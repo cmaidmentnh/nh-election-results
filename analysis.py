@@ -1209,37 +1209,39 @@ def get_town_representation(town):
 
 def get_turnout_analysis():
     """
-    Analyze turnout trends across towns and years.
+    Analyze turnout trends across towns and years using official ballots cast data.
     Returns towns with biggest turnout changes, overall trends, etc.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get turnout by town and year
+    # Get turnout by town and year from voter_registration table (ballots_cast)
     cursor.execute("""
         SELECT
-            res.municipality as town,
+            v.municipality as town,
             e.year,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
+            v.ballots_cast
+        FROM voter_registration v
+        JOIN elections e ON v.election_id = e.id
         WHERE e.election_type = 'general'
-        AND o.name = 'President of the United States'
-        AND res.municipality NOT GLOB '[0-9]*'
-        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
-        GROUP BY res.municipality, e.year
-        ORDER BY res.municipality, e.year
+        AND v.ballots_cast > 0
+        ORDER BY v.municipality, e.year
     """)
 
     town_turnout = defaultdict(dict)
     for row in cursor.fetchall():
-        town, year, votes = row
-        town_turnout[town][year] = votes
+        town, year, ballots = row
+        # Normalize ward names to town names
+        if ' Ward ' in town:
+            base_town = town[:town.index(' Ward ')]
+            if base_town not in town_turnout or year not in town_turnout[base_town]:
+                town_turnout[base_town][year] = 0
+            town_turnout[base_town][year] += ballots
+        else:
+            town_turnout[town][year] = ballots
 
     # Calculate changes
-    years = [2016, 2020, 2024]  # Presidential years
+    years = [2016, 2018, 2020, 2022, 2024]
     turnout_changes = []
 
     for town, by_year in town_turnout.items():
@@ -3009,42 +3011,29 @@ def get_undervote_analysis():
 
 def get_turnout_patterns():
     """
-    Analyze turnout patterns by town, year, and race competitiveness.
+    Analyze turnout patterns by town, year using official ballots cast data.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get registered voters if available, otherwise estimate from max turnout
-    # For now, we'll use total votes in presidential/gubernatorial races as proxy
-
+    # Get ballots cast from voter_registration table
     cursor.execute("""
         SELECT
             e.year,
-            res.municipality,
-            o.name as office,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
+            v.municipality,
+            v.ballots_cast
+        FROM voter_registration v
+        JOIN elections e ON v.election_id = e.id
         WHERE e.election_type = 'general'
-        AND o.name IN ('President of the United States', 'Governor')
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        AND res.municipality IS NOT NULL
-        AND res.municipality != ''
-        AND res.municipality NOT GLOB '[0-9]*'
-        GROUP BY e.year, res.municipality, o.name
+        AND v.ballots_cast > 0
     """)
 
-    # Organize by town
-    town_data = defaultdict(lambda: defaultdict(dict))
-    for year, muni, office, votes in cursor.fetchall():
+    # Organize by town (aggregating wards into cities)
+    town_data = defaultdict(lambda: defaultdict(int))
+    for year, muni, ballots in cursor.fetchall():
         if ' Ward ' in muni:
             muni = muni[:muni.index(' Ward ')]
-        if office not in town_data[muni][year]:
-            town_data[muni][year][office] = 0
-        town_data[muni][year][office] += votes
+        town_data[muni][year] += ballots
 
     # Calculate turnout metrics
     results = {
@@ -3058,11 +3047,7 @@ def get_turnout_patterns():
     # Get max turnout per town as proxy for voter base
     town_max = {}
     for muni, years in town_data.items():
-        max_votes = 0
-        for year, offices in years.items():
-            year_max = max(offices.values()) if offices else 0
-            max_votes = max(max_votes, year_max)
-        town_max[muni] = max_votes
+        town_max[muni] = max(years.values()) if years else 0
 
     # Calculate year-over-year and pres vs midterm
     for muni, years in town_data.items():
@@ -3079,7 +3064,7 @@ def get_turnout_patterns():
         mid_years = []
 
         for year in sorted(years.keys()):
-            turnout = max(years[year].values()) if years[year] else 0
+            turnout = years[year]
             turnout_pct = (turnout / town_max[muni]) * 100 if town_max[muni] > 0 else 0
             town_info['years'][year] = {
                 'votes': turnout,
@@ -3112,8 +3097,8 @@ def get_turnout_patterns():
     # Year totals
     year_totals = defaultdict(int)
     for muni, years in town_data.items():
-        for year, offices in years.items():
-            year_totals[year] += max(offices.values()) if offices else 0
+        for year, votes in years.items():
+            year_totals[year] += votes
 
     for year in sorted(year_totals.keys()):
         results['by_year'][year] = {
