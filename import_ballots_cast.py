@@ -87,9 +87,12 @@ def parse_ballots_file(filepath, year):
                         continue
                     if hasattr(row.iloc[name_col], 'strftime'):  # datetime
                         continue
-                    if municipality.upper() in ["TOTALS", "TOTAL", "REGULAR", "ABSENTEE"]:
+                    municipality_upper = municipality.upper().strip()
+                    if municipality_upper in ["TOTALS", "TOTAL", "REGULAR", "ABSENTEE", "NAN"]:
                         continue
-                    if "COUNTY" in municipality.upper():
+                    if "COUNTY" in municipality_upper:
+                        continue
+                    if "TOTAL" in municipality_upper:  # Catch any variation
                         continue
 
                     # Get total
