@@ -2000,13 +2000,12 @@ def get_districts_map_data(year=None, metric='margin'):
         """)
 
         # Build municipality -> competitive votes mapping
+        # IMPORTANT: Keep ward-level granularity (Manchester Ward 8, etc.)
+        # This ensures PVI is calculated only for the specific wards in a district
         muni_votes = defaultdict(lambda: {'r': 0, 'total': 0})
         for row in cursor.fetchall():
             muni, race_id, r_votes, d_votes = row
             if race_id in competitive_races:
-                # Normalize ward names to city names
-                if ' Ward ' in muni:
-                    muni = muni[:muni.index(' Ward ')]
                 muni_votes[muni]['r'] += r_votes
                 muni_votes[muni]['total'] += r_votes + d_votes
 
@@ -2029,9 +2028,7 @@ def get_districts_map_data(year=None, metric='margin'):
             county, district, muni = row
             if county in county_codes:
                 code = county_codes[county] + str(district)
-                # Normalize ward names
-                if ' Ward ' in muni:
-                    muni = muni[:muni.index(' Ward ')]
+                # Keep full municipality name (including ward info) for accurate PVI
                 district_munis[code].add(muni)
 
         # Calculate PVI for each House district
@@ -2060,8 +2057,7 @@ def get_districts_map_data(year=None, metric='margin'):
         senate_munis = defaultdict(set)
         for row in cursor.fetchall():
             district, muni = row
-            if ' Ward ' in muni:
-                muni = muni[:muni.index(' Ward ')]
+            # Keep full municipality name (including ward info) for accurate PVI
             senate_munis[f'sen_{district}'].add(muni)
 
         for code, munis in senate_munis.items():
@@ -2089,8 +2085,7 @@ def get_districts_map_data(year=None, metric='margin'):
         ec_munis = defaultdict(set)
         for row in cursor.fetchall():
             district, muni = row
-            if ' Ward ' in muni:
-                muni = muni[:muni.index(' Ward ')]
+            # Keep full municipality name (including ward info) for accurate PVI
             ec_munis[f'ec_{district}'].add(muni)
 
         for code, munis in ec_munis.items():
@@ -2118,8 +2113,7 @@ def get_districts_map_data(year=None, metric='margin'):
         cong_munis = defaultdict(set)
         for row in cursor.fetchall():
             district, muni = row
-            if ' Ward ' in muni:
-                muni = muni[:muni.index(' Ward ')]
+            # Keep full municipality name (including ward info) for accurate PVI
             cong_munis[f'cong_{district}'].add(muni)
 
         for code, munis in cong_munis.items():
@@ -2131,10 +2125,22 @@ def get_districts_map_data(year=None, metric='margin'):
                 if code in data:
                     data[code]['pvi'] = round(pvi, 1)
 
-        # Step 7: For towns, use their own competitive race data
-        for town in muni_votes:
-            if muni_votes[town]['total'] > 0:
-                town_r_pct = muni_votes[town]['r'] / muni_votes[town]['total'] * 100
+        # Step 7: For towns, aggregate ward data into cities for PVI
+        # Since the towns data (in 'data' dict) is already aggregated,
+        # we need to aggregate ward-level votes for city PVI calculation
+        town_aggregated = defaultdict(lambda: {'r': 0, 'total': 0})
+        for muni, votes in muni_votes.items():
+            # Normalize ward names to city names for the towns layer
+            if ' Ward ' in muni:
+                base_town = muni[:muni.index(' Ward ')]
+            else:
+                base_town = muni
+            town_aggregated[base_town]['r'] += votes['r']
+            town_aggregated[base_town]['total'] += votes['total']
+
+        for town, votes in town_aggregated.items():
+            if votes['total'] > 0:
+                town_r_pct = votes['r'] / votes['total'] * 100
                 pvi = town_r_pct - statewide_r_pct
                 if town in data:
                     data[town]['pvi'] = round(pvi, 1)
