@@ -15,13 +15,16 @@
 <!-- Towns in District -->
 <div class="card" style="margin-bottom: 32px;">
     <div class="card-header">
-        <span class="card-title">Towns in this District</span>
+        <span class="card-title">Towns in this District (Current Composition)</span>
     </div>
     <div class="town-list">
         {% for town in info.towns %}
         <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
         {% endfor %}
     </div>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 12px 0 0 0;">
+        Historical results below show aggregated votes from these towns across all years, reflecting current district boundaries.
+    </p>
 </div>
 
 <!-- Results by Year -->

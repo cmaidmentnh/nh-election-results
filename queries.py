@@ -23,7 +23,7 @@ def get_all_towns():
         SELECT DISTINCT municipality
         FROM results
         WHERE municipality NOT GLOB '[0-9]*'
-        AND municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        AND municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
         ORDER BY municipality
     """)
     towns = [row[0] for row in cursor.fetchall()]
@@ -128,19 +128,23 @@ def get_statewide_district_results(office, district):
 
 
 def get_towns_in_statewide_district(office, district):
-    """Get all towns that vote in a statewide district."""
+    """Get all towns that vote in a statewide district (current composition)."""
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Get towns from the most recent election year to get current district composition
     cursor.execute("""
         SELECT DISTINCT res.municipality
         FROM results res
         JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = ?
         AND r.district = ?
+        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
+        AND e.election_type = 'general'
         AND res.municipality NOT GLOB '[0-9]*'
-        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
         ORDER BY res.municipality
     """, (office, district))
 
@@ -367,57 +371,107 @@ def get_town_info(town):
 
 
 def get_district_results(county, district, office='State Representative'):
-    """Get results for a specific district across years."""
+    """
+    Get results for a district across years, using CURRENT district composition.
+    This aggregates town-level votes for the towns currently in the district,
+    not the historical race boundaries.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
+    # First get the current towns in this district (from 2024)
+    current_towns = get_district_towns(county, district, office)
+    if not current_towns:
+        conn.close()
+        return []
+
+    # Get the current seat count (from most recent year)
     cursor.execute("""
-        WITH race_totals AS (
+        SELECT r.seats
+        FROM races r
+        JOIN offices o ON r.office_id = o.id
+        JOIN elections e ON r.election_id = e.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
+        LIMIT 1
+    """, (county, str(district), office))
+    row = cursor.fetchone()
+    seats = row[0] if row else 1
+
+    # For each year, aggregate votes for these specific towns
+    # We find races that included these towns and sum their votes
+    placeholders = ','.join('?' * len(current_towns))
+    cursor.execute(f"""
+        WITH town_votes AS (
             SELECT
                 e.year,
-                r.id as race_id,
-                r.seats,
                 c.name as candidate,
                 c.party,
-                SUM(res.votes) as total_votes,
-                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+                SUM(res.votes) as total_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
-            WHERE r.county = ?
-            AND r.district = ?
+            WHERE res.municipality IN ({placeholders})
             AND o.name = ?
             AND e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            GROUP BY r.id, c.id
+            GROUP BY e.year, c.id
+        ),
+        ranked AS (
+            SELECT
+                year,
+                candidate,
+                party,
+                total_votes,
+                RANK() OVER (PARTITION BY year ORDER BY total_votes DESC) as rank
+            FROM town_votes
         )
         SELECT
-            year, race_id, seats, candidate, party, total_votes,
-            (rank <= seats) as is_winner, rank
-        FROM race_totals
+            year, candidate, party, total_votes,
+            (rank <= ?) as is_winner, rank
+        FROM ranked
         ORDER BY year DESC, total_votes DESC
-    """, (county, str(district), office))
+    """, (*current_towns, office, seats))
 
-    results = [dict(row) for row in cursor.fetchall()]
+    results = []
+    for row in cursor.fetchall():
+        results.append({
+            'year': row['year'],
+            'seats': seats,
+            'candidate': row['candidate'],
+            'party': row['party'],
+            'total_votes': row['total_votes'],
+            'is_winner': bool(row['is_winner']),
+            'rank': row['rank']
+        })
+
     conn.close()
     return results
 
 
 def get_district_towns(county, district, office='State Representative'):
-    """Get towns in a district with their vote breakdown."""
+    """Get towns CURRENTLY in a district (based on 2024 data)."""
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Get towns from the most recent election year (2024) to get current district composition
     cursor.execute("""
         SELECT DISTINCT res.municipality
         FROM results res
         JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE r.county = ?
         AND r.district = ?
         AND o.name = ?
+        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
+        AND e.election_type = 'general'
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
         ORDER BY res.municipality
     """, (county, str(district), office))
 
