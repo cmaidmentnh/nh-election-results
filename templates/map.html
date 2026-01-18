@@ -82,7 +82,6 @@
             <option value="exec">Executive Council</option>
             <option value="congress">Congressional Districts</option>
             <option value="towns">Towns</option>
-            <option value="counties">Counties</option>
         </select>
     </div>
     <div>
@@ -164,8 +163,8 @@ const layerConfig = {
     }
 };
 
-// Initialize map centered on NH
-const map = L.map('map').setView([43.8, -71.5], 8);
+// Initialize map centered on NH (zoom 8 is good for the whole state)
+const map = L.map('map').setView([43.5, -71.5], 7.5);
 
 // Add base tile layer
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -195,7 +194,8 @@ function getColor(value) {
 
 function style(feature) {
     const id = feature.properties[currentConfig.idField];
-    const data = electionData[id];
+    // Try both string and numeric lookup since JSON keys are strings
+    const data = electionData[id] || electionData[String(id)] || electionData[parseInt(id)];
     const value = data ? data.margin : null;
 
     return {
@@ -247,7 +247,8 @@ info.update = function(props) {
         return;
     }
     const id = props[currentConfig.idField];
-    const data = electionData[id];
+    // Try both string and numeric lookup
+    const data = electionData[id] || electionData[String(id)] || electionData[parseInt(id)];
     const name = currentConfig.formatName(props);
 
     let html = `<h4>${name}</h4>`;
