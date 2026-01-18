@@ -77,7 +77,8 @@
     <div>
         <label for="layer-select">View:</label>
         <select id="layer-select" onchange="changeLayer()">
-            <option value="house">State House Districts</option>
+            <option value="house">State House (Base Districts)</option>
+            <option value="floterial">State House (Floterial Districts)</option>
             <option value="senate">State Senate Districts</option>
             <option value="exec">Executive Council</option>
             <option value="congress">Congressional Districts</option>
@@ -135,6 +136,33 @@ const layerConfig = {
                 'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
             };
             return `${countyMap[code.substring(0, 2)] || code.substring(0, 2)} ${code.substring(2)}`;
+        }
+    },
+    floterial: {
+        file: '/static/data/nh-house-floterial-districts.geojson',
+        idField: 'floathse22',
+        nameField: 'floathse22',
+        clickUrl: (props) => {
+            const code = props.floathse22;
+            if (!code || code.trim() === '') return null;
+            const countyMap = {
+                'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
+                'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
+                'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
+            };
+            const countyCode = code.substring(0, 2);
+            const distNum = code.substring(2);
+            return `/district/${countyMap[countyCode]}/${distNum}`;
+        },
+        formatName: (props) => {
+            const code = props.floathse22;
+            if (!code || code.trim() === '') return 'Unknown';
+            const countyMap = {
+                'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
+                'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
+                'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
+            };
+            return `${countyMap[code.substring(0, 2)] || code.substring(0, 2)} ${code.substring(2)} (Floterial)`;
         }
     },
     senate: {
@@ -208,6 +236,10 @@ function getColor(value) {
 
 function style(feature) {
     const id = feature.properties[currentConfig.idField];
+    // Skip blank/null IDs
+    if (!id || (typeof id === 'string' && id.trim() === '')) {
+        return { fillColor: '#ccc', weight: 1, opacity: 0.5, color: '#999', fillOpacity: 0.3 };
+    }
     // Build the data key with prefix if specified
     const prefix = currentConfig.dataKeyPrefix || '';
     const dataKey = prefix + id;
