@@ -19,27 +19,40 @@ def index():
     towns = queries.get_all_towns()
     counties = queries.get_all_counties()
 
-    # Calculate changes
     years = sorted(statewide.keys())
+    latest_year = years[-1] if years else 2024
+    prev_year = years[-2] if len(years) >= 2 else None
+
+    # Get party control for latest year
+    party_control = analysis.get_party_control(latest_year)
+
+    # Calculate changes from previous election
     changes = {}
-    if len(years) >= 2:
-        for office in ['State Representative', 'State Senator', 'Executive Councilor']:
-            if office in statewide.get(years[-1], {}) and office in statewide.get(years[-2], {}):
-                prev = statewide[years[-2]][office]
-                curr = statewide[years[-1]][office]
-                r_change = curr['R'] - prev['R']
+    if prev_year:
+        prev_control = analysis.get_party_control(prev_year)
+        for office in party_control:
+            if office in prev_control:
+                r_change = party_control[office]['R'] - prev_control[office]['R']
                 changes[office] = {
                     'r_change': r_change,
                     'd_change': -r_change,
-                    'prev_year': years[-2],
-                    'curr_year': years[-1]
+                    'prev_year': prev_year
                 }
+
+    # Get closest races and biggest shifts
+    closest_races = analysis.get_closest_races(latest_year, limit=8)
+    biggest_shifts = analysis.get_biggest_shifts(prev_year, latest_year, limit=8) if prev_year else []
 
     return render_template('index.html',
                          stats=stats,
                          statewide=statewide,
                          years=years,
+                         latest_year=latest_year,
+                         prev_year=prev_year,
+                         party_control=party_control,
                          changes=changes,
+                         closest_races=closest_races,
+                         biggest_shifts=biggest_shifts,
                          towns=towns,
                          counties=counties)
 

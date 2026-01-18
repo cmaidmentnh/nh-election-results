@@ -29,6 +29,34 @@ def get_office_sort_key(office_name):
     return OFFICE_ORDER.get(office_name, 99)
 
 
+def classify_lean(margin):
+    """Classify a margin into a lean category."""
+    if margin > 15:
+        return "Safe R"
+    elif margin > 8:
+        return "Likely R"
+    elif margin > 3:
+        return "Lean R"
+    elif margin > -3:
+        return "Toss-up"
+    elif margin > -8:
+        return "Lean D"
+    elif margin > -15:
+        return "Likely D"
+    else:
+        return "Safe D"
+
+
+def get_trend_arrow(change):
+    """Return trend arrow based on margin change."""
+    if change > 2:
+        return "↗"  # Trending R
+    elif change < -2:
+        return "↘"  # Trending D
+    else:
+        return "→"  # Stable
+
+
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -421,6 +449,175 @@ def compare_years(town, year1, year2):
         'turnout_change': turnout_change,
         'turnout_pct_change': round(turnout_pct_change, 1)
     }
+
+
+def get_party_control(year):
+    """Get party control seat counts for legislative offices."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT
+                o.name as office,
+                r.id as race_id,
+                r.seats,
+                c.party,
+                SUM(res.votes) as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.year = ?
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor')
+            GROUP BY r.id, c.id
+        )
+        SELECT office, party, COUNT(*) as seats
+        FROM race_totals
+        WHERE rank <= seats
+        GROUP BY office, party
+    """, (year,))
+
+    results = {}
+    for row in cursor.fetchall():
+        office, party, seats = row
+        if office not in results:
+            results[office] = {'R': 0, 'D': 0, 'Other': 0}
+        if party == 'Republican':
+            results[office]['R'] = seats
+        elif party == 'Democratic':
+            results[office]['D'] = seats
+        else:
+            results[office]['Other'] += seats
+
+    conn.close()
+    return results
+
+
+def get_closest_races(year, limit=10):
+    """Get races with the smallest margins."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT
+                r.id as race_id,
+                o.name as office,
+                r.district,
+                r.county,
+                r.seats,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.year = ?
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.id
+        )
+        SELECT
+            office, district, county,
+            r_votes, d_votes, total_votes,
+            CASE WHEN r_votes + d_votes > 0
+                THEN ROUND((r_votes - d_votes) * 100.0 / (r_votes + d_votes), 1)
+                ELSE 0
+            END as margin
+        FROM race_totals
+        WHERE r_votes > 0 AND d_votes > 0
+        ORDER BY ABS(margin)
+        LIMIT ?
+    """, (year, limit))
+
+    results = []
+    for row in cursor.fetchall():
+        office, district, county, r_votes, d_votes, total, margin = row
+        results.append({
+            'office': office,
+            'district': district,
+            'county': county,
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'margin': margin,
+            'label': f"{county} {district}" if county else f"District {district}"
+        })
+
+    conn.close()
+    return results
+
+
+def get_biggest_shifts(year1, year2, limit=10):
+    """Get races with biggest margin shifts between two years."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH race_margins AS (
+            SELECT
+                e.year,
+                o.name as office,
+                r.district,
+                r.county,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.year IN (?, ?)
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY e.year, r.id
+        ),
+        margins AS (
+            SELECT
+                year, office, district, county,
+                CASE WHEN r_votes + d_votes > 0
+                    THEN (r_votes - d_votes) * 100.0 / (r_votes + d_votes)
+                    ELSE 0
+                END as margin
+            FROM race_margins
+            WHERE r_votes > 0 AND d_votes > 0
+        )
+        SELECT
+            m1.office, m1.district, m1.county,
+            ROUND(m1.margin, 1) as margin1,
+            ROUND(m2.margin, 1) as margin2,
+            ROUND(m2.margin - m1.margin, 1) as shift
+        FROM margins m1
+        JOIN margins m2 ON m1.office = m2.office
+            AND COALESCE(m1.district, '') = COALESCE(m2.district, '')
+            AND COALESCE(m1.county, '') = COALESCE(m2.county, '')
+        WHERE m1.year = ? AND m2.year = ?
+        ORDER BY ABS(shift) DESC
+        LIMIT ?
+    """, (year1, year2, year1, year2, limit))
+
+    results = []
+    for row in cursor.fetchall():
+        office, district, county, margin1, margin2, shift = row
+        results.append({
+            'office': office,
+            'district': district,
+            'county': county,
+            'margin1': margin1,
+            'margin2': margin2,
+            'shift': shift,
+            'direction': 'R' if shift > 0 else 'D',
+            'label': f"{county} {district}" if county else f"District {district}"
+        })
+
+    conn.close()
+    return results
 
 
 def get_county_summary(county):

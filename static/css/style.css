@@ -1015,6 +1015,187 @@ footer {
 .mb-6 { margin-bottom: 24px; }
 
 /* ============================================
+   PARTY CONTROL CARDS (Dashboard)
+   ============================================ */
+.control-card {
+  text-align: center;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gray-300);
+}
+
+.control-card.r-control::before { background: var(--republican); }
+.control-card.d-control::before { background: var(--democrat); }
+
+.control-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-500);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.control-seats {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.seat-count {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.seat-count.r { color: var(--republican); }
+.seat-count.d { color: var(--democrat); }
+
+.seat-divider {
+  font-size: 1.5rem;
+  color: var(--gray-300);
+  font-weight: 300;
+}
+
+.control-party {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 4px;
+}
+
+.control-change {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  margin-top: 8px;
+}
+
+.control-change.r { color: var(--republican); }
+.control-change.d { color: var(--democrat); }
+
+/* ============================================
+   RACE LIST (Dashboard Closest/Shifts)
+   ============================================ */
+.race-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.race-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.race-item:last-child {
+  border-bottom: none;
+}
+
+.race-item .race-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.race-item .race-name {
+  font-weight: 500;
+  color: var(--gray-900);
+  font-size: 0.9375rem;
+}
+
+.race-item .race-office {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+}
+
+.race-margin, .race-shift {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.race-margin.r, .race-shift.r {
+  background: var(--republican-soft);
+  color: var(--republican);
+}
+
+.race-margin.d, .race-shift.d {
+  background: var(--democrat-soft);
+  color: var(--democrat);
+}
+
+/* ============================================
+   QUICK JUMP GROUPS (Dashboard)
+   ============================================ */
+.jump-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jump-group label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.quick-jump {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 16px 0;
+}
+
+.quick-jump select {
+  min-width: 160px;
+}
+
+.quick-jump button {
+  padding: 10px 16px;
+}
+
+/* Year Section Headers */
+.year-section {
+  margin-bottom: 32px;
+}
+
+.year-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.year-badge {
+  background: var(--primary);
+  color: var(--white);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ============================================
    COUNTY PAGE - SIDEBAR LAYOUT
    ============================================ */
 .county-layout {
