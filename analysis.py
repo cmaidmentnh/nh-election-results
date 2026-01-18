@@ -1163,6 +1163,685 @@ def get_town_representation(town):
     return districts
 
 
+# ============== NEW ANALYSIS FUNCTIONS ==============
+
+def get_turnout_analysis():
+    """
+    Analyze turnout trends across towns and years.
+    Returns towns with biggest turnout changes, overall trends, etc.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get turnout by town and year
+    cursor.execute("""
+        SELECT
+            res.municipality as town,
+            e.year,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND o.name = 'President of the United States'
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        GROUP BY res.municipality, e.year
+        ORDER BY res.municipality, e.year
+    """)
+
+    town_turnout = defaultdict(dict)
+    for row in cursor.fetchall():
+        town, year, votes = row
+        town_turnout[town][year] = votes
+
+    # Calculate changes
+    years = [2016, 2020, 2024]  # Presidential years
+    turnout_changes = []
+
+    for town, by_year in town_turnout.items():
+        if 2020 in by_year and 2024 in by_year:
+            change = by_year[2024] - by_year[2020]
+            pct_change = (change / by_year[2020] * 100) if by_year[2020] > 0 else 0
+            turnout_changes.append({
+                'town': town,
+                'votes_2020': by_year.get(2020, 0),
+                'votes_2024': by_year.get(2024, 0),
+                'change': change,
+                'pct_change': round(pct_change, 1)
+            })
+
+    # Sort by absolute change
+    biggest_gains = sorted(turnout_changes, key=lambda x: -x['change'])[:15]
+    biggest_losses = sorted(turnout_changes, key=lambda x: x['change'])[:15]
+
+    # Statewide totals
+    statewide = {}
+    for year in years:
+        total = sum(by_year.get(year, 0) for by_year in town_turnout.values())
+        statewide[year] = total
+
+    conn.close()
+
+    return {
+        'by_town': dict(town_turnout),
+        'biggest_gains': biggest_gains,
+        'biggest_losses': biggest_losses,
+        'statewide': statewide,
+        'years': years
+    }
+
+
+def get_ticket_splitting_analysis():
+    """
+    Find towns where voters split tickets between top-of-ticket and down-ballot.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get results by town, year, and office
+    cursor.execute("""
+        SELECT
+            res.municipality as town,
+            e.year,
+            o.name as office,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        GROUP BY res.municipality, e.year, o.name
+    """)
+
+    by_town_year = defaultdict(lambda: defaultdict(dict))
+    for row in cursor.fetchall():
+        town, year, office, r_votes, d_votes = row
+        winner = 'R' if r_votes > d_votes else 'D' if d_votes > r_votes else 'Tie'
+        margin = ((r_votes - d_votes) / (r_votes + d_votes) * 100) if (r_votes + d_votes) > 0 else 0
+        by_town_year[town][year][office] = {'winner': winner, 'margin': round(margin, 1)}
+
+    conn.close()
+
+    # Find splits
+    splits = []
+    for town, by_year in by_town_year.items():
+        for year, by_office in by_year.items():
+            # Check President vs State Rep
+            pres = by_office.get('President of the United States')
+            state_rep = by_office.get('State Representative')
+
+            if pres and state_rep and pres['winner'] != state_rep['winner'] and pres['winner'] != 'Tie' and state_rep['winner'] != 'Tie':
+                splits.append({
+                    'town': town,
+                    'year': year,
+                    'president': pres['winner'],
+                    'president_margin': pres['margin'],
+                    'state_rep': state_rep['winner'],
+                    'state_rep_margin': state_rep['margin'],
+                    'split_magnitude': abs(pres['margin']) + abs(state_rep['margin'])
+                })
+
+    # Sort by split magnitude (biggest splits first)
+    splits.sort(key=lambda x: (-x['year'], -x['split_magnitude']))
+
+    # Group by year
+    by_year = defaultdict(list)
+    for s in splits:
+        by_year[s['year']].append(s)
+
+    return {
+        'splits': splits[:50],  # Top 50
+        'by_year': dict(by_year),
+        'total_splits': len(splits)
+    }
+
+
+def get_redistricting_impact():
+    """
+    Analyze impact of 2022 redistricting on districts.
+    Compare pre-redistricting (2020) to post-redistricting (2022, 2024).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get 2020 district results (pre-redistricting)
+    cursor.execute("""
+        SELECT
+            r.county,
+            r.district,
+            o.name as office,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = 2020
+        AND e.election_type = 'general'
+        AND o.name = 'State Representative'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.county, r.district
+    """)
+
+    pre_2022 = {}
+    for row in cursor.fetchall():
+        county, district, office, r_votes, d_votes = row
+        key = f"{county}-{district}"
+        total = r_votes + d_votes
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        pre_2022[key] = {'margin': round(margin, 1), 'r_votes': r_votes, 'd_votes': d_votes}
+
+    # Get 2024 district results (post-redistricting)
+    cursor.execute("""
+        SELECT
+            r.county,
+            r.district,
+            o.name as office,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = 2024
+        AND e.election_type = 'general'
+        AND o.name = 'State Representative'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.county, r.district
+    """)
+
+    post_2022 = {}
+    for row in cursor.fetchall():
+        county, district, office, r_votes, d_votes = row
+        key = f"{county}-{district}"
+        total = r_votes + d_votes
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        post_2022[key] = {'margin': round(margin, 1), 'r_votes': r_votes, 'd_votes': d_votes}
+
+    conn.close()
+
+    # Note: Direct comparison is difficult because district boundaries changed
+    # Instead, show new districts and their composition
+
+    return {
+        'pre_2022_districts': len(pre_2022),
+        'post_2022_districts': len(post_2022),
+        'note': 'District boundaries changed significantly in 2022 redistricting. Direct comparison is not meaningful.',
+        'post_2022': post_2022
+    }
+
+
+def get_office_results(office):
+    """
+    Get comprehensive results for a specific office across all years.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get results by year
+    cursor.execute("""
+        SELECT
+            e.year,
+            r.district,
+            r.county,
+            r.seats,
+            c.name as candidate,
+            c.party,
+            SUM(res.votes) as total_votes,
+            RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY e.year, r.id, c.id
+        ORDER BY e.year DESC, r.county, r.district, total_votes DESC
+    """, (office,))
+
+    by_year = defaultdict(lambda: {'races': [], 'r_seats': 0, 'd_seats': 0, 'total_r_votes': 0, 'total_d_votes': 0})
+    current_race = None
+
+    for row in cursor.fetchall():
+        year, district, county, seats, candidate, party, votes, rank = row
+        race_key = (year, district, county)
+
+        if race_key != current_race:
+            current_race = race_key
+            by_year[year]['races'].append({
+                'district': district,
+                'county': county,
+                'seats': seats,
+                'candidates': []
+            })
+
+        race = by_year[year]['races'][-1]
+        is_winner = rank <= seats
+        race['candidates'].append({
+            'name': candidate,
+            'party': party,
+            'votes': votes,
+            'is_winner': is_winner
+        })
+
+        if party == 'Republican':
+            by_year[year]['total_r_votes'] += votes
+            if is_winner:
+                by_year[year]['r_seats'] += 1
+        elif party == 'Democratic':
+            by_year[year]['total_d_votes'] += votes
+            if is_winner:
+                by_year[year]['d_seats'] += 1
+
+    conn.close()
+
+    # Calculate margins per year
+    for year, data in by_year.items():
+        total = data['total_r_votes'] + data['total_d_votes']
+        if total > 0:
+            data['margin'] = round((data['total_r_votes'] - data['total_d_votes']) / total * 100, 1)
+        else:
+            data['margin'] = 0
+
+    return {
+        'by_year': dict(by_year),
+        'years': sorted(by_year.keys(), reverse=True)
+    }
+
+
+def get_incumbent_analysis():
+    """
+    Identify candidates who ran multiple times and track their performance.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Find candidates who appear in multiple years
+    cursor.execute("""
+        WITH candidate_races AS (
+            SELECT
+                c.name as candidate,
+                c.party,
+                e.year,
+                o.name as office,
+                r.district,
+                r.county,
+                r.seats,
+                SUM(res.votes) as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Governor')
+            GROUP BY c.name, e.year, r.id
+        )
+        SELECT
+            candidate,
+            party,
+            year,
+            office,
+            district,
+            county,
+            total_votes,
+            (rank <= seats) as won
+        FROM candidate_races
+        ORDER BY candidate, year
+    """)
+
+    # Group by candidate
+    candidates = defaultdict(list)
+    for row in cursor.fetchall():
+        candidate, party, year, office, district, county, votes, won = row
+        candidates[candidate].append({
+            'party': party,
+            'year': year,
+            'office': office,
+            'district': district,
+            'county': county,
+            'votes': votes,
+            'won': bool(won)
+        })
+
+    conn.close()
+
+    # Filter to candidates with 2+ races
+    repeat_candidates = []
+    for name, races in candidates.items():
+        if len(races) >= 2:
+            wins = sum(1 for r in races if r['won'])
+            losses = len(races) - wins
+            years = [r['year'] for r in races]
+
+            repeat_candidates.append({
+                'name': name,
+                'party': races[0]['party'],
+                'races': races,
+                'total_races': len(races),
+                'wins': wins,
+                'losses': losses,
+                'win_rate': round(wins / len(races) * 100, 1),
+                'years': years,
+                'first_year': min(years),
+                'last_year': max(years)
+            })
+
+    # Sort by number of races
+    repeat_candidates.sort(key=lambda x: (-x['total_races'], x['name']))
+
+    # Separate winners and losers
+    incumbents_won = [c for c in repeat_candidates if c['races'][-1]['won']]
+    incumbents_lost = [c for c in repeat_candidates if len(c['races']) >= 2 and c['races'][-2]['won'] and not c['races'][-1]['won']]
+
+    return {
+        'repeat_candidates': repeat_candidates[:100],
+        'total_repeat': len(repeat_candidates),
+        'incumbents_won_2024': len([c for c in repeat_candidates if 2024 in c['years'] and 2022 in c['years'] and c['races'][-1]['won']]),
+        'incumbents_lost_2024': len(incumbents_lost)
+    }
+
+
+def compare_towns(town1, town2):
+    """Compare two towns side by side."""
+    summary1 = get_town_summary(town1)
+    summary2 = get_town_summary(town2)
+
+    if not summary1 or not summary2:
+        return None
+
+    pvi1 = get_town_pvi(town1)
+    pvi2 = get_town_pvi(town2)
+
+    return {
+        'town1': {
+            'name': town1,
+            'summary': summary1,
+            'pvi': pvi1
+        },
+        'town2': {
+            'name': town2,
+            'summary': summary2,
+            'pvi': pvi2
+        }
+    }
+
+
+def compare_districts(district1, district2):
+    """Compare two districts side by side."""
+    # Parse district strings like "Hillsborough-1" or "State Senate-1"
+    # For now, just return None - would need more complex parsing
+    return None
+
+
+def get_map_data(year, metric='pvi'):
+    """
+    Get data for map visualization.
+    Returns dict with town -> value mapping.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if metric == 'pvi':
+        # Get PVI for each town
+        cursor.execute("""
+            SELECT
+                res.municipality as town,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.year = ?
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality NOT GLOB '[0-9]*'
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+            GROUP BY res.municipality
+        """, (year,))
+
+        # Get statewide baseline
+        statewide = get_statewide_baseline(year)
+        state_r_pct = statewide.get(year, {}).get('r_pct', 50)
+
+        data = {}
+        for row in cursor.fetchall():
+            town, r_votes, d_votes, total = row
+            if total > 0:
+                town_r_pct = (r_votes / total) * 100
+                pvi = town_r_pct - state_r_pct
+                data[town] = round(pvi, 1)
+
+    elif metric == 'margin':
+        cursor.execute("""
+            SELECT
+                res.municipality as town,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.year = ?
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality NOT GLOB '[0-9]*'
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+            GROUP BY res.municipality
+        """, (year,))
+
+        data = {}
+        for row in cursor.fetchall():
+            town, r_votes, d_votes = row
+            total = r_votes + d_votes
+            if total > 0:
+                margin = (r_votes - d_votes) / total * 100
+                data[town] = round(margin, 1)
+
+    else:  # turnout
+        cursor.execute("""
+            SELECT
+                res.municipality as town,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.year = ?
+            AND e.election_type = 'general'
+            AND o.name = 'President of the United States'
+            AND res.municipality NOT GLOB '[0-9]*'
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+            GROUP BY res.municipality
+        """, (year,))
+
+        data = {}
+        for row in cursor.fetchall():
+            town, votes = row
+            data[town] = votes
+
+    conn.close()
+    return data
+
+
+def export_town_data(year=None):
+    """Export town-level data."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    year_filter = "AND e.year = ?" if year else ""
+    params = (year,) if year else ()
+
+    cursor.execute(f"""
+        SELECT
+            res.municipality as town,
+            e.year,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        {year_filter}
+        GROUP BY res.municipality, e.year
+        ORDER BY res.municipality, e.year
+    """, params)
+
+    data = []
+    for row in cursor.fetchall():
+        town, yr, r_votes, d_votes, total = row
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        data.append({
+            'town': town,
+            'year': yr,
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total,
+            'margin': round(margin, 1)
+        })
+
+    conn.close()
+    return data
+
+
+def export_district_data(year=None):
+    """Export district-level data."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    year_filter = "AND e.year = ?" if year else ""
+    params = (year,) if year else ()
+
+    cursor.execute(f"""
+        SELECT
+            o.name as office,
+            r.county,
+            r.district,
+            e.year,
+            r.seats,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        {year_filter}
+        GROUP BY o.name, r.county, r.district, e.year
+        ORDER BY o.name, r.county, r.district, e.year
+    """, params)
+
+    data = []
+    for row in cursor.fetchall():
+        office, county, district, yr, seats, r_votes, d_votes, total = row
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        data.append({
+            'office': office,
+            'county': county,
+            'district': district,
+            'year': yr,
+            'seats': seats,
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total,
+            'margin': round(margin, 1)
+        })
+
+    conn.close()
+    return data
+
+
+def export_race_data(year=None):
+    """Export race-level data."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    year_filter = "AND e.year = ?" if year else ""
+    params = (year,) if year else ()
+
+    cursor.execute(f"""
+        SELECT
+            e.year,
+            o.name as office,
+            r.county,
+            r.district,
+            c.name as candidate,
+            c.party,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        {year_filter}
+        GROUP BY e.year, r.id, c.id
+        ORDER BY e.year, o.name, r.county, r.district, total_votes DESC
+    """, params)
+
+    data = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return data
+
+
+def export_candidate_data(year=None):
+    """Export candidate performance data."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    year_filter = "AND e.year = ?" if year else ""
+    params = (year,) if year else ()
+
+    cursor.execute(f"""
+        SELECT
+            c.name as candidate,
+            c.party,
+            e.year,
+            o.name as office,
+            r.county,
+            r.district,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        {year_filter}
+        GROUP BY c.name, e.year, r.id
+        ORDER BY c.name, e.year
+    """, params)
+
+    data = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return data
+
+
 def get_all_districts_with_pvi(office):
     """
     Get all districts for an office with their PVI data.

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Redistricting Impact - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Redistricting Impact</h1>
+    <p class="subtitle">Analysis of 2022 redistricting changes</p>
+</div>
+
+<div class="metrics">
+    <div class="metric">
+        <div class="metric-value">{{ data.pre_2022_districts }}</div>
+        <div class="metric-label">Pre-2022 Districts</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value">{{ data.post_2022_districts }}</div>
+        <div class="metric-label">Post-2022 Districts</div>
+    </div>
+</div>
+
+<div class="two-col">
+    <div class="main-content">
+        <div class="section">
+            <h2>About Redistricting</h2>
+            <p>{{ data.note }}</p>
+            <p class="mt-2">New Hampshire redraws its legislative district boundaries every 10 years following the census. The 2022 redistricting changed many State House district boundaries, making direct before/after comparisons difficult.</p>
+        </div>
+
+        <div class="section">
+            <h2>2024 District Results (Post-Redistricting)</h2>
+            <p class="text-muted mb-2">State House districts under the new 2022 boundaries</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">R Votes</th>
+                        <th class="text-right">D Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, d in data.post_2022.items()|sort(key=lambda x: x[1].margin, reverse=true) %}
+                    <tr>
+                        <td>{{ key }}</td>
+                        <td class="text-right">
+                            <span class="{% if d.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.margin|abs) }}%
+                            </span>
+                        </td>
+                        <td class="text-right">{{ "{:,}".format(d.r_votes) }}</td>
+                        <td class="text-right">{{ "{:,}".format(d.d_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Key Dates</h3>
+            <ul class="town-list" style="columns: 1;">
+                <li><strong>2020:</strong> Last election under old maps</li>
+                <li><strong>2021:</strong> Census data released</li>
+                <li><strong>2022:</strong> New maps adopted</li>
+                <li><strong>2022:</strong> First election under new maps</li>
+                <li><strong>2024:</strong> Second election under new maps</li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Learn More</h3>
+            <p><a href="{{ url_for('districts_browser') }}">Browse all districts</a></p>
+        </div>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Election Map - NH Election Results{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+#map {
+    height: 600px;
+    width: 100%;
+    background: #f5f5f5;
+}
+.map-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.map-controls select {
+    width: auto;
+}
+.legend {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.legend-color {
+    width: 20px;
+    height: 14px;
+}
+.info-box {
+    background: white;
+    padding: 12px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    min-width: 150px;
+}
+.info-box h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Election Map</h1>
+    <p class="subtitle">Interactive map of New Hampshire voting patterns</p>
+</div>
+
+<div class="map-controls">
+    <div>
+        <label for="year-select" style="font-size: 0.85rem; color: var(--text-muted);">Year:</label>
+        <select id="year-select" onchange="updateMap()">
+            <option value="2024" {% if year == 2024 %}selected{% endif %}>2024</option>
+            <option value="2022" {% if year == 2022 %}selected{% endif %}>2022</option>
+            <option value="2020" {% if year == 2020 %}selected{% endif %}>2020</option>
+            <option value="2018" {% if year == 2018 %}selected{% endif %}>2018</option>
+            <option value="2016" {% if year == 2016 %}selected{% endif %}>2016</option>
+        </select>
+    </div>
+    <div>
+        <label for="metric-select" style="font-size: 0.85rem; color: var(--text-muted);">Metric:</label>
+        <select id="metric-select" onchange="updateMap()">
+            <option value="pvi" {% if metric == 'pvi' %}selected{% endif %}>PVI (Partisan Lean)</option>
+            <option value="margin" {% if metric == 'margin' %}selected{% endif %}>Vote Margin</option>
+            <option value="turnout" {% if metric == 'turnout' %}selected{% endif %}>Turnout</option>
+        </select>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div class="mt-2 text-muted">
+    <p><strong>Note:</strong> Map requires GeoJSON boundary data to display. Town boundaries will be colored based on the selected metric.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Initialize map centered on NH
+const map = L.map('map').setView([43.5, -71.5], 8);
+
+// Add base tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let geojsonLayer = null;
+
+function getColor(value, metric) {
+    if (metric === 'turnout') {
+        // Gradient for turnout (blue scale)
+        return value > 10000 ? '#08306b' :
+               value > 5000 ? '#2171b5' :
+               value > 2000 ? '#4292c6' :
+               value > 1000 ? '#6baed6' :
+               value > 500 ? '#9ecae1' :
+               '#deebf7';
+    } else {
+        // Red-blue scale for PVI/margin
+        return value > 20 ? '#67000d' :
+               value > 10 ? '#a50f15' :
+               value > 5 ? '#cb181d' :
+               value > 2 ? '#ef3b2c' :
+               value > 0 ? '#fc9272' :
+               value > -2 ? '#9ecae1' :
+               value > -5 ? '#6baed6' :
+               value > -10 ? '#4292c6' :
+               value > -20 ? '#2171b5' :
+               '#084594';
+    }
+}
+
+function updateMap() {
+    const year = document.getElementById('year-select').value;
+    const metric = document.getElementById('metric-select').value;
+
+    // Fetch map data
+    fetch(`/api/map-data?year=${year}&metric=${metric}`)
+        .then(r => r.json())
+        .then(data => {
+            console.log('Map data loaded:', Object.keys(data).length, 'towns');
+            // Note: GeoJSON layer would be updated here
+            // This requires GeoJSON boundary files to be loaded
+        });
+}
+
+// Initial load
+updateMap();
+
+// Info control
+const info = L.control({position: 'topright'});
+info.onAdd = function() {
+    this._div = L.DomUtil.create('div', 'info-box');
+    this.update();
+    return this._div;
+};
+info.update = function(props) {
+    this._div.innerHTML = props ?
+        `<h4>${props.name}</h4><p>${props.value !== undefined ? props.value : 'No data'}</p>` :
+        '<h4>Hover over a town</h4>';
+};
+info.addTo(map);
+
+// Legend control
+const legend = L.control({position: 'bottomright'});
+legend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = `
+        <div class="legend-item"><span class="legend-color" style="background:#67000d"></span> R+20+</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ef3b2c"></span> R+5-20</div>
+        <div class="legend-item"><span class="legend-color" style="background:#fc9272"></span> R+0-5</div>
+        <div class="legend-item"><span class="legend-color" style="background:#9ecae1"></span> D+0-5</div>
+        <div class="legend-item"><span class="legend-color" style="background:#4292c6"></span> D+5-20</div>
+        <div class="legend-item"><span class="legend-color" style="background:#084594"></span> D+20+</div>
+    `;
+    return div;
+};
+legend.addTo(map);
+</script>
+{% endblock %}

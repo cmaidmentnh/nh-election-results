@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ office }} - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ office }}</h1>
+    <p class="subtitle">Results across all election years</p>
+</div>
+
+<div class="metrics">
+    {% for year in data.years[:3] %}
+    {% set yr_data = data.by_year[year] %}
+    <div class="metric">
+        <div class="metric-value">
+            <span class="r">{{ yr_data.r_seats }}</span>-<span class="d">{{ yr_data.d_seats }}</span>
+        </div>
+        <div class="metric-label">{{ year }} Seats</div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="two-col">
+    <div class="main-content">
+        {% for year in data.years %}
+        {% set yr_data = data.by_year[year] %}
+        <div class="section">
+            <div class="section-header">
+                <h2>{{ year }} Results</h2>
+                <span class="{% if yr_data.margin > 0 %}r{% else %}d{% endif %}">
+                    {% if yr_data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(yr_data.margin|abs) }}% overall
+                </span>
+            </div>
+
+            <div class="mb-2">
+                <strong>Seats:</strong>
+                <span class="r">{{ yr_data.r_seats }} R</span> /
+                <span class="d">{{ yr_data.d_seats }} D</span>
+                &nbsp;&middot;&nbsp;
+                <strong>Votes:</strong>
+                {{ "{:,}".format(yr_data.total_r_votes) }} R /
+                {{ "{:,}".format(yr_data.total_d_votes) }} D
+            </div>
+
+            {% if yr_data.races|length <= 10 %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% if yr_data.races[0].county %}County{% endif %}</th>
+                        <th>District</th>
+                        <th>Winner</th>
+                        <th class="text-right">Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for race in yr_data.races %}
+                    {% set winner = race.candidates|selectattr('is_winner')|first %}
+                    <tr>
+                        <td>{{ race.county or '' }}</td>
+                        <td>
+                            {% if race.county %}
+                            <a href="{{ url_for('district', county=race.county, district=race.district) }}">{{ race.district }}</a>
+                            {% else %}
+                            <a href="{{ url_for('statewide_district', office=office, district=race.district) }}">{{ race.district }}</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if winner %}
+                            <span class="{% if winner.party == 'Republican' %}r{% elif winner.party == 'Democratic' %}d{% endif %}">
+                                {{ winner.name }}
+                            </span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td class="text-right">{{ "{:,}".format(winner.votes) if winner else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">{{ yr_data.races|length }} races total. <a href="{{ url_for('districts_browser') }}?office={{ office }}">Browse all districts</a></p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Browse by Office</h3>
+            <ul class="town-list" style="columns: 1;">
+                <li><a href="{{ url_for('office_detail', office_name='president') }}">President</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='governor') }}">Governor</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='us-senate') }}">US Senate</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='us-house') }}">US House</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='exec-council') }}">Exec Council</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='state-senate') }}">State Senate</a></li>
+                <li><a href="{{ url_for('office_detail', office_name='state-house') }}">State House</a></li>
+            </ul>
+        </div>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Turnout Analysis - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Turnout Analysis</h1>
+    <p class="subtitle">Presidential election turnout trends 2016-2024</p>
+</div>
+
+<div class="metrics">
+    {% for year in data.years %}
+    <div class="metric">
+        <div class="metric-value">{{ "{:,}".format(data.statewide[year]) }}</div>
+        <div class="metric-label">{{ year }} Turnout</div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="two-col">
+    <div class="main-content">
+        <div class="section">
+            <h2>Biggest Turnout Gains (2020 &rarr; 2024)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">2020</th>
+                        <th class="text-right">2024</th>
+                        <th class="text-right">Change</th>
+                        <th class="text-right">% Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in data.biggest_gains %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_2020) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_2024) }}</td>
+                        <td class="text-right" style="color: green;">+{{ "{:,}".format(t.change) }}</td>
+                        <td class="text-right" style="color: green;">+{{ t.pct_change }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Biggest Turnout Losses (2020 &rarr; 2024)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">2020</th>
+                        <th class="text-right">2024</th>
+                        <th class="text-right">Change</th>
+                        <th class="text-right">% Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in data.biggest_losses %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_2020) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_2024) }}</td>
+                        <td class="text-right" style="color: #8b0000;">{{ "{:,}".format(t.change) }}</td>
+                        <td class="text-right" style="color: #8b0000;">{{ t.pct_change }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>About This Data</h3>
+            <p class="text-muted">Turnout is measured by total votes cast in presidential races, which typically have the highest participation.</p>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Export Data</h3>
+            <p><a href="{{ url_for('api_export', data_type='towns') }}?format=csv">Download CSV</a></p>
+            <p><a href="{{ url_for('api_export', data_type='towns') }}">Download JSON</a></p>
+        </div>
+    </aside>
+</div>
+{% endblock %}

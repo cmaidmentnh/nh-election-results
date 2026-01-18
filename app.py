@@ -329,5 +329,130 @@ def statewide_district(office, district):
                          lean=lean)
 
 
+# ============== NEW FEATURE ROUTES ==============
+
+@app.route('/turnout')
+def turnout():
+    """Turnout analysis page."""
+    turnout_data = analysis.get_turnout_analysis()
+    return render_template('turnout.html', data=turnout_data)
+
+
+@app.route('/ticket-splitting')
+def ticket_splitting():
+    """Ticket splitting analysis page."""
+    splitting_data = analysis.get_ticket_splitting_analysis()
+    return render_template('ticket_splitting.html', data=splitting_data)
+
+
+@app.route('/redistricting')
+def redistricting():
+    """Redistricting impact analysis."""
+    impact_data = analysis.get_redistricting_impact()
+    return render_template('redistricting.html', data=impact_data)
+
+
+@app.route('/office/<office_name>')
+def office_detail(office_name):
+    """Office-level results page."""
+    # Decode URL-safe office name
+    office_map = {
+        'president': 'President of the United States',
+        'governor': 'Governor',
+        'us-senate': 'United States Senator',
+        'us-house': 'Representative in Congress',
+        'state-senate': 'State Senator',
+        'state-house': 'State Representative',
+        'exec-council': 'Executive Councilor'
+    }
+    office = office_map.get(office_name)
+    if not office:
+        return f"Office '{office_name}' not found", 404
+
+    office_data = analysis.get_office_results(office)
+    return render_template('office.html', office=office, data=office_data)
+
+
+@app.route('/incumbents')
+def incumbents():
+    """Incumbent tracker page."""
+    incumbent_data = analysis.get_incumbent_analysis()
+    return render_template('incumbents.html', data=incumbent_data)
+
+
+@app.route('/compare')
+def compare():
+    """Head-to-head comparison tool."""
+    type_ = request.args.get('type', 'town')  # town or district
+    item1 = request.args.get('item1', '')
+    item2 = request.args.get('item2', '')
+
+    comparison = None
+    if item1 and item2:
+        if type_ == 'town':
+            comparison = analysis.compare_towns(item1, item2)
+        else:
+            comparison = analysis.compare_districts(item1, item2)
+
+    towns = queries.get_all_towns()
+    return render_template('compare.html',
+                         type=type_,
+                         item1=item1,
+                         item2=item2,
+                         comparison=comparison,
+                         towns=towns)
+
+
+@app.route('/map')
+def election_map():
+    """Interactive election map."""
+    year = request.args.get('year', 2024, type=int)
+    metric = request.args.get('metric', 'pvi')  # pvi, margin, turnout
+    return render_template('map.html', year=year, metric=metric)
+
+
+@app.route('/api/map-data')
+def api_map_data():
+    """GeoJSON data for the map."""
+    year = request.args.get('year', 2024, type=int)
+    metric = request.args.get('metric', 'pvi')
+    return jsonify(analysis.get_map_data(year, metric))
+
+
+@app.route('/api/export/<data_type>')
+def api_export(data_type):
+    """Export data as CSV or JSON."""
+    format_ = request.args.get('format', 'json')
+    year = request.args.get('year', type=int)
+
+    if data_type == 'towns':
+        data = analysis.export_town_data(year)
+    elif data_type == 'districts':
+        data = analysis.export_district_data(year)
+    elif data_type == 'races':
+        data = analysis.export_race_data(year)
+    elif data_type == 'candidates':
+        data = analysis.export_candidate_data(year)
+    else:
+        return jsonify({'error': 'Invalid data type'}), 400
+
+    if format_ == 'csv':
+        import csv
+        import io
+        output = io.StringIO()
+        if data:
+            writer = csv.DictWriter(output, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+        response = app.response_class(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={data_type}.csv'}
+        )
+        return response
+
+    return jsonify(data)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

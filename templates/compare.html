@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Towns - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Compare Towns</h1>
+    <p class="subtitle">Side-by-side comparison of voting patterns</p>
+</div>
+
+<div class="section">
+    <form method="get" action="{{ url_for('compare') }}" style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+        <div>
+            <label for="item1" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Town 1</label>
+            <select name="item1" id="item1" style="width: 200px;">
+                <option value="">Select...</option>
+                {% for t in towns %}
+                <option value="{{ t }}" {% if t == item1 %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="item2" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Town 2</label>
+            <select name="item2" id="item2" style="width: 200px;">
+                <option value="">Select...</option>
+                {% for t in towns %}
+                <option value="{{ t }}" {% if t == item2 %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" style="padding: 0.5rem 1rem; background: var(--text); color: var(--bg); border: none; cursor: pointer;">Compare</button>
+    </form>
+</div>
+
+{% if comparison %}
+<div class="two-col" style="grid-template-columns: 1fr 1fr;">
+    <!-- Town 1 -->
+    <div class="main-content">
+        <div class="section">
+            <div class="section-header">
+                <h2><a href="{{ url_for('town', name=comparison.town1.name) }}">{{ comparison.town1.name }}</a></h2>
+                <span class="{% if 'R' in comparison.town1.summary.lean %}r{% else %}d{% endif %}">{{ comparison.town1.summary.lean }}</span>
+            </div>
+
+            <div class="metrics" style="justify-content: flex-start;">
+                <div class="metric">
+                    <div class="metric-value {% if comparison.town1.pvi.current_pvi > 0 %}r{% else %}d{% endif %}">
+                        {% if comparison.town1.pvi.current_pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(comparison.town1.pvi.current_pvi|abs) }}
+                    </div>
+                    <div class="metric-label">PVI</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value {% if comparison.town1.pvi.trend > 0 %}r{% else %}d{% endif %}">
+                        {% if comparison.town1.pvi.trend > 0 %}+{% endif %}{{ "%.1f"|format(comparison.town1.pvi.trend) }}
+                    </div>
+                    <div class="metric-label">Trend</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year in comparison.town1.summary.years|reverse %}
+                    {% set m = comparison.town1.summary.margins_by_year[year] %}
+                    <tr>
+                        <td>{{ year }}</td>
+                        <td class="text-right">
+                            <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
+                            </span>
+                        </td>
+                        <td class="text-right">{{ "{:,}".format(m.total_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Town 2 -->
+    <div class="main-content">
+        <div class="section">
+            <div class="section-header">
+                <h2><a href="{{ url_for('town', name=comparison.town2.name) }}">{{ comparison.town2.name }}</a></h2>
+                <span class="{% if 'R' in comparison.town2.summary.lean %}r{% else %}d{% endif %}">{{ comparison.town2.summary.lean }}</span>
+            </div>
+
+            <div class="metrics" style="justify-content: flex-start;">
+                <div class="metric">
+                    <div class="metric-value {% if comparison.town2.pvi.current_pvi > 0 %}r{% else %}d{% endif %}">
+                        {% if comparison.town2.pvi.current_pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(comparison.town2.pvi.current_pvi|abs) }}
+                    </div>
+                    <div class="metric-label">PVI</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value {% if comparison.town2.pvi.trend > 0 %}r{% else %}d{% endif %}">
+                        {% if comparison.town2.pvi.trend > 0 %}+{% endif %}{{ "%.1f"|format(comparison.town2.pvi.trend) }}
+                    </div>
+                    <div class="metric-label">Trend</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year in comparison.town2.summary.years|reverse %}
+                    {% set m = comparison.town2.summary.margins_by_year[year] %}
+                    <tr>
+                        <td>{{ year }}</td>
+                        <td class="text-right">
+                            <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
+                            </span>
+                        </td>
+                        <td class="text-right">{{ "{:,}".format(m.total_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% elif item1 or item2 %}
+<p class="text-muted">Please select two towns to compare.</p>
+{% endif %}
+{% endblock %}
