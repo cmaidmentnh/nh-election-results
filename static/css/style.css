@@ -158,21 +158,24 @@ header .container {
 /* Navigation */
 header nav {
   display: flex;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0;
   border-top: 1px solid var(--border);
   padding-top: 0.75rem;
 }
 
 header nav > a,
 .nav-dropdown > a {
+  display: inline-block;
   padding: 0.4rem 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
   border-radius: 4px;
+  text-decoration: none;
 }
 
 header nav > a:hover,
-.nav-dropdown > a:hover {
+.nav-dropdown:hover > a {
   background: var(--bg-alt);
   color: var(--text);
   text-decoration: none;
@@ -181,6 +184,7 @@ header nav > a:hover,
 /* Dropdown Navigation */
 .nav-dropdown {
   position: relative;
+  display: inline-block;
 }
 
 .nav-dropdown-content {

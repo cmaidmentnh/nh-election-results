@@ -58,10 +58,12 @@
                     <tr>
                         <td>{{ race.county or '' }}</td>
                         <td>
-                            {% if race.county %}
+                            {% if race.county and race.district %}
                             <a href="{{ url_for('district', county=race.county, district=race.district) }}">{{ race.district }}</a>
-                            {% else %}
+                            {% elif race.district %}
                             <a href="{{ url_for('statewide_district', office=office, district=race.district) }}">{{ race.district }}</a>
+                            {% else %}
+                            Statewide
                             {% endif %}
                         </td>
                         <td>

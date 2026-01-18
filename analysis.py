@@ -1699,18 +1699,26 @@ def compare_districts(district1, district2):
 def get_districts_map_data():
     """
     Get district data keyed by district code for the map.
-    District codes are like BE1 (Belknap 1), HI35 (Hillsborough 35), etc.
+    Returns data for all district types:
+    - House: BE1, HI35, etc.
+    - Senate: 1, 2, 3, etc.
+    - Exec Council: 1, 2, 3, 4, 5
+    - Congress: 1, 2
+    - Towns: town names
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # County code mapping
+    data = {}
+
+    # County code mapping for House districts
     county_codes = {
         'Belknap': 'BE', 'Carroll': 'CA', 'Cheshire': 'CH',
         'Coos': 'CO', 'Grafton': 'GR', 'Hillsborough': 'HI',
         'Merrimack': 'ME', 'Rockingham': 'RO', 'Strafford': 'ST', 'Sullivan': 'SU'
     }
 
+    # House districts
     cursor.execute("""
         SELECT
             r.county,
@@ -1730,13 +1738,129 @@ def get_districts_map_data():
         GROUP BY r.county, r.district
     """)
 
-    data = {}
     for row in cursor.fetchall():
         county, district, r_votes, d_votes, total = row
         if county in county_codes:
             code = county_codes[county] + str(district)
             margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
             data[code] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total
+            }
+
+    # Senate districts (keyed by number)
+    cursor.execute("""
+        SELECT
+            r.district,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'State Senator'
+        AND e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.district
+    """)
+
+    for row in cursor.fetchall():
+        district, r_votes, d_votes, total = row
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        data[int(district)] = {
+            'margin': round(margin, 1),
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total
+        }
+
+    # Executive Council (keyed by number)
+    cursor.execute("""
+        SELECT
+            r.district,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'Executive Councilor'
+        AND e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.district
+    """)
+
+    for row in cursor.fetchall():
+        district, r_votes, d_votes, total = row
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        data[int(district)] = {
+            'margin': round(margin, 1),
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total
+        }
+
+    # Congress (keyed by number)
+    cursor.execute("""
+        SELECT
+            r.district,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'Representative in Congress'
+        AND e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.district
+    """)
+
+    for row in cursor.fetchall():
+        district, r_votes, d_votes, total = row
+        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+        data[int(district)] = {
+            'margin': round(margin, 1),
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total
+        }
+
+    # Towns (keyed by name)
+    cursor.execute("""
+        SELECT
+            res.town,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        WHERE e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.town IS NOT NULL
+        AND res.town != ''
+        GROUP BY res.town
+    """)
+
+    for row in cursor.fetchall():
+        town, r_votes, d_votes, total = row
+        if town and total > 0:
+            margin = ((r_votes - d_votes) / total * 100)
+            data[town] = {
                 'margin': round(margin, 1),
                 'r_votes': r_votes,
                 'd_votes': d_votes,
