@@ -1772,14 +1772,14 @@ def get_districts_map_data():
     for row in cursor.fetchall():
         district, r_votes, d_votes, total = row
         margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[str(district)] = {
+        data[f'sen_{district}'] = {
             'margin': round(margin, 1),
             'r_votes': r_votes,
             'd_votes': d_votes,
             'total_votes': total
         }
 
-    # Executive Council (keyed by number as string)
+    # Executive Council (keyed with ec_ prefix)
     cursor.execute("""
         SELECT
             r.district,
@@ -1801,14 +1801,14 @@ def get_districts_map_data():
     for row in cursor.fetchall():
         district, r_votes, d_votes, total = row
         margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[str(district)] = {
+        data[f'ec_{district}'] = {
             'margin': round(margin, 1),
             'r_votes': r_votes,
             'd_votes': d_votes,
             'total_votes': total
         }
 
-    # Congress (keyed by number as string)
+    # Congress (keyed with cong_ prefix)
     cursor.execute("""
         SELECT
             r.district,
@@ -1830,7 +1830,7 @@ def get_districts_map_data():
     for row in cursor.fetchall():
         district, r_votes, d_votes, total = row
         margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[str(district)] = {
+        data[f'cong_{district}'] = {
             'margin': round(margin, 1),
             'r_votes': r_votes,
             'd_votes': d_votes,

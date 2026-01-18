@@ -130,6 +130,7 @@ const layerConfig = {
         file: '/static/data/nh-senate-districts.geojson',
         idField: 'Senate2022',
         nameField: 'Senate2022',
+        dataKeyPrefix: 'sen_',
         clickUrl: (props) => `/statewide-district/State Senator/${props.Senate2022}`,
         formatName: (props) => `Senate District ${props.Senate2022}`
     },
@@ -137,6 +138,7 @@ const layerConfig = {
         file: '/static/data/nh-exec-council-districts.geojson',
         idField: 'ExecCo2022',
         nameField: 'ExecCo2022',
+        dataKeyPrefix: 'ec_',
         clickUrl: (props) => `/statewide-district/Executive Councilor/${props.ExecCo2022}`,
         formatName: (props) => `Executive Council ${props.ExecCo2022}`
     },
@@ -144,6 +146,7 @@ const layerConfig = {
         file: '/static/data/nh-congress-districts.geojson',
         idField: 'Cong2022',
         nameField: 'Cong2022',
+        dataKeyPrefix: 'cong_',
         clickUrl: (props) => `/statewide-district/Representative in Congress/${props.Cong2022}`,
         formatName: (props) => `Congressional District ${props.Cong2022}`
     },
@@ -194,8 +197,11 @@ function getColor(value) {
 
 function style(feature) {
     const id = feature.properties[currentConfig.idField];
+    // Build the data key with prefix if specified
+    const prefix = currentConfig.dataKeyPrefix || '';
+    const dataKey = prefix + id;
     // Try both string and numeric lookup since JSON keys are strings
-    const data = electionData[id] || electionData[String(id)] || electionData[parseInt(id)];
+    const data = electionData[dataKey] || electionData[String(dataKey)];
     const value = data ? data.margin : null;
 
     return {
@@ -247,8 +253,10 @@ info.update = function(props) {
         return;
     }
     const id = props[currentConfig.idField];
-    // Try both string and numeric lookup
-    const data = electionData[id] || electionData[String(id)] || electionData[parseInt(id)];
+    // Build the data key with prefix if specified
+    const prefix = currentConfig.dataKeyPrefix || '';
+    const dataKey = prefix + id;
+    const data = electionData[dataKey] || electionData[String(dataKey)];
     const name = currentConfig.formatName(props);
 
     let html = `<h4>${name}</h4>`;
