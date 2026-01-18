@@ -6,7 +6,7 @@ Database queries for NH Election Results Explorer
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "nh_elections.db"
+DB_PATH = Path(__file__).parent / "nh_elections.db"
 
 
 def get_connection():
