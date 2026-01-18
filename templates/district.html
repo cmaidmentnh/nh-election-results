@@ -3,19 +3,15 @@
 {% block title %}{{ info.county }} District {{ info.district }} - NH Election Results{% endblock %}
 
 {% block content %}
-<!-- District Header -->
-<div class="town-header">
-    <div class="town-info">
-        <h1>{{ info.county }} District {{ info.district }}</h1>
-        <p class="subtitle">{{ info.office }}{% if info.seats > 1 %} &middot; {{ info.seats }} seats{% endif %}</p>
-    </div>
-    <div class="town-lean {% if 'R' in lean %}republican{% elif 'D' in lean %}democrat{% else %}swing{% endif %}">
-        {{ lean }}
-    </div>
+<div class="page-header">
+    <h1>
+        {{ info.county }} District {{ info.district }}
+        <span class="lean {% if 'R' in lean %}r{% else %}d{% endif %}">{{ lean }}</span>
+    </h1>
+    <p class="subtitle">{{ info.office }}{% if info.seats > 1 %} &middot; {{ info.seats }} seats{% endif %}</p>
 </div>
 
-<!-- Key Metrics -->
-<div class="metrics-row" style="grid-template-columns: repeat(3, 1fr);">
+<div class="metrics">
     <div class="metric">
         <div class="metric-value {% if pvi.current_pvi > 0 %}r{% else %}d{% endif %}">
             {% if pvi.current_pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(pvi.current_pvi|abs) }}
@@ -39,49 +35,39 @@
     {% endif %}
 </div>
 
-<!-- Two Column Layout -->
-<div class="county-layout">
-    <!-- Main Content -->
-    <div class="county-main">
-        <!-- Election History -->
-        <h2 class="section-title">Election History</h2>
+<div class="two-col">
+    <div class="main-content">
+        <div class="section">
+            <h2>Election History</h2>
 
-        {% for year in by_year.keys()|sort(reverse=true) %}
-        {% set data = by_year[year] %}
-        <div class="card" style="margin-bottom: 16px;">
-            <div class="card-header">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <span class="year-badge">{{ year }}</span>
-                    <span style="font-weight: 600;">
-                        <span class="r">{{ data.r_seats }}R</span> - <span class="d">{{ data.d_seats }}D</span>
+            {% for year in by_year.keys()|sort(reverse=true) %}
+            {% set data = by_year[year] %}
+            <div class="election-year">
+                <div class="election-year-header">
+                    <h3>{{ year }} &mdash; <span class="r">{{ data.r_seats }}R</span> / <span class="d">{{ data.d_seats }}D</span></h3>
+                    <span class="{% if data.margin > 0 %}r{% else %}d{% endif %}">
+                        {% if data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(data.margin|abs) }}%
                     </span>
                 </div>
-                <div class="race-margin {% if data.margin > 0 %}r{% else %}d{% endif %}">
-                    {% if data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(data.margin|abs) }}%
-                </div>
-            </div>
 
-            <div class="candidates-list">
-                {% for candidate in data.candidates %}
-                <div class="candidate-item {% if candidate.is_winner %}winner{% endif %}">
-                    <span class="candidate-name">
-                        {{ candidate.name }}
-                        {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
-                    </span>
-                    <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
-                    <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
-                </div>
-                {% endfor %}
+                <ul class="candidates">
+                    {% for candidate in data.candidates %}
+                    <li class="candidate {% if candidate.is_winner %}winner{% endif %}">
+                        <span class="candidate-name">{{ candidate.name }}</span>
+                        <span class="candidate-party {% if candidate.party == 'Republican' %}r{% elif candidate.party == 'Democratic' %}d{% endif %}">{{ candidate.party or '-' }}</span>
+                        <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 
-    <!-- Towns Sidebar -->
-    <aside class="county-sidebar">
-        <div class="sidebar-card">
-            <h3 class="sidebar-title">Towns ({{ info.towns|length }})</h3>
-            <ul class="town-sidebar-list">
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Towns ({{ info.towns|length }})</h3>
+            <ul class="town-list" style="columns: 1;">
                 {% for town in info.towns %}
                 <li><a href="{{ url_for('town', name=town) }}">{{ town }}</a></li>
                 {% endfor %}
@@ -89,5 +75,4 @@
         </div>
     </aside>
 </div>
-
 {% endblock %}

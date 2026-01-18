@@ -10,25 +10,26 @@
 </head>
 <body>
     <header>
-        <div class="nav-container">
-            <a href="{{ url_for('index') }}" class="logo">
-                <span class="logo-icon">NH</span>
-                <span>Election Results</span>
-            </a>
+        <div class="container">
+            <div>
+                <a href="{{ url_for('index') }}" class="site-title">New Hampshire Election Results</a>
+                <div class="site-subtitle">General Elections 2016-2024</div>
+            </div>
             <nav>
-                <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Dashboard</a>
-                <a href="{{ url_for('districts_browser') }}" class="{{ 'active' if request.endpoint == 'districts_browser' else '' }}">Districts</a>
-                <a href="{{ url_for('candidates') }}" class="{{ 'active' if request.endpoint == 'candidates' else '' }}">Candidates</a>
+                <a href="{{ url_for('districts_browser') }}">Districts</a>
+                <a href="{{ url_for('candidates') }}">Candidates</a>
             </nav>
         </div>
     </header>
 
-    <main>
+    <main class="container">
         {% block content %}{% endblock %}
     </main>
 
     <footer>
-        <p>NH Election Results Explorer &middot; Data from NH Secretary of State &middot; 2016-2024</p>
+        <div class="container">
+            Data from NH Secretary of State
+        </div>
     </footer>
 
     {% block scripts %}{% endblock %}

@@ -3,65 +3,40 @@
 {% block title %}{{ summary.name }} County - NH Election Results{% endblock %}
 
 {% block content %}
-<!-- County Header -->
-<div class="town-header">
-    <div class="town-info">
-        <h1>{{ summary.name }} County</h1>
-        <p class="subtitle">{{ summary.towns|length }} towns</p>
-    </div>
-    <div class="town-lean {% if 'R' in summary.lean %}republican{% elif 'D' in summary.lean %}democrat{% else %}swing{% endif %}">
-        {{ summary.lean }}
-    </div>
+<div class="page-header">
+    <h1>
+        {{ summary.name }} County
+        <span class="lean {% if 'R' in summary.lean %}r{% else %}d{% endif %}">{{ summary.lean }}</span>
+    </h1>
+    <p class="subtitle">{{ summary.towns|length }} towns</p>
 </div>
 
-<!-- Key Metrics -->
-<div class="metrics-row">
-    <div class="metric">
-        <div class="metric-value {% if summary.latest_margin.margin > 0 %}r{% else %}d{% endif %}">
-            {% if summary.latest_margin.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(summary.latest_margin.margin|abs) }}%
-        </div>
-        <div class="metric-label">{{ summary.latest_year }} Margin</div>
-    </div>
-    <div class="metric">
-        <div class="metric-value {% if summary.trend > 0 %}r{% else %}d{% endif %}">
-            {% if summary.trend > 0 %}+{% endif %}{{ "%.1f"|format(summary.trend) }}
-        </div>
-        <div class="metric-label">Trend {{ summary.years[0] }}-{{ summary.years[-1] }}</div>
-    </div>
-    <div class="metric">
-        <div class="metric-value">{{ "{:,}".format(summary.latest_margin.total_votes) }}</div>
-        <div class="metric-label">Total Votes</div>
-    </div>
-</div>
-
-<!-- Two Column Layout -->
-<div class="county-layout">
-    <!-- Main Content -->
-    <div class="county-main">
-        <!-- Presidential Results (All Years) -->
+<div class="two-col">
+    <div class="main-content">
+        <!-- Presidential Results -->
         {% if summary.presidential %}
-        <div class="card highlight-card" style="margin-bottom: 24px;">
-            <div class="card-header">
-                <span class="card-title">Presidential Results</span>
-            </div>
-            <table style="width: 100%;">
+        <div class="section">
+            <h2>Presidential Results</h2>
+            <table>
                 <thead>
                     <tr>
                         <th>Year</th>
                         <th>Margin</th>
-                        <th>R Votes</th>
-                        <th>D Votes</th>
+                        <th class="text-right">R Votes</th>
+                        <th class="text-right">D Votes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for race in summary.presidential %}
                     <tr>
                         <td><strong>{{ race.year }}</strong></td>
-                        <td class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
-                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                        <td>
+                            <span class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                            </span>
                         </td>
-                        <td>{{ "{:,}".format(race.r_votes) }}</td>
-                        <td>{{ "{:,}".format(race.d_votes) }}</td>
+                        <td class="text-right">{{ "{:,}".format(race.r_votes) }}</td>
+                        <td class="text-right">{{ "{:,}".format(race.d_votes) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -71,46 +46,45 @@
 
         <!-- Results by Year -->
         {% for year in summary.years|reverse %}
-        <div class="year-section">
-            <div class="year-header">
-                <span class="year-badge">{{ year }}</span>
+        <div class="section">
+            <div class="section-header">
+                <h2>{{ year }} Results</h2>
                 {% set m = summary.margins_by_year[year] %}
-                <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}" style="font-weight: 600;">
+                <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}">
                     {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
                 </span>
             </div>
 
-            <div class="races-grid">
-                {% for race in summary.races_by_year.get(year, []) %}
-                <div class="race-mini-card">
-                    <div class="race-mini-header">
-                        <span class="race-mini-name">
-                            {{ race.office }}
-                            {% if race.district %}
-                            <span class="race-mini-district">{{ race.district }}</span>
-                            {% endif %}
-                        </span>
-                        <span class="race-mini-margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
-                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
-                        </span>
-                    </div>
-                    <div class="race-mini-votes">
-                        <span class="r">{{ "{:,}".format(race.r_votes) }}</span>
-                        <span class="separator">vs</span>
-                        <span class="d">{{ "{:,}".format(race.d_votes) }}</span>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Office</th>
+                        <th>District</th>
+                        <th class="text-right">Margin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for race in summary.races_by_year.get(year, []) %}
+                    <tr>
+                        <td>{{ race.office }}</td>
+                        <td>{{ race.district or '-' }}</td>
+                        <td class="text-right">
+                            <span class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Towns Sidebar -->
-    <aside class="county-sidebar">
-        <div class="sidebar-card">
-            <h3 class="sidebar-title">Towns</h3>
-            <ul class="town-sidebar-list">
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Towns in {{ summary.name }}</h3>
+            <ul class="town-list">
                 {% for town in summary.towns %}
                 <li><a href="{{ url_for('town', name=town) }}">{{ town }}</a></li>
                 {% endfor %}
@@ -118,5 +92,4 @@
         </div>
     </aside>
 </div>
-
 {% endblock %}

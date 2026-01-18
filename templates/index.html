@@ -3,314 +3,177 @@
 {% block title %}NH Election Results{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>NH Election Results</h1>
-    <p class="subtitle">{{ stats.year_range }} General Elections</p>
-</div>
-
-<!-- Party Control Cards -->
-<h2 class="section-title">{{ latest_year }} Party Control</h2>
-<div class="grid grid-3" style="margin-bottom: 32px;">
-    {% if 'State Representative' in party_control %}
-    {% set house = party_control['State Representative'] %}
-    {% set change = changes.get('State Representative', {}) %}
-    <div class="card control-card {% if house.R > house.D %}r-control{% else %}d-control{% endif %}">
-        <div class="control-label">State House</div>
-        <div class="control-seats">
-            <span class="seat-count r">{{ house.R }}</span>
-            <span class="seat-divider">-</span>
-            <span class="seat-count d">{{ house.D }}</span>
-        </div>
-        <div class="control-party">
-            {% if house.R > house.D %}R+{{ house.R - house.D }}{% else %}D+{{ house.D - house.R }}{% endif %}
-        </div>
-        {% if change %}
-        <div class="control-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
-            {% if change.r_change > 0 %}Rs +{{ change.r_change }}{% elif change.r_change < 0 %}Ds +{{ change.d_change }}{% else %}No change{% endif %} from {{ change.prev_year }}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    {% if 'State Senator' in party_control %}
-    {% set senate = party_control['State Senator'] %}
-    {% set change = changes.get('State Senator', {}) %}
-    <div class="card control-card {% if senate.R > senate.D %}r-control{% else %}d-control{% endif %}">
-        <div class="control-label">State Senate</div>
-        <div class="control-seats">
-            <span class="seat-count r">{{ senate.R }}</span>
-            <span class="seat-divider">-</span>
-            <span class="seat-count d">{{ senate.D }}</span>
-        </div>
-        <div class="control-party">
-            {% if senate.R > senate.D %}R+{{ senate.R - senate.D }}{% else %}D+{{ senate.D - senate.R }}{% endif %}
-        </div>
-        {% if change %}
-        <div class="control-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
-            {% if change.r_change > 0 %}Rs +{{ change.r_change }}{% elif change.r_change < 0 %}Ds +{{ change.d_change }}{% else %}No change{% endif %} from {{ change.prev_year }}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    {% if 'Executive Councilor' in party_control %}
-    {% set ec = party_control['Executive Councilor'] %}
-    {% set change = changes.get('Executive Councilor', {}) %}
-    <div class="card control-card {% if ec.R > ec.D %}r-control{% else %}d-control{% endif %}">
-        <div class="control-label">Executive Council</div>
-        <div class="control-seats">
-            <span class="seat-count r">{{ ec.R }}</span>
-            <span class="seat-divider">-</span>
-            <span class="seat-count d">{{ ec.D }}</span>
-        </div>
-        <div class="control-party">
-            {% if ec.R > ec.D %}R+{{ ec.R - ec.D }}{% else %}D+{{ ec.D - ec.R }}{% endif %}
-        </div>
-        {% if change %}
-        <div class="control-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
-            {% if change.r_change > 0 %}Rs +{{ change.r_change }}{% elif change.r_change < 0 %}Ds +{{ change.d_change }}{% else %}No change{% endif %} from {{ change.prev_year }}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-</div>
-
-<!-- Closest Races & Biggest Shifts -->
-<div class="grid grid-2" style="margin-bottom: 32px;">
-    <!-- Closest Races -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Closest Races ({{ latest_year }})</span>
-        </div>
-        <div class="race-list">
-            {% for race in closest_races %}
-            <div class="race-item">
-                <div class="race-info">
-                    <span class="race-name">{{ race.label }}</span>
-                    <span class="race-office">{{ race.office }}</span>
-                </div>
-                <div class="race-margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
-                    {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
-                </div>
+<div class="two-col">
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Battleground Districts -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Battleground Districts</h2>
+                <a href="{{ url_for('districts_browser') }}" class="section-link">View all districts &rarr;</a>
             </div>
-            {% endfor %}
-        </div>
-    </div>
+            <p class="text-muted mb-2">Races decided by less than 5% in {{ latest_year }}</p>
 
-    <!-- Biggest Shifts -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Biggest Shifts ({{ prev_year }} → {{ latest_year }})</span>
+            <ul class="race-list">
+                {% for race in closest_races %}
+                <li class="race-item">
+                    <div class="race-header">
+                        <span class="race-name">{{ race.label }}</span>
+                        <span class="race-margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                        </span>
+                    </div>
+                    <div class="race-office">{{ race.office }}</div>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
-        <div class="race-list">
-            {% for race in biggest_shifts %}
-            <div class="race-item">
-                <div class="race-info">
-                    <span class="race-name">{{ race.label }}</span>
-                    <span class="race-office">{{ race.office }}</span>
-                </div>
-                <div class="race-shift {% if race.shift > 0 %}r{% else %}d{% endif %}">
-                    {% if race.shift > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.shift|abs) }}
-                </div>
+
+        <!-- Biggest Swings -->
+        {% if biggest_shifts %}
+        <div class="section">
+            <div class="section-header">
+                <h2>Biggest Swings</h2>
             </div>
-            {% endfor %}
+            <p class="text-muted mb-2">Largest margin shifts from {{ prev_year }} to {{ latest_year }}</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th>Office</th>
+                        <th class="text-right">Shift</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for race in biggest_shifts %}
+                    <tr>
+                        <td>{{ race.label }}</td>
+                        <td class="text-muted">{{ race.office }}</td>
+                        <td class="text-right">
+                            <span class="{% if race.shift > 0 %}r{% else %}d{% endif %}">
+                                {% if race.shift > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.shift|abs) }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Historical Table -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Historical Results</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>House</th>
+                        <th>Senate</th>
+                        <th>Council</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year in years|reverse %}
+                    <tr>
+                        <td><strong>{{ year }}</strong></td>
+                        <td>
+                            {% if 'State Representative' in statewide.get(year, {}) %}
+                            {% set h = statewide[year]['State Representative'] %}
+                            <span class="{% if h.R > h.D %}r{% else %}d{% endif %}">{{ h.R }}-{{ h.D }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if 'State Senator' in statewide.get(year, {}) %}
+                            {% set s = statewide[year]['State Senator'] %}
+                            <span class="{% if s.R > s.D %}r{% else %}d{% endif %}">{{ s.R }}-{{ s.D }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if 'Executive Councilor' in statewide.get(year, {}) %}
+                            {% set e = statewide[year]['Executive Councilor'] %}
+                            <span class="{% if e.R > e.D %}r{% else %}d{% endif %}">{{ e.R }}-{{ e.D }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
 
-<!-- Quick Navigation -->
-<div class="card" style="margin-bottom: 32px;">
-    <div class="card-header">
-        <span class="card-title">Explore</span>
-    </div>
-    <div class="quick-jump">
-        <div class="jump-group">
-            <label>Jump to town:</label>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <!-- Navigation -->
+        <div class="sidebar-section">
+            <h3>Find a Town</h3>
             <select id="town-select" onchange="if(this.value) window.location.href='/town/' + this.value">
-                <option value="">Select a town...</option>
+                <option value="">Select town...</option>
                 {% for town in towns %}
                 <option value="{{ town }}">{{ town }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="jump-group">
-            <label>Browse by county:</label>
-            <select id="county-view-select" onchange="if(this.value) window.location.href='/county/' + this.value">
+
+        <div class="sidebar-section">
+            <h3>Browse by County</h3>
+            <select id="county-select" onchange="if(this.value) window.location.href='/county/' + this.value">
                 <option value="">Select county...</option>
                 {% for county in counties %}
                 <option value="{{ county }}">{{ county }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="jump-group">
-            <label>Browse districts:</label>
-            <select id="office-select">
-                <option value="State Representative">State Rep</option>
-                <option value="State Senator">State Senate</option>
-                <option value="Executive Councilor">Exec Council</option>
-                <option value="Representative in Congress">US Congress</option>
-            </select>
-            <select id="county-select">
-                <option value="">Select county...</option>
-                {% for county in counties %}
-                <option value="{{ county }}">{{ county }}</option>
-                {% endfor %}
-            </select>
-            <select id="district-select">
-                <option value="">District...</option>
-            </select>
-            <button onclick="goToDistrict()">Go</button>
+
+        <!-- Party Control -->
+        <div class="sidebar-section">
+            <h3>{{ latest_year }} Results</h3>
+            <div class="party-control">
+                {% if 'State Representative' in party_control %}
+                {% set h = party_control['State Representative'] %}
+                <div class="party-control-row">
+                    <span class="party-control-label">House</span>
+                    <span class="party-control-value">
+                        <span class="r">{{ h.R }}</span>-<span class="d">{{ h.D }}</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if 'State Senator' in party_control %}
+                {% set s = party_control['State Senator'] %}
+                <div class="party-control-row">
+                    <span class="party-control-label">Senate</span>
+                    <span class="party-control-value">
+                        <span class="r">{{ s.R }}</span>-<span class="d">{{ s.D }}</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if 'Executive Councilor' in party_control %}
+                {% set e = party_control['Executive Councilor'] %}
+                <div class="party-control-row">
+                    <span class="party-control-label">Council</span>
+                    <span class="party-control-value">
+                        <span class="r">{{ e.R }}</span>-<span class="d">{{ e.D }}</span>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if changes %}
+            <div class="party-control-change">
+                vs {{ prev_year }}:
+                {% if changes.get('State Representative', {}).get('r_change', 0) > 0 %}
+                House R+{{ changes['State Representative']['r_change'] }}
+                {% elif changes.get('State Representative', {}).get('r_change', 0) < 0 %}
+                House D+{{ changes['State Representative']['d_change'] }}
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-    </div>
+    </aside>
 </div>
-
-<!-- Historical Overview -->
-<div class="card">
-    <div class="card-header">
-        <span class="card-title">Historical Results</span>
-    </div>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Year</th>
-                    <th>House</th>
-                    <th>Senate</th>
-                    <th>Exec Council</th>
-                    <th>Governor</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for year in years|reverse %}
-                <tr>
-                    <td><strong>{{ year }}</strong></td>
-                    <td>
-                        {% if 'State Representative' in statewide.get(year, {}) %}
-                        {% set h = statewide[year]['State Representative'] %}
-                        <span class="result-badge {% if h.R > h.D %}r{% else %}d{% endif %}">
-                            {{ h.R }}-{{ h.D }}
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if 'State Senator' in statewide.get(year, {}) %}
-                        {% set s = statewide[year]['State Senator'] %}
-                        <span class="result-badge {% if s.R > s.D %}r{% else %}d{% endif %}">
-                            {{ s.R }}-{{ s.D }}
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if 'Executive Councilor' in statewide.get(year, {}) %}
-                        {% set e = statewide[year]['Executive Councilor'] %}
-                        <span class="result-badge {% if e.R > e.D %}r{% else %}d{% endif %}">
-                            {{ e.R }}-{{ e.D }}
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if 'Governor' in statewide.get(year, {}) %}
-                        {% set g = statewide[year]['Governor'] %}
-                        <span class="result-badge {% if g.R > 0 %}r{% else %}d{% endif %}">
-                            {% if g.R > 0 %}R{% else %}D{% endif %}
-                        </span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-// District navigation
-const countySelect = document.getElementById('county-select');
-const officeSelect = document.getElementById('office-select');
-const districtSelect = document.getElementById('district-select');
-
-const countyBasedOffices = ['State Representative'];
-
-function updateUI() {
-    const office = officeSelect.value;
-    const needsCounty = countyBasedOffices.includes(office);
-
-    countySelect.style.display = needsCounty ? 'inline-block' : 'none';
-
-    if (needsCounty) {
-        if (countySelect.value) {
-            loadCountyDistricts();
-        } else {
-            districtSelect.innerHTML = '<option value="">Select county first...</option>';
-        }
-    } else {
-        loadStatewideDistricts();
-    }
-}
-
-function loadCountyDistricts() {
-    const county = countySelect.value;
-    const office = officeSelect.value;
-    districtSelect.innerHTML = '<option value="">Loading...</option>';
-
-    fetch('/api/districts/' + encodeURIComponent(county))
-        .then(r => r.json())
-        .then(districts => {
-            const filtered = districts.filter(d => d.office === office);
-            districtSelect.innerHTML = '<option value="">Select district...</option>';
-            filtered.forEach(d => {
-                const seatText = d.seats > 1 ? ` (${d.seats} seats)` : '';
-                districtSelect.innerHTML += `<option value="${d.district}">${d.district}${seatText}</option>`;
-            });
-        });
-}
-
-function loadStatewideDistricts() {
-    const office = officeSelect.value;
-    districtSelect.innerHTML = '<option value="">Loading...</option>';
-
-    fetch('/api/statewide-districts?office=' + encodeURIComponent(office))
-        .then(r => r.json())
-        .then(districts => {
-            districtSelect.innerHTML = '<option value="">Select district...</option>';
-            districts.forEach(d => {
-                districtSelect.innerHTML += `<option value="${d.district}">${d.district}</option>`;
-            });
-        });
-}
-
-officeSelect.addEventListener('change', updateUI);
-countySelect.addEventListener('change', () => {
-    if (countyBasedOffices.includes(officeSelect.value)) {
-        loadCountyDistricts();
-    }
-});
-
-updateUI();
-
-function goToDistrict() {
-    const office = officeSelect.value;
-    const district = districtSelect.value;
-    const county = countySelect.value;
-    const needsCounty = countyBasedOffices.includes(office);
-
-    if (!district) {
-        alert('Please select a district');
-        return;
-    }
-
-    if (needsCounty) {
-        if (!county) {
-            alert('Please select a county');
-            return;
-        }
-        window.location.href = `/district/${encodeURIComponent(county)}/${encodeURIComponent(district)}?office=${encodeURIComponent(office)}`;
-    } else {
-        window.location.href = `/statewide-district/${encodeURIComponent(office)}/${encodeURIComponent(district)}`;
-    }
-}
-</script>
 {% endblock %}
