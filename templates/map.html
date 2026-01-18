@@ -268,8 +268,10 @@ function getColor(value) {
 // Normalize district code - strip leading zeros from numeric part (HI05 -> HI5)
 function normalizeDistrictCode(code) {
     if (!code) return code;
-    const match = code.match(/^([A-Z]+)0*(\d+)$/);
-    return match ? match[1] + match[2] : code;
+    // Convert to string if it's a number (for exec council, senate, congress)
+    const codeStr = String(code);
+    const match = codeStr.match(/^([A-Z]+)0*(\d+)$/);
+    return match ? match[1] + match[2] : codeStr;
 }
 
 function style(feature) {
