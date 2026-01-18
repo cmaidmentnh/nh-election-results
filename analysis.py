@@ -1726,190 +1726,575 @@ def get_districts_map_data(year=None, metric='margin'):
     # Determine years to query
     if year:
         years = [int(year)]
+        year_clause = f"e.year = {year}"
     else:
-        # Average across all years
         years = [2016, 2018, 2020, 2022, 2024]
-
-    year_clause = f"e.year IN ({','.join(str(y) for y in years)})"
+        year_clause = f"e.year IN ({','.join(str(y) for y in years)})"
 
     # House districts - need special handling for multi-seat
-    # Get candidate-level data to calculate seat splits
-    cursor.execute(f"""
-        SELECT
-            r.county,
-            r.district,
-            c.name as candidate_name,
-            c.party,
-            SUM(res.votes) as votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE o.name = 'State Representative'
-        AND {year_clause}
-        AND e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY r.county, r.district, c.name, c.party
-        ORDER BY r.county, r.district, votes DESC
-    """)
+    # For average (year=None), use current district boundaries with historical town data
+    if not year:
+        # Get current (2024) district-to-town mapping for base districts
+        cursor.execute("""
+            SELECT DISTINCT r.county, r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'State Representative'
+            AND e.year = 2024
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+            AND r.district NOT LIKE '%F%'
+        """)
+        house_district_towns = defaultdict(set)
+        house_district_seats = {}
+        for county, district, muni in cursor.fetchall():
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                if ' Ward ' in muni:
+                    muni = muni[:muni.index(' Ward ')]
+                house_district_towns[code].add(muni)
 
-    # Group candidates by district
-    district_candidates = defaultdict(list)
-    for row in cursor.fetchall():
-        county, district, candidate_name, party, votes = row
-        if county in county_codes:
-            code = county_codes[county] + str(district)
-            district_candidates[code].append({
-                'name': candidate_name,
-                'party': party,
-                'votes': votes
-            })
+        # Get seat counts from 2024
+        cursor.execute("""
+            SELECT r.county, r.district, r.seats
+            FROM races r
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'State Representative'
+            AND e.year = 2024
+            AND r.district NOT LIKE '%F%'
+        """)
+        for county, district, seats in cursor.fetchall():
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                house_district_seats[code] = seats or 1
 
-    # Process each district - determine number of seats and calculate metrics
-    for code, candidates in district_candidates.items():
-        # Sort by votes descending
-        candidates.sort(key=lambda x: -x['votes'])
+        # Get all historical House votes by town
+        cursor.execute("""
+            SELECT
+                res.municipality,
+                c.party,
+                SUM(res.votes) as votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Representative'
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality IS NOT NULL
+            AND c.party IN ('Republican', 'Democratic')
+            GROUP BY res.municipality, c.party
+        """)
+        house_town_votes = defaultdict(lambda: {'r': 0, 'd': 0})
+        for muni, party, votes in cursor.fetchall():
+            if ' Ward ' in muni:
+                base = muni[:muni.index(' Ward ')]
+            else:
+                base = muni
+            if party == 'Republican':
+                house_town_votes[base]['r'] += votes
+            elif party == 'Democratic':
+                house_town_votes[base]['d'] += votes
 
-        # Count R and D candidates
-        r_candidates = [c for c in candidates if c['party'] == 'Republican']
-        d_candidates = [c for c in candidates if c['party'] == 'Democratic']
+        # Calculate margin for each current district using historical town data
+        for code, towns in house_district_towns.items():
+            r_votes = sum(house_town_votes[t]['r'] for t in towns)
+            d_votes = sum(house_town_votes[t]['d'] for t in towns)
+            total = r_votes + d_votes
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            seats = house_district_seats.get(code, 1)
+            data[code] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total,
+                'seats': seats,
+                'r_seats': seats if margin > 0 else 0,  # Approximate for average
+                'd_seats': seats if margin < 0 else 0
+            }
 
-        # Determine number of seats (half of major party candidates, roughly)
-        num_seats = max(len(r_candidates), len(d_candidates))
-        if num_seats == 0:
-            continue
+        # Floterial districts - same approach
+        cursor.execute("""
+            SELECT DISTINCT r.county, r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'State Representative'
+            AND e.year = 2024
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+            AND r.district LIKE '%F%'
+        """)
+        floterial_district_towns = defaultdict(set)
+        for county, district, muni in cursor.fetchall():
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                if ' Ward ' in muni:
+                    muni = muni[:muni.index(' Ward ')]
+                floterial_district_towns[code].add(muni)
 
-        # Get winners (top N vote-getters)
-        winners = candidates[:num_seats]
-        r_winners = sum(1 for w in winners if w['party'] == 'Republican')
-        d_winners = sum(1 for w in winners if w['party'] == 'Democratic')
+        # Get floterial seat counts from 2024
+        cursor.execute("""
+            SELECT r.county, r.district, r.seats
+            FROM races r
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'State Representative'
+            AND e.year = 2024
+            AND r.district LIKE '%F%'
+        """)
+        floterial_seats = {}
+        for county, district, seats in cursor.fetchall():
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                floterial_seats[code] = seats or 1
 
-        # Calculate total votes
-        r_votes = sum(c['votes'] for c in r_candidates)
-        d_votes = sum(c['votes'] for c in d_candidates)
-        total_votes = sum(c['votes'] for c in candidates)
+        for code, towns in floterial_district_towns.items():
+            r_votes = sum(house_town_votes[t]['r'] for t in towns)
+            d_votes = sum(house_town_votes[t]['d'] for t in towns)
+            total = r_votes + d_votes
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            seats = floterial_seats.get(code, 1)
+            data[code] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total,
+                'seats': seats,
+                'r_seats': seats if margin > 0 else 0,
+                'd_seats': seats if margin < 0 else 0
+            }
+    else:
+        # Specific year - use that year's data directly
+        cursor.execute(f"""
+            SELECT
+                r.county,
+                r.district,
+                c.name as candidate_name,
+                c.party,
+                SUM(res.votes) as votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Representative'
+            AND {year_clause}
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.county, r.district, c.name, c.party
+            ORDER BY r.county, r.district, votes DESC
+        """)
 
-        if num_seats > 1 and len(candidates) > num_seats:
-            # Multi-seat: use threshold margin (last winner vs first loser)
-            last_winner = candidates[num_seats - 1]
-            first_loser = candidates[num_seats]
-            threshold_total = last_winner['votes'] + first_loser['votes']
-            if threshold_total > 0:
-                # Positive if R would gain seat, negative if D would gain seat
-                if last_winner['party'] == 'Republican':
-                    # R holds the last seat - margin is R advantage
-                    margin = (last_winner['votes'] - first_loser['votes']) / threshold_total * 100
-                elif last_winner['party'] == 'Democratic':
-                    # D holds the last seat - margin is D advantage (negative)
-                    margin = -(last_winner['votes'] - first_loser['votes']) / threshold_total * 100
+        # Group candidates by district
+        district_candidates = defaultdict(list)
+        for row in cursor.fetchall():
+            county, district, candidate_name, party, votes = row
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                district_candidates[code].append({
+                    'name': candidate_name,
+                    'party': party,
+                    'votes': votes
+                })
+
+        # Process each district - determine number of seats and calculate metrics
+        for code, candidates in district_candidates.items():
+            # Sort by votes descending
+            candidates.sort(key=lambda x: -x['votes'])
+
+            # Count R and D candidates
+            r_candidates = [c for c in candidates if c['party'] == 'Republican']
+            d_candidates = [c for c in candidates if c['party'] == 'Democratic']
+
+            # Determine number of seats (half of major party candidates, roughly)
+            num_seats = max(len(r_candidates), len(d_candidates))
+            if num_seats == 0:
+                continue
+
+            # Get winners (top N vote-getters)
+            winners = candidates[:num_seats]
+            r_winners = sum(1 for w in winners if w['party'] == 'Republican')
+            d_winners = sum(1 for w in winners if w['party'] == 'Democratic')
+
+            # Calculate total votes
+            r_votes = sum(c['votes'] for c in r_candidates)
+            d_votes = sum(c['votes'] for c in d_candidates)
+            total_votes = sum(c['votes'] for c in candidates)
+
+            if num_seats > 1 and len(candidates) > num_seats:
+                # Multi-seat: use threshold margin (last winner vs first loser)
+                last_winner = candidates[num_seats - 1]
+                first_loser = candidates[num_seats]
+                threshold_total = last_winner['votes'] + first_loser['votes']
+                if threshold_total > 0:
+                    # Positive if R would gain seat, negative if D would gain seat
+                    if last_winner['party'] == 'Republican':
+                        # R holds the last seat - margin is R advantage
+                        margin = (last_winner['votes'] - first_loser['votes']) / threshold_total * 100
+                    elif last_winner['party'] == 'Democratic':
+                        # D holds the last seat - margin is D advantage (negative)
+                        margin = -(last_winner['votes'] - first_loser['votes']) / threshold_total * 100
+                    else:
+                        margin = 0
                 else:
                     margin = 0
             else:
-                margin = 0
-        else:
-            # Single seat or no losers: use vote margin
-            margin = ((r_votes - d_votes) / total_votes * 100) if total_votes > 0 else 0
+                # Single seat or no losers: use vote margin
+                margin = ((r_votes - d_votes) / total_votes * 100) if total_votes > 0 else 0
 
-        data[code] = {
-            'margin': round(margin, 1),
-            'r_votes': r_votes,
-            'd_votes': d_votes,
-            'total_votes': total_votes,
-            'seats': num_seats,
-            'r_seats': r_winners,
-            'd_seats': d_winners
-        }
+            # For State House, include top candidates for display
+            top_candidates = []
+            for c in candidates[:min(4, num_seats * 2)]:  # Top candidates up to 2x seats
+                top_candidates.append({
+                    'name': c['name'],
+                    'party': c['party'][0] if c['party'] else '?',
+                    'votes': c['votes']
+                })
+
+            data[code] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total_votes,
+                'seats': num_seats,
+                'r_seats': r_winners,
+                'd_seats': d_winners,
+                'candidates': top_candidates if year else None  # Only include for specific year
+            }
 
     # Senate districts
-    cursor.execute(f"""
-        SELECT
-            r.district,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE o.name = 'State Senator'
-        AND {year_clause}
-        AND e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY r.district
-    """)
+    # For average (year=None), use current district boundaries with historical town data
+    if not year:
+        # Get current (2024) district-to-town mapping
+        cursor.execute("""
+            SELECT DISTINCT r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'State Senator'
+            AND e.year = 2024
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+        """)
+        sen_district_towns = defaultdict(set)
+        for district, muni in cursor.fetchall():
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            sen_district_towns[district].add(muni)
 
-    for row in cursor.fetchall():
-        district, r_votes, d_votes, total = row
-        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[f'sen_{district}'] = {
-            'margin': round(margin, 1),
-            'r_votes': r_votes,
-            'd_votes': d_votes,
-            'total_votes': total
-        }
+        # Get all historical Senate votes by town
+        cursor.execute("""
+            SELECT
+                res.municipality,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Senator'
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality IS NOT NULL
+            GROUP BY res.municipality
+        """)
+        sen_town_votes = {}
+        for muni, r_votes, d_votes in cursor.fetchall():
+            if ' Ward ' in muni:
+                base = muni[:muni.index(' Ward ')]
+                if base not in sen_town_votes:
+                    sen_town_votes[base] = {'r': 0, 'd': 0}
+                sen_town_votes[base]['r'] += r_votes
+                sen_town_votes[base]['d'] += d_votes
+            else:
+                if muni not in sen_town_votes:
+                    sen_town_votes[muni] = {'r': 0, 'd': 0}
+                sen_town_votes[muni]['r'] += r_votes
+                sen_town_votes[muni]['d'] += d_votes
+
+        # Calculate margin for each current district using historical town data
+        for district, towns in sen_district_towns.items():
+            r_votes = sum(sen_town_votes.get(t, {}).get('r', 0) for t in towns)
+            d_votes = sum(sen_town_votes.get(t, {}).get('d', 0) for t in towns)
+            total = r_votes + d_votes
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            data[f'sen_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total
+            }
+    else:
+        # Specific year - get candidate-level data for display
+        cursor.execute(f"""
+            SELECT
+                r.district,
+                c.name as candidate_name,
+                c.party,
+                SUM(res.votes) as votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Senator'
+            AND {year_clause}
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.district, c.name, c.party
+            ORDER BY r.district, votes DESC
+        """)
+
+        sen_candidates = defaultdict(list)
+        for row in cursor.fetchall():
+            district, candidate_name, party, votes = row
+            sen_candidates[district].append({
+                'name': candidate_name,
+                'party': party[0] if party else '?',  # R or D
+                'votes': votes
+            })
+
+        for district, candidates in sen_candidates.items():
+            r_votes = sum(c['votes'] for c in candidates if c['party'] == 'R')
+            d_votes = sum(c['votes'] for c in candidates if c['party'] == 'D')
+            total = sum(c['votes'] for c in candidates)
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            # Get top 2 candidates for display
+            top_candidates = candidates[:2]
+            data[f'sen_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total,
+                'candidates': top_candidates
+            }
 
     # Executive Council (keyed with ec_ prefix)
-    cursor.execute(f"""
-        SELECT
-            r.district,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE o.name = 'Executive Councilor'
-        AND {year_clause}
-        AND e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY r.district
-    """)
+    # For average (year=None), use current district boundaries with historical town data
+    if not year:
+        # Get current (2024) district-to-town mapping
+        cursor.execute("""
+            SELECT DISTINCT r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'Executive Councilor'
+            AND e.year = 2024
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+        """)
+        ec_district_towns = defaultdict(set)
+        for district, muni in cursor.fetchall():
+            # Normalize ward names
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            ec_district_towns[district].add(muni)
 
-    for row in cursor.fetchall():
-        district, r_votes, d_votes, total = row
-        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[f'ec_{district}'] = {
-            'margin': round(margin, 1),
-            'r_votes': r_votes,
-            'd_votes': d_votes,
-            'total_votes': total
-        }
+        # Get all historical EC votes by town
+        cursor.execute("""
+            SELECT
+                res.municipality,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Executive Councilor'
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality IS NOT NULL
+            GROUP BY res.municipality
+        """)
+        ec_town_votes = {}
+        for muni, r_votes, d_votes in cursor.fetchall():
+            if ' Ward ' in muni:
+                base = muni[:muni.index(' Ward ')]
+                if base not in ec_town_votes:
+                    ec_town_votes[base] = {'r': 0, 'd': 0}
+                ec_town_votes[base]['r'] += r_votes
+                ec_town_votes[base]['d'] += d_votes
+            else:
+                if muni not in ec_town_votes:
+                    ec_town_votes[muni] = {'r': 0, 'd': 0}
+                ec_town_votes[muni]['r'] += r_votes
+                ec_town_votes[muni]['d'] += d_votes
+
+        # Calculate margin for each current district using historical town data
+        for district, towns in ec_district_towns.items():
+            r_votes = sum(ec_town_votes.get(t, {}).get('r', 0) for t in towns)
+            d_votes = sum(ec_town_votes.get(t, {}).get('d', 0) for t in towns)
+            total = r_votes + d_votes
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            data[f'ec_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total
+            }
+    else:
+        # Specific year - get candidate-level data for display
+        cursor.execute(f"""
+            SELECT
+                r.district,
+                c.name as candidate_name,
+                c.party,
+                SUM(res.votes) as votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Executive Councilor'
+            AND {year_clause}
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.district, c.name, c.party
+            ORDER BY r.district, votes DESC
+        """)
+
+        ec_candidates = defaultdict(list)
+        for row in cursor.fetchall():
+            district, candidate_name, party, votes = row
+            ec_candidates[district].append({
+                'name': candidate_name,
+                'party': party[0] if party else '?',
+                'votes': votes
+            })
+
+        for district, candidates in ec_candidates.items():
+            r_votes = sum(c['votes'] for c in candidates if c['party'] == 'R')
+            d_votes = sum(c['votes'] for c in candidates if c['party'] == 'D')
+            total = sum(c['votes'] for c in candidates)
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            top_candidates = candidates[:2]
+            data[f'ec_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total,
+                'candidates': top_candidates
+            }
 
     # Congress (keyed with cong_ prefix)
-    cursor.execute(f"""
-        SELECT
-            r.district,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE o.name = 'Representative in Congress'
-        AND {year_clause}
-        AND e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY r.district
-    """)
+    # For average, use current district boundaries with historical town data
+    if not year:
+        # Get current (2024) district-to-town mapping
+        cursor.execute("""
+            SELECT DISTINCT r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE o.name = 'Representative in Congress'
+            AND e.year = 2024
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+        """)
+        cong_district_towns = defaultdict(set)
+        for district, muni in cursor.fetchall():
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            cong_district_towns[district].add(muni)
 
-    for row in cursor.fetchall():
-        district, r_votes, d_votes, total = row
-        margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-        data[f'cong_{district}'] = {
-            'margin': round(margin, 1),
-            'r_votes': r_votes,
-            'd_votes': d_votes,
-            'total_votes': total
-        }
+        # Get all historical Congress votes by town
+        cursor.execute("""
+            SELECT
+                res.municipality,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Representative in Congress'
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality IS NOT NULL
+            GROUP BY res.municipality
+        """)
+        cong_town_votes = {}
+        for muni, r_votes, d_votes in cursor.fetchall():
+            if ' Ward ' in muni:
+                base = muni[:muni.index(' Ward ')]
+                if base not in cong_town_votes:
+                    cong_town_votes[base] = {'r': 0, 'd': 0}
+                cong_town_votes[base]['r'] += r_votes
+                cong_town_votes[base]['d'] += d_votes
+            else:
+                if muni not in cong_town_votes:
+                    cong_town_votes[muni] = {'r': 0, 'd': 0}
+                cong_town_votes[muni]['r'] += r_votes
+                cong_town_votes[muni]['d'] += d_votes
+
+        for district, towns in cong_district_towns.items():
+            r_votes = sum(cong_town_votes.get(t, {}).get('r', 0) for t in towns)
+            d_votes = sum(cong_town_votes.get(t, {}).get('d', 0) for t in towns)
+            total = r_votes + d_votes
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            data[f'cong_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total
+            }
+    else:
+        # Specific year - get candidate-level data for display
+        cursor.execute(f"""
+            SELECT
+                r.district,
+                c.name as candidate_name,
+                c.party,
+                SUM(res.votes) as votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Representative in Congress'
+            AND {year_clause}
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.district, c.name, c.party
+            ORDER BY r.district, votes DESC
+        """)
+
+        cong_candidates = defaultdict(list)
+        for row in cursor.fetchall():
+            district, candidate_name, party, votes = row
+            cong_candidates[district].append({
+                'name': candidate_name,
+                'party': party[0] if party else '?',
+                'votes': votes
+            })
+
+        for district, candidates in cong_candidates.items():
+            r_votes = sum(c['votes'] for c in candidates if c['party'] == 'R')
+            d_votes = sum(c['votes'] for c in candidates if c['party'] == 'D')
+            total = sum(c['votes'] for c in candidates)
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            top_candidates = candidates[:2]
+            data[f'cong_{district}'] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total,
+                'candidates': top_candidates
+            }
 
     # Towns (keyed by name) - aggregate wards into cities
-    # Use CASE to extract base town name (strip " Ward X" suffix)
+    # Calculate margin per race, then average across races (not cumulative totals)
     cursor.execute(f"""
         SELECT
             CASE
@@ -1917,6 +2302,7 @@ def get_districts_map_data(year=None, metric='margin'):
                 THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
                 ELSE res.municipality
             END as town,
+            r.id as race_id,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
             SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
             SUM(res.votes) as total_votes
@@ -1935,18 +2321,35 @@ def get_districts_map_data(year=None, metric='margin'):
             WHEN res.municipality LIKE '% Ward %'
             THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
             ELSE res.municipality
-        END
+        END, r.id
     """)
 
+    # Collect margins by town, then average them
+    town_race_data = defaultdict(list)
     for row in cursor.fetchall():
-        town, r_votes, d_votes, total = row
-        if town and total > 0:
+        town, race_id, r_votes, d_votes, total = row
+        if town and total > 0 and r_votes > 0 and d_votes > 0:  # Only count competitive races
             margin = ((r_votes - d_votes) / total * 100)
-            data[town] = {
-                'margin': round(margin, 1),
+            town_race_data[town].append({
+                'margin': margin,
                 'r_votes': r_votes,
                 'd_votes': d_votes,
-                'total_votes': total
+                'total': total
+            })
+
+    for town, races in town_race_data.items():
+        if races:
+            # Average the margins across races
+            avg_margin = sum(r['margin'] for r in races) / len(races)
+            total_r = sum(r['r_votes'] for r in races)
+            total_d = sum(r['d_votes'] for r in races)
+            total_votes = sum(r['total'] for r in races)
+            data[town] = {
+                'margin': round(avg_margin, 1),
+                'r_votes': total_r,
+                'd_votes': total_d,
+                'total_votes': total_votes,
+                'num_races': len(races)
             }
 
     # If PVI metric requested, calculate proper PVI for each district type

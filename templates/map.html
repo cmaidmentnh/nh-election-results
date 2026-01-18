@@ -316,13 +316,35 @@ function resetHighlight(e) {
     info.update();
 }
 
+// Detect touch devices
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+let selectedLayer = null;
+
 function onEachFeature(feature, layer) {
     layer.on({
         mouseover: highlightFeature,
         mouseout: resetHighlight,
         click: function(e) {
-            const url = currentConfig.clickUrl(feature.properties);
-            if (url) window.location.href = url;
+            if (isTouchDevice) {
+                // On mobile: first tap shows info, second tap navigates
+                if (selectedLayer === layer) {
+                    // Second tap - navigate
+                    const url = currentConfig.clickUrl(feature.properties);
+                    if (url) window.location.href = url;
+                } else {
+                    // First tap - show info and highlight
+                    if (selectedLayer) {
+                        geojsonLayer.resetStyle(selectedLayer);
+                    }
+                    selectedLayer = layer;
+                    highlightFeature(e);
+                    info.update(feature.properties);
+                }
+            } else {
+                // Desktop: click navigates directly
+                const url = currentConfig.clickUrl(feature.properties);
+                if (url) window.location.href = url;
+            }
         }
     });
 }
@@ -346,6 +368,7 @@ info.update = function(props) {
     const dataKey = prefix + normalizedId;
     const data = electionData[dataKey] || electionData[String(dataKey)];
     const name = currentConfig.formatName(props);
+    const detailUrl = currentConfig.clickUrl(props);
 
     const metric = document.getElementById('metric-select').value;
     let html = `<h4>${name}</h4>`;
@@ -367,13 +390,29 @@ info.update = function(props) {
         const marginColor = data.margin > 0 ? '#8b0000' : '#1e3a5f';
         const marginLabel = data.seats > 1 ? 'Threshold' : 'Margin';
         html += `<p>${marginLabel}: <span class="info-value" style="color:${marginColor}">${marginSign}${Math.abs(data.margin).toFixed(1)}%</span></p>`;
-        if (data.r_votes !== undefined) {
+
+        // Show candidates if available (specific year selected)
+        if (data.candidates && data.candidates.length > 0) {
+            html += '<div style="margin:6px 0;font-size:0.85rem;">';
+            data.candidates.forEach((c, i) => {
+                const partyColor = c.party === 'R' ? '#8b0000' : (c.party === 'D' ? '#1e3a5f' : '#666');
+                const lastName = c.name.split(' ').pop();
+                const isWinner = i === 0;
+                html += `<div style="color:${partyColor};${isWinner ? 'font-weight:600;' : ''}">${lastName} (${c.party}): ${c.votes?.toLocaleString() || '?'}${isWinner ? ' ✓' : ''}</div>`;
+            });
+            html += '</div>';
+        } else if (data.r_votes !== undefined) {
             html += `<p>R: ${data.r_votes?.toLocaleString() || '?'} / D: ${data.d_votes?.toLocaleString() || '?'}</p>`;
         }
     } else {
         html += '<p class="text-muted">No election data</p>';
     }
-    html += '<p style="font-size:0.75rem;color:#777;margin-top:4px;">Click to view details</p>';
+    // On mobile, show clickable link; on desktop, show hint
+    if (isTouchDevice) {
+        html += `<p style="margin-top:8px;"><a href="${detailUrl}" style="color:#1e3a5f;font-weight:600;">View Details &rarr;</a></p>`;
+    } else {
+        html += '<p style="font-size:0.75rem;color:#777;margin-top:4px;">Click to view details</p>';
+    }
     this._div.innerHTML = html;
 };
 info.addTo(map);
