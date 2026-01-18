@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Search - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Candidate Search</h1>
+    <p class="subtitle">Search for candidates by name to see their full race results</p>
+</div>
+
+<div class="card" style="margin-bottom: 32px;">
+    <form action="{{ url_for('candidates') }}" method="get">
+        <div class="search-container" style="max-width: 100%;">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" name="q" value="{{ query }}" placeholder="Search candidates..." class="search-input" autofocus>
+        </div>
+    </form>
+</div>
+
+{% if results %}
+<h2 class="section-title">{{ results|length }} Race{{ 's' if results|length > 1 else '' }} Found</h2>
+
+{% for race in results %}
+<div class="card race-card" style="margin-bottom: 16px;">
+    <div class="race-header-row">
+        <div class="race-info">
+            <span class="race-name">{{ race.office }}</span>
+            <span class="year-badge" style="margin-left: 8px;">{{ race.year }}</span>
+            {% if race.district %}
+            <span class="race-district">{{ race.county }} District {{ race.district }}</span>
+            {% endif %}
+        </div>
+        <div class="race-seats">{{ race.seats }} seat{{ 's' if race.seats > 1 else '' }}</div>
+    </div>
+
+    <div class="candidates-list">
+        {% for candidate in race.candidates %}
+        <div class="candidate-item {% if candidate.is_winner %}winner{% endif %} {% if candidate.is_match %}highlighted{% endif %}">
+            <span class="candidate-name">
+                {% if candidate.is_match %}<strong>{{ candidate.name }}</strong>{% else %}{{ candidate.name }}{% endif %}
+                {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
+            </span>
+            <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
+            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% elif query %}
+<div class="card">
+    <div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <p>No candidates found matching "{{ query }}"</p>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <p>Enter a name to search for candidates and see their full race results</p>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ name }} - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ name }}</h1>
+    <p class="subtitle">
+        <span class="party-badge {{ party|lower if party else 'other' }}">{{ party or 'Unknown' }}</span>
+    </p>
+</div>
+
+<!-- Win/Loss Record -->
+<div class="grid grid-2" style="margin-bottom: 32px;">
+    <div class="card stat-card">
+        <div class="stat-value" style="color: var(--accent);">{{ wins }}</div>
+        <div class="stat-label">Wins</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-value" style="color: var(--text-muted);">{{ losses }}</div>
+        <div class="stat-label">Losses</div>
+    </div>
+</div>
+
+<!-- Election History -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Election History</span>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Office</th>
+                    <th>District</th>
+                    <th>Votes</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for race in history %}
+                <tr>
+                    <td><strong>{{ race.year }}</strong></td>
+                    <td>{{ race.office }}</td>
+                    <td>
+                        {% if race.district %}
+                        <a href="{{ url_for('district', county=race.county, district=race.district) }}?office={{ race.office|urlencode }}">
+                            {{ race.county }} {{ race.district }}
+                        </a>
+                        {% else %}
+                        Statewide
+                        {% endif %}
+                    </td>
+                    <td class="votes-cell">{{ "{:,}".format(race.total_votes) }}</td>
+                    <td>
+                        {% if race.is_winner %}
+                        <span class="winner-badge">Won</span>
+                        {% else %}
+                        <span style="color: var(--text-muted);">Lost</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

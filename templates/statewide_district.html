@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ info.office }} District {{ info.district }} - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ info.office }} District {{ info.district }}</h1>
+</div>
+
+<!-- Towns in District -->
+<div class="card" style="margin-bottom: 32px;">
+    <div class="card-header">
+        <span class="card-title">Towns in this District ({{ info.towns|length }})</span>
+    </div>
+    <div class="town-list" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
+        {% for town in info.towns %}
+        <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Results by Year -->
+{% for year in by_year.keys()|sort(reverse=true) %}
+{% set year_data = by_year[year] %}
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span class="card-title">{{ year }}</span>
+        <span style="font-size: 1.1rem;">
+            <span class="r" style="font-weight: 600;">{{ year_data.r_seats }}R</span>
+            -
+            <span class="d" style="font-weight: 600;">{{ year_data.d_seats }}D</span>
+        </span>
+    </div>
+
+    <div class="candidates-list">
+        {% for candidate in year_data.candidates %}
+        <div class="candidate-item {% if candidate.is_winner %}winner{% endif %}">
+            <span class="candidate-name">
+                {{ candidate.name }}
+                {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
+            </span>
+            <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
+            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

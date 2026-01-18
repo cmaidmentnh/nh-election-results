@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ summary.name }} County - NH Election Results{% endblock %}
+
+{% block content %}
+<!-- County Header -->
+<div class="town-header">
+    <div class="town-info">
+        <h1>{{ summary.name }} County</h1>
+        <p class="subtitle">{{ summary.towns|length }} towns</p>
+    </div>
+    <div class="town-lean {% if 'R' in summary.lean %}republican{% elif 'D' in summary.lean %}democrat{% else %}swing{% endif %}">
+        {{ summary.lean }}
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="metrics-row">
+    <div class="metric">
+        <div class="metric-value {% if summary.latest_margin.margin > 0 %}r{% else %}d{% endif %}">
+            {% if summary.latest_margin.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(summary.latest_margin.margin|abs) }}%
+        </div>
+        <div class="metric-label">{{ summary.latest_year }} Margin</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value {% if summary.trend > 0 %}r{% else %}d{% endif %}">
+            {% if summary.trend > 0 %}+{% endif %}{{ "%.1f"|format(summary.trend) }}
+        </div>
+        <div class="metric-label">Trend {{ summary.years[0] }}-{{ summary.years[-1] }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value">{{ "{:,}".format(summary.latest_margin.total_votes) }}</div>
+        <div class="metric-label">Total Votes</div>
+    </div>
+</div>
+
+<!-- Results by Office for Latest Year -->
+<h2 class="section-title">{{ summary.latest_year }} Results by Office</h2>
+<div class="card" style="margin-bottom: 24px;">
+    <table style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Office</th>
+                <th>Margin</th>
+                <th>R Votes</th>
+                <th>D Votes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for office in summary.offices %}
+            {% if office in summary.by_year_office[summary.latest_year] %}
+            {% set o = summary.by_year_office[summary.latest_year][office] %}
+            <tr>
+                <td><strong>{{ office }}</strong></td>
+                <td class="{% if o.margin > 0 %}r{% else %}d{% endif %}">
+                    {% if o.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(o.margin|abs) }}%
+                </td>
+                <td>{{ "{:,}".format(o.r_votes) }}</td>
+                <td>{{ "{:,}".format(o.d_votes) }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Historical Results -->
+<h2 class="section-title">Historical Results by Year</h2>
+{% for year in summary.years|reverse %}
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span class="card-title">{{ year }}</span>
+        {% set m = summary.margins_by_year[year] %}
+        <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}" style="font-weight: 600;">
+            {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
+        </span>
+    </div>
+    <table style="width: 100%; font-size: 14px;">
+        <thead>
+            <tr>
+                <th>Office</th>
+                <th>Margin</th>
+                <th>R Votes</th>
+                <th>D Votes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for office in summary.offices %}
+            {% if office in summary.by_year_office[year] %}
+            {% set o = summary.by_year_office[year][office] %}
+            <tr>
+                <td>{{ office }}</td>
+                <td class="{% if o.margin > 0 %}r{% else %}d{% endif %}">
+                    {% if o.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(o.margin|abs) }}%
+                </td>
+                <td>{{ "{:,}".format(o.r_votes) }}</td>
+                <td>{{ "{:,}".format(o.d_votes) }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<!-- Towns in County -->
+<h2 class="section-title">Towns in {{ summary.name }} County</h2>
+<div class="town-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+    {% for town in summary.towns %}
+    <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ summary.name }} {{ year }} - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ summary.name }} - {{ year }}</h1>
+    <p class="subtitle">
+        <a href="{{ url_for('town', name=summary.name) }}">&larr; Back to {{ summary.name }} overview</a>
+    </p>
+</div>
+
+<!-- Year Navigation -->
+<div class="year-nav" style="margin-bottom: 24px;">
+    {% for y in summary.years|reverse %}
+    {% if y == year %}
+    <span class="year-link active">{{ y }}</span>
+    {% else %}
+    <a href="{{ url_for('town_year', name=summary.name, year=y) }}" class="year-link">{{ y }}</a>
+    {% endif %}
+    {% endfor %}
+</div>
+
+{% if year in summary.margins_by_year %}
+{% set margin = summary.margins_by_year[year] %}
+<div class="metrics-row" style="margin-bottom: 24px;">
+    <div class="metric">
+        <div class="metric-value {% if margin.margin > 0 %}r{% else %}d{% endif %}">
+            {% if margin.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(margin.margin|abs) }}%
+        </div>
+        <div class="metric-label">Overall Margin</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value r">{{ "{:,}".format(margin.r_votes) }}</div>
+        <div class="metric-label">Republican Votes</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value d">{{ "{:,}".format(margin.d_votes) }}</div>
+        <div class="metric-label">Democratic Votes</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value">{{ "{:,}".format(margin.total_votes) }}</div>
+        <div class="metric-label">Total Votes</div>
+    </div>
+</div>
+{% endif %}
+
+<h2 class="section-title">Race Results</h2>
+
+{% for race in races %}
+<div class="card race-card" style="margin-bottom: 16px;">
+    <div class="race-header-row">
+        <div class="race-info">
+            <span class="race-name">{{ race.office }}</span>
+            {% if race.district %}
+            <span class="race-district">District {{ race.district }}</span>
+            {% endif %}
+        </div>
+        <div class="race-result {% if race.winner_party == 'R' %}r{% elif race.winner_party == 'D' %}d{% endif %}">
+            {% if race.winner_party == 'R' %}
+            R+{{ race.margin_pct }}%
+            {% elif race.winner_party == 'D' %}
+            D+{{ race.margin_pct|abs }}%
+            {% else %}
+            Tie
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="candidates-list">
+        {% for candidate in race.candidates %}
+        <div class="candidate-item {% if candidate.is_winner %}winner{% endif %}">
+            <span class="candidate-name">
+                {{ candidate.name }}
+                {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
+            </span>
+            <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
+            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

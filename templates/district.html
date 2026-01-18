@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ info.county }} District {{ info.district }} - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ info.county }} County District {{ info.district }}</h1>
+    {% if info.seats > 1 %}
+    <p class="subtitle">{{ info.office }} &middot; {{ info.seats }} seats</p>
+    {% else %}
+    <p class="subtitle">{{ info.office }}</p>
+    {% endif %}
+</div>
+
+<!-- Towns in District -->
+<div class="card" style="margin-bottom: 32px;">
+    <div class="card-header">
+        <span class="card-title">Towns in this District</span>
+    </div>
+    <div class="town-list">
+        {% for town in info.towns %}
+        <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Results by Year -->
+{% for year in by_year.keys()|sort(reverse=true) %}
+{% set year_data = by_year[year] %}
+<div class="year-section fade-in">
+    <div class="year-header">
+        <span class="year-badge">{{ year }}</span>
+        {% set r_winners = year_data.candidates|selectattr('is_winner')|selectattr('party', 'equalto', 'Republican')|list|length %}
+        {% set d_winners = year_data.candidates|selectattr('is_winner')|selectattr('party', 'equalto', 'Democratic')|list|length %}
+        <span style="font-size: 1.1rem;">
+            <span style="color: var(--republican); font-weight: 600;">{{ r_winners }}R</span>
+            -
+            <span style="color: var(--democrat); font-weight: 600;">{{ d_winners }}D</span>
+        </span>
+    </div>
+
+    <div class="race-group">
+        {% for candidate in year_data.candidates %}
+        <div class="candidate-row {{ 'winner' if candidate.is_winner else '' }}">
+            <span class="candidate-name">
+                {{ candidate.name }}
+                {% if candidate.is_winner %}
+                <span class="winner-badge">Winner</span>
+                {% endif %}
+            </span>
+            <span class="candidate-party">
+                <span class="party-badge {{ candidate.party|lower if candidate.party else 'other' }}">
+                    {{ candidate.party or 'Unknown' }}
+                </span>
+            </span>
+            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

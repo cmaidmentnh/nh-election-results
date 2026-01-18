@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>NH Election Results</h1>
+    <p class="subtitle">{{ stats.year_range }} General Elections</p>
+</div>
+
+<!-- Quick Navigation -->
+<div class="card" style="margin-bottom: 32px;">
+    <div class="quick-jump" style="display: flex; gap: 32px; flex-wrap: wrap;">
+        <div>
+            <label>Jump to town:</label>
+            <select id="town-select" onchange="if(this.value) window.location.href='/town/' + this.value" style="min-width: 200px;">
+                <option value="">Select a town...</option>
+                {% for town in towns %}
+                <option value="{{ town }}">{{ town }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Browse by county:</label>
+            <select id="county-view-select" onchange="if(this.value) window.location.href='/county/' + this.value" style="min-width: 150px;">
+                <option value="">Select county...</option>
+                {% for county in counties %}
+                <option value="{{ county }}">{{ county }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Browse by district:</label>
+            <select id="office-select" style="min-width: 150px;">
+                <option value="State Representative">State Rep</option>
+                <option value="State Senator">State Senate (1-24)</option>
+                <option value="Executive Councilor">Exec Council (1-5)</option>
+                <option value="Representative in Congress">US Congress (1-2)</option>
+            </select>
+            <select id="county-select" style="min-width: 150px;">
+                <option value="">Select county...</option>
+                {% for county in counties %}
+                <option value="{{ county }}">{{ county }}</option>
+                {% endfor %}
+            </select>
+            <select id="district-select" style="min-width: 100px;">
+                <option value="">District...</option>
+            </select>
+            <button onclick="goToDistrict()" style="padding: 8px 16px;">Go</button>
+        </div>
+    </div>
+</div>
+
+<!-- Current Control Headlines -->
+{% set latest = years[-1] if years else 2024 %}
+<h2 class="section-title">{{ latest }} Results</h2>
+
+<div class="grid grid-3" style="margin-bottom: 32px;">
+    {% if 'State Representative' in statewide.get(latest, {}) %}
+    {% set house = statewide[latest]['State Representative'] %}
+    {% set change = changes.get('State Representative', {}) %}
+    <div class="card insight-card {% if house.R > house.D %}republican{% else %}democrat{% endif %}">
+        <div class="insight-label">State House</div>
+        <div class="insight-headline">
+            <span class="big-number r">{{ house.R }}</span>
+            <span class="separator">-</span>
+            <span class="big-number d">{{ house.D }}</span>
+        </div>
+        <div class="insight-party">
+            {% if house.R > house.D %}
+            <span class="party-indicator r">Republican Control</span>
+            {% else %}
+            <span class="party-indicator d">Democratic Control</span>
+            {% endif %}
+        </div>
+        {% if change %}
+        <div class="insight-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
+            {% if change.r_change > 0 %}
+            R+{{ change.r_change }} from {{ change.prev_year }}
+            {% elif change.r_change < 0 %}
+            D+{{ change.d_change }} from {{ change.prev_year }}
+            {% else %}
+            No change from {{ change.prev_year }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if 'State Senator' in statewide.get(latest, {}) %}
+    {% set senate = statewide[latest]['State Senator'] %}
+    {% set change = changes.get('State Senator', {}) %}
+    <div class="card insight-card {% if senate.R > senate.D %}republican{% else %}democrat{% endif %}">
+        <div class="insight-label">State Senate</div>
+        <div class="insight-headline">
+            <span class="big-number r">{{ senate.R }}</span>
+            <span class="separator">-</span>
+            <span class="big-number d">{{ senate.D }}</span>
+        </div>
+        <div class="insight-party">
+            {% if senate.R > senate.D %}
+            <span class="party-indicator r">Republican Control</span>
+            {% else %}
+            <span class="party-indicator d">Democratic Control</span>
+            {% endif %}
+        </div>
+        {% if change %}
+        <div class="insight-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
+            {% if change.r_change > 0 %}
+            R+{{ change.r_change }} from {{ change.prev_year }}
+            {% elif change.r_change < 0 %}
+            D+{{ change.d_change }} from {{ change.prev_year }}
+            {% else %}
+            No change from {{ change.prev_year }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if 'Executive Councilor' in statewide.get(latest, {}) %}
+    {% set ec = statewide[latest]['Executive Councilor'] %}
+    {% set change = changes.get('Executive Councilor', {}) %}
+    <div class="card insight-card {% if ec.R > ec.D %}republican{% else %}democrat{% endif %}">
+        <div class="insight-label">Executive Council</div>
+        <div class="insight-headline">
+            <span class="big-number r">{{ ec.R }}</span>
+            <span class="separator">-</span>
+            <span class="big-number d">{{ ec.D }}</span>
+        </div>
+        <div class="insight-party">
+            {% if ec.R > ec.D %}
+            <span class="party-indicator r">Republican Control</span>
+            {% else %}
+            <span class="party-indicator d">Democratic Control</span>
+            {% endif %}
+        </div>
+        {% if change %}
+        <div class="insight-change {% if change.r_change > 0 %}r{% elif change.r_change < 0 %}d{% endif %}">
+            {% if change.r_change > 0 %}
+            R+{{ change.r_change }} from {{ change.prev_year }}
+            {% elif change.r_change < 0 %}
+            D+{{ change.d_change }} from {{ change.prev_year }}
+            {% else %}
+            No change from {{ change.prev_year }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Historical Data Table -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Historical Results</span>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>House</th>
+                    <th>Senate</th>
+                    <th>Exec Council</th>
+                    <th>Governor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for year in years|reverse %}
+                <tr>
+                    <td><strong>{{ year }}</strong></td>
+                    <td>
+                        {% if 'State Representative' in statewide.get(year, {}) %}
+                        {% set h = statewide[year]['State Representative'] %}
+                        <span class="result-badge {% if h.R > h.D %}r{% else %}d{% endif %}">
+                            {{ h.R }}-{{ h.D }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'State Senator' in statewide.get(year, {}) %}
+                        {% set s = statewide[year]['State Senator'] %}
+                        <span class="result-badge {% if s.R > s.D %}r{% else %}d{% endif %}">
+                            {{ s.R }}-{{ s.D }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'Executive Councilor' in statewide.get(year, {}) %}
+                        {% set e = statewide[year]['Executive Councilor'] %}
+                        <span class="result-badge {% if e.R > e.D %}r{% else %}d{% endif %}">
+                            {{ e.R }}-{{ e.D }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'Governor' in statewide.get(year, {}) %}
+                        {% set g = statewide[year]['Governor'] %}
+                        <span class="result-badge {% if g.R > 0 %}r{% else %}d{% endif %}">
+                            {% if g.R > 0 %}R{% else %}D{% endif %}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// District navigation
+const countySelect = document.getElementById('county-select');
+const officeSelect = document.getElementById('office-select');
+const districtSelect = document.getElementById('district-select');
+
+// Offices that need county selection (county-based districts)
+const countyBasedOffices = ['State Representative'];
+
+function updateUI() {
+    const office = officeSelect.value;
+    const needsCounty = countyBasedOffices.includes(office);
+
+    // Show/hide county dropdown
+    countySelect.style.display = needsCounty ? 'inline-block' : 'none';
+
+    if (needsCounty) {
+        // County-based: wait for county selection
+        if (countySelect.value) {
+            loadCountyDistricts();
+        } else {
+            districtSelect.innerHTML = '<option value="">Select county first...</option>';
+        }
+    } else {
+        // Statewide office: load districts directly
+        loadStatewideDistricts();
+    }
+}
+
+function loadCountyDistricts() {
+    const county = countySelect.value;
+    const office = officeSelect.value;
+    districtSelect.innerHTML = '<option value="">Loading...</option>';
+
+    fetch('/api/districts/' + encodeURIComponent(county))
+        .then(r => r.json())
+        .then(districts => {
+            const filtered = districts.filter(d => d.office === office);
+            districtSelect.innerHTML = '<option value="">Select district...</option>';
+            filtered.forEach(d => {
+                // Only show seat count for State Rep (multi-seat districts)
+                const seatText = d.seats > 1 ? ` (${d.seats} seats)` : '';
+                districtSelect.innerHTML += `<option value="${d.district}">${d.district}${seatText}</option>`;
+            });
+        });
+}
+
+function loadStatewideDistricts() {
+    const office = officeSelect.value;
+    districtSelect.innerHTML = '<option value="">Loading...</option>';
+
+    fetch('/api/statewide-districts?office=' + encodeURIComponent(office))
+        .then(r => r.json())
+        .then(districts => {
+            districtSelect.innerHTML = '<option value="">Select district...</option>';
+            districts.forEach(d => {
+                // Statewide offices are all single-seat, no need to show seat count
+                districtSelect.innerHTML += `<option value="${d.district}">${d.district}</option>`;
+            });
+        });
+}
+
+officeSelect.addEventListener('change', updateUI);
+countySelect.addEventListener('change', () => {
+    if (countyBasedOffices.includes(officeSelect.value)) {
+        loadCountyDistricts();
+    }
+});
+
+// Initialize
+updateUI();
+
+function goToDistrict() {
+    const office = officeSelect.value;
+    const district = districtSelect.value;
+    const county = countySelect.value;
+    const needsCounty = countyBasedOffices.includes(office);
+
+    if (!district) {
+        alert('Please select a district');
+        return;
+    }
+
+    if (needsCounty) {
+        if (!county) {
+            alert('Please select a county');
+            return;
+        }
+        window.location.href = `/district/${encodeURIComponent(county)}/${encodeURIComponent(district)}?office=${encodeURIComponent(office)}`;
+    } else {
+        // For statewide offices, use a different URL pattern
+        window.location.href = `/statewide-district/${encodeURIComponent(office)}/${encodeURIComponent(district)}`;
+    }
+}
+</script>
+{% endblock %}

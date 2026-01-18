@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{{ office }} Districts - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ office }} Districts</h1>
+    <p class="subtitle">Sorted by PVI (R+ to D+)</p>
+</div>
+
+<!-- Office Selector -->
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <label style="font-weight: 600;">Select Office:</label>
+        <select id="office-select" onchange="window.location.href='/districts?office=' + encodeURIComponent(this.value)" style="min-width: 200px;">
+            <option value="State Senator" {% if office == 'State Senator' %}selected{% endif %}>State Senate (24 districts)</option>
+            <option value="Executive Councilor" {% if office == 'Executive Councilor' %}selected{% endif %}>Executive Council (5 districts)</option>
+            <option value="Representative in Congress" {% if office == 'Representative in Congress' %}selected{% endif %}>US Congress (2 districts)</option>
+            <option value="State Representative" {% if office == 'State Representative' %}selected{% endif %}>State House (by county)</option>
+        </select>
+    </div>
+</div>
+
+<!-- Districts Table -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">{{ districts|length }} Districts</span>
+    </div>
+    <div class="table-container">
+        <table id="districts-table">
+            <thead>
+                <tr>
+                    <th style="cursor: pointer;" onclick="sortTable(0)">District</th>
+                    {% if office == 'State Representative' %}
+                    <th style="cursor: pointer;" onclick="sortTable(1)">County</th>
+                    <th style="cursor: pointer;" onclick="sortTable(2)">Seats</th>
+                    <th style="cursor: pointer;" onclick="sortTable(3)">PVI</th>
+                    <th style="cursor: pointer;" onclick="sortTable(4)">Trend</th>
+                    {% else %}
+                    <th style="cursor: pointer;" onclick="sortTable(1)">PVI</th>
+                    <th style="cursor: pointer;" onclick="sortTable(2)">Trend</th>
+                    {% endif %}
+                    <th>Towns</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in districts %}
+                <tr onclick="goToDistrict('{{ d.district }}', '{{ d.county }}')" style="cursor: pointer;">
+                    <td><strong>{{ d.district }}</strong></td>
+                    {% if office == 'State Representative' %}
+                    <td>{{ d.county }}</td>
+                    <td>{{ d.seats }}</td>
+                    {% endif %}
+                    <td class="{% if d.pvi > 0 %}r{% else %}d{% endif %}" data-value="{{ d.pvi }}">
+                        {% if d.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.pvi|abs) }}
+                    </td>
+                    <td data-value="{{ d.trend }}">
+                        {% if d.trend > 1 %}
+                        <span class="trend-indicator r">&#9650; +{{ "%.1f"|format(d.trend) }}</span>
+                        {% elif d.trend < -1 %}
+                        <span class="trend-indicator d">&#9660; {{ "%.1f"|format(d.trend) }}</span>
+                        {% else %}
+                        <span class="trend-indicator">&#8212; {{ "%.1f"|format(d.trend) }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="towns-cell">{{ d.towns|join(', ') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.trend-indicator {
+    font-weight: 600;
+}
+.trend-indicator.r {
+    color: var(--republican);
+}
+.trend-indicator.d {
+    color: var(--democrat);
+}
+.towns-cell {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#districts-table th {
+    user-select: none;
+}
+#districts-table th:hover {
+    background-color: var(--bg-light);
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const office = '{{ office }}';
+const isCountyBased = office === 'State Representative';
+
+function goToDistrict(district, county) {
+    if (isCountyBased) {
+        window.location.href = `/district/${encodeURIComponent(county)}/${encodeURIComponent(district)}?office=${encodeURIComponent(office)}`;
+    } else {
+        window.location.href = `/statewide-district/${encodeURIComponent(office)}/${encodeURIComponent(district)}`;
+    }
+}
+
+// Table sorting
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('districts-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Toggle sort direction
+    sortDirection[columnIndex] = !sortDirection[columnIndex];
+    const ascending = sortDirection[columnIndex];
+
+    rows.sort((a, b) => {
+        let aVal = a.cells[columnIndex].getAttribute('data-value') || a.cells[columnIndex].textContent.trim();
+        let bVal = b.cells[columnIndex].getAttribute('data-value') || b.cells[columnIndex].textContent.trim();
+
+        // Try to parse as number
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
+
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return ascending ? aNum - bNum : bNum - aNum;
+        }
+
+        // String comparison
+        return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+{% endblock %}

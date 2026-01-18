@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NH Election Results{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <span class="logo-icon">NH</span>
+                <span>Election Results</span>
+            </a>
+            <nav>
+                <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Dashboard</a>
+                <a href="{{ url_for('districts_browser') }}" class="{{ 'active' if request.endpoint == 'districts_browser' else '' }}">Districts</a>
+                <a href="{{ url_for('candidates') }}" class="{{ 'active' if request.endpoint == 'candidates' else '' }}">Candidates</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>NH Election Results Explorer &middot; Data from NH Secretary of State &middot; 2016-2024</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
