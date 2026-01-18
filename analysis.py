@@ -1840,7 +1840,7 @@ def get_districts_map_data():
     # Towns (keyed by name)
     cursor.execute("""
         SELECT
-            res.town,
+            res.municipality as town,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
             SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
             SUM(res.votes) as total_votes
@@ -1851,9 +1851,11 @@ def get_districts_map_data():
         WHERE e.year = 2024
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        AND res.town IS NOT NULL
-        AND res.town != ''
-        GROUP BY res.town
+        AND res.municipality IS NOT NULL
+        AND res.municipality != ''
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        GROUP BY res.municipality
     """)
 
     for row in cursor.fetchall():
