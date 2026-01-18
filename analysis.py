@@ -1949,52 +1949,195 @@ def get_districts_map_data(year=None, metric='margin'):
                 'total_votes': total
             }
 
-    # If PVI metric requested, add PVI values from presidential races
+    # If PVI metric requested, calculate proper PVI for each district type
     if metric == 'pvi':
-        # Calculate PVI from presidential races (2016, 2020, 2024)
+        # Step 1: Get statewide baseline from competitive races
+        # A competitive race has both R and D candidates with votes
         cursor.execute("""
             SELECT
-                CASE
-                    WHEN res.municipality LIKE '% Ward %'
-                    THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
-                    ELSE res.municipality
-                END as town,
+                r.id as race_id,
                 SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-                SUM(res.votes) as total_votes
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE o.name = 'President of the United States'
-            AND e.year IN (2016, 2020, 2024)
-            AND e.election_type = 'general'
+            WHERE e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.id
+            HAVING r_votes > 0 AND d_votes > 0
+        """)
+
+        competitive_races = set()
+        statewide_r = 0
+        statewide_total = 0
+        for row in cursor.fetchall():
+            race_id, r_votes, d_votes = row
+            competitive_races.add(race_id)
+            statewide_r += r_votes
+            statewide_total += r_votes + d_votes
+
+        statewide_r_pct = (statewide_r / statewide_total * 100) if statewide_total > 0 else 50
+
+        # Step 2: Get municipality-level competitive votes
+        # This will be used to calculate PVI for each district
+        cursor.execute("""
+            SELECT
+                res.municipality,
+                r.id as race_id,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             AND res.municipality != ''
             AND res.municipality NOT GLOB '[0-9]*'
-            GROUP BY CASE
-                WHEN res.municipality LIKE '% Ward %'
-                THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
-                ELSE res.municipality
-            END
+            GROUP BY res.municipality, r.id
         """)
 
+        # Build municipality -> competitive votes mapping
+        muni_votes = defaultdict(lambda: {'r': 0, 'total': 0})
         for row in cursor.fetchall():
-            town, r_votes, d_votes, total = row
-            if town and total > 0:
-                pvi = ((r_votes - d_votes) / total * 100)
+            muni, race_id, r_votes, d_votes = row
+            if race_id in competitive_races:
+                # Normalize ward names to city names
+                if ' Ward ' in muni:
+                    muni = muni[:muni.index(' Ward ')]
+                muni_votes[muni]['r'] += r_votes
+                muni_votes[muni]['total'] += r_votes + d_votes
+
+        # Step 3: For each House district, find its municipalities and calculate PVI
+        cursor.execute("""
+            SELECT DISTINCT
+                r.county,
+                r.district,
+                res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Representative'
+            AND res.municipality IS NOT NULL
+            AND res.municipality NOT GLOB '[0-9]*'
+        """)
+
+        district_munis = defaultdict(set)
+        for row in cursor.fetchall():
+            county, district, muni = row
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                # Normalize ward names
+                if ' Ward ' in muni:
+                    muni = muni[:muni.index(' Ward ')]
+                district_munis[code].add(muni)
+
+        # Calculate PVI for each House district
+        for code, munis in district_munis.items():
+            district_r = sum(muni_votes[m]['r'] for m in munis)
+            district_total = sum(muni_votes[m]['total'] for m in munis)
+            if district_total > 0:
+                district_r_pct = district_r / district_total * 100
+                pvi = district_r_pct - statewide_r_pct
+                if code in data:
+                    data[code]['pvi'] = round(pvi, 1)
+
+        # Step 4: For Senate districts, find municipalities and calculate PVI
+        cursor.execute("""
+            SELECT DISTINCT
+                r.district,
+                res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Senator'
+            AND res.municipality IS NOT NULL
+            AND res.municipality NOT GLOB '[0-9]*'
+        """)
+
+        senate_munis = defaultdict(set)
+        for row in cursor.fetchall():
+            district, muni = row
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            senate_munis[f'sen_{district}'].add(muni)
+
+        for code, munis in senate_munis.items():
+            district_r = sum(muni_votes[m]['r'] for m in munis)
+            district_total = sum(muni_votes[m]['total'] for m in munis)
+            if district_total > 0:
+                district_r_pct = district_r / district_total * 100
+                pvi = district_r_pct - statewide_r_pct
+                if code in data:
+                    data[code]['pvi'] = round(pvi, 1)
+
+        # Step 5: For Exec Council districts
+        cursor.execute("""
+            SELECT DISTINCT
+                r.district,
+                res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Executive Councilor'
+            AND res.municipality IS NOT NULL
+            AND res.municipality NOT GLOB '[0-9]*'
+        """)
+
+        ec_munis = defaultdict(set)
+        for row in cursor.fetchall():
+            district, muni = row
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            ec_munis[f'ec_{district}'].add(muni)
+
+        for code, munis in ec_munis.items():
+            district_r = sum(muni_votes[m]['r'] for m in munis)
+            district_total = sum(muni_votes[m]['total'] for m in munis)
+            if district_total > 0:
+                district_r_pct = district_r / district_total * 100
+                pvi = district_r_pct - statewide_r_pct
+                if code in data:
+                    data[code]['pvi'] = round(pvi, 1)
+
+        # Step 6: For Congressional districts
+        cursor.execute("""
+            SELECT DISTINCT
+                r.district,
+                res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'Representative in Congress'
+            AND res.municipality IS NOT NULL
+            AND res.municipality NOT GLOB '[0-9]*'
+        """)
+
+        cong_munis = defaultdict(set)
+        for row in cursor.fetchall():
+            district, muni = row
+            if ' Ward ' in muni:
+                muni = muni[:muni.index(' Ward ')]
+            cong_munis[f'cong_{district}'].add(muni)
+
+        for code, munis in cong_munis.items():
+            district_r = sum(muni_votes[m]['r'] for m in munis)
+            district_total = sum(muni_votes[m]['total'] for m in munis)
+            if district_total > 0:
+                district_r_pct = district_r / district_total * 100
+                pvi = district_r_pct - statewide_r_pct
+                if code in data:
+                    data[code]['pvi'] = round(pvi, 1)
+
+        # Step 7: For towns, use their own competitive race data
+        for town in muni_votes:
+            if muni_votes[town]['total'] > 0:
+                town_r_pct = muni_votes[town]['r'] / muni_votes[town]['total'] * 100
+                pvi = town_r_pct - statewide_r_pct
                 if town in data:
                     data[town]['pvi'] = round(pvi, 1)
-                else:
-                    data[town] = {
-                        'margin': round(pvi, 1),
-                        'pvi': round(pvi, 1),
-                        'r_votes': r_votes,
-                        'd_votes': d_votes,
-                        'total_votes': total
-                    }
 
     conn.close()
     return data
