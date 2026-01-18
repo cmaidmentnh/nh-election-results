@@ -198,6 +198,13 @@ function style(feature) {
     const data = electionData[id] || electionData[String(id)] || electionData[parseInt(id)];
     const value = data ? data.margin : null;
 
+    // Debug: log first few features to console
+    if (!window._styleDebugCount) window._styleDebugCount = 0;
+    if (window._styleDebugCount < 3) {
+        console.log('Feature ID:', id, 'Type:', typeof id, 'Data found:', !!data, 'Margin:', value);
+        window._styleDebugCount++;
+    }
+
     return {
         fillColor: getColor(value),
         weight: 1,
@@ -298,6 +305,9 @@ function changeLayer() {
 }
 
 function loadLayer() {
+    // Reset debug counter for new layer
+    window._styleDebugCount = 0;
+
     // Remove existing layer
     if (geojsonLayer) {
         map.removeLayer(geojsonLayer);
@@ -311,7 +321,7 @@ function loadLayer() {
                 style: style,
                 onEachFeature: onEachFeature
             }).addTo(map);
-            map.fitBounds(geojsonLayer.getBounds());
+            map.fitBounds(geojsonLayer.getBounds(), { padding: [10, 10], maxZoom: 10 });
         })
         .catch(err => {
             console.error('Error loading layer:', err);
@@ -321,6 +331,7 @@ function loadLayer() {
 // Load election data and initial layer
 fetch('/api/districts-map-data').then(r => r.json()).then(data => {
     electionData = data;
+    console.log('Election data loaded, keys:', Object.keys(data).length, 'Sample keys:', Object.keys(data).slice(0, 10));
     loadLayer();
 }).catch(err => {
     console.error('Error loading election data:', err);
