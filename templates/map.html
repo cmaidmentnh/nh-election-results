@@ -85,8 +85,19 @@
         </select>
     </div>
     <div>
+        <label for="year-select">Year:</label>
+        <select id="year-select" onchange="reloadData()">
+            <option value="">Average (All Years)</option>
+            <option value="2024" selected>2024</option>
+            <option value="2022">2022</option>
+            <option value="2020">2020</option>
+            <option value="2018">2018</option>
+            <option value="2016">2016</option>
+        </select>
+    </div>
+    <div>
         <label for="metric-select">Color by:</label>
-        <select id="metric-select" onchange="updateColors()">
+        <select id="metric-select" onchange="reloadData()">
             <option value="margin">Vote Margin</option>
             <option value="pvi">PVI (Partisan Lean)</option>
         </select>
@@ -261,9 +272,14 @@ info.update = function(props) {
 
     let html = `<h4>${name}</h4>`;
     if (data) {
+        // Show seat split for multi-seat districts
+        if (data.seats && data.seats > 1) {
+            html += `<p>Seats: <span class="info-value"><span style="color:#8b0000">${data.r_seats}R</span>-<span style="color:#1e3a5f">${data.d_seats}D</span></span> (${data.seats} total)</p>`;
+        }
         const marginSign = data.margin > 0 ? 'R+' : 'D+';
         const marginColor = data.margin > 0 ? '#8b0000' : '#1e3a5f';
-        html += `<p>Margin: <span class="info-value" style="color:${marginColor}">${marginSign}${Math.abs(data.margin).toFixed(1)}%</span></p>`;
+        const marginLabel = data.seats > 1 ? 'Threshold' : 'Margin';
+        html += `<p>${marginLabel}: <span class="info-value" style="color:${marginColor}">${marginSign}${Math.abs(data.margin).toFixed(1)}%</span></p>`;
         if (data.r_votes !== undefined) {
             html += `<p>R: ${data.r_votes?.toLocaleString() || '?'} / D: ${data.d_votes?.toLocaleString() || '?'}</p>`;
         }
@@ -305,6 +321,21 @@ function changeLayer() {
     loadLayer();
 }
 
+function reloadData() {
+    const year = document.getElementById('year-select').value;
+    const metric = document.getElementById('metric-select').value;
+    let url = '/api/districts-map-data?metric=' + metric;
+    if (year) {
+        url += '&year=' + year;
+    }
+    fetch(url).then(r => r.json()).then(data => {
+        electionData = data;
+        updateColors();
+    }).catch(err => {
+        console.error('Error loading election data:', err);
+    });
+}
+
 function loadLayer() {
     // Remove existing layer
     if (geojsonLayer) {
@@ -327,7 +358,13 @@ function loadLayer() {
 }
 
 // Load election data and initial layer
-fetch('/api/districts-map-data').then(r => r.json()).then(data => {
+const initialYear = document.getElementById('year-select').value;
+const initialMetric = document.getElementById('metric-select').value;
+let initialUrl = '/api/districts-map-data?metric=' + initialMetric;
+if (initialYear) {
+    initialUrl += '&year=' + initialYear;
+}
+fetch(initialUrl).then(r => r.json()).then(data => {
     electionData = data;
     loadLayer();
 }).catch(err => {

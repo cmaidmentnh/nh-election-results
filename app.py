@@ -422,7 +422,9 @@ def api_map_data():
 @app.route('/api/districts-map-data')
 def api_districts_map_data():
     """District data for the map, keyed by district code (e.g., BE1, HI35)."""
-    return jsonify(analysis.get_districts_map_data())
+    year = request.args.get('year')  # None for average, or specific year
+    metric = request.args.get('metric', 'margin')  # 'margin' or 'pvi'
+    return jsonify(analysis.get_districts_map_data(year=year, metric=metric))
 
 
 @app.route('/api/export/<data_type>')

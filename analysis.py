@@ -1696,14 +1696,19 @@ def compare_districts(district1, district2):
     return None
 
 
-def get_districts_map_data():
+def get_districts_map_data(year=None, metric='margin'):
     """
     Get district data keyed by district code for the map.
+
+    Args:
+        year: Election year (2016, 2018, 2020, 2022, 2024) or None for average
+        metric: 'margin' for vote margin, 'pvi' for partisan lean
+
     Returns data for all district types:
     - House: BE1, HI35, etc.
-    - Senate: 1, 2, 3, etc.
-    - Exec Council: 1, 2, 3, 4, 5
-    - Congress: 1, 2
+    - Senate: sen_1, sen_2, etc.
+    - Exec Council: ec_1, ec_2, etc.
+    - Congress: cong_1, cong_2
     - Towns: town names
     """
     conn = get_connection()
@@ -1718,40 +1723,106 @@ def get_districts_map_data():
         'Merrimack': 'ME', 'Rockingham': 'RO', 'Strafford': 'ST', 'Sullivan': 'SU'
     }
 
-    # House districts
-    cursor.execute("""
+    # Determine years to query
+    if year:
+        years = [int(year)]
+    else:
+        # Average across all years
+        years = [2016, 2018, 2020, 2022, 2024]
+
+    year_clause = f"e.year IN ({','.join(str(y) for y in years)})"
+
+    # House districts - need special handling for multi-seat
+    # Get candidate-level data to calculate seat splits
+    cursor.execute(f"""
         SELECT
             r.county,
             r.district,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-            SUM(res.votes) as total_votes
+            c.name as candidate_name,
+            c.party,
+            SUM(res.votes) as votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'State Representative'
-        AND e.year = 2024
+        AND {year_clause}
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY r.county, r.district
+        GROUP BY r.county, r.district, c.name, c.party
+        ORDER BY r.county, r.district, votes DESC
     """)
 
+    # Group candidates by district
+    district_candidates = defaultdict(list)
     for row in cursor.fetchall():
-        county, district, r_votes, d_votes, total = row
+        county, district, candidate_name, party, votes = row
         if county in county_codes:
             code = county_codes[county] + str(district)
-            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
-            data[code] = {
-                'margin': round(margin, 1),
-                'r_votes': r_votes,
-                'd_votes': d_votes,
-                'total_votes': total
-            }
+            district_candidates[code].append({
+                'name': candidate_name,
+                'party': party,
+                'votes': votes
+            })
 
-    # Senate districts (keyed by number)
-    cursor.execute("""
+    # Process each district - determine number of seats and calculate metrics
+    for code, candidates in district_candidates.items():
+        # Sort by votes descending
+        candidates.sort(key=lambda x: -x['votes'])
+
+        # Count R and D candidates
+        r_candidates = [c for c in candidates if c['party'] == 'Republican']
+        d_candidates = [c for c in candidates if c['party'] == 'Democratic']
+
+        # Determine number of seats (half of major party candidates, roughly)
+        num_seats = max(len(r_candidates), len(d_candidates))
+        if num_seats == 0:
+            continue
+
+        # Get winners (top N vote-getters)
+        winners = candidates[:num_seats]
+        r_winners = sum(1 for w in winners if w['party'] == 'Republican')
+        d_winners = sum(1 for w in winners if w['party'] == 'Democratic')
+
+        # Calculate total votes
+        r_votes = sum(c['votes'] for c in r_candidates)
+        d_votes = sum(c['votes'] for c in d_candidates)
+        total_votes = sum(c['votes'] for c in candidates)
+
+        if num_seats > 1 and len(candidates) > num_seats:
+            # Multi-seat: use threshold margin (last winner vs first loser)
+            last_winner = candidates[num_seats - 1]
+            first_loser = candidates[num_seats]
+            threshold_total = last_winner['votes'] + first_loser['votes']
+            if threshold_total > 0:
+                # Positive if R would gain seat, negative if D would gain seat
+                if last_winner['party'] == 'Republican':
+                    # R holds the last seat - margin is R advantage
+                    margin = (last_winner['votes'] - first_loser['votes']) / threshold_total * 100
+                elif last_winner['party'] == 'Democratic':
+                    # D holds the last seat - margin is D advantage (negative)
+                    margin = -(last_winner['votes'] - first_loser['votes']) / threshold_total * 100
+                else:
+                    margin = 0
+            else:
+                margin = 0
+        else:
+            # Single seat or no losers: use vote margin
+            margin = ((r_votes - d_votes) / total_votes * 100) if total_votes > 0 else 0
+
+        data[code] = {
+            'margin': round(margin, 1),
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total_votes,
+            'seats': num_seats,
+            'r_seats': r_winners,
+            'd_seats': d_winners
+        }
+
+    # Senate districts
+    cursor.execute(f"""
         SELECT
             r.district,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
@@ -1763,7 +1834,7 @@ def get_districts_map_data():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'State Senator'
-        AND e.year = 2024
+        AND {year_clause}
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.district
@@ -1780,7 +1851,7 @@ def get_districts_map_data():
         }
 
     # Executive Council (keyed with ec_ prefix)
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT
             r.district,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
@@ -1792,7 +1863,7 @@ def get_districts_map_data():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'Executive Councilor'
-        AND e.year = 2024
+        AND {year_clause}
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.district
@@ -1809,7 +1880,7 @@ def get_districts_map_data():
         }
 
     # Congress (keyed with cong_ prefix)
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT
             r.district,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
@@ -1821,7 +1892,7 @@ def get_districts_map_data():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'Representative in Congress'
-        AND e.year = 2024
+        AND {year_clause}
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.district
@@ -1839,7 +1910,7 @@ def get_districts_map_data():
 
     # Towns (keyed by name) - aggregate wards into cities
     # Use CASE to extract base town name (strip " Ward X" suffix)
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT
             CASE
                 WHEN res.municipality LIKE '% Ward %'
@@ -1853,7 +1924,7 @@ def get_districts_map_data():
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
-        WHERE e.year = 2024
+        WHERE {year_clause}
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND res.municipality IS NOT NULL
