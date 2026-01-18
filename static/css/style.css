@@ -166,7 +166,7 @@ header nav {
 
 header nav > a,
 .nav-dropdown > a {
-  display: inline-block;
+  display: block;
   padding: 0.4rem 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
@@ -184,7 +184,6 @@ header nav > a:hover,
 /* Dropdown Navigation */
 .nav-dropdown {
   position: relative;
-  display: inline-block;
 }
 
 .nav-dropdown-content {
