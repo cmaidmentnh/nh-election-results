@@ -1837,10 +1837,15 @@ def get_districts_map_data():
             'total_votes': total
         }
 
-    # Towns (keyed by name)
+    # Towns (keyed by name) - aggregate wards into cities
+    # Use CASE to extract base town name (strip " Ward X" suffix)
     cursor.execute("""
         SELECT
-            res.municipality as town,
+            CASE
+                WHEN res.municipality LIKE '% Ward %'
+                THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
+                ELSE res.municipality
+            END as town,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
             SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
             SUM(res.votes) as total_votes
@@ -1855,7 +1860,11 @@ def get_districts_map_data():
         AND res.municipality != ''
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
-        GROUP BY res.municipality
+        GROUP BY CASE
+            WHEN res.municipality LIKE '% Ward %'
+            THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
+            ELSE res.municipality
+        END
     """)
 
     for row in cursor.fetchall():
