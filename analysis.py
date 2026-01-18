@@ -1949,6 +1949,53 @@ def get_districts_map_data(year=None, metric='margin'):
                 'total_votes': total
             }
 
+    # If PVI metric requested, add PVI values from presidential races
+    if metric == 'pvi':
+        # Calculate PVI from presidential races (2016, 2020, 2024)
+        cursor.execute("""
+            SELECT
+                CASE
+                    WHEN res.municipality LIKE '% Ward %'
+                    THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
+                    ELSE res.municipality
+                END as town,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'President of the United States'
+            AND e.year IN (2016, 2020, 2024)
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND res.municipality IS NOT NULL
+            AND res.municipality != ''
+            AND res.municipality NOT GLOB '[0-9]*'
+            GROUP BY CASE
+                WHEN res.municipality LIKE '% Ward %'
+                THEN SUBSTR(res.municipality, 1, INSTR(res.municipality, ' Ward ') - 1)
+                ELSE res.municipality
+            END
+        """)
+
+        for row in cursor.fetchall():
+            town, r_votes, d_votes, total = row
+            if town and total > 0:
+                pvi = ((r_votes - d_votes) / total * 100)
+                if town in data:
+                    data[town]['pvi'] = round(pvi, 1)
+                else:
+                    data[town] = {
+                        'margin': round(pvi, 1),
+                        'pvi': round(pvi, 1),
+                        'r_votes': r_votes,
+                        'd_votes': d_votes,
+                        'total_votes': total
+                    }
+
     conn.close()
     return data
 

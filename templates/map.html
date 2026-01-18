@@ -245,7 +245,10 @@ function style(feature) {
     const dataKey = prefix + id;
     // Try both string and numeric lookup since JSON keys are strings
     const data = electionData[dataKey] || electionData[String(dataKey)];
-    const value = data ? data.margin : null;
+
+    // Use PVI or margin based on selected metric
+    const metric = document.getElementById('metric-select').value;
+    const value = data ? (metric === 'pvi' && data.pvi !== undefined ? data.pvi : data.margin) : null;
 
     return {
         fillColor: getColor(value),
@@ -302,12 +305,22 @@ info.update = function(props) {
     const data = electionData[dataKey] || electionData[String(dataKey)];
     const name = currentConfig.formatName(props);
 
+    const metric = document.getElementById('metric-select').value;
     let html = `<h4>${name}</h4>`;
     if (data) {
         // Show seat split for multi-seat districts
         if (data.seats && data.seats > 1) {
             html += `<p>Seats: <span class="info-value"><span style="color:#8b0000">${data.r_seats}R</span>-<span style="color:#1e3a5f">${data.d_seats}D</span></span> (${data.seats} total)</p>`;
         }
+
+        // Show PVI if available and selected
+        if (metric === 'pvi' && data.pvi !== undefined) {
+            const pviSign = data.pvi > 0 ? 'R+' : 'D+';
+            const pviColor = data.pvi > 0 ? '#8b0000' : '#1e3a5f';
+            html += `<p>PVI: <span class="info-value" style="color:${pviColor}">${pviSign}${Math.abs(data.pvi).toFixed(1)}</span></p>`;
+        }
+
+        // Show margin
         const marginSign = data.margin > 0 ? 'R+' : 'D+';
         const marginColor = data.margin > 0 ? '#8b0000' : '#1e3a5f';
         const marginLabel = data.seats > 1 ? 'Threshold' : 'Margin';
