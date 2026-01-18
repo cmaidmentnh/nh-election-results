@@ -419,6 +419,12 @@ def api_map_data():
     return jsonify(analysis.get_map_data(year, metric))
 
 
+@app.route('/api/districts-map-data')
+def api_districts_map_data():
+    """District data for the map, keyed by district code (e.g., BE1, HI35)."""
+    return jsonify(analysis.get_districts_map_data())
+
+
 @app.route('/api/export/<data_type>')
 def api_export(data_type):
     """Export data as CSV or JSON."""

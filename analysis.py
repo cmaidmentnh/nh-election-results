@@ -1504,12 +1504,15 @@ def get_office_results(office):
 
 def get_incumbent_analysis():
     """
-    Identify candidates who ran multiple times and track their performance.
+    Track incumbents - candidates who won in year N and ran again in year N+2.
+    Uses name + party + district to identify the same person across elections.
+    Shows whether they won or lost re-election.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Find candidates who appear in multiple years
+    # Get all candidate races with win/loss status
+    # Group by name + party + town to identify the same person
     cursor.execute("""
         WITH candidate_races AS (
             SELECT
@@ -1519,9 +1522,10 @@ def get_incumbent_analysis():
                 o.name as office,
                 r.district,
                 r.county,
+                res.town,
                 r.seats,
-                SUM(res.votes) as total_votes,
-                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+                res.votes as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) OVER (PARTITION BY res.candidate_id, r.id) DESC) as rank
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
@@ -1530,7 +1534,6 @@ def get_incumbent_analysis():
             WHERE e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Governor')
-            GROUP BY c.name, e.year, r.id
         )
         SELECT
             candidate,
@@ -1539,61 +1542,125 @@ def get_incumbent_analysis():
             office,
             district,
             county,
-            total_votes,
-            (rank <= seats) as won
+            town,
+            SUM(total_votes) as votes,
+            MAX(rank <= seats) as won
         FROM candidate_races
-        ORDER BY candidate, year
+        GROUP BY candidate, party, year, office, district, county, town
+        ORDER BY candidate, party, town, year
     """)
 
-    # Group by candidate
-    candidates = defaultdict(list)
+    # Group by candidate + party + town (same person across years)
+    # This identifies the same person by name + party + home town
+    person_races = defaultdict(list)
     for row in cursor.fetchall():
-        candidate, party, year, office, district, county, votes, won = row
-        candidates[candidate].append({
+        candidate, party, year, office, district, county, town, votes, won = row
+        # Key: person identified by name + party + town
+        key = (candidate, party or '', town or '')
+        person_races[key].append({
             'party': party,
             'year': year,
             'office': office,
             'district': district,
             'county': county,
+            'town': town,
             'votes': votes,
             'won': bool(won)
         })
 
     conn.close()
 
-    # Filter to candidates with 2+ races
+    # Track true incumbents: people who won their seat in year N and ran again in year N+2
+    incumbents_2024 = []  # Won in 2022, ran in 2024
+    incumbents_2022 = []  # Won in 2020, ran in 2022
+    incumbents_2020 = []  # Won in 2018, ran in 2020
+
     repeat_candidates = []
-    for name, races in candidates.items():
-        if len(races) >= 2:
-            wins = sum(1 for r in races if r['won'])
-            losses = len(races) - wins
-            years = [r['year'] for r in races]
 
-            repeat_candidates.append({
-                'name': name,
-                'party': races[0]['party'],
-                'races': races,
-                'total_races': len(races),
-                'wins': wins,
-                'losses': losses,
-                'win_rate': round(wins / len(races) * 100, 1),
-                'years': years,
-                'first_year': min(years),
-                'last_year': max(years)
-            })
+    for (name, party, town), races in person_races.items():
+        if len(races) < 2:
+            continue
 
-    # Sort by number of races
+        # Build race lookup by year
+        races_by_year = {r['year']: r for r in races}
+        wins = sum(1 for r in races if r['won'])
+        years = sorted([r['year'] for r in races])
+
+        # Check for 2024 incumbents (won 2022, ran 2024)
+        if 2022 in races_by_year and 2024 in races_by_year:
+            if races_by_year[2022]['won']:
+                incumbents_2024.append({
+                    'name': name,
+                    'party': races_by_year[2024]['party'],
+                    'office': races_by_year[2024]['office'],
+                    'district': races_by_year[2024]['district'],
+                    'county': races_by_year[2024]['county'],
+                    'won_reelection': races_by_year[2024]['won'],
+                    'votes_2022': races_by_year[2022]['votes'],
+                    'votes_2024': races_by_year[2024]['votes']
+                })
+
+        # Check for 2022 incumbents (won 2020, ran 2022)
+        if 2020 in races_by_year and 2022 in races_by_year:
+            if races_by_year[2020]['won']:
+                incumbents_2022.append({
+                    'name': name,
+                    'party': races_by_year[2022]['party'],
+                    'office': races_by_year[2022]['office'],
+                    'won_reelection': races_by_year[2022]['won']
+                })
+
+        # Check for 2020 incumbents (won 2018, ran 2020)
+        if 2018 in races_by_year and 2020 in races_by_year:
+            if races_by_year[2018]['won']:
+                incumbents_2020.append({
+                    'name': name,
+                    'party': races_by_year[2020]['party'],
+                    'office': races_by_year[2020]['office'],
+                    'won_reelection': races_by_year[2020]['won']
+                })
+
+        # Track repeat candidates for the table
+        most_recent_race = races[-1]
+        repeat_candidates.append({
+            'name': name,
+            'party': party,
+            'town': town,
+            'office': most_recent_race['office'],
+            'district': most_recent_race['district'],
+            'county': most_recent_race['county'],
+            'races': races,
+            'total_races': len(races),
+            'wins': wins,
+            'losses': len(races) - wins,
+            'win_rate': round(wins / len(races) * 100, 1),
+            'years': years,
+            'first_year': min(years),
+            'last_year': max(years)
+        })
+
+    # Sort repeat candidates by number of races
     repeat_candidates.sort(key=lambda x: (-x['total_races'], x['name']))
 
-    # Separate winners and losers
-    incumbents_won = [c for c in repeat_candidates if c['races'][-1]['won']]
-    incumbents_lost = [c for c in repeat_candidates if len(c['races']) >= 2 and c['races'][-2]['won'] and not c['races'][-1]['won']]
+    # Calculate incumbent stats
+    inc_2024_won = sum(1 for i in incumbents_2024 if i['won_reelection'])
+    inc_2024_lost = len(incumbents_2024) - inc_2024_won
+    inc_2022_won = sum(1 for i in incumbents_2022 if i['won_reelection'])
+    inc_2022_lost = len(incumbents_2022) - inc_2022_won
+    inc_2020_won = sum(1 for i in incumbents_2020 if i['won_reelection'])
+    inc_2020_lost = len(incumbents_2020) - inc_2020_won
+
+    # Sort incumbents_2024 - lost first, then by name
+    incumbents_2024.sort(key=lambda x: (x['won_reelection'], x['name']))
 
     return {
         'repeat_candidates': repeat_candidates[:100],
         'total_repeat': len(repeat_candidates),
-        'incumbents_won_2024': len([c for c in repeat_candidates if 2024 in c['years'] and 2022 in c['years'] and c['races'][-1]['won']]),
-        'incumbents_lost_2024': len(incumbents_lost)
+        'incumbents_2024': incumbents_2024,
+        'incumbents_won_2024': inc_2024_won,
+        'incumbents_lost_2024': inc_2024_lost,
+        'incumbents_2022': {'won': inc_2022_won, 'lost': inc_2022_lost, 'total': len(incumbents_2022)},
+        'incumbents_2020': {'won': inc_2020_won, 'lost': inc_2020_lost, 'total': len(incumbents_2020)}
     }
 
 
@@ -1627,6 +1694,57 @@ def compare_districts(district1, district2):
     # Parse district strings like "Hillsborough-1" or "State Senate-1"
     # For now, just return None - would need more complex parsing
     return None
+
+
+def get_districts_map_data():
+    """
+    Get district data keyed by district code for the map.
+    District codes are like BE1 (Belknap 1), HI35 (Hillsborough 35), etc.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # County code mapping
+    county_codes = {
+        'Belknap': 'BE', 'Carroll': 'CA', 'Cheshire': 'CH',
+        'Coos': 'CO', 'Grafton': 'GR', 'Hillsborough': 'HI',
+        'Merrimack': 'ME', 'Rockingham': 'RO', 'Strafford': 'ST', 'Sullivan': 'SU'
+    }
+
+    cursor.execute("""
+        SELECT
+            r.county,
+            r.district,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'State Representative'
+        AND e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.county, r.district
+    """)
+
+    data = {}
+    for row in cursor.fetchall():
+        county, district, r_votes, d_votes, total = row
+        if county in county_codes:
+            code = county_codes[county] + str(district)
+            margin = ((r_votes - d_votes) / total * 100) if total > 0 else 0
+            data[code] = {
+                'margin': round(margin, 1),
+                'r_votes': r_votes,
+                'd_votes': d_votes,
+                'total_votes': total
+            }
+
+    conn.close()
+    return data
 
 
 def get_map_data(year, metric='pvi'):

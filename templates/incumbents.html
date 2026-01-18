@@ -5,26 +5,122 @@
 {% block content %}
 <div class="page-header">
     <h1>Incumbent Tracker</h1>
-    <p class="subtitle">Candidates who have run in multiple elections</p>
+    <p class="subtitle">Tracking re-election rates for NH legislators</p>
 </div>
 
-<div class="metrics">
-    <div class="metric">
-        <div class="metric-value">{{ data.total_repeat }}</div>
-        <div class="metric-label">Repeat Candidates</div>
-    </div>
-    <div class="metric">
-        <div class="metric-value">{{ data.incumbents_won_2024 }}</div>
-        <div class="metric-label">Incumbents Won 2024</div>
-    </div>
-    <div class="metric">
-        <div class="metric-value">{{ data.incumbents_lost_2024 }}</div>
-        <div class="metric-label">Incumbents Lost 2024</div>
+<div class="section">
+    <h2>2024 Incumbent Re-Election</h2>
+    <p class="text-muted mb-2">Incumbents = candidates who won in 2022 and ran again in 2024</p>
+
+    <div class="metrics">
+        <div class="metric">
+            <div class="metric-value">{{ data.incumbents_won_2024 + data.incumbents_lost_2024 }}</div>
+            <div class="metric-label">Total Incumbents</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value" style="color: var(--color-safe);">{{ data.incumbents_won_2024 }}</div>
+            <div class="metric-label">Won Re-Election</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value" style="color: var(--color-danger);">{{ data.incumbents_lost_2024 }}</div>
+            <div class="metric-label">Lost Re-Election</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value">{% if data.incumbents_won_2024 + data.incumbents_lost_2024 > 0 %}{{ "%.1f"|format(data.incumbents_won_2024 / (data.incumbents_won_2024 + data.incumbents_lost_2024) * 100) }}%{% else %}N/A{% endif %}</div>
+            <div class="metric-label">Re-Election Rate</div>
+        </div>
     </div>
 </div>
 
 <div class="two-col">
     <div class="main-content">
+        {% if data.incumbents_lost_2024 > 0 %}
+        <div class="section">
+            <h2>Incumbents Who Lost in 2024</h2>
+            <p class="text-muted mb-2">These candidates won in 2022 but lost their re-election bid in 2024</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Party</th>
+                        <th>Office</th>
+                        <th>District</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in data.incumbents_2024 if not c.won_reelection %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('candidates') }}?q={{ c.name }}">{{ c.name }}</a>
+                        </td>
+                        <td>
+                            <span class="{% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}">
+                                {{ c.party[:1] if c.party else '-' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if c.office == 'State Representative' %}State House
+                            {% elif c.office == 'State Senator' %}State Senate
+                            {% elif c.office == 'Executive Councilor' %}Exec Council
+                            {% else %}{{ c.office }}{% endif %}
+                        </td>
+                        <td>
+                            {% if c.county %}
+                            <a href="{{ url_for('district', county=c.county, district=c.district) }}">{{ c.county }} {{ c.district }}</a>
+                            {% else %}
+                            {{ c.district }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <h2>Historical Re-Election Rates</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th class="text-right">Incumbents</th>
+                        <th class="text-right">Won</th>
+                        <th class="text-right">Lost</th>
+                        <th class="text-right">Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>2024</strong></td>
+                        <td class="text-right">{{ data.incumbents_won_2024 + data.incumbents_lost_2024 }}</td>
+                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_won_2024 }}</td>
+                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_lost_2024 }}</td>
+                        <td class="text-right">{% if data.incumbents_won_2024 + data.incumbents_lost_2024 > 0 %}{{ "%.1f"|format(data.incumbents_won_2024 / (data.incumbents_won_2024 + data.incumbents_lost_2024) * 100) }}%{% else %}N/A{% endif %}</td>
+                    </tr>
+                    {% if data.incumbents_2022 %}
+                    <tr>
+                        <td>2022</td>
+                        <td class="text-right">{{ data.incumbents_2022.total }}</td>
+                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_2022.won }}</td>
+                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_2022.lost }}</td>
+                        <td class="text-right">{% if data.incumbents_2022.total > 0 %}{{ "%.1f"|format(data.incumbents_2022.won / data.incumbents_2022.total * 100) }}%{% else %}N/A{% endif %}</td>
+                    </tr>
+                    {% endif %}
+                    {% if data.incumbents_2020 %}
+                    <tr>
+                        <td>2020</td>
+                        <td class="text-right">{{ data.incumbents_2020.total }}</td>
+                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_2020.won }}</td>
+                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_2020.lost }}</td>
+                        <td class="text-right">{% if data.incumbents_2020.total > 0 %}{{ "%.1f"|format(data.incumbents_2020.won / data.incumbents_2020.total * 100) }}%{% else %}N/A{% endif %}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
         <div class="section">
             <h2>Most Experienced Candidates</h2>
             <p class="text-muted mb-2">Candidates who have run in the most elections (2016-2024)</p>
@@ -65,7 +161,8 @@
     <aside class="sidebar">
         <div class="sidebar-section">
             <h3>About This Data</h3>
-            <p class="text-muted">This tracks candidates for State Representative, State Senator, Executive Councilor, and Governor who have appeared on general election ballots multiple times since 2016.</p>
+            <p class="text-muted">An "incumbent" is defined as a candidate who won their seat in the previous election cycle (N-2) and ran for re-election.</p>
+            <p class="text-muted mt-1">This tracks State Representative, State Senator, Executive Councilor, and Governor races.</p>
         </div>
 
         <div class="sidebar-section">
