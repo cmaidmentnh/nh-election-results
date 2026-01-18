@@ -86,7 +86,7 @@ def get_statewide_districts(office):
 
 
 def get_statewide_district_results(office, district):
-    """Get results for a statewide district across all years."""
+    """Get results for a statewide district - ONLY post-redistricting (2022+)."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -106,6 +106,7 @@ def get_statewide_district_results(office, district):
         WHERE o.name = ?
         AND r.district = ?
         AND e.election_type = 'general'
+        AND e.year >= 2022
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, c.id
         ORDER BY e.year DESC, votes DESC
@@ -372,76 +373,48 @@ def get_town_info(town):
 
 def get_district_results(county, district, office='State Representative'):
     """
-    Get results for a district across years, using CURRENT district composition.
-    This aggregates town-level votes for the towns currently in the district,
-    not the historical race boundaries.
+    Get results for a district - ONLY post-redistricting years (2022+).
+    Districts changed boundaries after 2020, so showing pre-2022 data is misleading.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # First get the current towns in this district (from 2024)
-    current_towns = get_district_towns(county, district, office)
-    if not current_towns:
-        conn.close()
-        return []
-
-    # Get the current seat count (from most recent year)
+    # Get results directly from the race data (2022+ only)
     cursor.execute("""
-        SELECT r.seats
-        FROM races r
-        JOIN offices o ON r.office_id = o.id
-        JOIN elections e ON r.election_id = e.id
-        WHERE r.county = ?
-        AND r.district = ?
-        AND o.name = ?
-        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
-        LIMIT 1
-    """, (county, str(district), office))
-    row = cursor.fetchone()
-    seats = row[0] if row else 1
-
-    # For each year, aggregate votes for these specific towns
-    # We find races that included these towns and sum their votes
-    placeholders = ','.join('?' * len(current_towns))
-    cursor.execute(f"""
-        WITH town_votes AS (
+        WITH race_totals AS (
             SELECT
                 e.year,
+                r.id as race_id,
+                r.seats,
                 c.name as candidate,
                 c.party,
-                SUM(res.votes) as total_votes
+                SUM(res.votes) as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
-            WHERE res.municipality IN ({placeholders})
+            WHERE r.county = ?
+            AND r.district = ?
             AND o.name = ?
             AND e.election_type = 'general'
+            AND e.year >= 2022
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            GROUP BY e.year, c.id
-        ),
-        ranked AS (
-            SELECT
-                year,
-                candidate,
-                party,
-                total_votes,
-                RANK() OVER (PARTITION BY year ORDER BY total_votes DESC) as rank
-            FROM town_votes
+            GROUP BY r.id, c.id
         )
         SELECT
-            year, candidate, party, total_votes,
-            (rank <= ?) as is_winner, rank
-        FROM ranked
+            year, seats, candidate, party, total_votes,
+            (rank <= seats) as is_winner, rank
+        FROM race_totals
         ORDER BY year DESC, total_votes DESC
-    """, (*current_towns, office, seats))
+    """, (county, str(district), office))
 
     results = []
     for row in cursor.fetchall():
         results.append({
             'year': row['year'],
-            'seats': seats,
+            'seats': row['seats'],
             'candidate': row['candidate'],
             'party': row['party'],
             'total_votes': row['total_votes'],
