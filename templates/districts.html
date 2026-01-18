@@ -30,13 +30,14 @@
         <table id="districts-table">
             <thead>
                 <tr>
-                    <th style="cursor: pointer;" onclick="sortTable(0)">District</th>
                     {% if office == 'State Representative' %}
-                    <th style="cursor: pointer;" onclick="sortTable(1)">County</th>
+                    <th style="cursor: pointer;" onclick="sortTable(0)">County</th>
+                    <th style="cursor: pointer;" onclick="sortTable(1)">District</th>
                     <th style="cursor: pointer;" onclick="sortTable(2)">Seats</th>
                     <th style="cursor: pointer;" onclick="sortTable(3)">PVI</th>
                     <th style="cursor: pointer;" onclick="sortTable(4)">Trend</th>
                     {% else %}
+                    <th style="cursor: pointer;" onclick="sortTable(0)">District</th>
                     <th style="cursor: pointer;" onclick="sortTable(1)">PVI</th>
                     <th style="cursor: pointer;" onclick="sortTable(2)">Trend</th>
                     {% endif %}
@@ -46,10 +47,12 @@
             <tbody>
                 {% for d in districts %}
                 <tr onclick="goToDistrict('{{ d.district }}', '{{ d.county }}')" style="cursor: pointer;">
-                    <td><strong>{{ d.district }}</strong></td>
                     {% if office == 'State Representative' %}
                     <td>{{ d.county }}</td>
+                    <td><strong>{{ d.district }}</strong></td>
                     <td>{{ d.seats }}</td>
+                    {% else %}
+                    <td><strong>{{ d.district }}</strong></td>
                     {% endif %}
                     <td class="{% if d.pvi > 0 %}r{% else %}d{% endif %}" data-value="{{ d.pvi }}">
                         {% if d.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.pvi|abs) }}
