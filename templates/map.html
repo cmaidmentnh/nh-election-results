@@ -69,11 +69,22 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>State House District Map</h1>
-    <p class="subtitle">2024 results by district</p>
+    <h1>Election Map</h1>
+    <p class="subtitle">Interactive district and town boundaries</p>
 </div>
 
 <div class="map-controls">
+    <div>
+        <label for="layer-select">View:</label>
+        <select id="layer-select" onchange="changeLayer()">
+            <option value="house">State House Districts</option>
+            <option value="senate">State Senate Districts</option>
+            <option value="exec">Executive Council</option>
+            <option value="congress">Congressional Districts</option>
+            <option value="towns">Towns</option>
+            <option value="counties">Counties</option>
+        </select>
+    </div>
     <div>
         <label for="metric-select">Color by:</label>
         <select id="metric-select" onchange="updateColors()">
@@ -89,10 +100,74 @@
 {% block scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// Layer configurations
+const layerConfig = {
+    house: {
+        file: '/static/data/nh-house-base-districts.geojson',
+        idField: 'basehse22',
+        nameField: 'basehse22',
+        clickUrl: (props) => {
+            const code = props.basehse22;
+            const countyMap = {
+                'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
+                'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
+                'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
+            };
+            const countyCode = code.substring(0, 2);
+            const distNum = code.substring(2);
+            return `/district/${countyMap[countyCode]}/${distNum}`;
+        },
+        formatName: (props) => {
+            const code = props.basehse22;
+            const countyMap = {
+                'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
+                'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
+                'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
+            };
+            return `${countyMap[code.substring(0, 2)] || code.substring(0, 2)} ${code.substring(2)}`;
+        }
+    },
+    senate: {
+        file: '/static/data/nh-senate-districts.geojson',
+        idField: 'Senate2022',
+        nameField: 'Senate2022',
+        clickUrl: (props) => `/statewide-district/State Senator/${props.Senate2022}`,
+        formatName: (props) => `Senate District ${props.Senate2022}`
+    },
+    exec: {
+        file: '/static/data/nh-exec-council-districts.geojson',
+        idField: 'ExecCo2022',
+        nameField: 'ExecCo2022',
+        clickUrl: (props) => `/statewide-district/Executive Councilor/${props.ExecCo2022}`,
+        formatName: (props) => `Executive Council ${props.ExecCo2022}`
+    },
+    congress: {
+        file: '/static/data/nh-congress-districts.geojson',
+        idField: 'Cong2022',
+        nameField: 'Cong2022',
+        clickUrl: (props) => `/statewide-district/Representative in Congress/${props.Cong2022}`,
+        formatName: (props) => `Congressional District ${props.Cong2022}`
+    },
+    towns: {
+        file: '/static/data/nh-towns.geojson',
+        idField: 'name',
+        nameField: 'name',
+        clickUrl: (props) => `/town/${encodeURIComponent(props.name)}`,
+        formatName: (props) => props.name
+    },
+    counties: {
+        file: '/static/data/nh-counties.geojson',
+        idField: 'name',
+        nameField: 'name',
+        clickUrl: (props) => `/county/${encodeURIComponent(props.name || props.NAME)}`,
+        formatName: (props) => `${props.name || props.NAME} County`
+    }
+};
+
 // Initialize map centered on NH
 const map = L.map('map').setView([43.8, -71.5], 8);
 
-// Add base tile layer (light gray for better contrast)
+// Add base tile layer
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap, &copy; CARTO',
     maxZoom: 19
@@ -100,10 +175,11 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 
 let geojsonLayer = null;
 let electionData = {};
+let currentLayer = 'house';
+let currentConfig = layerConfig.house;
 
 // Color scale - red to blue
 function getColor(value) {
-    // value is margin: positive = R, negative = D
     if (value === null || value === undefined) return '#ccc';
     return value > 30 ? '#67000d' :
            value > 20 ? '#a50f15' :
@@ -118,8 +194,8 @@ function getColor(value) {
 }
 
 function style(feature) {
-    const districtCode = feature.properties.basehse22;
-    const data = electionData[districtCode];
+    const id = feature.properties[currentConfig.idField];
+    const data = electionData[id];
     const value = data ? data.margin : null;
 
     return {
@@ -152,19 +228,8 @@ function onEachFeature(feature, layer) {
         mouseover: highlightFeature,
         mouseout: resetHighlight,
         click: function(e) {
-            const code = feature.properties.basehse22;
-            // Parse district code (e.g., "HI35" -> Hillsborough 35)
-            const countyMap = {
-                'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
-                'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
-                'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
-            };
-            const countyCode = code.substring(0, 2);
-            const distNum = code.substring(2);
-            const county = countyMap[countyCode];
-            if (county) {
-                window.location.href = `/district/${county}/${distNum}`;
-            }
+            const url = currentConfig.clickUrl(feature.properties);
+            if (url) window.location.href = url;
         }
     });
 }
@@ -178,30 +243,23 @@ info.onAdd = function() {
 };
 info.update = function(props) {
     if (!props) {
-        this._div.innerHTML = '<h4>Hover over a district</h4>';
+        this._div.innerHTML = '<h4>Hover over an area</h4>';
         return;
     }
-    const code = props.basehse22;
-    const data = electionData[code];
+    const id = props[currentConfig.idField];
+    const data = electionData[id];
+    const name = currentConfig.formatName(props);
 
-    // Parse district code
-    const countyMap = {
-        'BE': 'Belknap', 'CA': 'Carroll', 'CH': 'Cheshire',
-        'CO': 'Coos', 'GR': 'Grafton', 'HI': 'Hillsborough',
-        'ME': 'Merrimack', 'RO': 'Rockingham', 'ST': 'Strafford', 'SU': 'Sullivan'
-    };
-    const countyCode = code.substring(0, 2);
-    const distNum = code.substring(2);
-    const county = countyMap[countyCode] || countyCode;
-
-    let html = `<h4>${county} ${distNum}</h4>`;
+    let html = `<h4>${name}</h4>`;
     if (data) {
         const marginSign = data.margin > 0 ? 'R+' : 'D+';
         const marginColor = data.margin > 0 ? '#8b0000' : '#1e3a5f';
         html += `<p>Margin: <span class="info-value" style="color:${marginColor}">${marginSign}${Math.abs(data.margin).toFixed(1)}%</span></p>`;
-        html += `<p>R: ${data.r_votes?.toLocaleString() || '?'} / D: ${data.d_votes?.toLocaleString() || '?'}</p>`;
+        if (data.r_votes !== undefined) {
+            html += `<p>R: ${data.r_votes?.toLocaleString() || '?'} / D: ${data.d_votes?.toLocaleString() || '?'}</p>`;
+        }
     } else {
-        html += '<p class="text-muted">No data</p>';
+        html += '<p class="text-muted">No election data</p>';
     }
     html += '<p style="font-size:0.75rem;color:#777;margin-top:4px;">Click to view details</p>';
     this._div.innerHTML = html;
@@ -231,23 +289,41 @@ function updateColors() {
     }
 }
 
-// Load data
-Promise.all([
-    fetch('/static/data/nh-house-districts.geojson').then(r => r.json()),
-    fetch('/api/districts-map-data').then(r => r.json())
-]).then(([geojson, data]) => {
+function changeLayer() {
+    const layerType = document.getElementById('layer-select').value;
+    currentLayer = layerType;
+    currentConfig = layerConfig[layerType];
+    loadLayer();
+}
+
+function loadLayer() {
+    // Remove existing layer
+    if (geojsonLayer) {
+        map.removeLayer(geojsonLayer);
+    }
+
+    // Load new geojson
+    fetch(currentConfig.file)
+        .then(r => r.json())
+        .then(geojson => {
+            geojsonLayer = L.geoJSON(geojson, {
+                style: style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+            map.fitBounds(geojsonLayer.getBounds());
+        })
+        .catch(err => {
+            console.error('Error loading layer:', err);
+        });
+}
+
+// Load election data and initial layer
+fetch('/api/districts-map-data').then(r => r.json()).then(data => {
     electionData = data;
-
-    geojsonLayer = L.geoJSON(geojson, {
-        style: style,
-        onEachFeature: onEachFeature
-    }).addTo(map);
-
-    // Fit map to bounds
-    map.fitBounds(geojsonLayer.getBounds());
+    loadLayer();
 }).catch(err => {
-    console.error('Error loading map data:', err);
-    document.getElementById('map').innerHTML = '<p style="padding:20px;color:#666;">Error loading map data. Please refresh.</p>';
+    console.error('Error loading election data:', err);
+    loadLayer(); // Still load the layer even without election data
 });
 </script>
 {% endblock %}

@@ -4,27 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}NH Election Results{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% block head %}{% endblock %}
 </head>
 <body>
     <header>
         <div class="container">
-            <div>
+            <div class="header-top">
                 <a href="{{ url_for('index') }}" class="site-title">New Hampshire Election Results</a>
-                <div class="site-subtitle">General Elections 2016-2024</div>
+                <div class="header-search">
+                    <input type="text" id="town-search" placeholder="Search towns..." autocomplete="off">
+                    <div id="search-results" class="search-dropdown"></div>
+                </div>
             </div>
             <nav>
-                <a href="{{ url_for('districts_browser') }}">Districts</a>
-                <a href="{{ url_for('candidates') }}">Candidates</a>
+                <a href="{{ url_for('index') }}">Home</a>
+                <div class="nav-dropdown">
+                    <a href="{{ url_for('districts_browser') }}">Districts ▾</a>
+                    <div class="nav-dropdown-content">
+                        <a href="{{ url_for('districts_browser', office='State Representative') }}">State House</a>
+                        <a href="{{ url_for('districts_browser', office='State Senator') }}">State Senate</a>
+                        <a href="{{ url_for('districts_browser', office='Executive Councilor') }}">Exec Council</a>
+                        <a href="{{ url_for('districts_browser', office='Representative in Congress') }}">Congress</a>
+                    </div>
+                </div>
+                <div class="nav-dropdown">
+                    <a href="#">Offices ▾</a>
+                    <div class="nav-dropdown-content">
+                        <a href="{{ url_for('office_detail', office_name='governor') }}">Governor</a>
+                        <a href="{{ url_for('office_detail', office_name='us-senate') }}">US Senate</a>
+                        <a href="{{ url_for('office_detail', office_name='us-house') }}">US House</a>
+                        <a href="{{ url_for('office_detail', office_name='state-senate') }}">State Senate</a>
+                        <a href="{{ url_for('office_detail', office_name='state-house') }}">State House</a>
+                    </div>
+                </div>
                 <a href="{{ url_for('election_map') }}">Map</a>
-                <a href="{{ url_for('compare') }}">Compare</a>
-                <a href="{{ url_for('turnout') }}">Turnout</a>
-                <a href="{{ url_for('incumbents') }}">Incumbents</a>
+                <a href="{{ url_for('candidates') }}">Candidates</a>
+                <div class="nav-dropdown">
+                    <a href="#">Analysis ▾</a>
+                    <div class="nav-dropdown-content">
+                        <a href="{{ url_for('compare') }}">Compare Towns</a>
+                        <a href="{{ url_for('turnout') }}">Turnout</a>
+                        <a href="{{ url_for('incumbents') }}">Incumbents</a>
+                        <a href="{{ url_for('ticket_splitting') }}">Ticket Splitting</a>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
+
+    <script>
+    // Town search autocomplete
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('town-search');
+        const resultsDiv = document.getElementById('search-results');
+        let towns = [];
+
+        // Fetch towns list
+        fetch('/api/towns').then(r => r.json()).then(data => { towns = data; });
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const matches = towns.filter(t => t.toLowerCase().includes(query)).slice(0, 8);
+            if (matches.length === 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            resultsDiv.innerHTML = matches.map(t =>
+                `<a href="/town/${encodeURIComponent(t)}">${t}</a>`
+            ).join('');
+            resultsDiv.style.display = 'block';
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const firstLink = resultsDiv.querySelector('a');
+                if (firstLink) window.location.href = firstLink.href;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.style.display = 'none';
+            }
+        });
+    });
+    </script>
 
     <main class="container">
         {% block content %}{% endblock %}
