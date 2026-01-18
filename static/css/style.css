@@ -1196,6 +1196,84 @@ footer {
 }
 
 /* ============================================
+   KEY RACES TABLE (Town Page)
+   ============================================ */
+.key-races-table {
+  width: 100%;
+}
+
+.key-races-table th.year-col {
+  text-align: center;
+  min-width: 70px;
+}
+
+.key-races-table .office-cell {
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.key-races-table .margin-cell {
+  text-align: center;
+}
+
+.key-races-table .margin-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.key-races-table .margin-badge.r {
+  background: var(--republican-soft);
+  color: var(--republican);
+}
+
+.key-races-table .margin-badge.d {
+  background: var(--democrat-soft);
+  color: var(--democrat);
+}
+
+.key-races-table .no-data {
+  color: var(--gray-400);
+}
+
+/* ============================================
+   REPRESENTATION LIST (Town Page)
+   ============================================ */
+.representation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rep-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+}
+
+.rep-office {
+  font-weight: 500;
+  color: var(--gray-700);
+  font-size: 0.9375rem;
+}
+
+.rep-district {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.rep-district:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
    COUNTY PAGE - SIDEBAR LAYOUT
    ============================================ */
 .county-layout {

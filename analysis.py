@@ -1057,6 +1057,112 @@ def get_district_pvi(office, district, county=None):
     }
 
 
+def get_town_key_races(town):
+    """
+    Get key race margins across years for a town.
+    Returns dict with margins by office and year for the grid view.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get margins by office and year
+    cursor.execute("""
+        SELECT
+            e.year,
+            o.name as office,
+            r.district,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE res.municipality = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY e.year, o.name
+        ORDER BY e.year, o.name
+    """, (town,))
+
+    results = {}
+    years = set()
+    offices_seen = set()
+
+    for row in cursor.fetchall():
+        year, office, district, r_votes, d_votes = row
+        rd_total = r_votes + d_votes
+        if rd_total > 0:
+            margin = round((r_votes - d_votes) / rd_total * 100, 1)
+        else:
+            margin = 0
+
+        if office not in results:
+            results[office] = {}
+        results[office][year] = margin
+        years.add(year)
+        offices_seen.add(office)
+
+    conn.close()
+
+    # Define key offices to show (in order)
+    key_offices = [
+        'President of the United States',
+        'Governor',
+        'United States Senator',
+        'State Senator',
+        'State Representative'
+    ]
+
+    # Filter to only key offices that have data
+    filtered = {}
+    for office in key_offices:
+        if office in results:
+            filtered[office] = results[office]
+
+    return {
+        'by_office': filtered,
+        'years': sorted(years, reverse=True)
+    }
+
+
+def get_town_representation(town):
+    """
+    Get the current districts this town is in (most recent year).
+    Returns list of district assignments.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get districts for this town from the most recent year
+    cursor.execute("""
+        SELECT DISTINCT
+            o.name as office,
+            r.district,
+            r.county
+        FROM results res
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE res.municipality = ?
+        AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+        AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress')
+        ORDER BY o.name
+    """, (town,))
+
+    districts = []
+    for row in cursor.fetchall():
+        office, district, county = row
+        districts.append({
+            'office': office,
+            'district': district,
+            'county': county
+        })
+
+    conn.close()
+    return districts
+
+
 def get_all_districts_with_pvi(office):
     """
     Get all districts for an office with their PVI data.

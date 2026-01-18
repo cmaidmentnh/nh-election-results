@@ -77,11 +77,17 @@ def town(name):
     # Get PVI data
     pvi = analysis.get_town_pvi(name)
 
+    # Get key races grid and representation
+    key_races = analysis.get_town_key_races(name)
+    representation = analysis.get_town_representation(name)
+
     return render_template('town.html',
                          summary=summary,
                          races=races,
                          comparison=comparison,
-                         pvi=pvi)
+                         pvi=pvi,
+                         key_races=key_races,
+                         representation=representation)
 
 
 @app.route('/town/<name>/<int:year>')

@@ -14,16 +14,6 @@
     </div>
 </div>
 
-<!-- Year Navigation -->
-<div class="year-nav" style="margin-bottom: 24px;">
-    <span class="year-link active">{{ summary.latest_year }}</span>
-    {% for year in summary.years|reverse %}
-    {% if year != summary.latest_year %}
-    <a href="{{ url_for('town_year', name=summary.name, year=year) }}" class="year-link">{{ year }}</a>
-    {% endif %}
-    {% endfor %}
-</div>
-
 <!-- Key Metrics Row -->
 <div class="metrics-row">
     <div class="metric">
@@ -76,6 +66,77 @@
 </div>
 {% endif %}
 
+<!-- Key Races Grid -->
+{% if key_races and key_races.by_office %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Key Races: How {{ summary.name }} Voted</span>
+    </div>
+    <div class="table-container">
+        <table class="key-races-table">
+            <thead>
+                <tr>
+                    <th>Race</th>
+                    {% for year in key_races.years %}
+                    <th class="year-col">{{ year }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for office, margins in key_races.by_office.items() %}
+                <tr>
+                    <td class="office-cell">
+                        {% if office == 'President of the United States' %}President
+                        {% elif office == 'United States Senator' %}US Senate
+                        {% elif office == 'State Senator' %}State Senate
+                        {% elif office == 'State Representative' %}State House
+                        {% else %}{{ office }}{% endif %}
+                    </td>
+                    {% for year in key_races.years %}
+                    <td class="margin-cell">
+                        {% if year in margins %}
+                        {% set m = margins[year] %}
+                        <span class="margin-badge {% if m > 0 %}r{% else %}d{% endif %}">
+                            {% if m > 0 %}R+{{ "%.0f"|format(m) }}{% else %}D+{{ "%.0f"|format(m|abs) }}{% endif %}
+                        </span>
+                        {% else %}
+                        <span class="no-data">-</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Current Representation -->
+{% if representation %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Current Districts</span>
+    </div>
+    <div class="representation-list">
+        {% for d in representation %}
+        <div class="rep-item">
+            <span class="rep-office">
+                {% if d.office == 'State Representative' %}State House
+                {% elif d.office == 'State Senator' %}State Senate
+                {% elif d.office == 'Executive Councilor' %}Exec Council
+                {% elif d.office == 'Representative in Congress' %}US Congress
+                {% else %}{{ d.office }}{% endif %}
+            </span>
+            <a href="{% if d.office == 'State Representative' %}{{ url_for('district', county=d.county, district=d.district) }}{% else %}{{ url_for('statewide_district', office=d.office, district=d.district) }}{% endif %}" class="rep-district">
+                {% if d.county %}{{ d.county }} {% endif %}District {{ d.district }}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% if summary.ticket_splits %}
 <!-- Ticket Splitting Alert -->
 <div class="card alert-card" style="margin-bottom: 24px;">
@@ -99,38 +160,20 @@
     <div class="chart-note">
         PVI = Town performance vs statewide average (competitive races only). Positive = more Republican than state, Negative = more Democratic.
     </div>
-    <!-- PVI by Year Table -->
-    <div class="pvi-table" style="margin-top: 16px;">
-        <table style="width: 100%; font-size: 14px;">
-            <thead>
-                <tr>
-                    <th>Year</th>
-                    <th>PVI</th>
-                    <th>Town R%</th>
-                    <th>State R%</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for year in pvi.years|reverse %}
-                {% if year in pvi.pvi_by_year %}
-                {% set p = pvi.pvi_by_year[year] %}
-                <tr>
-                    <td>{{ year }}</td>
-                    <td class="{% if p.pvi > 0 %}r{% else %}d{% endif %}">
-                        {% if p.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(p.pvi|abs) }}
-                    </td>
-                    <td>{{ p.town_r_pct }}%</td>
-                    <td>{{ p.state_r_pct }}%</td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
 </div>
 
 <!-- Race Results for Latest Year -->
 <h2 class="section-title">{{ summary.latest_year }} Race Results</h2>
+
+<!-- Year Navigation -->
+<div class="year-nav" style="margin-bottom: 24px;">
+    <span class="year-link active">{{ summary.latest_year }}</span>
+    {% for year in summary.years|reverse %}
+    {% if year != summary.latest_year %}
+    <a href="{{ url_for('town_year', name=summary.name, year=year) }}" class="year-link">{{ year }}</a>
+    {% endif %}
+    {% endfor %}
+</div>
 
 {% for race in races %}
 <div class="card race-card" style="margin-bottom: 16px;">
