@@ -3,48 +3,97 @@
 {% block title %}{{ info.office }} District {{ info.district }} - NH Election Results{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>{{ info.office }} District {{ info.district }}</h1>
-</div>
-
-<!-- Towns in District -->
-<div class="card" style="margin-bottom: 32px;">
-    <div class="card-header">
-        <span class="card-title">Towns in this District ({{ info.towns|length }})</span>
+<!-- District Header -->
+<div class="town-header">
+    <div class="town-info">
+        <h1>{% if info.office == 'State Senator' %}State Senate{% elif info.office == 'Executive Councilor' %}Executive Council{% elif info.office == 'Representative in Congress' %}US Congress{% else %}{{ info.office }}{% endif %} District {{ info.district }}</h1>
+        <p class="subtitle">{{ info.towns|length }} towns</p>
     </div>
-    <div class="town-list" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
-        {% for town in info.towns %}
-        <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
-        {% endfor %}
+    <div class="town-lean {% if 'R' in lean %}republican{% elif 'D' in lean %}democrat{% else %}swing{% endif %}">
+        {{ lean }}
     </div>
 </div>
 
-<!-- Results by Year -->
-{% for year in by_year.keys()|sort(reverse=true) %}
-{% set year_data = by_year[year] %}
-<div class="card" style="margin-bottom: 16px;">
-    <div class="card-header">
-        <span class="card-title">{{ year }}</span>
-        <span style="font-size: 1.1rem;">
-            <span class="r" style="font-weight: 600;">{{ year_data.r_seats }}R</span>
-            -
-            <span class="d" style="font-weight: 600;">{{ year_data.d_seats }}D</span>
-        </span>
+<!-- Key Metrics -->
+<div class="metrics-row" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="metric">
+        <div class="metric-value {% if pvi.current_pvi > 0 %}r{% else %}d{% endif %}">
+            {% if pvi.current_pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(pvi.current_pvi|abs) }}
+        </div>
+        <div class="metric-label">PVI</div>
     </div>
+    <div class="metric">
+        <div class="metric-value {% if pvi.trend > 0 %}r{% else %}d{% endif %}">
+            {% if pvi.trend > 0 %}+{% endif %}{{ "%.1f"|format(pvi.trend) }}
+        </div>
+        <div class="metric-label">Trend</div>
+    </div>
+    {% if by_year %}
+    {% set latest = by_year.keys()|list|sort|last %}
+    <div class="metric">
+        <div class="metric-value">
+            <span class="r">{{ by_year[latest].r_seats }}</span>-<span class="d">{{ by_year[latest].d_seats }}</span>
+        </div>
+        <div class="metric-label">{{ latest }} Result</div>
+    </div>
+    {% endif %}
+</div>
 
-    <div class="candidates-list">
-        {% for candidate in year_data.candidates %}
-        <div class="candidate-item {% if candidate.is_winner %}winner{% endif %}">
-            <span class="candidate-name">
-                {{ candidate.name }}
-                {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
-            </span>
-            <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
-            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+<!-- Two Column Layout -->
+<div class="county-layout">
+    <!-- Main Content -->
+    <div class="county-main">
+        <!-- Election History -->
+        <h2 class="section-title">Election History</h2>
+
+        {% for year in by_year.keys()|sort(reverse=true) %}
+        {% set data = by_year[year] %}
+        <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span class="year-badge">{{ year }}</span>
+                    <span style="font-weight: 600;">
+                        {% if data.r_seats > data.d_seats %}
+                        <span class="r">R Win</span>
+                        {% elif data.d_seats > data.r_seats %}
+                        <span class="d">D Win</span>
+                        {% else %}
+                        Tie
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="race-margin {% if data.margin > 0 %}r{% else %}d{% endif %}">
+                    {% if data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(data.margin|abs) }}%
+                </div>
+            </div>
+
+            <div class="candidates-list">
+                {% for candidate in data.candidates %}
+                <div class="candidate-item {% if candidate.is_winner %}winner{% endif %}">
+                    <span class="candidate-name">
+                        {{ candidate.name }}
+                        {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
+                    </span>
+                    <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
+                    <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
         {% endfor %}
     </div>
+
+    <!-- Towns Sidebar -->
+    <aside class="county-sidebar">
+        <div class="sidebar-card">
+            <h3 class="sidebar-title">Towns ({{ info.towns|length }})</h3>
+            <ul class="town-sidebar-list">
+                {% for town in info.towns %}
+                <li><a href="{{ url_for('town', name=town) }}">{{ town }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </aside>
 </div>
-{% endfor %}
 
 {% endblock %}

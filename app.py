@@ -114,13 +114,16 @@ def district(county, district):
     info = queries.get_district_info(county, district, office)
     results = queries.get_district_results(county, district, office)
 
+    # Get PVI data for competitiveness
+    pvi = analysis.get_district_pvi(office, district, county)
+    lean = analysis.classify_lean(pvi['current_pvi'])
+
     # Group by year and calculate insights
     by_year = {}
     for r in results:
         year = r['year']
         if year not in by_year:
-            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0}
-        # Map query keys to template keys
+            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'r_votes': 0, 'd_votes': 0}
         candidate = {
             'name': r['candidate'],
             'party': r['party'],
@@ -128,15 +131,29 @@ def district(county, district):
             'is_winner': r['is_winner']
         }
         by_year[year]['candidates'].append(candidate)
+        if r['party'] == 'Republican':
+            by_year[year]['r_votes'] += r['total_votes']
+        elif r['party'] == 'Democratic':
+            by_year[year]['d_votes'] += r['total_votes']
         if r['is_winner']:
             if r['party'] == 'Republican':
                 by_year[year]['r_seats'] += 1
             elif r['party'] == 'Democratic':
                 by_year[year]['d_seats'] += 1
 
+    # Calculate margins for each year
+    for year, data in by_year.items():
+        total = data['r_votes'] + data['d_votes']
+        if total > 0:
+            data['margin'] = round((data['r_votes'] - data['d_votes']) / total * 100, 1)
+        else:
+            data['margin'] = 0
+
     return render_template('district.html',
                          info=info,
-                         by_year=by_year)
+                         by_year=by_year,
+                         pvi=pvi,
+                         lean=lean)
 
 
 @app.route('/county/<name>')
@@ -276,22 +293,40 @@ def statewide_district(office, district):
         'towns': queries.get_towns_in_statewide_district(office, district)
     }
 
+    # Get PVI data for competitiveness
+    pvi = analysis.get_district_pvi(office, district)
+    lean = analysis.classify_lean(pvi['current_pvi'])
+
     # Group by year
     by_year = {}
     for r in results:
         year = r['year']
         if year not in by_year:
-            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0}
+            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'r_votes': 0, 'd_votes': 0}
         by_year[year]['candidates'].append(r)
+        if r['party'] == 'Republican':
+            by_year[year]['r_votes'] += r['votes']
+        elif r['party'] == 'Democratic':
+            by_year[year]['d_votes'] += r['votes']
         if r['is_winner']:
             if r['party'] == 'Republican':
                 by_year[year]['r_seats'] += 1
             elif r['party'] == 'Democratic':
                 by_year[year]['d_seats'] += 1
 
+    # Calculate margins for each year
+    for year, data in by_year.items():
+        total = data['r_votes'] + data['d_votes']
+        if total > 0:
+            data['margin'] = round((data['r_votes'] - data['d_votes']) / total * 100, 1)
+        else:
+            data['margin'] = 0
+
     return render_template('statewide_district.html',
                          info=info,
-                         by_year=by_year)
+                         by_year=by_year,
+                         pvi=pvi,
+                         lean=lean)
 
 
 if __name__ == '__main__':
