@@ -1013,3 +1013,157 @@ footer {
 .mb-4 { margin-bottom: 16px; }
 .mt-6 { margin-top: 24px; }
 .mb-6 { margin-bottom: 24px; }
+
+/* ============================================
+   COUNTY PAGE - SIDEBAR LAYOUT
+   ============================================ */
+.county-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 32px;
+  margin-top: 24px;
+}
+
+.county-main {
+  min-width: 0;
+}
+
+.county-sidebar {
+  position: sticky;
+  top: 88px;
+  height: fit-content;
+  max-height: calc(100vh - 120px);
+}
+
+.sidebar-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.town-sidebar-list {
+  list-style: none;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.town-sidebar-list li {
+  margin-bottom: 2px;
+}
+
+.town-sidebar-list a {
+  display: block;
+  padding: 8px 12px;
+  color: var(--gray-700);
+  text-decoration: none;
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+
+.town-sidebar-list a:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+/* Race Grid */
+.races-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.race-mini-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.race-mini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.race-mini-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  line-height: 1.3;
+}
+
+.race-mini-district {
+  display: inline-block;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.race-mini-margin {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.race-mini-votes {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.race-mini-votes .r {
+  color: var(--republican);
+  font-weight: 500;
+}
+
+.race-mini-votes .d {
+  color: var(--democrat);
+  font-weight: 500;
+}
+
+.race-mini-votes .separator {
+  color: var(--gray-400);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .county-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .county-sidebar {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+
+  .town-sidebar-list {
+    max-height: 200px;
+  }
+
+  .races-grid {
+    grid-template-columns: 1fr;
+  }
+}

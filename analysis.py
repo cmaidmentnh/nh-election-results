@@ -424,7 +424,7 @@ def compare_years(town, year1, year2):
 
 
 def get_county_summary(county):
-    """Get summary of a county's voting patterns, towns, and results by office."""
+    """Get summary of a county's voting patterns, towns, and results by race."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -444,13 +444,14 @@ def get_county_summary(county):
         conn.close()
         return None
 
-    # Get results by year and office for municipalities in this county
-    # This includes statewide races (POTUS, Gov, etc.) by filtering on municipality
     placeholders = ','.join('?' * len(towns))
+
+    # Get individual race results (with district) for these towns
     cursor.execute(f"""
         SELECT
             e.year,
             o.name as office,
+            r.district,
             SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
             SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
             SUM(res.votes) as total_votes
@@ -462,40 +463,71 @@ def get_county_summary(county):
         WHERE res.municipality IN ({placeholders})
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY e.year, o.name
-        ORDER BY e.year, o.name
+        GROUP BY e.year, o.name, r.district
+        ORDER BY e.year DESC, o.name, r.district
     """, towns)
 
-    # Organize by year and office
-    by_year_office = defaultdict(lambda: defaultdict(dict))
+    # Organize races by year
+    races_by_year = defaultdict(list)
     years_set = set()
-    offices_set = set()
+    presidential_results = []
 
     for row in cursor.fetchall():
-        year, office, r_votes, d_votes, total = row
+        year, office, district, r_votes, d_votes, total = row
         years_set.add(year)
-        offices_set.add(office)
         rd_total = r_votes + d_votes
         margin = ((r_votes - d_votes) / rd_total * 100) if rd_total > 0 else 0
-        by_year_office[year][office] = {
+
+        race_data = {
+            'office': office,
+            'district': district,
             'r_votes': r_votes,
             'd_votes': d_votes,
             'total_votes': total,
             'margin': round(margin, 1)
         }
 
-    # Also get aggregate totals by year
+        # Separate presidential results for the special section
+        if office == 'President of the United States':
+            race_data['year'] = year
+            presidential_results.append(race_data)
+        else:
+            races_by_year[year].append(race_data)
+
+    # Sort races within each year by office importance
+    for year in races_by_year:
+        races_by_year[year].sort(key=lambda x: (get_office_sort_key(x['office']), x['district'] or ''))
+
+    # Sort presidential results by year descending
+    presidential_results.sort(key=lambda x: -x['year'])
+
+    # Get aggregate totals by year (for overall margin)
+    cursor.execute(f"""
+        SELECT
+            e.year,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        WHERE res.municipality IN ({placeholders})
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY e.year
+        ORDER BY e.year
+    """, towns)
+
     margins_by_year = {}
-    for year in years_set:
-        total_r = sum(off.get('r_votes', 0) for off in by_year_office[year].values())
-        total_d = sum(off.get('d_votes', 0) for off in by_year_office[year].values())
-        total_all = sum(off.get('total_votes', 0) for off in by_year_office[year].values())
-        rd_total = total_r + total_d
-        margin = ((total_r - total_d) / rd_total * 100) if rd_total > 0 else 0
+    for row in cursor.fetchall():
+        year, r_votes, d_votes, total = row
+        rd_total = r_votes + d_votes
+        margin = ((r_votes - d_votes) / rd_total * 100) if rd_total > 0 else 0
         margins_by_year[year] = {
-            'r_votes': total_r,
-            'd_votes': total_d,
-            'total_votes': total_all,
+            'r_votes': r_votes,
+            'd_votes': d_votes,
+            'total_votes': total,
             'margin': round(margin, 1)
         }
 
@@ -504,9 +536,6 @@ def get_county_summary(county):
 
     if not years:
         return None
-
-    # Sort offices by importance
-    sorted_offices = sorted(offices_set, key=get_office_sort_key)
 
     # Calculate trend
     if len(years) >= 2:
@@ -537,8 +566,8 @@ def get_county_summary(county):
         'latest_year': years[-1],
         'latest_margin': latest_margin,
         'margins_by_year': margins_by_year,
-        'by_year_office': dict(by_year_office),
-        'offices': sorted_offices,
+        'races_by_year': dict(races_by_year),
+        'presidential': presidential_results,
         'years': years,
         'trend': round(trend, 1)
     }

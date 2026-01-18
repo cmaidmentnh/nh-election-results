@@ -34,81 +34,89 @@
     </div>
 </div>
 
-<!-- Results by Office for Latest Year -->
-<h2 class="section-title">{{ summary.latest_year }} Results by Office</h2>
-<div class="card" style="margin-bottom: 24px;">
-    <table style="width: 100%;">
-        <thead>
-            <tr>
-                <th>Office</th>
-                <th>Margin</th>
-                <th>R Votes</th>
-                <th>D Votes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for office in summary.offices %}
-            {% if office in summary.by_year_office[summary.latest_year] %}
-            {% set o = summary.by_year_office[summary.latest_year][office] %}
-            <tr>
-                <td><strong>{{ office }}</strong></td>
-                <td class="{% if o.margin > 0 %}r{% else %}d{% endif %}">
-                    {% if o.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(o.margin|abs) }}%
-                </td>
-                <td>{{ "{:,}".format(o.r_votes) }}</td>
-                <td>{{ "{:,}".format(o.d_votes) }}</td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<!-- Two Column Layout -->
+<div class="county-layout">
+    <!-- Main Content -->
+    <div class="county-main">
+        <!-- Presidential Results (All Years) -->
+        {% if summary.presidential %}
+        <div class="card highlight-card" style="margin-bottom: 24px;">
+            <div class="card-header">
+                <span class="card-title">Presidential Results</span>
+            </div>
+            <table style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Margin</th>
+                        <th>R Votes</th>
+                        <th>D Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for race in summary.presidential %}
+                    <tr>
+                        <td><strong>{{ race.year }}</strong></td>
+                        <td class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                        </td>
+                        <td>{{ "{:,}".format(race.r_votes) }}</td>
+                        <td>{{ "{:,}".format(race.d_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
 
-<!-- Historical Results -->
-<h2 class="section-title">Historical Results by Year</h2>
-{% for year in summary.years|reverse %}
-<div class="card" style="margin-bottom: 16px;">
-    <div class="card-header">
-        <span class="card-title">{{ year }}</span>
-        {% set m = summary.margins_by_year[year] %}
-        <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}" style="font-weight: 600;">
-            {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
-        </span>
+        <!-- Results by Year -->
+        {% for year in summary.years|reverse %}
+        <div class="year-section">
+            <div class="year-header">
+                <span class="year-badge">{{ year }}</span>
+                {% set m = summary.margins_by_year[year] %}
+                <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}" style="font-weight: 600;">
+                    {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%
+                </span>
+            </div>
+
+            <div class="races-grid">
+                {% for race in summary.races_by_year.get(year, []) %}
+                <div class="race-mini-card">
+                    <div class="race-mini-header">
+                        <span class="race-mini-name">
+                            {{ race.office }}
+                            {% if race.district %}
+                            <span class="race-mini-district">{{ race.district }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="race-mini-margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                        </span>
+                    </div>
+                    <div class="race-mini-votes">
+                        <span class="r">{{ "{:,}".format(race.r_votes) }}</span>
+                        <span class="separator">vs</span>
+                        <span class="d">{{ "{:,}".format(race.d_votes) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    <table style="width: 100%; font-size: 14px;">
-        <thead>
-            <tr>
-                <th>Office</th>
-                <th>Margin</th>
-                <th>R Votes</th>
-                <th>D Votes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for office in summary.offices %}
-            {% if office in summary.by_year_office[year] %}
-            {% set o = summary.by_year_office[year][office] %}
-            <tr>
-                <td>{{ office }}</td>
-                <td class="{% if o.margin > 0 %}r{% else %}d{% endif %}">
-                    {% if o.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(o.margin|abs) }}%
-                </td>
-                <td>{{ "{:,}".format(o.r_votes) }}</td>
-                <td>{{ "{:,}".format(o.d_votes) }}</td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endfor %}
 
-<!-- Towns in County -->
-<h2 class="section-title">Towns in {{ summary.name }} County</h2>
-<div class="town-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
-    {% for town in summary.towns %}
-    <a href="{{ url_for('town', name=town) }}" class="town-chip">{{ town }}</a>
-    {% endfor %}
+    <!-- Towns Sidebar -->
+    <aside class="county-sidebar">
+        <div class="sidebar-card">
+            <h3 class="sidebar-title">Towns</h3>
+            <ul class="town-sidebar-list">
+                {% for town in summary.towns %}
+                <li><a href="{{ url_for('town', name=town) }}">{{ town }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </aside>
 </div>
 
 {% endblock %}
