@@ -447,10 +447,21 @@ function loadLayer() {
         map.removeLayer(geojsonLayer);
     }
 
+    if (!currentConfig || !currentConfig.file) {
+        console.error('No config or file for layer:', currentLayer, 'year:', currentYear);
+        return;
+    }
+
+    console.log('Loading layer:', currentConfig.file);
+
     // Load new geojson
     fetch(currentConfig.file)
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        })
         .then(geojson => {
+            console.log('Loaded', geojson.features.length, 'features');
             geojsonLayer = L.geoJSON(geojson, {
                 style: style,
                 onEachFeature: onEachFeature
@@ -458,7 +469,7 @@ function loadLayer() {
             // Don't auto-fit bounds - use fixed view for consistent zoom
         })
         .catch(err => {
-            console.error('Error loading layer:', err);
+            console.error('Error loading layer:', currentConfig.file, err);
         });
 }
 
