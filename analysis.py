@@ -1277,76 +1277,6 @@ def get_turnout_analysis():
     }
 
 
-def get_ticket_splitting_analysis():
-    """
-    Find towns where voters split tickets between top-of-ticket and down-ballot.
-    """
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    # Get results by town, year, and office
-    cursor.execute("""
-        SELECT
-            res.municipality as town,
-            e.year,
-            o.name as office,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        AND res.municipality NOT GLOB '[0-9]*'
-        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
-        GROUP BY res.municipality, e.year, o.name
-    """)
-
-    by_town_year = defaultdict(lambda: defaultdict(dict))
-    for row in cursor.fetchall():
-        town, year, office, r_votes, d_votes = row
-        winner = 'R' if r_votes > d_votes else 'D' if d_votes > r_votes else 'Tie'
-        margin = ((r_votes - d_votes) / (r_votes + d_votes) * 100) if (r_votes + d_votes) > 0 else 0
-        by_town_year[town][year][office] = {'winner': winner, 'margin': round(margin, 1)}
-
-    conn.close()
-
-    # Find splits
-    splits = []
-    for town, by_year in by_town_year.items():
-        for year, by_office in by_year.items():
-            # Check President vs State Rep
-            pres = by_office.get('President of the United States')
-            state_rep = by_office.get('State Representative')
-
-            if pres and state_rep and pres['winner'] != state_rep['winner'] and pres['winner'] != 'Tie' and state_rep['winner'] != 'Tie':
-                splits.append({
-                    'town': town,
-                    'year': year,
-                    'president': pres['winner'],
-                    'president_margin': pres['margin'],
-                    'state_rep': state_rep['winner'],
-                    'state_rep_margin': state_rep['margin'],
-                    'split_magnitude': abs(pres['margin']) + abs(state_rep['margin'])
-                })
-
-    # Sort by split magnitude (biggest splits first)
-    splits.sort(key=lambda x: (-x['year'], -x['split_magnitude']))
-
-    # Group by year
-    by_year = defaultdict(list)
-    for s in splits:
-        by_year[s['year']].append(s)
-
-    return {
-        'splits': splits[:50],  # Top 50
-        'by_year': dict(by_year),
-        'total_splits': len(splits)
-    }
-
-
 def get_redistricting_impact():
     """
     Analyze impact of 2022 redistricting on districts.
@@ -1516,18 +1446,17 @@ def get_incumbent_analysis():
     # Get all candidate races with win/loss status
     # Group by name + party + town to identify the same person
     cursor.execute("""
-        WITH candidate_races AS (
+        WITH candidate_totals AS (
             SELECT
                 c.name as candidate,
                 c.party,
                 e.year,
                 o.name as office,
+                r.id as race_id,
                 r.district,
                 r.county,
-                res.town,
                 r.seats,
-                res.votes as total_votes,
-                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) OVER (PARTITION BY res.candidate_id, r.id) DESC) as rank
+                SUM(res.votes) as total_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
@@ -1536,6 +1465,21 @@ def get_incumbent_analysis():
             WHERE e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Governor')
+            GROUP BY c.name, c.party, e.year, o.name, r.id, r.district, r.county, r.seats
+        ),
+        candidate_ranked AS (
+            SELECT
+                candidate,
+                party,
+                year,
+                office,
+                race_id,
+                district,
+                county,
+                seats,
+                total_votes,
+                RANK() OVER (PARTITION BY race_id ORDER BY total_votes DESC) as rank
+            FROM candidate_totals
         )
         SELECT
             candidate,
@@ -1544,28 +1488,25 @@ def get_incumbent_analysis():
             office,
             district,
             county,
-            town,
-            SUM(total_votes) as votes,
-            MAX(rank <= seats) as won
-        FROM candidate_races
-        GROUP BY candidate, party, year, office, district, county, town
-        ORDER BY candidate, party, town, year
+            total_votes as votes,
+            rank <= seats as won
+        FROM candidate_ranked
+        ORDER BY candidate, party, year
     """)
 
-    # Group by candidate + party + town (same person across years)
-    # This identifies the same person by name + party + home town
+    # Group by candidate + party (same person across years)
+    # This identifies the same person by name + party
     person_races = defaultdict(list)
     for row in cursor.fetchall():
-        candidate, party, year, office, district, county, town, votes, won = row
-        # Key: person identified by name + party + town
-        key = (candidate, party or '', town or '')
+        candidate, party, year, office, district, county, votes, won = row
+        # Key: person identified by name + party
+        key = (candidate, party or '')
         person_races[key].append({
             'party': party,
             'year': year,
             'office': office,
             'district': district,
             'county': county,
-            'town': town,
             'votes': votes,
             'won': bool(won)
         })
@@ -1579,7 +1520,7 @@ def get_incumbent_analysis():
 
     repeat_candidates = []
 
-    for (name, party, town), races in person_races.items():
+    for (name, party), races in person_races.items():
         if len(races) < 2:
             continue
 
@@ -1627,7 +1568,6 @@ def get_incumbent_analysis():
         repeat_candidates.append({
             'name': name,
             'party': party,
-            'town': town,
             'office': most_recent_race['office'],
             'district': most_recent_race['district'],
             'county': most_recent_race['county'],
@@ -3148,9 +3088,9 @@ def get_ticket_splitting_analysis():
         data[year][muni][office][p] += votes
 
     results = {
-        'by_year': {},
-        'split_towns': [],
-        'comparison_pairs': []
+        'by_year': {},  # Old format: year -> list of splits (for ticket_splitting.html)
+        'split_towns': [],  # New format: flat list of all splits (for deep_analysis.html)
+        'total_splits': 0
     }
 
     # Compare Governor vs State House in each town
@@ -3160,6 +3100,8 @@ def get_ticket_splitting_analysis():
         ('President of the United States', 'State Representative'),
         ('President of the United States', 'Governor')
     ]
+
+    all_pres_rep_splits = []  # Specifically President vs State Rep for old template
 
     for year in sorted(data.keys()):
         year_splits = []
@@ -3190,14 +3132,37 @@ def get_ticket_splitting_analysis():
                                 'split': round(split, 1)
                             })
 
-        results['by_year'][year] = {
-            'num_split_towns': len(set(s['town'] for s in year_splits)),
-            'avg_split': round(sum(abs(s['split']) for s in year_splits) / len(year_splits), 1) if year_splits else 0
-        }
+                            # Old format for President vs State Rep specifically
+                            if office1 == 'President of the United States' and office2 == 'State Representative':
+                                winner1 = 'R' if margin1 > 0 else 'D'
+                                winner2 = 'R' if margin2 > 0 else 'D'
+                                if winner1 != winner2:  # Actually split ticket
+                                    all_pres_rep_splits.append({
+                                        'year': year,
+                                        'town': muni,
+                                        'president': winner1,
+                                        'president_margin': round(margin1, 1),
+                                        'state_rep': winner2,
+                                        'state_rep_margin': round(margin2, 1),
+                                        'split_magnitude': abs(margin1) + abs(margin2)
+                                    })
 
         results['split_towns'].extend(year_splits)
 
-    # Sort by largest splits
+    # Group President vs State Rep splits by year (old format for ticket_splitting.html)
+    for s in all_pres_rep_splits:
+        year = s['year']
+        if year not in results['by_year']:
+            results['by_year'][year] = []
+        results['by_year'][year].append(s)
+
+    # Sort each year's splits by magnitude
+    for year in results['by_year']:
+        results['by_year'][year].sort(key=lambda x: -x['split_magnitude'])
+
+    results['total_splits'] = len(all_pres_rep_splits)
+
+    # Sort split_towns by largest splits (for deep_analysis.html)
     results['split_towns'].sort(key=lambda x: -abs(x['split']))
     results['split_towns'] = results['split_towns'][:100]
 
