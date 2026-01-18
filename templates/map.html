@@ -234,15 +234,23 @@ function getColor(value) {
            '#023858';
 }
 
+// Normalize district code - strip leading zeros from numeric part (HI05 -> HI5)
+function normalizeDistrictCode(code) {
+    if (!code) return code;
+    const match = code.match(/^([A-Z]+)0*(\d+)$/);
+    return match ? match[1] + match[2] : code;
+}
+
 function style(feature) {
     const id = feature.properties[currentConfig.idField];
     // Skip blank/null IDs
     if (!id || (typeof id === 'string' && id.trim() === '')) {
         return { fillColor: '#ccc', weight: 1, opacity: 0.5, color: '#999', fillOpacity: 0.3 };
     }
-    // Build the data key with prefix if specified
+    // Build the data key with prefix if specified, normalizing district codes
     const prefix = currentConfig.dataKeyPrefix || '';
-    const dataKey = prefix + id;
+    const normalizedId = normalizeDistrictCode(id);
+    const dataKey = prefix + normalizedId;
     // Try both string and numeric lookup since JSON keys are strings
     const data = electionData[dataKey] || electionData[String(dataKey)];
 
@@ -299,9 +307,10 @@ info.update = function(props) {
         return;
     }
     const id = props[currentConfig.idField];
-    // Build the data key with prefix if specified
+    // Build the data key with prefix if specified, normalizing district codes
     const prefix = currentConfig.dataKeyPrefix || '';
-    const dataKey = prefix + id;
+    const normalizedId = normalizeDistrictCode(id);
+    const dataKey = prefix + normalizedId;
     const data = electionData[dataKey] || electionData[String(dataKey)];
     const name = currentConfig.formatName(props);
 
