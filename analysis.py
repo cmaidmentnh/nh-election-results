@@ -435,7 +435,7 @@ def get_county_summary(county):
         JOIN races r ON res.race_id = r.id
         WHERE r.county = ?
         AND res.municipality NOT GLOB '[0-9]*'
-        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
         ORDER BY res.municipality
     """, (county,))
     towns = [row[0] for row in cursor.fetchall()]
@@ -711,7 +711,7 @@ def get_towns_in_district(office, district, county=None):
             AND r.county = ?
             AND e.year = (SELECT MAX(e2.year) FROM elections e2)
             AND res.municipality NOT GLOB '[0-9]*'
-            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
             ORDER BY res.municipality
         """, (office, district, county))
     else:
@@ -726,7 +726,7 @@ def get_towns_in_district(office, district, county=None):
             AND r.district = ?
             AND e.year = (SELECT MAX(e2.year) FROM elections e2)
             AND res.municipality NOT GLOB '[0-9]*'
-            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
             ORDER BY res.municipality
         """, (office, district))
 
