@@ -462,5 +462,20 @@ def api_export(data_type):
     return jsonify(data)
 
 
+@app.route('/deep-analysis')
+def deep_analysis():
+    """Deep analysis page with undervotes, turnout, ticket splitting, bellwethers."""
+    undervote = analysis.get_undervote_analysis()
+    turnout = analysis.get_turnout_patterns()
+    splitting = analysis.get_ticket_splitting_analysis()
+    bellwether = analysis.get_bellwether_analysis()
+
+    return render_template('deep_analysis.html',
+                         undervote=undervote,
+                         turnout=turnout,
+                         splitting=splitting,
+                         bellwether=bellwether)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

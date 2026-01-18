@@ -2508,3 +2508,431 @@ def get_all_districts_with_pvi(office):
     districts.sort(key=lambda x: -x['pvi'])
 
     return districts
+
+
+# ============== DEEP ANALYSIS FUNCTIONS ==============
+
+def get_undervote_analysis():
+    """
+    Analyze undervoting patterns - where voters skip downballot races.
+    Compares total votes in top-of-ticket races vs downballot races.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get total votes by office and year for each municipality
+    cursor.execute("""
+        SELECT
+            e.year,
+            o.name as office,
+            res.municipality,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.municipality IS NOT NULL
+        AND res.municipality != ''
+        AND res.municipality NOT GLOB '[0-9]*'
+        GROUP BY e.year, o.name, res.municipality
+    """)
+
+    # Organize data by year and municipality
+    data = defaultdict(lambda: defaultdict(dict))
+    for year, office, muni, votes in cursor.fetchall():
+        # Normalize ward names
+        if ' Ward ' in muni:
+            muni = muni[:muni.index(' Ward ')]
+        if muni not in data[year]:
+            data[year][muni] = {}
+        if office not in data[year][muni]:
+            data[year][muni][office] = 0
+        data[year][muni][office] += votes
+
+    # Calculate undervote rates by comparing to top-of-ticket
+    results = {'by_year': {}, 'by_town': {}, 'worst_undervote': []}
+
+    top_ticket = ['President of the United States', 'Governor']
+    downballot = ['State Representative', 'State Senator', 'Executive Councilor']
+
+    for year in sorted(data.keys()):
+        year_stats = {'towns': 0, 'avg_undervote': 0, 'by_office': {}}
+        town_undervotes = []
+
+        for muni, offices in data[year].items():
+            # Find top-of-ticket votes
+            top_votes = max(offices.get(t, 0) for t in top_ticket)
+            if top_votes == 0:
+                continue
+
+            # Calculate undervote for each downballot office
+            for office in downballot:
+                if office in offices:
+                    office_votes = offices[office]
+                    undervote_pct = ((top_votes - office_votes) / top_votes) * 100
+                    town_undervotes.append({
+                        'year': year,
+                        'town': muni,
+                        'office': office,
+                        'top_votes': top_votes,
+                        'office_votes': office_votes,
+                        'undervote_pct': round(undervote_pct, 1)
+                    })
+
+                    if office not in year_stats['by_office']:
+                        year_stats['by_office'][office] = []
+                    year_stats['by_office'][office].append(undervote_pct)
+
+        # Calculate averages for the year
+        for office in year_stats['by_office']:
+            vals = year_stats['by_office'][office]
+            year_stats['by_office'][office] = round(sum(vals) / len(vals), 1) if vals else 0
+
+        results['by_year'][year] = year_stats
+
+        # Track worst undervotes
+        results['worst_undervote'].extend(town_undervotes)
+
+    # Sort to find worst undervote towns
+    results['worst_undervote'].sort(key=lambda x: -x['undervote_pct'])
+    results['worst_undervote'] = results['worst_undervote'][:50]
+
+    conn.close()
+    return results
+
+
+def get_turnout_patterns():
+    """
+    Analyze turnout patterns by town, year, and race competitiveness.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get registered voters if available, otherwise estimate from max turnout
+    # For now, we'll use total votes in presidential/gubernatorial races as proxy
+
+    cursor.execute("""
+        SELECT
+            e.year,
+            res.municipality,
+            o.name as office,
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND o.name IN ('President of the United States', 'Governor')
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.municipality IS NOT NULL
+        AND res.municipality != ''
+        AND res.municipality NOT GLOB '[0-9]*'
+        GROUP BY e.year, res.municipality, o.name
+    """)
+
+    # Organize by town
+    town_data = defaultdict(lambda: defaultdict(dict))
+    for year, muni, office, votes in cursor.fetchall():
+        if ' Ward ' in muni:
+            muni = muni[:muni.index(' Ward ')]
+        if office not in town_data[muni][year]:
+            town_data[muni][year][office] = 0
+        town_data[muni][year][office] += votes
+
+    # Calculate turnout metrics
+    results = {
+        'by_town': [],
+        'by_year': {},
+        'presidential_vs_midterm': [],
+        'highest_turnout_towns': [],
+        'lowest_turnout_towns': []
+    }
+
+    # Get max turnout per town as proxy for voter base
+    town_max = {}
+    for muni, years in town_data.items():
+        max_votes = 0
+        for year, offices in years.items():
+            year_max = max(offices.values()) if offices else 0
+            max_votes = max(max_votes, year_max)
+        town_max[muni] = max_votes
+
+    # Calculate year-over-year and pres vs midterm
+    for muni, years in town_data.items():
+        if town_max[muni] < 100:  # Skip very small towns
+            continue
+
+        town_info = {
+            'town': muni,
+            'max_turnout': town_max[muni],
+            'years': {}
+        }
+
+        pres_years = []
+        mid_years = []
+
+        for year in sorted(years.keys()):
+            turnout = max(years[year].values()) if years[year] else 0
+            turnout_pct = (turnout / town_max[muni]) * 100 if town_max[muni] > 0 else 0
+            town_info['years'][year] = {
+                'votes': turnout,
+                'pct': round(turnout_pct, 1)
+            }
+
+            if year % 4 == 0:  # Presidential year
+                pres_years.append(turnout)
+            else:
+                mid_years.append(turnout)
+
+        # Presidential vs midterm drop
+        if pres_years and mid_years:
+            avg_pres = sum(pres_years) / len(pres_years)
+            avg_mid = sum(mid_years) / len(mid_years)
+            drop = ((avg_pres - avg_mid) / avg_pres) * 100 if avg_pres > 0 else 0
+            town_info['pres_mid_drop'] = round(drop, 1)
+            results['presidential_vs_midterm'].append({
+                'town': muni,
+                'avg_presidential': int(avg_pres),
+                'avg_midterm': int(avg_mid),
+                'drop_pct': round(drop, 1)
+            })
+
+        results['by_town'].append(town_info)
+
+    # Sort for highest/lowest
+    results['presidential_vs_midterm'].sort(key=lambda x: -x['drop_pct'])
+
+    # Year totals
+    year_totals = defaultdict(int)
+    for muni, years in town_data.items():
+        for year, offices in years.items():
+            year_totals[year] += max(offices.values()) if offices else 0
+
+    for year in sorted(year_totals.keys()):
+        results['by_year'][year] = {
+            'total_votes': year_totals[year],
+            'is_presidential': year % 4 == 0
+        }
+
+    conn.close()
+    return results
+
+
+def get_ticket_splitting_analysis():
+    """
+    Analyze ticket splitting - where voters vote for different parties
+    in different races.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get results by municipality, year, and office
+    cursor.execute("""
+        SELECT
+            e.year,
+            res.municipality,
+            o.name as office,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.party IN ('Republican', 'Democratic')
+        AND res.municipality IS NOT NULL
+        AND res.municipality != ''
+        AND res.municipality NOT GLOB '[0-9]*'
+        GROUP BY e.year, res.municipality, o.name, c.party
+    """)
+
+    # Organize data
+    data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0})))
+    for year, muni, office, party, votes in cursor.fetchall():
+        if ' Ward ' in muni:
+            muni = muni[:muni.index(' Ward ')]
+        p = 'R' if party == 'Republican' else 'D'
+        data[year][muni][office][p] += votes
+
+    results = {
+        'by_year': {},
+        'split_towns': [],
+        'comparison_pairs': []
+    }
+
+    # Compare Governor vs State House in each town
+    comparisons = [
+        ('Governor', 'State Representative'),
+        ('Governor', 'State Senator'),
+        ('President of the United States', 'State Representative'),
+        ('President of the United States', 'Governor')
+    ]
+
+    for year in sorted(data.keys()):
+        year_splits = []
+
+        for muni, offices in data[year].items():
+            for office1, office2 in comparisons:
+                if office1 in offices and office2 in offices:
+                    o1 = offices[office1]
+                    o2 = offices[office2]
+
+                    # Calculate R margin for each office
+                    total1 = o1['R'] + o1['D']
+                    total2 = o2['R'] + o2['D']
+
+                    if total1 > 0 and total2 > 0:
+                        margin1 = ((o1['R'] - o1['D']) / total1) * 100
+                        margin2 = ((o2['R'] - o2['D']) / total2) * 100
+                        split = margin2 - margin1  # Positive = more R downballot
+
+                        if abs(split) > 5:  # Meaningful split
+                            year_splits.append({
+                                'year': year,
+                                'town': muni,
+                                'office1': office1,
+                                'office2': office2,
+                                'margin1': round(margin1, 1),
+                                'margin2': round(margin2, 1),
+                                'split': round(split, 1)
+                            })
+
+        results['by_year'][year] = {
+            'num_split_towns': len(set(s['town'] for s in year_splits)),
+            'avg_split': round(sum(abs(s['split']) for s in year_splits) / len(year_splits), 1) if year_splits else 0
+        }
+
+        results['split_towns'].extend(year_splits)
+
+    # Sort by largest splits
+    results['split_towns'].sort(key=lambda x: -abs(x['split']))
+    results['split_towns'] = results['split_towns'][:100]
+
+    conn.close()
+    return results
+
+
+def get_bellwether_analysis():
+    """
+    Identify bellwether towns - those that best predict statewide results.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get statewide results by year
+    cursor.execute("""
+        SELECT
+            e.year,
+            o.name as office,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.party IN ('Republican', 'Democratic')
+        AND o.name IN ('Governor', 'President of the United States', 'United States Senator')
+        GROUP BY e.year, o.name, c.party
+    """)
+
+    statewide = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0}))
+    for year, office, party, votes in cursor.fetchall():
+        p = 'R' if party == 'Republican' else 'D'
+        statewide[year][office][p] += votes
+
+    # Calculate statewide margins
+    statewide_margins = {}
+    for year, offices in statewide.items():
+        # Use Governor or President
+        for office in ['Governor', 'President of the United States']:
+            if office in offices:
+                total = offices[office]['R'] + offices[office]['D']
+                if total > 0:
+                    margin = ((offices[office]['R'] - offices[office]['D']) / total) * 100
+                    statewide_margins[year] = round(margin, 1)
+                    break
+
+    # Get town-level results
+    cursor.execute("""
+        SELECT
+            e.year,
+            res.municipality,
+            o.name as office,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.party IN ('Republican', 'Democratic')
+        AND o.name IN ('Governor', 'President of the United States')
+        AND res.municipality IS NOT NULL
+        AND res.municipality != ''
+        AND res.municipality NOT GLOB '[0-9]*'
+        GROUP BY e.year, res.municipality, o.name, c.party
+    """)
+
+    town_data = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0}))
+    for year, muni, office, party, votes in cursor.fetchall():
+        if ' Ward ' in muni:
+            muni = muni[:muni.index(' Ward ')]
+        p = 'R' if party == 'Republican' else 'D'
+        town_data[muni][(year, office)][p] += votes
+
+    # Calculate bellwether score for each town
+    # Score = average absolute deviation from statewide result
+    bellwethers = []
+
+    for muni, year_offices in town_data.items():
+        deviations = []
+        correct_calls = 0
+        total_calls = 0
+
+        for (year, office), votes in year_offices.items():
+            if year not in statewide_margins:
+                continue
+
+            total = votes['R'] + votes['D']
+            if total < 100:  # Skip small sample sizes
+                continue
+
+            town_margin = ((votes['R'] - votes['D']) / total) * 100
+            state_margin = statewide_margins[year]
+
+            deviation = abs(town_margin - state_margin)
+            deviations.append(deviation)
+
+            # Did town pick the winner?
+            if (town_margin > 0 and state_margin > 0) or (town_margin < 0 and state_margin < 0):
+                correct_calls += 1
+            total_calls += 1
+
+        if len(deviations) >= 3:  # Need at least 3 elections
+            bellwethers.append({
+                'town': muni,
+                'avg_deviation': round(sum(deviations) / len(deviations), 1),
+                'correct_calls': correct_calls,
+                'total_calls': total_calls,
+                'accuracy': round((correct_calls / total_calls) * 100, 1) if total_calls > 0 else 0,
+                'elections': len(deviations)
+            })
+
+    # Sort by lowest deviation (best bellwethers)
+    bellwethers.sort(key=lambda x: x['avg_deviation'])
+
+    conn.close()
+
+    return {
+        'statewide_margins': statewide_margins,
+        'bellwethers': bellwethers[:50],
+        'best_predictors': [b for b in bellwethers if b['accuracy'] == 100][:20]
+    }

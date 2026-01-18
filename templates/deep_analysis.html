@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Deep Analysis - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Deep Analysis</h1>
+    <p class="subtitle">Undervotes, turnout patterns, ticket splitting, and bellwether towns</p>
+</div>
+
+<div class="two-col">
+    <div class="main-content">
+        <!-- Bellwether Towns -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Bellwether Towns</h2>
+            </div>
+            <p class="text-muted mb-2">Towns that most closely match statewide results (Gov/President)</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">Avg Deviation</th>
+                        <th class="text-right">Accuracy</th>
+                        <th class="text-right">Elections</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bellwether.bellwethers[:20] %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=b.town) }}">{{ b.town }}</a></td>
+                        <td class="text-right">{{ b.avg_deviation }}%</td>
+                        <td class="text-right">{{ b.correct_calls }}/{{ b.total_calls }} ({{ b.accuracy }}%)</td>
+                        <td class="text-right">{{ b.elections }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p class="text-muted mt-2" style="font-size: 0.85rem;">
+                <strong>Statewide margins (Gov):</strong>
+                {% for year, margin in bellwether.statewide_margins.items()|sort %}
+                {{ year }}: <span class="{% if margin > 0 %}r{% else %}d{% endif %}">{% if margin > 0 %}R+{% else %}D+{% endif %}{{ margin|abs }}%</span>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+        </div>
+
+        <!-- Ticket Splitting -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Ticket Splitting</h2>
+            </div>
+            <p class="text-muted mb-2">Towns where voters split between parties (>5% difference between offices)</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Town</th>
+                        <th>Offices</th>
+                        <th class="text-right">Split</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in splitting.split_towns[:30] %}
+                    <tr>
+                        <td>{{ s.year }}</td>
+                        <td><a href="{{ url_for('town', name=s.town) }}">{{ s.town }}</a></td>
+                        <td>
+                            {{ s.office1[:3] }}: <span class="{% if s.margin1 > 0 %}r{% else %}d{% endif %}">{% if s.margin1 > 0 %}R{% else %}D{% endif %}+{{ s.margin1|abs|round(0)|int }}%</span>
+                            vs {{ s.office2[:3] }}: <span class="{% if s.margin2 > 0 %}r{% else %}d{% endif %}">{% if s.margin2 > 0 %}R{% else %}D{% endif %}+{{ s.margin2|abs|round(0)|int }}%</span>
+                        </td>
+                        <td class="text-right {% if s.split > 0 %}r{% else %}d{% endif %}">
+                            {% if s.split > 0 %}R+{% else %}D+{% endif %}{{ s.split|abs }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Undervote Analysis -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Undervote Patterns</h2>
+            </div>
+            <p class="text-muted mb-2">Average % of voters who skip downballot races (compared to Gov/President)</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th class="text-right">State Rep</th>
+                        <th class="text-right">State Senate</th>
+                        <th class="text-right">Exec Council</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year, data in undervote.by_year.items()|sort %}
+                    <tr>
+                        <td><strong>{{ year }}</strong></td>
+                        <td class="text-right">{{ data.by_office.get('State Representative', '-') }}%</td>
+                        <td class="text-right">{{ data.by_office.get('State Senator', '-') }}%</td>
+                        <td class="text-right">{{ data.by_office.get('Executive Councilor', '-') }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 class="mt-2">Highest Undervote Towns</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Town</th>
+                        <th>Office</th>
+                        <th class="text-right">Undervote</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in undervote.worst_undervote[:20] %}
+                    {% if u.top_votes > 50 %}
+                    <tr>
+                        <td>{{ u.year }}</td>
+                        <td><a href="{{ url_for('town', name=u.town) }}">{{ u.town }}</a></td>
+                        <td>{{ u.office }}</td>
+                        <td class="text-right">{{ u.undervote_pct }}%</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Turnout Patterns -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Turnout Patterns</h2>
+            </div>
+            <p class="text-muted mb-2">Presidential vs midterm turnout drop by town</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th class="text-right">Total Votes</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year, data in turnout.by_year.items()|sort %}
+                    <tr>
+                        <td><strong>{{ year }}</strong></td>
+                        <td class="text-right">{{ "{:,}".format(data.total_votes) }}</td>
+                        <td>{% if data.is_presidential %}Presidential{% else %}Midterm{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 class="mt-2">Biggest Presidential-to-Midterm Drop</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">Avg Pres</th>
+                        <th class="text-right">Avg Midterm</th>
+                        <th class="text-right">Drop</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in turnout.presidential_vs_midterm[:20] %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
+                        <td class="text-right">{{ "{:,}".format(t.avg_presidential) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.avg_midterm) }}</td>
+                        <td class="text-right">{{ t.drop_pct }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Analysis Pages</h3>
+            <ul class="town-list" style="columns: 1;">
+                <li><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('election_map') }}">Election Map</a></li>
+                <li><a href="{{ url_for('districts_browser') }}">Districts</a></li>
+                <li><strong>Deep Analysis</strong></li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Key Insights</h3>
+            <div class="party-control">
+                <div class="party-control-row">
+                    <span class="party-control-label">Best Bellwether</span>
+                    <span class="party-control-value">{{ bellwether.bellwethers[0].town if bellwether.bellwethers else 'N/A' }}</span>
+                </div>
+                <div class="party-control-row">
+                    <span class="party-control-label">Perfect Predictors</span>
+                    <span class="party-control-value">{{ bellwether.best_predictors|length }}</span>
+                </div>
+                <div class="party-control-row">
+                    <span class="party-control-label">Avg Undervote (Rep)</span>
+                    <span class="party-control-value">{{ undervote.by_year[2024].by_office.get('State Representative', 'N/A') }}%</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
