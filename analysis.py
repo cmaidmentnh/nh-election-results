@@ -695,6 +695,47 @@ def get_county_summary(county):
     for year in races_by_year:
         races_by_year[year].sort(key=lambda x: (get_office_sort_key(x['office']), x['district'] or ''))
 
+    # Aggregate by office for summary view
+    office_summary_by_year = defaultdict(lambda: defaultdict(lambda: {'r_seats': 0, 'd_seats': 0, 'total_seats': 0, 'r_votes': 0, 'd_votes': 0}))
+
+    # Need to get seat winners from the database
+    cursor.execute(f"""
+        WITH race_winners AS (
+            SELECT
+                e.year,
+                o.name as office,
+                r.id as race_id,
+                r.seats,
+                c.party,
+                SUM(res.votes) as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE res.municipality IN ({placeholders})
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.id, c.id
+        )
+        SELECT year, office, party, COUNT(*) as seats_won,
+               SUM(total_votes) as votes
+        FROM race_winners
+        WHERE rank <= seats
+        GROUP BY year, office, party
+    """, towns)
+
+    for row in cursor.fetchall():
+        year, office, party, seats, votes = row
+        if party == 'Republican':
+            office_summary_by_year[year][office]['r_seats'] += seats
+            office_summary_by_year[year][office]['r_votes'] += votes
+        elif party == 'Democratic':
+            office_summary_by_year[year][office]['d_seats'] += seats
+            office_summary_by_year[year][office]['d_votes'] += votes
+        office_summary_by_year[year][office]['total_seats'] += seats
+
     # Sort presidential results by year descending
     presidential_results.sort(key=lambda x: -x['year'])
 
@@ -764,6 +805,7 @@ def get_county_summary(county):
         'latest_margin': latest_margin,
         'margins_by_year': margins_by_year,
         'races_by_year': dict(races_by_year),
+        'office_summary': {year: dict(offices) for year, offices in office_summary_by_year.items()},
         'presidential': presidential_results,
         'years': years,
         'trend': round(trend, 1)
@@ -1845,66 +1887,99 @@ def export_candidate_data(year=None):
 def get_all_districts_with_pvi(office):
     """
     Get all districts for an office with their PVI data.
-    PVI is based on ALL races from the towns in each district (current composition).
+    OPTIMIZED: Uses batch query instead of per-district queries.
     Returns list sorted by current PVI (most R to most D).
     """
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Get statewide baseline for 2024
+    statewide = get_statewide_baseline(2024)
+    state_r_pct = statewide.get(2024, {}).get('r_pct', 50)
+
     # Check if this is a county-based office
     is_county_based = office == 'State Representative'
 
     if is_county_based:
-        # Get all county/district combinations
+        # Batch query: Get all districts with their 2024 vote margins
         cursor.execute("""
-            SELECT DISTINCT r.county, r.district, r.seats
-            FROM races r
-            JOIN offices o ON r.office_id = o.id
+            SELECT
+                r.county,
+                r.district,
+                r.seats,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
             WHERE o.name = ?
-            AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+            AND e.year = 2024
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.county, r.district
             ORDER BY r.county, CAST(r.district AS INTEGER)
         """, (office,))
 
         districts = []
         for row in cursor.fetchall():
-            county, district, seats = row
-            pvi_data = get_district_pvi(office, district, county)
+            county, district, seats, r_votes, d_votes, total = row
+            if total > 0:
+                dist_r_pct = (r_votes / total) * 100
+                pvi = dist_r_pct - state_r_pct
+            else:
+                pvi = 0
+
             districts.append({
                 'district': district,
                 'county': county,
                 'seats': seats,
-                'pvi': pvi_data['current_pvi'],
-                'trend': pvi_data['trend'],
-                'pvi_by_year': pvi_data['pvi_by_year'],
-                'years': pvi_data['years'],
-                'towns': pvi_data.get('towns', [])
+                'pvi': round(pvi, 1),
+                'trend': 0,  # Skip trend calc for speed
+                'r_votes': r_votes,
+                'd_votes': d_votes
             })
     else:
-        # Statewide districts
+        # Statewide districts - batch query
         cursor.execute("""
-            SELECT DISTINCT r.district, r.seats
-            FROM races r
-            JOIN offices o ON r.office_id = o.id
+            SELECT
+                r.district,
+                r.seats,
+                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
+                SUM(res.votes) as total_votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
             WHERE o.name = ?
-            AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+            AND e.year = 2024
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.district
             ORDER BY CAST(r.district AS INTEGER)
         """, (office,))
 
         districts = []
         for row in cursor.fetchall():
-            district, seats = row
-            pvi_data = get_district_pvi(office, district)
+            district, seats, r_votes, d_votes, total = row
+            if total > 0:
+                dist_r_pct = (r_votes / total) * 100
+                pvi = dist_r_pct - state_r_pct
+            else:
+                pvi = 0
+
             districts.append({
                 'district': district,
                 'county': None,
                 'seats': seats,
-                'pvi': pvi_data['current_pvi'],
-                'trend': pvi_data['trend'],
-                'pvi_by_year': pvi_data['pvi_by_year'],
-                'years': pvi_data['years'],
-                'towns': pvi_data.get('towns', [])
+                'pvi': round(pvi, 1),
+                'trend': 0,
+                'r_votes': r_votes,
+                'd_votes': d_votes
             })
 
     conn.close()

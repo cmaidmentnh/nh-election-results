@@ -44,7 +44,7 @@
         </div>
         {% endif %}
 
-        <!-- Results by Year -->
+        <!-- Results by Year - Aggregated by Office -->
         {% for year in summary.years|reverse %}
         <div class="section">
             <div class="section-header">
@@ -55,28 +55,40 @@
                 </span>
             </div>
 
+            {% if summary.office_summary and year in summary.office_summary %}
             <table>
                 <thead>
                     <tr>
                         <th>Office</th>
-                        <th>District</th>
-                        <th class="text-right">Margin</th>
+                        <th class="text-right">R Seats</th>
+                        <th class="text-right">D Seats</th>
+                        <th class="text-right">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for race in summary.races_by_year.get(year, []) %}
+                    {% for office in ['State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress', 'Governor', 'United States Senator'] %}
+                    {% if office in summary.office_summary[year] %}
+                    {% set o = summary.office_summary[year][office] %}
                     <tr>
-                        <td>{{ race.office }}</td>
-                        <td>{{ race.district or '-' }}</td>
-                        <td class="text-right">
-                            <span class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
-                                {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
-                            </span>
+                        <td>
+                            {% if office == 'State Representative' %}State House
+                            {% elif office == 'State Senator' %}State Senate
+                            {% elif office == 'Executive Councilor' %}Exec Council
+                            {% elif office == 'Representative in Congress' %}US House
+                            {% elif office == 'United States Senator' %}US Senate
+                            {% else %}{{ office }}{% endif %}
                         </td>
+                        <td class="text-right"><span class="r">{{ o.r_seats }}</span></td>
+                        <td class="text-right"><span class="d">{{ o.d_seats }}</span></td>
+                        <td class="text-right text-muted">{{ o.total_seats }}</td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
+            {% else %}
+            <p class="text-muted">No seat data available for {{ year }}</p>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
