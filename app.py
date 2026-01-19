@@ -479,5 +479,18 @@ def deep_analysis():
                          bellwether=bellwether)
 
 
+@app.route('/stats')
+def stats():
+    """Comprehensive statistical analysis page."""
+    swing = analysis.get_swing_analysis()
+    correlation = analysis.get_correlation_analysis()
+    trends = analysis.get_long_term_trends()
+
+    return render_template('stats.html',
+                         swing=swing,
+                         correlation=correlation,
+                         trends=trends)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

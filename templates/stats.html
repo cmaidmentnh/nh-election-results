@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Statistical Analysis - NH Election Results{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Statistical Analysis</h1>
+    <p class="subtitle">Swing districts, correlations, and long-term trends</p>
+</div>
+
+<div class="two-col">
+    <div class="main-content">
+        <!-- Swing Districts -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Swing Districts</h2>
+            </div>
+            <p class="text-muted mb-2">State House districts most likely to flip based on margin, trend, and volatility</p>
+
+            {% if swing.high_flip %}
+            <h3 class="mt-2">High Flip Likelihood</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th>Seats</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">Trend</th>
+                        <th class="text-right">Volatility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in swing.high_flip[:15] %}
+                    <tr>
+                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td>{{ d.seats }}</td>
+                        <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
+                        </td>
+                        <td class="text-right {% if d.trend > 0 %}r{% else %}d{% endif %}">
+                            {% if d.trend > 0 %}+{% endif %}{{ d.trend }}
+                        </td>
+                        <td class="text-right">{{ d.volatility }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            <h3 class="mt-2">Trending Republican</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th class="text-right">2024 Margin</th>
+                        <th class="text-right">Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in swing.trending_r[:10] %}
+                    <tr>
+                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
+                        </td>
+                        <td class="text-right r">+{{ d.trend }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 class="mt-2">Trending Democratic</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th class="text-right">2024 Margin</th>
+                        <th class="text-right">Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in swing.trending_d[:10] %}
+                    <tr>
+                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
+                        </td>
+                        <td class="text-right d">{{ d.trend }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Urban/Rural Divide -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Urban/Rural Divide</h2>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value {% if correlation.size_correlation.large_towns_avg_margin > 0 %}r{% else %}d{% endif %}">
+                        {% if correlation.size_correlation.large_towns_avg_margin > 0 %}R+{% else %}D+{% endif %}{{ correlation.size_correlation.large_towns_avg_margin|abs }}
+                    </div>
+                    <div class="metric-label">Large Towns</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value {% if correlation.size_correlation.small_towns_avg_margin > 0 %}r{% else %}d{% endif %}">
+                        {% if correlation.size_correlation.small_towns_avg_margin > 0 %}R+{% else %}D+{% endif %}{{ correlation.size_correlation.small_towns_avg_margin|abs }}
+                    </div>
+                    <div class="metric-label">Small Towns</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value {% if correlation.size_correlation.urban_rural_gap > 0 %}r{% else %}d{% endif %}">
+                        {% if correlation.size_correlation.urban_rural_gap > 0 %}R+{% else %}D+{% endif %}{{ correlation.size_correlation.urban_rural_gap|abs }}
+                    </div>
+                    <div class="metric-label">Rural Gap</div>
+                </div>
+            </div>
+
+            <h3 class="mt-2">Most Republican Towns</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in correlation.most_r_towns %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
+                        <td class="text-right r">R+{{ "%.1f"|format(t.margin) }}%</td>
+                        <td class="text-right">{{ "{:,}".format(t.total_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 class="mt-2">Most Democratic Towns</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="text-right">Margin</th>
+                        <th class="text-right">Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in correlation.most_d_towns %}
+                    <tr>
+                        <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
+                        <td class="text-right d">D+{{ "%.1f"|format(t.margin|abs) }}%</td>
+                        <td class="text-right">{{ "{:,}".format(t.total_votes) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- County Trends -->
+        <div class="section">
+            <div class="section-header">
+                <h2>County Long-Term Trends</h2>
+            </div>
+            <p class="text-muted mb-2">Partisan shift from {{ trends.county_trends[0].first_year if trends.county_trends else '2016' }} to {{ trends.county_trends[0].last_year if trends.county_trends else '2024' }}</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>County</th>
+                        <th class="text-right">{{ trends.county_trends[0].first_year if trends.county_trends else '2016' }}</th>
+                        <th class="text-right">{{ trends.county_trends[0].last_year if trends.county_trends else '2024' }}</th>
+                        <th class="text-right">Shift</th>
+                        <th class="text-right">Per Year</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in trends.county_trends %}
+                    <tr>
+                        <td><a href="{{ url_for('county', name=c.county) }}">{{ c.county }}</a></td>
+                        <td class="text-right {% if c.first_margin > 0 %}r{% else %}d{% endif %}">
+                            {% if c.first_margin > 0 %}R+{% else %}D+{% endif %}{{ c.first_margin|abs }}%
+                        </td>
+                        <td class="text-right {% if c.last_margin > 0 %}r{% else %}d{% endif %}">
+                            {% if c.last_margin > 0 %}R+{% else %}D+{% endif %}{{ c.last_margin|abs }}%
+                        </td>
+                        <td class="text-right {% if c.total_shift > 0 %}r{% else %}d{% endif %}">
+                            {% if c.total_shift > 0 %}R+{% else %}D+{% endif %}{{ c.total_shift|abs }}
+                        </td>
+                        <td class="text-right">{{ c.shift_per_year }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <h3>Analysis Pages</h3>
+            <ul class="town-list" style="columns: 1;">
+                <li><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('election_map') }}">Election Map</a></li>
+                <li><a href="{{ url_for('districts_browser') }}">Districts</a></li>
+                <li><a href="{{ url_for('deep_analysis') }}">Deep Analysis</a></li>
+                <li><strong>Statistics</strong></li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Key Findings</h3>
+            <div class="party-control">
+                <div class="party-control-row">
+                    <span class="party-control-label">Swing Districts</span>
+                    <span class="party-control-value">{{ swing.swing_districts|length }}</span>
+                </div>
+                <div class="party-control-row">
+                    <span class="party-control-label">High Flip Risk</span>
+                    <span class="party-control-value">{{ swing.high_flip|length }}</span>
+                </div>
+                <div class="party-control-row">
+                    <span class="party-control-label">Trending R</span>
+                    <span class="party-control-value r">{{ swing.trending_r|length }}</span>
+                </div>
+                <div class="party-control-row">
+                    <span class="party-control-label">Trending D</span>
+                    <span class="party-control-value d">{{ swing.trending_d|length }}</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}

@@ -44,6 +44,8 @@
                 <div class="nav-dropdown">
                     <a href="#">Analysis ▾</a>
                     <div class="nav-dropdown-content">
+                        <a href="{{ url_for('stats') }}">Statistics</a>
+                        <a href="{{ url_for('deep_analysis') }}">Deep Analysis</a>
                         <a href="{{ url_for('compare') }}">Compare Towns</a>
                         <a href="{{ url_for('turnout') }}">Turnout</a>
                         <a href="{{ url_for('incumbents') }}">Incumbents</a>

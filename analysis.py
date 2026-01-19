@@ -3433,3 +3433,278 @@ def get_bellwether_analysis():
         'bellwethers': bellwethers[:50],
         'best_predictors': [b for b in bellwethers if b['accuracy'] == 100][:20]
     }
+
+
+# ============== ADVANCED STATISTICAL ANALYSIS ==============
+
+def get_swing_analysis():
+    """
+    Identify districts most likely to flip based on:
+    - Close margins (< 5%)
+    - Trending toward the minority party
+    - Historical volatility
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get all State Rep districts with 2022 and 2024 data
+    cursor.execute("""
+        SELECT
+            e.year,
+            r.county,
+            r.district,
+            r.seats,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'State Representative'
+        AND e.year IN (2020, 2022, 2024)
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY e.year, r.county, r.district, c.name, c.party
+    """)
+
+    # Aggregate by district and year using top vote-getter
+    district_data = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0, 'seats': 1}))
+    for row in cursor.fetchall():
+        year, county, district, seats, party, votes = row
+        key = (county, district)
+        if party == 'Republican':
+            district_data[key][year]['top_r'] = max(district_data[key][year]['top_r'], votes)
+        else:
+            district_data[key][year]['top_d'] = max(district_data[key][year]['top_d'], votes)
+        district_data[key][year]['seats'] = seats
+
+    swing_districts = []
+    for (county, district), years in district_data.items():
+        if 2024 not in years:
+            continue
+
+        # Calculate 2024 margin
+        r24, d24 = years[2024]['top_r'], years[2024]['top_d']
+        total24 = r24 + d24
+        if total24 == 0:
+            continue
+        margin24 = ((r24 - d24) / total24) * 100
+        winner24 = 'R' if margin24 > 0 else 'D'
+
+        # Calculate trend from 2022
+        trend = 0
+        if 2022 in years:
+            r22, d22 = years[2022]['top_r'], years[2022]['top_d']
+            total22 = r22 + d22
+            if total22 > 0:
+                margin22 = ((r22 - d22) / total22) * 100
+                trend = margin24 - margin22
+
+        # Calculate volatility (standard deviation of margins)
+        margins = []
+        for y in [2020, 2022, 2024]:
+            if y in years:
+                r, d = years[y]['top_r'], years[y]['top_d']
+                t = r + d
+                if t > 0:
+                    margins.append(((r - d) / t) * 100)
+
+        volatility = 0
+        if len(margins) >= 2:
+            avg = sum(margins) / len(margins)
+            volatility = (sum((m - avg) ** 2 for m in margins) / len(margins)) ** 0.5
+
+        # Score: closer margin = higher score, trending against winner = higher score
+        is_competitive = abs(margin24) < 10
+        trending_against = (winner24 == 'R' and trend < 0) or (winner24 == 'D' and trend > 0)
+
+        if is_competitive or trending_against or volatility > 5:
+            swing_districts.append({
+                'county': county,
+                'district': district,
+                'seats': years[2024]['seats'],
+                'margin': round(margin24, 1),
+                'winner': winner24,
+                'trend': round(trend, 1),
+                'volatility': round(volatility, 1),
+                'contested': r24 > 0 and d24 > 0,
+                'flip_likelihood': 'High' if abs(margin24) < 5 and trending_against else
+                                   'Medium' if abs(margin24) < 10 else 'Low'
+            })
+
+    # Sort by closest margin
+    swing_districts.sort(key=lambda x: abs(x['margin']))
+
+    conn.close()
+    return {
+        'swing_districts': swing_districts[:50],
+        'high_flip': [d for d in swing_districts if d['flip_likelihood'] == 'High'],
+        'trending_r': [d for d in swing_districts if d['trend'] > 3][:20],
+        'trending_d': [d for d in swing_districts if d['trend'] < -3][:20]
+    }
+
+
+def get_correlation_analysis():
+    """
+    Analyze correlations between various factors:
+    - Turnout vs margin
+    - Town size vs partisan lean
+    - Incumbent advantage
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get town-level data for 2024
+    cursor.execute("""
+        SELECT
+            res.municipality,
+            o.name as office,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = 2024
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY res.municipality, o.name, c.party
+    """)
+
+    town_data = defaultdict(lambda: {'total_votes': 0, 'r_votes': 0, 'd_votes': 0})
+    for row in cursor.fetchall():
+        muni, office, party, votes = row
+        town_data[muni]['total_votes'] += votes
+        if party == 'Republican':
+            town_data[muni]['r_votes'] += votes
+        else:
+            town_data[muni]['d_votes'] += votes
+
+    # Calculate margin and size for each town
+    towns = []
+    for muni, data in town_data.items():
+        total = data['r_votes'] + data['d_votes']
+        if total < 100:
+            continue
+        margin = ((data['r_votes'] - data['d_votes']) / total) * 100
+        towns.append({
+            'town': muni,
+            'total_votes': data['total_votes'],
+            'margin': margin,
+            'size': data['total_votes']
+        })
+
+    # Sort by size to find size-partisan correlation
+    towns.sort(key=lambda x: -x['size'])
+    large_towns = towns[:50]
+    small_towns = towns[-50:]
+
+    large_avg_margin = sum(t['margin'] for t in large_towns) / len(large_towns) if large_towns else 0
+    small_avg_margin = sum(t['margin'] for t in small_towns) / len(small_towns) if small_towns else 0
+
+    conn.close()
+
+    return {
+        'size_correlation': {
+            'large_towns_avg_margin': round(large_avg_margin, 1),
+            'small_towns_avg_margin': round(small_avg_margin, 1),
+            'urban_rural_gap': round(small_avg_margin - large_avg_margin, 1)
+        },
+        'largest_r_towns': sorted([t for t in towns if t['margin'] > 0], key=lambda x: -x['size'])[:10],
+        'largest_d_towns': sorted([t for t in towns if t['margin'] < 0], key=lambda x: -x['size'])[:10],
+        'most_r_towns': sorted(towns, key=lambda x: -x['margin'])[:10],
+        'most_d_towns': sorted(towns, key=lambda x: x['margin'])[:10]
+    }
+
+
+def get_long_term_trends():
+    """
+    Analyze long-term partisan trends by region/county.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get county-level margins over time
+    cursor.execute("""
+        SELECT
+            e.year,
+            r.county,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND c.party IN ('Republican', 'Democratic')
+        AND r.county IS NOT NULL
+        GROUP BY e.year, r.county, c.party
+    """)
+
+    county_data = defaultdict(lambda: defaultdict(lambda: {'r': 0, 'd': 0}))
+    for row in cursor.fetchall():
+        year, county, party, votes = row
+        if party == 'Republican':
+            county_data[county][year]['r'] += votes
+        else:
+            county_data[county][year]['d'] += votes
+
+    county_trends = []
+    for county, years in county_data.items():
+        sorted_years = sorted(years.keys())
+        if len(sorted_years) < 2:
+            continue
+
+        # Calculate margin for first and last year
+        first_year = sorted_years[0]
+        last_year = sorted_years[-1]
+
+        r1, d1 = years[first_year]['r'], years[first_year]['d']
+        r2, d2 = years[last_year]['r'], years[last_year]['d']
+
+        if r1 + d1 == 0 or r2 + d2 == 0:
+            continue
+
+        margin1 = ((r1 - d1) / (r1 + d1)) * 100
+        margin2 = ((r2 - d2) / (r2 + d2)) * 100
+        shift = margin2 - margin1
+
+        county_trends.append({
+            'county': county,
+            'first_year': first_year,
+            'last_year': last_year,
+            'first_margin': round(margin1, 1),
+            'last_margin': round(margin2, 1),
+            'total_shift': round(shift, 1),
+            'shift_per_year': round(shift / (last_year - first_year), 2) if last_year > first_year else 0
+        })
+
+    # Sort by shift
+    county_trends.sort(key=lambda x: -x['total_shift'])
+
+    conn.close()
+
+    return {
+        'county_trends': county_trends,
+        'shifting_r': [c for c in county_trends if c['total_shift'] > 0],
+        'shifting_d': [c for c in county_trends if c['total_shift'] < 0],
+        'most_stable': sorted(county_trends, key=lambda x: abs(x['total_shift']))[:5]
+    }
+
+
+def get_comprehensive_stats():
+    """
+    Get all statistical analyses in one call.
+    """
+    return {
+        'swing': get_swing_analysis(),
+        'correlation': get_correlation_analysis(),
+        'trends': get_long_term_trends(),
+        'bellwether': get_bellwether_analysis()
+    }
