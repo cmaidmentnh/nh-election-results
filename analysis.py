@@ -2850,31 +2850,95 @@ def export_candidate_data(year=None):
 
 def get_all_districts_with_pvi(office):
     """
-    Get all districts for an office with their PVI data and trends.
-    Uses TOP vote-getter per party for fair multi-member race comparison.
+    Get all districts for an office with PVI data.
+    PVI = district R% (all contested races) - statewide R% (all contested races).
     Returns list sorted by current PVI (most R to most D).
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get statewide baseline
-    statewide = get_statewide_baseline()
-    state_r_pct_2024 = statewide.get(2024, {}).get('r_pct', 50)
-    state_r_pct_2022 = statewide.get(2022, {}).get('r_pct', 50)
+    # Get statewide baseline: R% across all contested races
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT e.year, r.id as race_id,
+                   SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+                   SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.year IN (2022, 2024)
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY e.year, r.id
+            HAVING r > 0 AND d > 0  -- contested only
+        )
+        SELECT year, SUM(r) as total_r, SUM(d) as total_d
+        FROM race_totals
+        GROUP BY year
+    """)
+    state_baseline = {}
+    for year, total_r, total_d in cursor.fetchall():
+        state_baseline[year] = total_r / (total_r + total_d) * 100 if (total_r + total_d) > 0 else 50
+    state_r_pct_2024 = state_baseline.get(2024, 50)
+    state_r_pct_2022 = state_baseline.get(2022, 50)
 
     # Check if this is a county-based office
     is_county_based = office == 'State Representative'
 
     if is_county_based:
-        # Get candidate-level data for 2022 and 2024 to use top vote-getter method
+        # Get district -> municipalities mapping
         cursor.execute("""
-            SELECT
-                e.year,
-                r.county,
-                r.district,
-                r.seats,
-                c.party,
-                SUM(res.votes) as votes
+            SELECT DISTINCT r.county, r.district, r.seats, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = ?
+            AND e.year = 2024
+            AND e.election_type = 'general'
+        """, (office,))
+
+        district_towns = defaultdict(set)
+        district_seats = {}
+        for county, district, seats, municipality in cursor.fetchall():
+            key = (county, district)
+            district_towns[key].add(municipality)
+            district_seats[key] = seats
+
+        # Get all votes by municipality for contested races (for PVI calculation)
+        cursor.execute("""
+            WITH race_totals AS (
+                SELECT e.year, r.id as race_id, res.municipality,
+                       SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+                       SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+                FROM results res
+                JOIN candidates c ON res.candidate_id = c.id
+                JOIN races r ON res.race_id = r.id
+                JOIN elections e ON r.election_id = e.id
+                WHERE e.year IN (2022, 2024)
+                AND e.election_type = 'general'
+                AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+                GROUP BY e.year, r.id, res.municipality
+            ),
+            contested AS (
+                SELECT year, municipality, r, d
+                FROM race_totals
+                WHERE r > 0 AND d > 0
+            )
+            SELECT year, municipality, SUM(r) as r, SUM(d) as d
+            FROM contested
+            GROUP BY year, municipality
+        """)
+
+        town_votes = defaultdict(lambda: defaultdict(lambda: {'r': 0, 'd': 0}))
+        for year, municipality, r, d in cursor.fetchall():
+            town_votes[year][municipality] = {'r': r, 'd': d}
+
+        # Get State Rep race results for each district (for showing winners/margin)
+        cursor.execute("""
+            SELECT e.year, r.county, r.district, c.party,
+                   SUM(res.votes) as votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
@@ -2885,52 +2949,45 @@ def get_all_districts_with_pvi(office):
             AND e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND c.party IN ('Republican', 'Democratic')
-            GROUP BY e.year, r.county, r.district, c.name, c.party
-            ORDER BY r.county, r.district, e.year
+            GROUP BY e.year, r.county, r.district, c.id
         """, (office,))
 
-        # Group candidates by year/district and find top vote-getter per party
-        district_candidates = defaultdict(lambda: defaultdict(list))
-        district_seats = {}
-        for row in cursor.fetchall():
-            year, county, district, seats, party, votes = row
+        # Get top vote-getter per party per district for margin calc
+        district_results = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0}))
+        for year, county, district, party, votes in cursor.fetchall():
             key = (county, district)
-            district_candidates[key][year].append({'party': party, 'votes': votes})
-            district_seats[key] = seats
+            if party == 'Republican':
+                district_results[key][year]['top_r'] = max(district_results[key][year]['top_r'], votes)
+            elif party == 'Democratic':
+                district_results[key][year]['top_d'] = max(district_results[key][year]['top_d'], votes)
 
         districts = []
-        for (county, district), years_data in district_candidates.items():
-            # Calculate 2024 PVI using top vote-getter
-            if 2024 in years_data:
-                candidates_2024 = years_data[2024]
-                top_r = max((c['votes'] for c in candidates_2024 if c['party'] == 'Republican'), default=0)
-                top_d = max((c['votes'] for c in candidates_2024 if c['party'] == 'Democratic'), default=0)
-                rd_total = top_r + top_d
-                if rd_total > 0:
-                    dist_r_pct = (top_r / rd_total) * 100
-                    pvi_2024 = dist_r_pct - state_r_pct_2024
-                else:
-                    pvi_2024 = 0
+        for (county, district), towns in district_towns.items():
+            # Calculate PVI from all contested races in district towns
+            r_2024 = sum(town_votes[2024].get(t, {}).get('r', 0) for t in towns)
+            d_2024 = sum(town_votes[2024].get(t, {}).get('d', 0) for t in towns)
+            r_2022 = sum(town_votes[2022].get(t, {}).get('r', 0) for t in towns)
+            d_2022 = sum(town_votes[2022].get(t, {}).get('d', 0) for t in towns)
+
+            if (r_2024 + d_2024) > 0:
+                dist_r_pct_2024 = r_2024 / (r_2024 + d_2024) * 100
+                pvi_2024 = dist_r_pct_2024 - state_r_pct_2024
             else:
                 pvi_2024 = 0
-                top_r = 0
-                top_d = 0
 
-            # Calculate 2022 PVI for trend
-            if 2022 in years_data:
-                candidates_2022 = years_data[2022]
-                top_r_22 = max((c['votes'] for c in candidates_2022 if c['party'] == 'Republican'), default=0)
-                top_d_22 = max((c['votes'] for c in candidates_2022 if c['party'] == 'Democratic'), default=0)
-                rd_total_22 = top_r_22 + top_d_22
-                if rd_total_22 > 0:
-                    dist_r_pct_22 = (top_r_22 / rd_total_22) * 100
-                    pvi_2022 = dist_r_pct_22 - state_r_pct_2022
-                else:
-                    pvi_2022 = pvi_2024  # No trend if no 2022 data
+            if (r_2022 + d_2022) > 0:
+                dist_r_pct_2022 = r_2022 / (r_2022 + d_2022) * 100
+                pvi_2022 = dist_r_pct_2022 - state_r_pct_2022
             else:
                 pvi_2022 = pvi_2024
 
             trend = pvi_2024 - pvi_2022
+
+            # Get State Rep race results for this district
+            res_2024 = district_results[(county, district)][2024]
+            top_r = res_2024['top_r']
+            top_d = res_2024['top_d']
+            contested = top_r > 0 and top_d > 0
 
             districts.append({
                 'district': district,
@@ -2940,8 +2997,12 @@ def get_all_districts_with_pvi(office):
                 'trend': round(trend, 1),
                 'r_votes': top_r,
                 'd_votes': top_d,
-                'contested': top_r > 0 and top_d > 0
+                'contested': contested
             })
+
+        conn.close()
+        return sorted(districts, key=lambda x: -x['pvi'])
+
     else:
         # Statewide districts (Senate, EC, Congress) - single seat, sum is OK
         cursor.execute("""

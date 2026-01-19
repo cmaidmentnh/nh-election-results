@@ -68,3 +68,16 @@ Located in `static/data/`:
 - Multi-member districts: Use MAX (top vote-getter) not SUM for margin calculations
 - Ties: If candidates tie at cutoff, neither wins that seat
 - Towns sharing county names: Hillsborough, Carroll, Grafton, Strafford, Sullivan, Merrimack
+
+## PVI Calculation
+
+PVI (Partisan Voter Index) formula:
+```
+PVI = (R votes for towns in district / Total R+D votes for towns in district)
+    - (R votes statewide in all contested races / Total R+D votes statewide in all contested races)
+```
+
+- Uses ALL contested races (not just the specific office's race)
+- A race is "contested" if both R and D candidates ran
+- This gives meaningful PVI even for uncontested State Rep races
+- Statewide baseline ~51% R in 2024
