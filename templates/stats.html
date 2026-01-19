@@ -39,7 +39,10 @@
                         </td>
                         <td>
                             {% if d.winners %}
-                                <span class="{% if d.winners[0].party == 'Republican' %}r{% else %}d{% endif %}">{{ d.winners[0].name.split(' ')[-1] }} ({{ d.winners[0].party[0] }})</span>
+                                {% set name_parts = d.winners[0].name.split(' ') %}
+                                {% set suffixes = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V'] %}
+                                {% set last_name = name_parts[-2] if name_parts[-1] in suffixes and name_parts|length > 1 else name_parts[-1] %}
+                                <span class="{% if d.winners[0].party == 'Republican' %}r{% else %}d{% endif %}">{{ last_name }} ({{ d.winners[0].party[0] }})</span>
                             {% endif %}
                         </td>
                         <td class="text-right {% if d.margin22 and d.margin22 > 0 %}r{% elif d.margin22 and d.margin22 < 0 %}d{% endif %}">
@@ -88,8 +91,13 @@
                             {% if d.d_seats > 0 %}<span class="d">{{ d.d_seats }}D</span>{% endif %}
                         </td>
                         <td>
-                            <span class="d">{{ d.last_winner.name.split(' ')[-1] }}</span> beat
-                            <span class="r">{{ d.first_loser.name.split(' ')[-1] }}</span>
+                            {% set winner_parts = d.last_winner.name.split(' ') %}
+                            {% set loser_parts = d.first_loser.name.split(' ') %}
+                            {% set suffixes = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V'] %}
+                            {% set winner_name = winner_parts[-2] if winner_parts[-1] in suffixes and winner_parts|length > 1 else winner_parts[-1] %}
+                            {% set loser_name = loser_parts[-2] if loser_parts[-1] in suffixes and loser_parts|length > 1 else loser_parts[-1] %}
+                            <span class="d">{{ winner_name }}</span> beat
+                            <span class="r">{{ loser_name }}</span>
                             by <strong>{{ "{:,}".format(d.gap) }}</strong> votes ({{ d.gap_pct }}%)
                         </td>
                         <td class="text-right">
@@ -130,8 +138,13 @@
                             {% if d.d_seats > 0 %}<span class="d">{{ d.d_seats }}D</span>{% endif %}
                         </td>
                         <td>
-                            <span class="r">{{ d.last_winner.name.split(' ')[-1] }}</span> beat
-                            <span class="d">{{ d.first_loser.name.split(' ')[-1] }}</span>
+                            {% set winner_parts = d.last_winner.name.split(' ') %}
+                            {% set loser_parts = d.first_loser.name.split(' ') %}
+                            {% set suffixes = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V'] %}
+                            {% set winner_name = winner_parts[-2] if winner_parts[-1] in suffixes and winner_parts|length > 1 else winner_parts[-1] %}
+                            {% set loser_name = loser_parts[-2] if loser_parts[-1] in suffixes and loser_parts|length > 1 else loser_parts[-1] %}
+                            <span class="r">{{ winner_name }}</span> beat
+                            <span class="d">{{ loser_name }}</span>
                             by <strong>{{ "{:,}".format(d.gap) }}</strong> votes ({{ d.gap_pct }}%)
                         </td>
                         <td class="text-right">
