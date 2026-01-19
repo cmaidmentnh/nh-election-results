@@ -1,83 +1,45 @@
 # NH Election Results - Claude Reference
 
+## Deployment
+
+```bash
+# Deploy to production (elections.nhhouse.gop)
+ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
+```
+
 ## Server Access
 
 ```bash
 # SSH to production server
 ssh root@138.197.20.97
 
-# App directory
+# App directory on server
 cd /opt/nh-election-results
-```
-
-## Deployment
-
-```bash
-# Commit, push, and deploy
-cd /Users/chrismaidment/Desktop/Data-Elections/election_app
-git add -A && git commit -m "message" && git push && ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
 ```
 
 ## Checking Logs
 
 ```bash
-# Recent logs
 ssh root@138.197.20.97 "journalctl -u nh-election-results -n 50 --no-pager"
-
-# Follow logs live
-ssh root@138.197.20.97 "journalctl -u nh-election-results -f"
 ```
-
-## Service Management
-
-```bash
-# Restart
-ssh root@138.197.20.97 "systemctl restart nh-election-results"
-
-# Status
-ssh root@138.197.20.97 "systemctl status nh-election-results"
-```
-
-## App Details
-
-- **Server**: 138.197.20.97
-- **App Path**: /opt/nh-election-results
-- **Port**: 5006 (behind nginx/Cloudflare)
-- **Service**: nh-election-results.service
-- **Workers**: 2 gunicorn workers
 
 ## Database
 
-- SQLite database: `nh_elections.db`
-- Contains NH election results 2016-2024
+Local SQLite database: `nh_elections.db`
 
-## GeoJSON Files
+Key tables:
+- `results` - Vote counts by municipality/candidate
+- `races` - Race metadata (district, county, seats)
+- `candidates` - Candidate info
+- `elections` - Election year/type
+- `offices` - Office names
+- `district_compositions` - Which towns are in which districts
+- `voter_registration` - Ballots cast data for turnout
 
-Located in `static/data/`:
-- `nh-towns.geojson` - 259 NH towns
-- `nh-counties.geojson` - 10 NH counties
-- `nh-house-base-districts.geojson` - State House base districts
-- `nh-house-floterial-districts.geojson` - State House floterial districts
-- `nh-senate-districts.geojson` - State Senate districts
-- `nh-exec-council-districts.geojson` - Executive Council districts
-- `nh-congress-districts.geojson` - Congressional districts
+## Git Workflow
 
-## Important Notes
-
-- **NEVER delete data without explicit DELETE command from user**
-- Multi-member districts: Use MAX (top vote-getter) not SUM for margin calculations
-- Ties: If candidates tie at cutoff, neither wins that seat
-- Towns sharing county names: Hillsborough, Carroll, Grafton, Strafford, Sullivan, Merrimack
-
-## PVI Calculation
-
-PVI (Partisan Voter Index) formula:
+Always commit, push, AND deploy:
+```bash
+git add -A && git commit -m "message" && git push
+ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
 ```
-PVI = (R votes for towns in district / Total R+D votes for towns in district)
-    - (R votes statewide in all contested races / Total R+D votes statewide in all contested races)
-```
-
-- Uses ALL contested races (not just the specific office's race)
-- A race is "contested" if both R and D candidates ran
-- This gives meaningful PVI even for uncontested State Rep races
-- Statewide baseline ~51% R in 2024
