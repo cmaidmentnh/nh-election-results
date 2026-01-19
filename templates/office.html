@@ -79,7 +79,7 @@
                 </tbody>
             </table>
             {% else %}
-            <p class="text-muted">{{ yr_data.races|length }} races total. <a href="{{ url_for('districts_browser') }}?office={{ office }}">Browse all districts</a></p>
+            <p class="text-muted">{{ yr_data.races|length }} races total. <a href="{{ url_for('districts_browser') }}?office={{ office }}&year={{ year }}">Browse all districts</a></p>
             {% endif %}
         </div>
         {% endfor %}

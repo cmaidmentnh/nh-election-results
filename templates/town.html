@@ -51,6 +51,8 @@
                         <td>
                             {% if office == 'President of the United States' %}President
                             {% elif office == 'United States Senator' %}US Senate
+                            {% elif office == 'Representative in Congress' %}US House
+                            {% elif office == 'Executive Councilor' %}Exec Council
                             {% elif office == 'State Senator' %}State Senate
                             {% elif office == 'State Representative' %}State House
                             {% else %}{{ office }}{% endif %}

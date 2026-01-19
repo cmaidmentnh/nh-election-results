@@ -55,15 +55,17 @@
     font-weight: 600;
 }
 .race-candidates {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.25rem;
+    list-style: none;
 }
 .race-candidate {
     display: flex;
     justify-content: space-between;
-    padding: 0.25rem 0;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
+}
+.race-candidate:last-child {
+    border-bottom: none;
 }
 .race-candidate.winner {
     font-weight: 600;
@@ -73,9 +75,25 @@
     align-items: center;
     gap: 0.25rem;
 }
+.race-candidate .party {
+    width: 90px;
+    font-size: 0.85rem;
+}
+.race-candidate .votes {
+    width: 70px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
 .race-candidate .check {
     color: #22c55e;
+    font-size: 0.9rem;
+}
+.race-towns {
     font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
 }
 </style>
 {% endblock %}
@@ -139,17 +157,23 @@
                         {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
                     </span>
                 </div>
-                <div class="race-candidates">
+                <ul class="race-candidates">
                     {% for c in race.candidates %}
-                    <div class="race-candidate {% if c.is_winner %}winner{% endif %}">
+                    <li class="race-candidate {% if c.is_winner %}winner{% endif %}">
                         <span class="name">
-                            <span class="{% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}">{{ c.name }}</span>
-                            {% if c.is_winner %}<span class="check">✓</span>{% endif %}
+                            {% if c.is_winner %}<span class="check">&#10003;</span>{% endif %}
+                            {{ c.name }}
                         </span>
-                        <span>{{ "{:,}".format(c.votes) }}</span>
-                    </div>
+                        <span class="party {% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}">{{ c.party or '-' }}</span>
+                        <span class="votes">{{ "{:,}".format(c.votes) }}</span>
+                    </li>
                     {% endfor %}
+                </ul>
+                {% if race.towns %}
+                <div class="race-towns">
+                    {{ race.towns|join(', ') }}
                 </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>

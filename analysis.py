@@ -1322,6 +1322,8 @@ def get_town_key_races(town):
         'President of the United States',
         'Governor',
         'United States Senator',
+        'Representative in Congress',
+        'Executive Councilor',
         'State Senator',
         'State Representative'
     ]
@@ -1672,9 +1674,28 @@ def get_office_year_results(office, year):
         elif party == 'Democratic':
             race['top_d'] = max(race['top_d'], votes)
 
+    # Get towns for each district (State Representative only)
+    if office == 'State Representative':
+        cycle = '2022-2030' if year >= 2022 else '2012-2020'
+        cursor.execute("""
+            SELECT county, district, municipality
+            FROM district_compositions
+            WHERE office = 'State Representative'
+            AND redistricting_cycle = ?
+            ORDER BY county, district, municipality
+        """, (cycle,))
+
+        district_towns = {}
+        for row in cursor.fetchall():
+            county, district, town = row
+            key = (county, district)
+            if key not in district_towns:
+                district_towns[key] = []
+            district_towns[key].append(town)
+
     conn.close()
 
-    # Calculate margin for each race
+    # Calculate margin for each race and add towns
     for race in races:
         total = race['top_r'] + race['top_d']
         if total > 0:
@@ -1684,6 +1705,11 @@ def get_office_year_results(office, year):
         # Clean up temp fields
         del race['top_r']
         del race['top_d']
+
+        # Add towns for State Rep
+        if office == 'State Representative':
+            key = (race['county'], race['district'])
+            race['towns'] = district_towns.get(key, [])
 
     return races
 
