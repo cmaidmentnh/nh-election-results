@@ -37,8 +37,8 @@
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
                         </td>
-                        <td class="text-right {% if d.trend > 0 %}r{% else %}d{% endif %}">
-                            {% if d.trend > 0 %}+{% endif %}{{ d.trend }}
+                        <td class="text-right {% if d.trend and d.trend > 0 %}r{% elif d.trend and d.trend < 0 %}d{% endif %}">
+                            {% if d.trend is not none %}{% if d.trend > 0 %}+{% endif %}{{ d.trend }}{% else %}—{% endif %}
                         </td>
                         <td class="text-right">{{ d.volatility }}</td>
                     </tr>

@@ -3492,23 +3492,28 @@ def get_swing_analysis():
             continue
         margin24 = ((r24 - d24) / total24) * 100
         winner24 = 'R' if margin24 > 0 else 'D'
+        contested24 = r24 > 0 and d24 > 0
 
-        # Calculate trend from 2022
+        # Calculate trend from 2022 - ONLY if both years were contested
         trend = 0
+        trend_valid = False
         if 2022 in years:
             r22, d22 = years[2022]['top_r'], years[2022]['top_d']
             total22 = r22 + d22
-            if total22 > 0:
+            contested22 = r22 > 0 and d22 > 0
+            if total22 > 0 and contested22 and contested24:
                 margin22 = ((r22 - d22) / total22) * 100
                 trend = margin24 - margin22
+                trend_valid = True
 
-        # Calculate volatility (standard deviation of margins)
+        # Calculate volatility - ONLY from contested races
         margins = []
         for y in [2020, 2022, 2024]:
             if y in years:
                 r, d = years[y]['top_r'], years[y]['top_d']
                 t = r + d
-                if t > 0:
+                # Only include contested races in volatility calculation
+                if t > 0 and r > 0 and d > 0:
                     margins.append(((r - d) / t) * 100)
 
         volatility = 0
@@ -3516,9 +3521,13 @@ def get_swing_analysis():
             avg = sum(margins) / len(margins)
             volatility = (sum((m - avg) ** 2 for m in margins) / len(margins)) ** 0.5
 
+        # Skip uncontested races entirely
+        if not contested24:
+            continue
+
         # Score: closer margin = higher score, trending against winner = higher score
         is_competitive = abs(margin24) < 10
-        trending_against = (winner24 == 'R' and trend < 0) or (winner24 == 'D' and trend > 0)
+        trending_against = trend_valid and ((winner24 == 'R' and trend < 0) or (winner24 == 'D' and trend > 0))
 
         if is_competitive or trending_against or volatility > 5:
             swing_districts.append({
@@ -3527,9 +3536,10 @@ def get_swing_analysis():
                 'seats': years[2024]['seats'],
                 'margin': round(margin24, 1),
                 'winner': winner24,
-                'trend': round(trend, 1),
+                'trend': round(trend, 1) if trend_valid else None,
                 'volatility': round(volatility, 1),
-                'contested': r24 > 0 and d24 > 0,
+                'contested': True,
+                'trend_valid': trend_valid,
                 'flip_likelihood': 'High' if abs(margin24) < 5 and trending_against else
                                    'Medium' if abs(margin24) < 10 else 'Low'
             })
@@ -3541,8 +3551,8 @@ def get_swing_analysis():
     return {
         'swing_districts': swing_districts[:50],
         'high_flip': [d for d in swing_districts if d['flip_likelihood'] == 'High'],
-        'trending_r': [d for d in swing_districts if d['trend'] > 3][:20],
-        'trending_d': [d for d in swing_districts if d['trend'] < -3][:20]
+        'trending_r': [d for d in swing_districts if d['trend_valid'] and d['trend'] > 3][:20],
+        'trending_d': [d for d in swing_districts if d['trend_valid'] and d['trend'] < -3][:20]
     }
 
 
