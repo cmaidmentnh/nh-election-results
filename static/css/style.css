@@ -480,6 +480,12 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+.winner-check {
+  color: #22c55e;
+  font-weight: bold;
+  margin-left: 0.25rem;
+}
+
 .candidate-party {
   width: 100px;
   font-size: 0.85rem;

@@ -66,7 +66,7 @@
                 <ul class="candidates">
                     {% for candidate in data.candidates %}
                     <li class="candidate {% if candidate.is_winner %}winner{% endif %}">
-                        <span class="candidate-name">{{ candidate.name }}</span>
+                        <span class="candidate-name">{{ candidate.name }}{% if candidate.is_winner %} <span class="winner-check" title="Winner">&#10003;</span>{% endif %}</span>
                         <span class="candidate-party {% if candidate.party == 'Republican' %}r{% elif candidate.party == 'Democratic' %}d{% endif %}">{{ candidate.party or '-' }}</span>
                         <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
                     </li>
@@ -211,6 +211,13 @@ const districtTowns = {{ info.towns | tojson }};
 const nameMap = {
     'Atkinson & Gilmanton': 'Atkinson & Gilmanton Academy Grant',
     'Second College': 'Second College Grant',
+    'Low & Burbanks': 'Low and Burbanks Grant',
+    'Thompson & Meserve': 'Thompson and Meserves Purchase',
+    "Pinkham's Grant": 'Pinkhams Grant',
+    "Hart's Location": 'Harts Location',
+    'Croydon': 'Croyden',
+    'Washington': 'Wasington',
+    'Newfields': 'Newfield',
     'Wentworths Location': "Wentworth's Location",
     "Wentworth's Location": 'Wentworths Location'
 };
