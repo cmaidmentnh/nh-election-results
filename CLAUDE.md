@@ -1,34 +1,70 @@
 # NH Election Results - Claude Reference
 
+## Server Access
+
+```bash
+# SSH to production server
+ssh root@138.197.20.97
+
+# App directory
+cd /opt/nh-election-results
+```
+
 ## Deployment
 
 ```bash
-# Deploy to production
-git push && ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
+# Commit, push, and deploy
+cd /Users/chrismaidment/Desktop/Data-Elections/election_app
+git add -A && git commit -m "message" && git push && ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
 ```
 
-## Server
+## Checking Logs
 
-- Host: 138.197.20.97
-- Path: /opt/nh-election-results
-- Service: nh-election-results
-- URL: elections.nhhouse.gop
+```bash
+# Recent logs
+ssh root@138.197.20.97 "journalctl -u nh-election-results -n 50 --no-pager"
+
+# Follow logs live
+ssh root@138.197.20.97 "journalctl -u nh-election-results -f"
+```
+
+## Service Management
+
+```bash
+# Restart
+ssh root@138.197.20.97 "systemctl restart nh-election-results"
+
+# Status
+ssh root@138.197.20.97 "systemctl status nh-election-results"
+```
+
+## App Details
+
+- **Server**: 138.197.20.97
+- **App Path**: /opt/nh-election-results
+- **Port**: 5006 (behind nginx/Cloudflare)
+- **Service**: nh-election-results.service
+- **Workers**: 2 gunicorn workers
 
 ## Database
 
-- Local: nh_elections.db
-- NEVER delete data without explicit user command
-- Back up before major changes: `cp nh_elections.db nh_elections.db.backup_$(date +%Y%m%d)`
+- SQLite database: `nh_elections.db`
+- Contains NH election results 2016-2024
 
-## Key Files
+## GeoJSON Files
 
-- `app.py` - Flask routes
-- `analysis.py` - Data analysis functions
-- `queries.py` - Database queries
-- `import_missing_towns.py` - Re-import town data from XLS files
+Located in `static/data/`:
+- `nh-towns.geojson` - 259 NH towns
+- `nh-counties.geojson` - 10 NH counties
+- `nh-house-base-districts.geojson` - State House base districts
+- `nh-house-floterial-districts.geojson` - State House floterial districts
+- `nh-senate-districts.geojson` - State Senate districts
+- `nh-exec-council-districts.geojson` - Executive Council districts
+- `nh-congress-districts.geojson` - Congressional districts
 
-## Notes
+## Important Notes
 
+- **NEVER delete data without explicit DELETE command from user**
 - Multi-member districts: Use MAX (top vote-getter) not SUM for margin calculations
 - Ties: If candidates tie at cutoff, neither wins that seat
 - Towns sharing county names: Hillsborough, Carroll, Grafton, Strafford, Sullivan, Merrimack
