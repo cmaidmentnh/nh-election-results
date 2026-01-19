@@ -118,6 +118,9 @@ def district(county, district):
     pvi = analysis.get_district_pvi(office, district, county)
     lean = analysis.classify_lean(pvi['current_pvi'])
 
+    # Get POTUS and Governor results for this district
+    topline = analysis.get_district_topline_races(office, district, county)
+
     # Group by year and calculate insights
     by_year = {}
     for r in results:
@@ -154,7 +157,8 @@ def district(county, district):
                          info=info,
                          by_year=by_year,
                          pvi=pvi,
-                         lean=lean)
+                         lean=lean,
+                         topline=topline)
 
 
 @app.route('/county/<name>')
@@ -298,6 +302,9 @@ def statewide_district(office, district):
     pvi = analysis.get_district_pvi(office, district)
     lean = analysis.classify_lean(pvi['current_pvi'])
 
+    # Get POTUS and Governor results for this district
+    topline = analysis.get_district_topline_races(office, district)
+
     # Group by year
     by_year = {}
     for r in results:
@@ -328,7 +335,8 @@ def statewide_district(office, district):
                          info=info,
                          by_year=by_year,
                          pvi=pvi,
-                         lean=lean)
+                         lean=lean,
+                         topline=topline)
 
 
 # ============== NEW FEATURE ROUTES ==============

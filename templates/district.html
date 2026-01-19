@@ -65,6 +65,44 @@
     </div>
 
     <aside class="sidebar">
+        {% if topline %}
+        <div class="sidebar-section">
+            <h3>Topline Results</h3>
+            <table class="topline-table">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>President</th>
+                        <th>Governor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year in topline.keys()|sort(reverse=true) %}
+                    <tr>
+                        <td>{{ year }}</td>
+                        <td>
+                            {% if 'President of the United States' in topline[year] %}
+                            {% set p = topline[year]['President of the United States'] %}
+                            <span class="{% if p.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if p.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(p.margin|abs) }}
+                            </span>
+                            {% else %}&mdash;{% endif %}
+                        </td>
+                        <td>
+                            {% if 'Governor' in topline[year] %}
+                            {% set g = topline[year]['Governor'] %}
+                            <span class="{% if g.margin > 0 %}r{% else %}d{% endif %}">
+                                {% if g.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(g.margin|abs) }}
+                            </span>
+                            {% else %}&mdash;{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <div class="sidebar-section">
             <h3>Towns ({{ info.towns|length }})</h3>
             <ul class="town-list" style="columns: 1;">

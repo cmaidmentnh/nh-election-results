@@ -1156,6 +1156,56 @@ def get_district_pvi(office, district, county=None):
     }
 
 
+def get_district_topline_races(office, district, county=None):
+    """
+    Get POTUS and Governor results aggregated for a district's towns.
+    Returns dict with margins for President and Governor by year.
+    """
+    towns = get_towns_in_district(office, district, county)
+    if not towns:
+        return {}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    placeholders = ','.join('?' * len(towns))
+
+    cursor.execute(f"""
+        SELECT
+            e.year,
+            o.name as office,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE res.municipality IN ({placeholders})
+        AND e.election_type = 'general'
+        AND o.name IN ('President of the United States', 'Governor')
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY e.year, o.name
+        ORDER BY e.year DESC
+    """, towns)
+
+    results = {}
+    for year, off, r, d in cursor.fetchall():
+        if year not in results:
+            results[year] = {}
+        total = r + d
+        if total > 0:
+            margin = (r - d) / total * 100
+            results[year][off] = {
+                'r': r,
+                'd': d,
+                'margin': round(margin, 1)
+            }
+
+    conn.close()
+    return results
+
+
 def get_town_key_races(town):
     """
     Get key race margins across years for a town.
