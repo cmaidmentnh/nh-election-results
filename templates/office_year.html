@@ -56,11 +56,13 @@
 }
 .race-candidates {
     list-style: none;
+    margin: 0;
+    padding: 0;
 }
 .race-candidate {
     display: flex;
-    justify-content: space-between;
-    padding: 0.4rem 0;
+    align-items: center;
+    padding: 0.35rem 0;
     border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
 }
@@ -71,22 +73,20 @@
     font-weight: 600;
 }
 .race-candidate .name {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-.race-candidate .party {
-    width: 90px;
-    font-size: 0.85rem;
-}
-.race-candidate .votes {
-    width: 70px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+    flex: 1;
 }
 .race-candidate .check {
     color: #22c55e;
-    font-size: 0.9rem;
+    margin-right: 0.3rem;
+}
+.race-candidate .party {
+    width: 85px;
+    font-size: 0.85rem;
+}
+.race-candidate .votes {
+    width: 65px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 .race-towns {
     font-size: 0.8rem;
@@ -160,10 +160,8 @@
                 <ul class="race-candidates">
                     {% for c in race.candidates %}
                     <li class="race-candidate {% if c.is_winner %}winner{% endif %}">
-                        <span class="name">
-                            {% if c.is_winner %}<span class="check">&#10003;</span>{% endif %}
-                            {{ c.name }}
-                        </span>
+                        {% if c.is_winner %}<span class="check">&#10003;</span>{% endif %}
+                        <span class="name">{{ c.name }}</span>
                         <span class="party {% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}">{{ c.party or '-' }}</span>
                         <span class="votes">{{ "{:,}".format(c.votes) }}</span>
                     </li>
