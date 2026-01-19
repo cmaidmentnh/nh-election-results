@@ -103,11 +103,11 @@ def race_entry(race_id):
 
     # Get candidates
     cursor.execute("""
-        SELECT DISTINCT c.id, c.name, c.party
+        SELECT DISTINCT c.id, c.name, c.party, c.display_order
         FROM candidates c
         JOIN results res ON c.id = res.candidate_id
         WHERE res.race_id = ?
-        ORDER BY c.party DESC, c.name
+        ORDER BY c.party DESC, c.display_order, c.name
     """, (race_id,))
     candidates = cursor.fetchall()
 
