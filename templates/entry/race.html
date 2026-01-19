@@ -4,35 +4,22 @@
 
 {% block content %}
 <style>
-    .container { max-width: none; padding: 1rem; }
-    #results-table {
-        width: auto;
-        border-collapse: collapse;
+    .container { max-width: none; }
+    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #results-table { border-collapse: collapse; }
+    #results-table th, #results-table td { padding: 0.4rem 0.5rem; white-space: nowrap; font-size: 14px; }
+    #results-table input { width: 60px; text-align: right; padding: 0.3rem; font-size: 14px; border: 1px solid #ccc; border-radius: 3px; }
+    #results-table th:first-child { text-align: left; position: sticky; left: 0; background: #f5f5f5; z-index: 1; min-width: 120px; }
+    #results-table td:first-child { position: sticky; left: 0; background: white; min-width: 120px; }
+    #results-table tbody tr:nth-child(odd) td:first-child { background: #fafafa; }
+    #results-table tbody tr:hover { background: #f0f7ff; }
+    @media (max-width: 768px) {
+        .container { padding: 0.5rem; }
+        #results-table th, #results-table td { padding: 0.3rem; font-size: 12px; }
+        #results-table input { width: 50px; font-size: 14px; padding: 0.4rem 0.2rem; }
+        #results-table th:first-child, #results-table td:first-child { min-width: 100px; }
+        h2 { font-size: 1.1rem; }
     }
-    #results-table input[type="number"] {
-        width: 55px;
-        padding: 0.2rem;
-        font-size: 13px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-    }
-    #results-table input[type="number"]:focus {
-        outline: 2px solid #1e3a5f;
-        border-color: #1e3a5f;
-    }
-    #results-table th, #results-table td {
-        padding: 0.25rem 0.4rem;
-        font-size: 13px;
-    }
-    #results-table th {
-        background: #f0f0f0;
-        position: sticky;
-        top: 0;
-    }
-    #results-table tbody tr:hover {
-        background: #f9f9f9;
-    }
-    .card { padding: 0.75rem; }
 </style>
 <p><a href="{{ url_for('entry.election_races', election_id=race.election_id) }}">&larr; Back to Races</a></p>
 
@@ -45,52 +32,50 @@
 </div>
 {% else %}
 
-<div class="card" style="overflow-x: auto;">
+<div class="card">
     <h3>Enter Vote Counts</h3>
     <p class="text-small text-muted" style="margin-bottom: 1rem;">Enter votes for each candidate in each town. Changes save automatically.</p>
 
+    <div class="table-wrapper">
     <table id="results-table">
         <thead>
             <tr>
-                <th>Town</th>
-                {% for c in candidates %}
-                <th style="text-align: center;">
-                    {{ c.name }}
-                    <span style="font-weight: normal; {% if c.party == 'Republican' %}color: #8b0000;{% elif c.party == 'Democratic' %}color: #1e3a5f;{% else %}color: #666;{% endif %}">({{ c.party[0] if c.party else '?' }})</span>
-                </th>
+                <th>Candidate</th>
+                {% for town in towns %}
+                <th style="text-align: center;">{{ town }}</th>
                 {% endfor %}
                 <th style="text-align: center;">Total</th>
             </tr>
         </thead>
         <tbody>
-            {% for town in towns %}
-            <tr data-town="{{ town }}">
-                <td>{{ town }}</td>
-                {% for c in candidates %}
+            {% for c in candidates %}
+            <tr data-candidate="{{ c.id }}">
+                <td><strong>{{ c.name }}</strong> <span style="{% if c.party == 'Republican' %}color:#8b0000{% elif c.party == 'Democratic' %}color:#1e3a5f{% endif %}">({{ c.party[0] if c.party else '?' }})</span></td>
+                {% for town in towns %}
                 <td style="text-align: center;">
                     <input type="number"
                            class="vote-input"
                            data-town="{{ town }}"
                            data-candidate="{{ c.id }}"
                            value="{{ results.get(town, {}).get(c.id, 0) }}"
-                           min="0"
-                           style="text-align: center;">
+                           min="0">
                 </td>
                 {% endfor %}
-                <td class="row-total" style="text-align: center; font-weight: 600;">0</td>
+                <td class="row-total" data-candidate="{{ c.id }}" style="text-align: center; font-weight: 600;">0</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr style="font-weight: 600; background: #f5f5f5;">
                 <td>TOTAL</td>
-                {% for c in candidates %}
-                <td class="col-total" data-candidate="{{ c.id }}" style="text-align: center;">0</td>
+                {% for town in towns %}
+                <td class="col-total" data-town="{{ town }}" style="text-align: center;">0</td>
                 {% endfor %}
                 <td id="grand-total" style="text-align: center;">0</td>
             </tr>
         </tfoot>
     </table>
+    </div>
 </div>
 
 <div class="card">
@@ -108,7 +93,7 @@ const raceId = {{ race.id }};
 let saveTimeout = null;
 
 function updateTotals() {
-    // Row totals
+    // Row totals (per candidate)
     document.querySelectorAll('#results-table tbody tr').forEach(row => {
         let total = 0;
         row.querySelectorAll('.vote-input').forEach(input => {
@@ -117,14 +102,14 @@ function updateTotals() {
         row.querySelector('.row-total').textContent = total.toLocaleString();
     });
 
-    // Column totals
-    const candidates = [...new Set([...document.querySelectorAll('.vote-input')].map(i => i.dataset.candidate))];
-    candidates.forEach(candId => {
+    // Column totals (per town)
+    const towns = [...new Set([...document.querySelectorAll('.vote-input')].map(i => i.dataset.town))];
+    towns.forEach(town => {
         let total = 0;
-        document.querySelectorAll(`.vote-input[data-candidate="${candId}"]`).forEach(input => {
+        document.querySelectorAll(`.vote-input[data-town="${town}"]`).forEach(input => {
             total += parseInt(input.value) || 0;
         });
-        document.querySelector(`.col-total[data-candidate="${candId}"]`).textContent = total.toLocaleString();
+        document.querySelector(`.col-total[data-town="${town}"]`).textContent = total.toLocaleString();
     });
 
     // Grand total
