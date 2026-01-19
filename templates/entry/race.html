@@ -3,6 +3,17 @@
 {% block title %}Enter Results - {{ race.county }} {{ race.district }}{% endblock %}
 
 {% block content %}
+<style>
+    .container { max-width: 1400px; }
+    #results-table input[type="number"] {
+        width: 60px;
+        padding: 0.25rem;
+        font-size: 0.9rem;
+    }
+    #results-table th, #results-table td {
+        padding: 0.35rem 0.5rem;
+    }
+</style>
 <p><a href="{{ url_for('entry.election_races', election_id=race.election_id) }}">&larr; Back to Races</a></p>
 
 <h2>{{ race.office_name }} - {% if race.county %}{{ race.county }} {% endif %}District {{ race.district }}</h2>
@@ -14,11 +25,11 @@
 </div>
 {% else %}
 
-<div class="card">
+<div class="card" style="overflow-x: auto;">
     <h3>Enter Vote Counts</h3>
     <p class="text-small text-muted" style="margin-bottom: 1rem;">Enter votes for each candidate in each town. Changes save automatically.</p>
 
-    <table id="results-table">
+    <table id="results-table" style="min-width: 100%; white-space: nowrap;">
         <thead>
             <tr>
                 <th>Town</th>
@@ -43,7 +54,7 @@
                            data-candidate="{{ c.id }}"
                            value="{{ results.get(town, {}).get(c.id, 0) }}"
                            min="0"
-                           style="width: 70px; text-align: center; padding: 0.3rem;">
+                           style="text-align: center;">
                 </td>
                 {% endfor %}
                 <td class="row-total" style="text-align: center; font-weight: 600;">0</td>
