@@ -3567,9 +3567,18 @@ def get_swing_analysis():
     trending_d = sorted([d for d in swing_districts if d['trend_valid'] and d['trend'] < -3],
                        key=lambda x: x['trend'])[:15]
 
+    # High flip = single-seat districts with close margins trending against holder
+    high_flip = [d for d in swing_districts
+                 if d['flip_likelihood'] == 'High' and d['seats'] == 1]
+
+    # Competitive multi-seat = multi-seat districts with close margins (likely to stay split)
+    competitive_multi = [d for d in swing_districts
+                        if d['seats'] > 1 and abs(d['margin']) < 5]
+
     return {
         'swing_districts': swing_districts[:50],
-        'high_flip': [d for d in swing_districts if d['flip_likelihood'] == 'High'],
+        'high_flip': high_flip,
+        'competitive_multi': competitive_multi,
         'trending_r': trending_r,
         'trending_d': trending_d
     }

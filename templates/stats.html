@@ -18,19 +18,65 @@
             <p class="text-muted mb-2">State House districts most likely to flip based on margin, trend, and volatility</p>
 
             {% if swing.high_flip %}
-            <h3 class="mt-2">High Flip Likelihood</h3>
+            <h3 class="mt-2">Single-Seat Flip Targets</h3>
+            <p class="text-muted" style="font-size: 0.9em;">Single-seat districts with close margins trending against the current holder</p>
             <table>
                 <thead>
                     <tr>
                         <th>District</th>
-                        <th>Current Seats</th>
+                        <th>Holder</th>
                         <th class="text-right">2022</th>
                         <th class="text-right">2024</th>
-                        <th>Outlook</th>
+                        <th>Flip</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for d in swing.high_flip[:15] %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
+                            <br><span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                        </td>
+                        <td>
+                            {% if d.winners %}
+                                <span class="{% if d.winners[0].party == 'Republican' %}r{% else %}d{% endif %}">{{ d.winners[0].name.split(' ')[-1] }} ({{ d.winners[0].party[0] }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right {% if d.margin22 and d.margin22 > 0 %}r{% elif d.margin22 and d.margin22 < 0 %}d{% endif %}">
+                            {% if d.margin22 is not none %}{% if d.margin22 > 0 %}R+{% else %}D+{% endif %}{{ d.margin22|abs }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
+                            {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
+                        </td>
+                        <td>
+                            {% if d.winner == 'R' and d.trend and d.trend < 0 %}
+                                <span class="d"><strong>R→D</strong></span>
+                            {% elif d.winner == 'D' and d.trend and d.trend > 0 %}
+                                <span class="r"><strong>D→R</strong></span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if swing.competitive_multi %}
+            <h3 class="mt-2">Competitive Multi-Seat Districts</h3>
+            <p class="text-muted" style="font-size: 0.9em;">Multi-seat districts with close margins — typically split between parties</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th>Seats</th>
+                        <th class="text-right">2022</th>
+                        <th class="text-right">2024</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in swing.competitive_multi[:10] %}
                     {% set r_seats = d.winners|selectattr('party', 'equalto', 'Republican')|list|length %}
                     {% set d_seats = d.winners|selectattr('party', 'equalto', 'Democratic')|list|length %}
                     <tr>
@@ -48,23 +94,6 @@
                         </td>
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
-                        </td>
-                        <td>
-                            {% if r_seats > 0 and d_seats == 0 and d.trend and d.trend < 0 %}
-                                <span class="d"><strong>R→D</strong></span>
-                            {% elif d_seats > 0 and r_seats == 0 and d.trend and d.trend > 0 %}
-                                <span class="r"><strong>D→R</strong></span>
-                            {% elif r_seats > 0 and d_seats > 0 %}
-                                {% if d.trend and d.trend < 0 %}
-                                    <span class="d">+D seat</span>
-                                {% elif d.trend and d.trend > 0 %}
-                                    <span class="r">+R seat</span>
-                                {% else %}
-                                    Split
-                                {% endif %}
-                            {% else %}
-                                —
-                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
