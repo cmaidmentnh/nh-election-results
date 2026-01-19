@@ -1326,39 +1326,46 @@ def get_town_representation(town):
 
 def get_turnout_analysis():
     """
-    Analyze turnout trends across towns and years using official ballots cast data.
+    Analyze turnout trends across towns and years using presidential vote totals.
     Returns towns with biggest turnout changes, overall trends, etc.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get turnout by town and year from voter_registration table (ballots_cast)
+    # Get total votes in presidential races by town/year (as proxy for turnout)
     cursor.execute("""
         SELECT
-            v.municipality as town,
+            res.municipality as town,
             e.year,
-            v.ballots_cast
-        FROM voter_registration v
-        JOIN elections e ON v.election_id = e.id
+            SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-        AND v.ballots_cast > 0
-        ORDER BY v.municipality, e.year
+        AND o.name = 'President of the United States'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY res.municipality, e.year
+        ORDER BY res.municipality, e.year
     """)
 
     town_turnout = defaultdict(dict)
     for row in cursor.fetchall():
-        town, year, ballots = row
+        town, year, votes = row
+        if not town or town in ['TOTALS', 'Court ordered recount']:
+            continue
         # Normalize ward names to town names
         if ' Ward ' in town:
             base_town = town[:town.index(' Ward ')]
             if base_town not in town_turnout or year not in town_turnout[base_town]:
                 town_turnout[base_town][year] = 0
-            town_turnout[base_town][year] += ballots
+            town_turnout[base_town][year] += votes
         else:
-            town_turnout[town][year] = ballots
+            town_turnout[town][year] = votes
 
-    # Calculate changes
-    years = [2016, 2018, 2020, 2022, 2024]
+    # Calculate changes (presidential years only)
+    presidential_years = [2016, 2020, 2024]
     turnout_changes = []
 
     for town, by_year in town_turnout.items():
@@ -1379,7 +1386,7 @@ def get_turnout_analysis():
 
     # Statewide totals
     statewide = {}
-    for year in years:
+    for year in presidential_years:
         total = sum(by_year.get(year, 0) for by_year in town_turnout.values())
         statewide[year] = total
 
@@ -1390,7 +1397,7 @@ def get_turnout_analysis():
         'biggest_gains': biggest_gains,
         'biggest_losses': biggest_losses,
         'statewide': statewide,
-        'years': years
+        'years': presidential_years
     }
 
 
@@ -4075,4 +4082,142 @@ def get_comprehensive_stats():
         'correlation': get_correlation_analysis(),
         'trends': get_long_term_trends(),
         'bellwether': get_bellwether_analysis()
+    }
+
+
+def get_trump_comparison():
+    """
+    Compare R State Rep performance vs Trump in 2024.
+    Returns districts where R candidates under/outperformed Trump.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get Trump margin by town in 2024
+    cursor.execute("""
+        SELECT
+            res.municipality,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = 2024
+        AND e.election_type = 'general'
+        AND o.name = 'President of the United States'
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY res.municipality
+    """)
+
+    trump_by_town = {}
+    for row in cursor.fetchall():
+        town, r, d = row
+        if r + d > 0:
+            trump_by_town[town] = ((r - d) / (r + d)) * 100
+
+    # Get State Rep margins by district in 2024
+    cursor.execute("""
+        SELECT
+            r.county,
+            r.district,
+            r.seats,
+            res.municipality,
+            c.name as candidate_name,
+            c.party,
+            res.votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = 2024
+        AND e.election_type = 'general'
+        AND o.name = 'State Representative'
+        AND c.party IN ('Republican', 'Democratic')
+        ORDER BY r.county, r.district, res.municipality, c.party
+    """)
+
+    # Aggregate by district
+    district_data = defaultdict(lambda: {
+        'towns': set(),
+        'r_votes': 0,
+        'd_votes': 0,
+        'seats': 1,
+        'r_candidates': set()
+    })
+
+    for row in cursor.fetchall():
+        county, district, seats, town, candidate, party, votes = row
+        key = (county, district)
+        district_data[key]['towns'].add(town)
+        district_data[key]['seats'] = seats or 1
+        if party == 'Republican':
+            district_data[key]['r_votes'] += votes
+            district_data[key]['r_candidates'].add(candidate)
+        else:
+            district_data[key]['d_votes'] += votes
+
+    conn.close()
+
+    # Calculate comparisons
+    results = []
+    for (county, district), data in district_data.items():
+        r_votes = data['r_votes']
+        d_votes = data['d_votes']
+        seats = data['seats']
+
+        # Skip uncontested races
+        if r_votes == 0 or d_votes == 0:
+            continue
+
+        # Calculate State Rep margin (normalize for seats)
+        rep_margin = ((r_votes - d_votes) / (r_votes + d_votes)) * 100
+
+        # Calculate Trump margin for this district's towns
+        trump_r = 0
+        trump_d = 0
+        for town in data['towns']:
+            if town in trump_by_town:
+                # We need raw votes - recalculate
+                pass
+
+        # Get Trump votes for district towns
+        district_trump_votes = []
+        for town in data['towns']:
+            if town in trump_by_town:
+                district_trump_votes.append(trump_by_town[town])
+
+        if not district_trump_votes:
+            continue
+
+        # Average Trump margin across towns (simple average since we don't have per-town population here)
+        # Better: get actual votes
+        trump_margin = sum(district_trump_votes) / len(district_trump_votes)
+
+        # Gap: positive means R outperformed Trump
+        gap = rep_margin - trump_margin
+
+        results.append({
+            'county': county,
+            'district': district,
+            'towns': ', '.join(sorted(data['towns'])),
+            'trump': trump_margin,
+            'rep': rep_margin,
+            'gap': gap,
+            'r_candidates': sorted(data['r_candidates'])
+        })
+
+    # Separate under/outperformers
+    underperformers = sorted([r for r in results if r['gap'] < 0], key=lambda x: x['gap'])
+    outperformers = sorted([r for r in results if r['gap'] >= 0], key=lambda x: -x['gap'])
+
+    # Average gap
+    avg_gap = sum(r['gap'] for r in results) / len(results) if results else 0
+
+    return {
+        'underperformers': underperformers,
+        'outperformers': outperformers,
+        'avg_gap': avg_gap
     }

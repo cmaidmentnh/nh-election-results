@@ -453,6 +453,16 @@ def incumbents():
     return render_template('incumbents.html', data=incumbent_data)
 
 
+@app.route('/trump-comparison')
+def trump_comparison():
+    """Compare R State Rep performance vs Trump by district."""
+    data = analysis.get_trump_comparison()
+    return render_template('trump_comparison.html',
+                         underperformers=data['underperformers'],
+                         outperformers=data['outperformers'],
+                         avg_gap=data['avg_gap'])
+
+
 @app.route('/compare')
 def compare():
     """Head-to-head comparison tool."""
