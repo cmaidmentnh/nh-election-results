@@ -469,7 +469,10 @@ def compare_years(town, year1, year2):
 
 
 def get_party_control(year):
-    """Get party control seat counts for legislative offices."""
+    """Get party control seat counts for legislative offices.
+
+    Handles ties correctly - if there's a tie at the cutoff, neither tied candidate wins.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -492,10 +495,25 @@ def get_party_control(year):
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor')
             GROUP BY r.id, c.id
+        ),
+        -- Count candidates per race that would win (rank <= seats)
+        race_winner_count AS (
+            SELECT race_id, COUNT(*) as winner_count, MAX(seats) as seats
+            FROM race_totals
+            WHERE rank <= seats
+            GROUP BY race_id
+        ),
+        -- A race has a tie if winner_count > seats
+        winners AS (
+            SELECT rt.office, rt.race_id, rt.party, rt.rank
+            FROM race_totals rt
+            JOIN race_winner_count rwc ON rt.race_id = rwc.race_id
+            WHERE rt.rank <= rt.seats
+            -- Exclude all candidates at the tied rank if there's a tie
+            AND NOT (rwc.winner_count > rwc.seats AND rt.rank = rt.seats)
         )
         SELECT office, party, COUNT(*) as seats
-        FROM race_totals
-        WHERE rank <= seats
+        FROM winners
         GROUP BY office, party
     """, (year,))
 
