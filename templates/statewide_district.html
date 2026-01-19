@@ -215,6 +215,18 @@
 <script>
 const districtTowns = {{ info.towns | tojson }};
 
+// Name normalization for unincorporated places
+const nameMap = {
+    'Atkinson & Gilmanton': 'Atkinson & Gilmanton Academy Grant',
+    'Second College': 'Second College Grant',
+    'Wentworths Location': "Wentworth's Location",
+    "Wentworth's Location": 'Wentworths Location'
+};
+
+function normalizeGeoName(geoName) {
+    return nameMap[geoName] || geoName;
+}
+
 const map = L.map('district-map', {
     zoomControl: false,
     attributionControl: false,
@@ -231,9 +243,11 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png
 fetch('/static/data/nh-towns.geojson')
     .then(r => r.json())
     .then(geojson => {
-        const districtFeatures = geojson.features.filter(f =>
-            districtTowns.includes(f.properties.name)
-        );
+        const districtFeatures = geojson.features.filter(f => {
+            const geoName = f.properties.name;
+            const normalizedName = normalizeGeoName(geoName);
+            return districtTowns.includes(geoName) || districtTowns.includes(normalizedName);
+        });
 
         const layer = L.geoJSON(districtFeatures, {
             style: {
