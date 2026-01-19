@@ -3498,12 +3498,14 @@ def get_swing_analysis():
         # Calculate trend from 2022 - ONLY if both years were contested
         trend = 0
         trend_valid = False
+        margin22 = None
         if 2022 in years:
             r22, d22 = years[2022]['top_r'], years[2022]['top_d']
             total22 = r22 + d22
             contested22 = r22 > 0 and d22 > 0
-            if total22 > 0 and contested22 and contested24:
-                margin22 = ((r22 - d22) / total22) * 100
+            if total22 > 0:
+                margin22 = round(((r22 - d22) / total22) * 100, 1)
+            if contested22 and contested24 and total22 > 0:
                 trend = margin24 - margin22
                 trend_valid = True
 
@@ -3533,12 +3535,18 @@ def get_swing_analysis():
         if is_competitive or trending_against or volatility > 5:
             # Get towns in this district
             towns = queries.get_district_towns(county, district, 'State Representative')
+
+            # Get the actual 2024 winners
+            winners = queries.get_district_winners(county, district, 'State Representative', 2024)
+
             swing_districts.append({
                 'county': county,
                 'district': district,
                 'seats': years[2024]['seats'],
                 'margin': round(margin24, 1),
+                'margin22': margin22,
                 'winner': winner24,
+                'winners': winners,
                 'trend': round(trend, 1) if trend_valid else None,
                 'volatility': round(volatility, 1),
                 'contested': True,

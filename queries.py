@@ -453,6 +453,51 @@ def get_district_towns(county, district, office='State Representative'):
     return towns
 
 
+def get_district_winners(county, district, office='State Representative', year=2024):
+    """Get the winning candidates for a district in a given year (top N by votes where N = seats)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # First get the number of seats
+    cursor.execute("""
+        SELECT r.seats
+        FROM races r
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        LIMIT 1
+    """, (county, str(district), office, year))
+    row = cursor.fetchone()
+    seats = row[0] if row else 1
+
+    # Get candidates ordered by votes, take top N
+    cursor.execute("""
+        SELECT c.name, c.party, SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY c.id
+        ORDER BY total_votes DESC
+    """, (county, str(district), office, year))
+
+    all_candidates = [{'name': row[0], 'party': row[1], 'votes': row[2]} for row in cursor.fetchall()]
+    winners = all_candidates[:seats]
+    conn.close()
+    return winners
+
+
 def get_district_info(county, district, office='State Representative'):
     """Get info about a district."""
     conn = get_connection()

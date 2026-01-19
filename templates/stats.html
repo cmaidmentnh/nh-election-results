@@ -23,9 +23,9 @@
                 <thead>
                     <tr>
                         <th>District</th>
-                        <th>Seats</th>
-                        <th class="text-right">Margin</th>
-                        <th class="text-right">Trend</th>
+                        <th>Current Holders</th>
+                        <th class="text-right">2022</th>
+                        <th class="text-right">2024</th>
                         <th>Flip</th>
                     </tr>
                 </thead>
@@ -34,20 +34,24 @@
                     <tr>
                         <td>
                             <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
-                            <span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                            <br><span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
                         </td>
-                        <td>{{ d.seats }}</td>
+                        <td>
+                            {% for w in d.winners %}
+                                <span class="{% if w.party == 'Republican' %}r{% else %}d{% endif %}">{{ w.name.split(' ')[-1] }} ({{ w.party[0] }})</span>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-right {% if d.margin22 and d.margin22 > 0 %}r{% elif d.margin22 and d.margin22 < 0 %}d{% endif %}">
+                            {% if d.margin22 is not none %}{% if d.margin22 > 0 %}R+{% else %}D+{% endif %}{{ d.margin22|abs }}%{% else %}—{% endif %}
+                        </td>
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
                         </td>
-                        <td class="text-right {% if d.trend and d.trend > 0 %}r{% elif d.trend and d.trend < 0 %}d{% endif %}">
-                            {% if d.trend is not none %}{% if d.trend > 0 %}+{% endif %}{{ d.trend }}{% else %}—{% endif %}
-                        </td>
                         <td>
                             {% if d.trend and d.trend < 0 and d.winner == 'R' %}
-                                <span class="d">R→D</span>
+                                <span class="d"><strong>R→D</strong></span>
                             {% elif d.trend and d.trend > 0 and d.winner == 'D' %}
-                                <span class="r">D→R</span>
+                                <span class="r"><strong>D→R</strong></span>
                             {% else %}
                                 —
                             {% endif %}
