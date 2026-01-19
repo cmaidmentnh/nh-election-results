@@ -3529,16 +3529,54 @@ def get_ticket_splitting_analysis():
 
 def get_bellwether_analysis():
     """
-    Identify bellwether towns - those that best predict statewide results.
+    Identify bellwether towns - those that best predict NH House control.
+    Based on State Rep votes and which party wins majority of House seats.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get statewide results by year
+    # Get House seats won by party for each year
+    # Winners are top N candidates by total votes where N = seats
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT
+                r.id as race_id,
+                e.year,
+                c.id as candidate_id,
+                c.party,
+                r.seats,
+                SUM(res.votes) as total_votes,
+                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.election_type = 'general'
+            AND o.name = 'State Representative'
+            AND c.party IN ('Republican', 'Democratic')
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY r.id, c.id
+        )
+        SELECT year, party, COUNT(*) as seats_won
+        FROM race_totals
+        WHERE rank <= seats
+        GROUP BY year, party
+    """)
+
+    house_control = {}
+    seats_by_year = defaultdict(lambda: {'R': 0, 'D': 0})
+    for year, party, seats in cursor.fetchall():
+        p = 'R' if party == 'Republican' else 'D'
+        seats_by_year[year][p] = seats
+
+    for year, seats in seats_by_year.items():
+        house_control[year] = 'R' if seats['R'] > seats['D'] else 'D'
+
+    # Get statewide State Rep vote totals by year
     cursor.execute("""
         SELECT
             e.year,
-            o.name as office,
             c.party,
             SUM(res.votes) as votes
         FROM results res
@@ -3547,34 +3585,29 @@ def get_bellwether_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
+        AND o.name = 'State Representative'
         AND c.party IN ('Republican', 'Democratic')
-        AND o.name IN ('Governor', 'President of the United States', 'United States Senator')
-        GROUP BY e.year, o.name, c.party
+        GROUP BY e.year, c.party
     """)
 
-    statewide = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0}))
-    for year, office, party, votes in cursor.fetchall():
+    statewide_rep_votes = defaultdict(lambda: {'R': 0, 'D': 0})
+    for year, party, votes in cursor.fetchall():
         p = 'R' if party == 'Republican' else 'D'
-        statewide[year][office][p] += votes
+        statewide_rep_votes[year][p] = votes
 
-    # Calculate statewide margins
+    # Calculate statewide margins (for reference)
     statewide_margins = {}
-    for year, offices in statewide.items():
-        # Use Governor or President
-        for office in ['Governor', 'President of the United States']:
-            if office in offices:
-                total = offices[office]['R'] + offices[office]['D']
-                if total > 0:
-                    margin = ((offices[office]['R'] - offices[office]['D']) / total) * 100
-                    statewide_margins[year] = round(margin, 1)
-                    break
+    for year, votes in statewide_rep_votes.items():
+        total = votes['R'] + votes['D']
+        if total > 0:
+            margin = ((votes['R'] - votes['D']) / total) * 100
+            statewide_margins[year] = round(margin, 1)
 
-    # Get town-level results
+    # Get town-level State Rep votes
     cursor.execute("""
         SELECT
             e.year,
             res.municipality,
-            o.name as office,
             c.party,
             SUM(res.votes) as votes
         FROM results res
@@ -3583,66 +3616,70 @@ def get_bellwether_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
+        AND o.name = 'State Representative'
         AND c.party IN ('Republican', 'Democratic')
-        AND o.name IN ('Governor', 'President of the United States')
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
         AND res.municipality NOT GLOB '[0-9]*'
-        GROUP BY e.year, res.municipality, o.name, c.party
+        GROUP BY e.year, res.municipality, c.party
     """)
 
     town_data = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0}))
-    for year, muni, office, party, votes in cursor.fetchall():
+    for year, muni, party, votes in cursor.fetchall():
         if ' Ward ' in muni:
             muni = muni[:muni.index(' Ward ')]
         p = 'R' if party == 'Republican' else 'D'
-        town_data[muni][(year, office)][p] += votes
+        town_data[muni][year][p] += votes
 
     # Calculate bellwether score for each town
-    # Score = average absolute deviation from statewide result
+    # Score = how often town's State Rep vote predicted House control
     bellwethers = []
 
-    for muni, year_offices in town_data.items():
-        deviations = []
+    for muni, years_data in town_data.items():
         correct_calls = 0
         total_calls = 0
+        deviations = []
 
-        for (year, office), votes in year_offices.items():
-            if year not in statewide_margins:
+        for year, votes in years_data.items():
+            if year not in house_control:
                 continue
 
             total = votes['R'] + votes['D']
-            if total < 100:  # Skip small sample sizes
+            if total < 50:  # Skip tiny samples
                 continue
 
             town_margin = ((votes['R'] - votes['D']) / total) * 100
-            state_margin = statewide_margins[year]
+            town_winner = 'R' if town_margin > 0 else 'D'
 
-            deviation = abs(town_margin - state_margin)
-            deviations.append(deviation)
-
-            # Did town pick the winner?
-            if (town_margin > 0 and state_margin > 0) or (town_margin < 0 and state_margin < 0):
+            # Did town's State Rep vote predict House control?
+            if town_winner == house_control[year]:
                 correct_calls += 1
             total_calls += 1
 
-        if len(deviations) >= 3:  # Need at least 3 elections
+            # Also track deviation from statewide State Rep margin
+            if year in statewide_margins:
+                deviation = abs(town_margin - statewide_margins[year])
+                deviations.append(deviation)
+
+        if total_calls >= 3:  # Need at least 3 elections
             bellwethers.append({
                 'town': muni,
-                'avg_deviation': round(sum(deviations) / len(deviations), 1),
+                'avg_deviation': round(sum(deviations) / len(deviations), 1) if deviations else 0,
                 'correct_calls': correct_calls,
                 'total_calls': total_calls,
                 'accuracy': round((correct_calls / total_calls) * 100, 1) if total_calls > 0 else 0,
-                'elections': len(deviations)
+                'elections': total_calls
             })
 
-    # Sort by lowest deviation (best bellwethers)
-    bellwethers.sort(key=lambda x: x['avg_deviation'])
+    # Sort by accuracy first, then lowest deviation
+    bellwethers.sort(key=lambda x: (-x['accuracy'], x['avg_deviation']))
 
     conn.close()
 
     return {
         'statewide_margins': statewide_margins,
+        'house_control': house_control,
+        'seats_by_year': dict(seats_by_year),
         'bellwethers': bellwethers[:50],
         'best_predictors': [b for b in bellwethers if b['accuracy'] == 100][:20]
     }
