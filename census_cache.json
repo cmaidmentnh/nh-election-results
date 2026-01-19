@@ -5,7 +5,15 @@
     "median_home_value": 379900,
     "median_age": 55.1,
     "college_pct": 35.3,
-    "white_pct": 95.1
+    "white_pct": 95.1,
+    "black_pct": 1.4,
+    "asian_pct": 0.3,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 92.1,
+    "veteran_pct": 12.5,
+    "foreign_born_pct": 1.4,
+    "poverty_pct": 3.3,
+    "unemployment_pct": 1.4
   },
   "Barnstead": {
     "population": 4972,
@@ -13,7 +21,15 @@
     "median_home_value": 307600,
     "median_age": 43.0,
     "college_pct": 29.3,
-    "white_pct": 93.8
+    "white_pct": 93.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.9,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 90.1,
+    "veteran_pct": 10.2,
+    "foreign_born_pct": 2.5,
+    "poverty_pct": 4.2,
+    "unemployment_pct": 0.8
   },
   "Belmont": {
     "population": 7383,
@@ -21,7 +37,15 @@
     "median_home_value": 264500,
     "median_age": 48.5,
     "college_pct": 19.4,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 1.2,
+    "asian_pct": 1.1,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 82.8,
+    "veteran_pct": 9.7,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 11.0,
+    "unemployment_pct": 0.7
   },
   "Center Harbor": {
     "population": 958,
@@ -29,7 +53,15 @@
     "median_home_value": 394800,
     "median_age": 60.4,
     "college_pct": 44.3,
-    "white_pct": 95.7
+    "white_pct": 95.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.6,
+    "homeowner_pct": 91.4,
+    "veteran_pct": 6.8,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 1.8,
+    "unemployment_pct": 0.0
   },
   "Gilford": {
     "population": 7785,
@@ -37,7 +69,15 @@
     "median_home_value": 388700,
     "median_age": 46.0,
     "college_pct": 43.0,
-    "white_pct": 90.3
+    "white_pct": 90.3,
+    "black_pct": 0.4,
+    "asian_pct": 3.1,
+    "hispanic_pct": 4.0,
+    "homeowner_pct": 91.0,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 3.3,
+    "poverty_pct": 6.2,
+    "unemployment_pct": 0.8
   },
   "Gilmanton": {
     "population": 3997,
@@ -45,7 +85,15 @@
     "median_home_value": 333800,
     "median_age": 46.7,
     "college_pct": 42.9,
-    "white_pct": 97.3
+    "white_pct": 97.3,
+    "black_pct": 1.5,
+    "asian_pct": 0.2,
+    "hispanic_pct": 1.8,
+    "homeowner_pct": 93.8,
+    "veteran_pct": 10.0,
+    "foreign_born_pct": 4.1,
+    "poverty_pct": 6.9,
+    "unemployment_pct": 0.8
   },
   "Laconia": {
     "population": 16982,
@@ -53,7 +101,15 @@
     "median_home_value": 308800,
     "median_age": 44.9,
     "college_pct": 25.3,
-    "white_pct": 91.3
+    "white_pct": 91.3,
+    "black_pct": 0.0,
+    "asian_pct": 1.5,
+    "hispanic_pct": 3.2,
+    "homeowner_pct": 62.8,
+    "veteran_pct": 10.9,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 12.1,
+    "unemployment_pct": 2.4
   },
   "Meredith": {
     "population": 6706,
@@ -61,7 +117,15 @@
     "median_home_value": 441500,
     "median_age": 54.7,
     "college_pct": 43.6,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 0.6,
+    "asian_pct": 1.4,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 77.3,
+    "veteran_pct": 8.7,
+    "foreign_born_pct": 5.7,
+    "poverty_pct": 10.5,
+    "unemployment_pct": 1.9
   },
   "New Hampton": {
     "population": 2484,
@@ -69,7 +133,15 @@
     "median_home_value": 364900,
     "median_age": 51.6,
     "college_pct": 34.3,
-    "white_pct": 96.8
+    "white_pct": 96.8,
+    "black_pct": 0.7,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.7,
+    "homeowner_pct": 87.4,
+    "veteran_pct": 9.9,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 13.1,
+    "unemployment_pct": 0.3
   },
   "Sanbornton": {
     "population": 3054,
@@ -77,7 +149,15 @@
     "median_home_value": 392900,
     "median_age": 45.2,
     "college_pct": 38.9,
-    "white_pct": 94.6
+    "white_pct": 94.6,
+    "black_pct": 1.3,
+    "asian_pct": 1.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 80.1,
+    "veteran_pct": 6.8,
+    "foreign_born_pct": 3.2,
+    "poverty_pct": 3.8,
+    "unemployment_pct": 4.8
   },
   "Tilton": {
     "population": 4026,
@@ -85,7 +165,15 @@
     "median_home_value": 209000,
     "median_age": 46.1,
     "college_pct": 28.8,
-    "white_pct": 95.1
+    "white_pct": 95.1,
+    "black_pct": 0.8,
+    "asian_pct": 0.1,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 62.8,
+    "veteran_pct": 15.3,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 11.5,
+    "unemployment_pct": 1.0
   },
   "Albany": {
     "population": 819,
@@ -93,7 +181,15 @@
     "median_home_value": 238300,
     "median_age": 46.8,
     "college_pct": 36.8,
-    "white_pct": 86.9
+    "white_pct": 86.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 10.0,
+    "homeowner_pct": 67.4,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 0.7,
+    "poverty_pct": 9.9,
+    "unemployment_pct": 1.2
   },
   "Bartlett": {
     "population": 3257,
@@ -101,7 +197,15 @@
     "median_home_value": 359200,
     "median_age": 57.4,
     "college_pct": 45.1,
-    "white_pct": 96.9
+    "white_pct": 96.9,
+    "black_pct": 0.3,
+    "asian_pct": 0.1,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 78.6,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 7.3,
+    "unemployment_pct": 4.0
   },
   "Brookfield": {
     "population": 653,
@@ -109,7 +213,15 @@
     "median_home_value": 374600,
     "median_age": 51.5,
     "college_pct": 36.5,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.8,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 99.6,
+    "veteran_pct": 13.4,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 2.5,
+    "unemployment_pct": 2.6
   },
   "Chatham": {
     "population": 433,
@@ -117,7 +229,15 @@
     "median_home_value": 300000,
     "median_age": 48.5,
     "college_pct": 36.4,
-    "white_pct": 90.1
+    "white_pct": 90.1,
+    "black_pct": 0.0,
+    "asian_pct": 1.8,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 90.1,
+    "veteran_pct": 5.8,
+    "foreign_born_pct": 3.7,
+    "poverty_pct": 5.3,
+    "unemployment_pct": 0.5
   },
   "Conway": {
     "population": 10068,
@@ -125,7 +245,15 @@
     "median_home_value": 271700,
     "median_age": 53.5,
     "college_pct": 38.5,
-    "white_pct": 95.4
+    "white_pct": 95.4,
+    "black_pct": 0.0,
+    "asian_pct": 1.7,
+    "hispanic_pct": 0.1,
+    "homeowner_pct": 69.4,
+    "veteran_pct": 10.9,
+    "foreign_born_pct": 2.4,
+    "poverty_pct": 7.7,
+    "unemployment_pct": 5.1
   },
   "Eaton": {
     "population": 423,
@@ -133,7 +261,15 @@
     "median_home_value": 348100,
     "median_age": 60.1,
     "college_pct": 52.0,
-    "white_pct": 99.1
+    "white_pct": 99.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 86.3,
+    "veteran_pct": 9.0,
+    "foreign_born_pct": 2.1,
+    "poverty_pct": 9.0,
+    "unemployment_pct": 1.0
   },
   "Effingham": {
     "population": 1758,
@@ -141,7 +277,15 @@
     "median_home_value": 276500,
     "median_age": 41.7,
     "college_pct": 21.8,
-    "white_pct": 92.2
+    "white_pct": 92.2,
+    "black_pct": 0.2,
+    "asian_pct": 0.8,
+    "hispanic_pct": 4.6,
+    "homeowner_pct": 88.6,
+    "veteran_pct": 5.0,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 13.3,
+    "unemployment_pct": 2.9
   },
   "Freedom": {
     "population": 1369,
@@ -149,7 +293,15 @@
     "median_home_value": 369800,
     "median_age": 60.1,
     "college_pct": 42.2,
-    "white_pct": 98.7
+    "white_pct": 98.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 93.4,
+    "veteran_pct": 9.7,
+    "foreign_born_pct": 1.4,
+    "poverty_pct": 15.0,
+    "unemployment_pct": 1.9
   },
   "Hale's location, Carroll County, New Hampshire": {
     "population": 216,
@@ -157,7 +309,15 @@
     "median_home_value": 859000,
     "median_age": 65.2,
     "college_pct": 54.2,
-    "white_pct": 98.1
+    "white_pct": 98.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 82.9,
+    "veteran_pct": 7.4,
+    "foreign_born_pct": 2.3,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 3.7
   },
   "Hart's Location": {
     "population": 49,
@@ -165,7 +325,15 @@
     "median_home_value": 188900,
     "median_age": 66.3,
     "college_pct": 0.0,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 2.0,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 36.7
   },
   "Jackson": {
     "population": 1046,
@@ -173,7 +341,15 @@
     "median_home_value": 670000,
     "median_age": 58.3,
     "college_pct": 60.7,
-    "white_pct": 95.7
+    "white_pct": 95.7,
+    "black_pct": 2.7,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 78.1,
+    "veteran_pct": 5.5,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 9.4,
+    "unemployment_pct": 0.8
   },
   "Madison": {
     "population": 2634,
@@ -181,7 +357,15 @@
     "median_home_value": 360200,
     "median_age": 43.1,
     "college_pct": 35.1,
-    "white_pct": 93.9
+    "white_pct": 93.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.5,
+    "hispanic_pct": 0.9,
+    "homeowner_pct": 87.4,
+    "veteran_pct": 9.1,
+    "foreign_born_pct": 1.9,
+    "poverty_pct": 4.8,
+    "unemployment_pct": 4.5
   },
   "Moultonborough": {
     "population": 5043,
@@ -189,7 +373,15 @@
     "median_home_value": 516800,
     "median_age": 57.8,
     "college_pct": 47.5,
-    "white_pct": 96.7
+    "white_pct": 96.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 90.5,
+    "veteran_pct": 11.0,
+    "foreign_born_pct": 2.8,
+    "poverty_pct": 1.6,
+    "unemployment_pct": 2.9
   },
   "Ossipee": {
     "population": 4478,
@@ -197,7 +389,15 @@
     "median_home_value": 283700,
     "median_age": 54.7,
     "college_pct": 28.6,
-    "white_pct": 90.8
+    "white_pct": 90.8,
+    "black_pct": 3.9,
+    "asian_pct": 3.6,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 77.2,
+    "veteran_pct": 8.5,
+    "foreign_born_pct": 5.3,
+    "poverty_pct": 9.7,
+    "unemployment_pct": 1.7
   },
   "Sandwich": {
     "population": 1745,
@@ -205,7 +405,15 @@
     "median_home_value": 383900,
     "median_age": 62.8,
     "college_pct": 61.4,
-    "white_pct": 96.3
+    "white_pct": 96.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.3,
+    "homeowner_pct": 92.6,
+    "veteran_pct": 7.5,
+    "foreign_born_pct": 4.8,
+    "poverty_pct": 3.3,
+    "unemployment_pct": 6.5
   },
   "Tamworth": {
     "population": 2867,
@@ -213,7 +421,15 @@
     "median_home_value": 356400,
     "median_age": 45.1,
     "college_pct": 36.4,
-    "white_pct": 91.8
+    "white_pct": 91.8,
+    "black_pct": 1.7,
+    "asian_pct": 1.0,
+    "hispanic_pct": 3.8,
+    "homeowner_pct": 69.1,
+    "veteran_pct": 4.9,
+    "foreign_born_pct": 1.3,
+    "poverty_pct": 6.4,
+    "unemployment_pct": 0.0
   },
   "Tuftonboro": {
     "population": 2536,
@@ -221,7 +437,15 @@
     "median_home_value": 446500,
     "median_age": 55.1,
     "college_pct": 36.6,
-    "white_pct": 97.7
+    "white_pct": 97.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.7,
+    "homeowner_pct": 91.6,
+    "veteran_pct": 11.6,
+    "foreign_born_pct": 2.0,
+    "poverty_pct": 4.5,
+    "unemployment_pct": 3.3
   },
   "Wakefield": {
     "population": 5337,
@@ -229,7 +453,15 @@
     "median_home_value": 299500,
     "median_age": 51.4,
     "college_pct": 24.7,
-    "white_pct": 95.8
+    "white_pct": 95.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.1,
+    "hispanic_pct": 2.8,
+    "homeowner_pct": 95.8,
+    "veteran_pct": 5.6,
+    "foreign_born_pct": 3.3,
+    "poverty_pct": 10.9,
+    "unemployment_pct": 1.5
   },
   "Wolfeboro": {
     "population": 6528,
@@ -237,7 +469,15 @@
     "median_home_value": 432300,
     "median_age": 56.5,
     "college_pct": 42.5,
-    "white_pct": 94.2
+    "white_pct": 94.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.3,
+    "hispanic_pct": 3.5,
+    "homeowner_pct": 76.0,
+    "veteran_pct": 12.0,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 8.3,
+    "unemployment_pct": 2.8
   },
   "Alstead": {
     "population": 1625,
@@ -245,7 +485,15 @@
     "median_home_value": 236300,
     "median_age": 52.5,
     "college_pct": 26.3,
-    "white_pct": 96.5
+    "white_pct": 96.5,
+    "black_pct": 0.2,
+    "asian_pct": 0.3,
+    "hispanic_pct": 1.5,
+    "homeowner_pct": 71.0,
+    "veteran_pct": 8.0,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 9.5,
+    "unemployment_pct": 1.9
   },
   "Chesterfield": {
     "population": 3592,
@@ -253,7 +501,15 @@
     "median_home_value": 312600,
     "median_age": 51.4,
     "college_pct": 41.9,
-    "white_pct": 94.6
+    "white_pct": 94.6,
+    "black_pct": 0.0,
+    "asian_pct": 1.8,
+    "hispanic_pct": 1.2,
+    "homeowner_pct": 83.4,
+    "veteran_pct": 9.7,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 8.0,
+    "unemployment_pct": 3.9
   },
   "Dublin": {
     "population": 1632,
@@ -261,7 +517,15 @@
     "median_home_value": 383300,
     "median_age": 50.2,
     "college_pct": 47.6,
-    "white_pct": 94.1
+    "white_pct": 94.1,
+    "black_pct": 0.1,
+    "asian_pct": 1.1,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 81.1,
+    "veteran_pct": 3.7,
+    "foreign_born_pct": 2.9,
+    "poverty_pct": 10.7,
+    "unemployment_pct": 1.3
   },
   "Fitzwilliam": {
     "population": 2317,
@@ -269,7 +533,15 @@
     "median_home_value": 273800,
     "median_age": 49.5,
     "college_pct": 36.2,
-    "white_pct": 91.7
+    "white_pct": 91.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.5,
+    "hispanic_pct": 6.6,
+    "homeowner_pct": 94.8,
+    "veteran_pct": 7.5,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 8.3,
+    "unemployment_pct": 3.4
   },
   "Gilsum": {
     "population": 719,
@@ -277,7 +549,15 @@
     "median_home_value": 216800,
     "median_age": 44.1,
     "college_pct": 17.3,
-    "white_pct": 97.4
+    "white_pct": 97.4,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 9.9,
+    "homeowner_pct": 93.7,
+    "veteran_pct": 15.1,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 7.8,
+    "unemployment_pct": 5.9
   },
   "Harrisville": {
     "population": 942,
@@ -285,7 +565,15 @@
     "median_home_value": 360300,
     "median_age": 57.4,
     "college_pct": 50.8,
-    "white_pct": 92.6
+    "white_pct": 92.6,
+    "black_pct": 2.1,
+    "asian_pct": 1.3,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 93.7,
+    "veteran_pct": 7.1,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 4.7,
+    "unemployment_pct": 2.0
   },
   "Hinsdale": {
     "population": 3987,
@@ -293,7 +581,15 @@
     "median_home_value": 181800,
     "median_age": 50.8,
     "college_pct": 13.9,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 79.2,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 0.2,
+    "poverty_pct": 5.5,
+    "unemployment_pct": 3.3
   },
   "Jaffrey": {
     "population": 5413,
@@ -301,7 +597,15 @@
     "median_home_value": 244900,
     "median_age": 43.8,
     "college_pct": 34.3,
-    "white_pct": 93.4
+    "white_pct": 93.4,
+    "black_pct": 1.6,
+    "asian_pct": 0.8,
+    "hispanic_pct": 1.1,
+    "homeowner_pct": 77.8,
+    "veteran_pct": 6.5,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 3.6,
+    "unemployment_pct": 4.6
   },
   "Keene": {
     "population": 22923,
@@ -309,7 +613,15 @@
     "median_home_value": 232500,
     "median_age": 35.9,
     "college_pct": 43.4,
-    "white_pct": 92.5
+    "white_pct": 92.5,
+    "black_pct": 1.5,
+    "asian_pct": 0.5,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 50.9,
+    "veteran_pct": 7.9,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 9.9,
+    "unemployment_pct": 1.0
   },
   "Marlborough": {
     "population": 2121,
@@ -317,7 +629,15 @@
     "median_home_value": 253200,
     "median_age": 44.9,
     "college_pct": 39.0,
-    "white_pct": 97.3
+    "white_pct": 97.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 66.8,
+    "veteran_pct": 8.7,
+    "foreign_born_pct": 0.6,
+    "poverty_pct": 14.5,
+    "unemployment_pct": 0.2
   },
   "Marlow": {
     "population": 848,
@@ -325,7 +645,15 @@
     "median_home_value": 283100,
     "median_age": 50.2,
     "college_pct": 30.8,
-    "white_pct": 98.5
+    "white_pct": 98.5,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 92.5,
+    "veteran_pct": 13.5,
+    "foreign_born_pct": 0.7,
+    "poverty_pct": 7.3,
+    "unemployment_pct": 0.3
   },
   "Nelson": {
     "population": 586,
@@ -333,7 +661,15 @@
     "median_home_value": 341500,
     "median_age": 46.0,
     "college_pct": 64.5,
-    "white_pct": 86.9
+    "white_pct": 86.9,
+    "black_pct": 0.0,
+    "asian_pct": 1.4,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 89.0,
+    "veteran_pct": 6.2,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 2.4,
+    "unemployment_pct": 0.0
   },
   "Richmond": {
     "population": 1225,
@@ -341,7 +677,15 @@
     "median_home_value": 301500,
     "median_age": 53.0,
     "college_pct": 33.8,
-    "white_pct": 93.0
+    "white_pct": 93.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.6,
+    "hispanic_pct": 5.6,
+    "homeowner_pct": 97.5,
+    "veteran_pct": 6.7,
+    "foreign_born_pct": 1.9,
+    "poverty_pct": 3.2,
+    "unemployment_pct": 7.0
   },
   "Rindge": {
     "population": 6482,
@@ -349,7 +693,15 @@
     "median_home_value": 343800,
     "median_age": 35.8,
     "college_pct": 37.6,
-    "white_pct": 85.7
+    "white_pct": 85.7,
+    "black_pct": 0.7,
+    "asian_pct": 1.8,
+    "hispanic_pct": 5.4,
+    "homeowner_pct": 87.6,
+    "veteran_pct": 4.0,
+    "foreign_born_pct": 3.1,
+    "poverty_pct": 9.7,
+    "unemployment_pct": 2.1
   },
   "Roxbury": {
     "population": 276,
@@ -357,7 +709,15 @@
     "median_home_value": null,
     "median_age": 38.7,
     "college_pct": 34.1,
-    "white_pct": 99.3
+    "white_pct": 99.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 94.5,
+    "veteran_pct": 4.3,
+    "foreign_born_pct": 0.4,
+    "poverty_pct": 3.3,
+    "unemployment_pct": 9.0
   },
   "Stoddard": {
     "population": 1156,
@@ -365,7 +725,15 @@
     "median_home_value": 299300,
     "median_age": 50.1,
     "college_pct": 30.3,
-    "white_pct": 96.5
+    "white_pct": 96.5,
+    "black_pct": 0.0,
+    "asian_pct": 1.0,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 91.3,
+    "veteran_pct": 4.9,
+    "foreign_born_pct": 2.4,
+    "poverty_pct": 6.7,
+    "unemployment_pct": 1.7
   },
   "Sullivan": {
     "population": 699,
@@ -373,7 +741,15 @@
     "median_home_value": 210600,
     "median_age": 46.8,
     "college_pct": 22.7,
-    "white_pct": 88.1
+    "white_pct": 88.1,
+    "black_pct": 0.0,
+    "asian_pct": 2.6,
+    "hispanic_pct": 0.9,
+    "homeowner_pct": 93.5,
+    "veteran_pct": 5.1,
+    "foreign_born_pct": 4.6,
+    "poverty_pct": 4.1,
+    "unemployment_pct": 0.0
   },
   "Surry": {
     "population": 998,
@@ -381,7 +757,15 @@
     "median_home_value": 279600,
     "median_age": 45.2,
     "college_pct": 32.4,
-    "white_pct": 97.1
+    "white_pct": 97.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.5,
+    "homeowner_pct": 90.2,
+    "veteran_pct": 8.4,
+    "foreign_born_pct": 0.2,
+    "poverty_pct": 2.5,
+    "unemployment_pct": 1.5
   },
   "Swanzey": {
     "population": 7351,
@@ -389,7 +773,15 @@
     "median_home_value": 247300,
     "median_age": 52.2,
     "college_pct": 28.2,
-    "white_pct": 90.9
+    "white_pct": 90.9,
+    "black_pct": 0.2,
+    "asian_pct": 1.2,
+    "hispanic_pct": 3.3,
+    "homeowner_pct": 67.6,
+    "veteran_pct": 13.6,
+    "foreign_born_pct": 2.9,
+    "poverty_pct": 9.5,
+    "unemployment_pct": 1.4
   },
   "Troy": {
     "population": 2034,
@@ -397,7 +789,15 @@
     "median_home_value": 233600,
     "median_age": 39.3,
     "college_pct": 28.8,
-    "white_pct": 96.2
+    "white_pct": 96.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.8,
+    "homeowner_pct": 77.2,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 1.1,
+    "poverty_pct": 5.5,
+    "unemployment_pct": 2.4
   },
   "Walpole": {
     "population": 3671,
@@ -405,7 +805,15 @@
     "median_home_value": 278800,
     "median_age": 44.7,
     "college_pct": 31.2,
-    "white_pct": 85.8
+    "white_pct": 85.8,
+    "black_pct": 2.2,
+    "asian_pct": 0.0,
+    "hispanic_pct": 4.5,
+    "homeowner_pct": 67.9,
+    "veteran_pct": 10.4,
+    "foreign_born_pct": 4.1,
+    "poverty_pct": 13.2,
+    "unemployment_pct": 1.0
   },
   "Westmoreland": {
     "population": 2146,
@@ -413,7 +821,15 @@
     "median_home_value": 322700,
     "median_age": 55.4,
     "college_pct": 47.9,
-    "white_pct": 97.7
+    "white_pct": 97.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 88.1,
+    "veteran_pct": 7.6,
+    "foreign_born_pct": 2.3,
+    "poverty_pct": 6.0,
+    "unemployment_pct": 1.1
   },
   "Winchester": {
     "population": 4202,
@@ -421,7 +837,15 @@
     "median_home_value": 232000,
     "median_age": 40.9,
     "college_pct": 18.7,
-    "white_pct": 94.1
+    "white_pct": 94.1,
+    "black_pct": 0.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.9,
+    "homeowner_pct": 65.5,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 1.0,
+    "poverty_pct": 16.9,
+    "unemployment_pct": 3.8
   },
   "Atkinson and Gilmanton Academy grant, Coos County, New Hampshire": {
     "population": 0,
@@ -429,7 +853,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Beans grant, Coos County, New Hampshire": {
     "population": 0,
@@ -437,7 +869,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Beans purchase, Coos County, New Hampshire": {
     "population": 0,
@@ -445,7 +885,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Berlin": {
     "population": 9473,
@@ -453,7 +901,15 @@
     "median_home_value": 113500,
     "median_age": 44.3,
     "college_pct": 14.2,
-    "white_pct": 89.9
+    "white_pct": 89.9,
+    "black_pct": 5.3,
+    "asian_pct": 0.2,
+    "hispanic_pct": 5.2,
+    "homeowner_pct": 60.6,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 16.8,
+    "unemployment_pct": 2.4
   },
   "Cambridge township, Coos County, New Hampshire": {
     "population": 21,
@@ -461,7 +917,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": 0.0,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 0.0,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 0.0
   },
   "Carroll": {
     "population": 715,
@@ -469,7 +933,15 @@
     "median_home_value": 229100,
     "median_age": 59.5,
     "college_pct": 33.2,
-    "white_pct": 98.9
+    "white_pct": 98.9,
+    "black_pct": 0.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.1,
+    "homeowner_pct": 86.4,
+    "veteran_pct": 12.8,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 2.1
   },
   "Chandlers purchase, Coos County, New Hampshire": {
     "population": 0,
@@ -477,7 +949,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Clarksville": {
     "population": 281,
@@ -485,7 +965,15 @@
     "median_home_value": 173200,
     "median_age": 51.7,
     "college_pct": 18.5,
-    "white_pct": 98.9
+    "white_pct": 98.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 94.5,
+    "veteran_pct": 11.5,
+    "foreign_born_pct": 1.1,
+    "poverty_pct": 10.0,
+    "unemployment_pct": 2.0
   },
   "Colebrook": {
     "population": 1871,
@@ -493,7 +981,15 @@
     "median_home_value": 180500,
     "median_age": 53.6,
     "college_pct": 20.4,
-    "white_pct": 97.0
+    "white_pct": 97.0,
+    "black_pct": 0.3,
+    "asian_pct": 0.1,
+    "hispanic_pct": 0.3,
+    "homeowner_pct": 70.8,
+    "veteran_pct": 12.1,
+    "foreign_born_pct": 0.5,
+    "poverty_pct": 11.5,
+    "unemployment_pct": 1.3
   },
   "Columbia": {
     "population": 710,
@@ -501,7 +997,15 @@
     "median_home_value": 186300,
     "median_age": 48.4,
     "college_pct": 15.1,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 0.6,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.4,
+    "homeowner_pct": 87.8,
+    "veteran_pct": 6.8,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 11.8,
+    "unemployment_pct": 3.2
   },
   "Crawfords purchase, Coos County, New Hampshire": {
     "population": 0,
@@ -509,7 +1013,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Cutts grant, Coos County, New Hampshire": {
     "population": 0,
@@ -517,7 +1029,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Dalton": {
     "population": 964,
@@ -525,7 +1045,15 @@
     "median_home_value": 156300,
     "median_age": 43.6,
     "college_pct": 20.7,
-    "white_pct": 96.4
+    "white_pct": 96.4,
+    "black_pct": 0.3,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 82.0,
+    "veteran_pct": 10.4,
+    "foreign_born_pct": 0.8,
+    "poverty_pct": 19.3,
+    "unemployment_pct": 4.0
   },
   "Dixs grant, Coos County, New Hampshire": {
     "population": 0,
@@ -533,7 +1061,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Dixville township, Coos County, New Hampshire": {
     "population": 8,
@@ -541,7 +1077,15 @@
     "median_home_value": null,
     "median_age": 70.5,
     "college_pct": 25.0,
-    "white_pct": 87.5
+    "white_pct": 87.5,
+    "black_pct": 0.0,
+    "asian_pct": 12.5,
+    "hispanic_pct": 12.5,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 12.5,
+    "foreign_born_pct": 12.5,
+    "poverty_pct": 62.5,
+    "unemployment_pct": 0.0
   },
   "Dummer": {
     "population": 320,
@@ -549,7 +1093,15 @@
     "median_home_value": 221600,
     "median_age": 53.1,
     "college_pct": 19.0,
-    "white_pct": 99.1
+    "white_pct": 99.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.3,
+    "homeowner_pct": 96.4,
+    "veteran_pct": 7.3,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 13.1,
+    "unemployment_pct": 2.2
   },
   "Errol": {
     "population": 296,
@@ -557,7 +1109,15 @@
     "median_home_value": 269800,
     "median_age": 60.8,
     "college_pct": 11.9,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 95.8,
+    "veteran_pct": 13.2,
+    "foreign_born_pct": 1.0,
+    "poverty_pct": 4.1,
+    "unemployment_pct": 0.0
   },
   "Ervings location, Coos County, New Hampshire": {
     "population": 0,
@@ -565,7 +1125,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Gorham": {
     "population": 2695,
@@ -573,7 +1141,15 @@
     "median_home_value": 144500,
     "median_age": 55.3,
     "college_pct": 23.9,
-    "white_pct": 96.7
+    "white_pct": 96.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.9,
+    "hispanic_pct": 0.5,
+    "homeowner_pct": 75.9,
+    "veteran_pct": 10.2,
+    "foreign_born_pct": 2.0,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 0.5
   },
   "Greens grant, Coos County, New Hampshire": {
     "population": 25,
@@ -581,7 +1157,15 @@
     "median_home_value": null,
     "median_age": 32.9,
     "college_pct": 61.9,
-    "white_pct": 72.0
+    "white_pct": 72.0,
+    "black_pct": 0.0,
+    "asian_pct": 12.0,
+    "hispanic_pct": 16.0,
+    "homeowner_pct": null,
+    "veteran_pct": 0.0,
+    "foreign_born_pct": 12.0,
+    "poverty_pct": 66.7,
+    "unemployment_pct": 28.6
   },
   "Hadleys purchase, Coos County, New Hampshire": {
     "population": 0,
@@ -589,7 +1173,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Jefferson": {
     "population": 1012,
@@ -597,7 +1189,15 @@
     "median_home_value": 305900,
     "median_age": 58.6,
     "college_pct": 33.8,
-    "white_pct": 98.3
+    "white_pct": 98.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 88.4,
+    "veteran_pct": 6.8,
+    "foreign_born_pct": 2.3,
+    "poverty_pct": 9.1,
+    "unemployment_pct": 1.6
   },
   "Kilkenny township, Coos County, New Hampshire": {
     "population": 0,
@@ -605,7 +1205,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Lancaster": {
     "population": 3227,
@@ -613,7 +1221,15 @@
     "median_home_value": 204700,
     "median_age": 46.6,
     "college_pct": 28.2,
-    "white_pct": 95.4
+    "white_pct": 95.4,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 76.3,
+    "veteran_pct": 7.7,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 12.1,
+    "unemployment_pct": 1.7
   },
   "Low and Burbanks grant, Coos County, New Hampshire": {
     "population": 0,
@@ -621,7 +1237,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Martins location, Coos County, New Hampshire": {
     "population": 0,
@@ -629,7 +1253,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Milan": {
     "population": 1354,
@@ -637,7 +1269,15 @@
     "median_home_value": 239700,
     "median_age": 49.5,
     "college_pct": 20.1,
-    "white_pct": 95.2
+    "white_pct": 95.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 4.3,
+    "homeowner_pct": 80.9,
+    "veteran_pct": 10.0,
+    "foreign_born_pct": 0.4,
+    "poverty_pct": 6.7,
+    "unemployment_pct": 0.3
   },
   "Millsfield township, Coos County, New Hampshire": {
     "population": 5,
@@ -645,7 +1285,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": 60.0,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 60.0,
+    "foreign_born_pct": 60.0,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 0.0
   },
   "Northumberland": {
     "population": 1900,
@@ -653,7 +1301,15 @@
     "median_home_value": 111900,
     "median_age": 48.0,
     "college_pct": 11.0,
-    "white_pct": 91.8
+    "white_pct": 91.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.3,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 73.3,
+    "veteran_pct": 15.8,
+    "foreign_born_pct": 4.4,
+    "poverty_pct": 17.4,
+    "unemployment_pct": 2.4
   },
   "Odell township, Coos County, New Hampshire": {
     "population": 0,
@@ -661,7 +1317,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Pinkhams grant, Coos County, New Hampshire": {
     "population": 8,
@@ -669,7 +1333,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": 0.0,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": null,
+    "veteran_pct": 0.0,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 100.0,
+    "unemployment_pct": 0.0
   },
   "Pittsburg": {
     "population": 691,
@@ -677,7 +1349,15 @@
     "median_home_value": 266800,
     "median_age": 64.8,
     "college_pct": 15.4,
-    "white_pct": 99.0
+    "white_pct": 99.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 91.2,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 6.3
   },
   "Randolph": {
     "population": 381,
@@ -685,7 +1365,15 @@
     "median_home_value": 300000,
     "median_age": 52.6,
     "college_pct": 61.4,
-    "white_pct": 96.6
+    "white_pct": 96.6,
+    "black_pct": 0.0,
+    "asian_pct": 1.3,
+    "hispanic_pct": 4.2,
+    "homeowner_pct": 80.7,
+    "veteran_pct": 11.7,
+    "foreign_born_pct": 3.1,
+    "poverty_pct": 7.6,
+    "unemployment_pct": 1.8
   },
   "Sargents purchase, Coos County, New Hampshire": {
     "population": 42,
@@ -693,7 +1381,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": 100.0,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": null,
+    "veteran_pct": 100.0,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 0.0
   },
   "Second College grant, Coos County, New Hampshire": {
     "population": 0,
@@ -701,7 +1397,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Shelburne": {
     "population": 515,
@@ -709,7 +1413,15 @@
     "median_home_value": 272500,
     "median_age": 48.6,
     "college_pct": 36.8,
-    "white_pct": 97.1
+    "white_pct": 97.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 83.5,
+    "veteran_pct": 19.4,
+    "foreign_born_pct": 2.5,
+    "poverty_pct": 3.0,
+    "unemployment_pct": 1.5
   },
   "Stark": {
     "population": 519,
@@ -717,7 +1429,15 @@
     "median_home_value": 198600,
     "median_age": 49.4,
     "college_pct": 11.7,
-    "white_pct": 97.3
+    "white_pct": 97.3,
+    "black_pct": 0.8,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 93.8,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 1.2,
+    "poverty_pct": 7.8,
+    "unemployment_pct": 8.4
   },
   "Stewartstown": {
     "population": 1012,
@@ -725,7 +1445,15 @@
     "median_home_value": 167400,
     "median_age": 55.1,
     "college_pct": 8.8,
-    "white_pct": 94.8
+    "white_pct": 94.8,
+    "black_pct": 1.7,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 83.0,
+    "veteran_pct": 13.2,
+    "foreign_born_pct": 5.8,
+    "poverty_pct": 15.0,
+    "unemployment_pct": 2.4
   },
   "Stratford": {
     "population": 832,
@@ -733,7 +1461,15 @@
     "median_home_value": 156300,
     "median_age": 53.7,
     "college_pct": 10.6,
-    "white_pct": 94.6
+    "white_pct": 94.6,
+    "black_pct": 0.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 86.2,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 28.6,
+    "unemployment_pct": 6.4
   },
   "Success township, Coos County, New Hampshire": {
     "population": 0,
@@ -741,7 +1477,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Thompson and Meserves purchase, Coos County, New Hampshire": {
     "population": 0,
@@ -749,7 +1493,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Wentworth location, Coos County, New Hampshire": {
     "population": 12,
@@ -757,7 +1509,15 @@
     "median_home_value": null,
     "median_age": 74.3,
     "college_pct": 16.7,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 8.3,
+    "foreign_born_pct": 16.7,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 0.0
   },
   "Whitefield": {
     "population": 2497,
@@ -765,7 +1525,15 @@
     "median_home_value": 216300,
     "median_age": 51.2,
     "college_pct": 25.7,
-    "white_pct": 98.0
+    "white_pct": 98.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.1,
+    "hispanic_pct": 1.6,
+    "homeowner_pct": 67.5,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 2.8,
+    "poverty_pct": 12.1,
+    "unemployment_pct": 2.1
   },
   "Alexandria": {
     "population": 1919,
@@ -773,7 +1541,15 @@
     "median_home_value": 285600,
     "median_age": 53.0,
     "college_pct": 27.5,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.8,
+    "hispanic_pct": 1.3,
+    "homeowner_pct": 93.4,
+    "veteran_pct": 10.6,
+    "foreign_born_pct": 1.5,
+    "poverty_pct": 8.8,
+    "unemployment_pct": 1.7
   },
   "Ashland": {
     "population": 2207,
@@ -781,7 +1557,15 @@
     "median_home_value": 188600,
     "median_age": 37.9,
     "college_pct": 31.6,
-    "white_pct": 86.0
+    "white_pct": 86.0,
+    "black_pct": 0.3,
+    "asian_pct": 1.4,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 59.8,
+    "veteran_pct": 8.1,
+    "foreign_born_pct": 4.7,
+    "poverty_pct": 20.9,
+    "unemployment_pct": 1.4
   },
   "Bath": {
     "population": 1049,
@@ -789,7 +1573,15 @@
     "median_home_value": 219200,
     "median_age": 50.9,
     "college_pct": 30.3,
-    "white_pct": 96.5
+    "white_pct": 96.5,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 89.3,
+    "veteran_pct": 10.3,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 7.7,
+    "unemployment_pct": 3.0
   },
   "Benton": {
     "population": 377,
@@ -797,7 +1589,15 @@
     "median_home_value": 277300,
     "median_age": 62.6,
     "college_pct": 17.3,
-    "white_pct": 94.4
+    "white_pct": 94.4,
+    "black_pct": 1.6,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 94.5,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 13.0,
+    "unemployment_pct": 0.6
   },
   "Bethlehem": {
     "population": 2523,
@@ -805,7 +1605,15 @@
     "median_home_value": 269400,
     "median_age": 52.4,
     "college_pct": 45.3,
-    "white_pct": 98.2
+    "white_pct": 98.2,
+    "black_pct": 1.3,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 79.4,
+    "veteran_pct": 6.2,
+    "foreign_born_pct": 3.1,
+    "poverty_pct": 8.0,
+    "unemployment_pct": 3.4
   },
   "Bridgewater": {
     "population": 1290,
@@ -813,7 +1621,15 @@
     "median_home_value": 355300,
     "median_age": 50.6,
     "college_pct": 30.1,
-    "white_pct": 95.5
+    "white_pct": 95.5,
+    "black_pct": 0.0,
+    "asian_pct": 1.3,
+    "hispanic_pct": 4.6,
+    "homeowner_pct": 76.2,
+    "veteran_pct": 6.1,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 9.8,
+    "unemployment_pct": 1.4
   },
   "Bristol": {
     "population": 3265,
@@ -821,7 +1637,15 @@
     "median_home_value": 216900,
     "median_age": 44.5,
     "college_pct": 26.4,
-    "white_pct": 88.3
+    "white_pct": 88.3,
+    "black_pct": 0.3,
+    "asian_pct": 4.2,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 70.5,
+    "veteran_pct": 8.2,
+    "foreign_born_pct": 5.4,
+    "poverty_pct": 9.1,
+    "unemployment_pct": 1.8
   },
   "Campton": {
     "population": 3380,
@@ -829,7 +1653,15 @@
     "median_home_value": 282800,
     "median_age": 49.3,
     "college_pct": 44.2,
-    "white_pct": 92.3
+    "white_pct": 92.3,
+    "black_pct": 6.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 96.8,
+    "veteran_pct": 8.5,
+    "foreign_born_pct": 8.2,
+    "poverty_pct": 5.4,
+    "unemployment_pct": 0.6
   },
   "Canaan": {
     "population": 3801,
@@ -837,7 +1669,15 @@
     "median_home_value": 237900,
     "median_age": 45.6,
     "college_pct": 26.1,
-    "white_pct": 87.9
+    "white_pct": 87.9,
+    "black_pct": 3.6,
+    "asian_pct": 1.6,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 81.0,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 12.5,
+    "unemployment_pct": 1.8
   },
   "Dorchester": {
     "population": 431,
@@ -845,7 +1685,15 @@
     "median_home_value": 124400,
     "median_age": 56.1,
     "college_pct": 33.9,
-    "white_pct": 85.4
+    "white_pct": 85.4,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 93.5,
+    "veteran_pct": 30.0,
+    "foreign_born_pct": 0.7,
+    "poverty_pct": 17.4,
+    "unemployment_pct": 0.8
   },
   "Easton": {
     "population": 360,
@@ -853,7 +1701,15 @@
     "median_home_value": 389700,
     "median_age": 60.1,
     "college_pct": 52.1,
-    "white_pct": 94.7
+    "white_pct": 94.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.6,
+    "hispanic_pct": 2.2,
+    "homeowner_pct": 97.3,
+    "veteran_pct": 4.2,
+    "foreign_born_pct": 4.2,
+    "poverty_pct": 10.3,
+    "unemployment_pct": 0.3
   },
   "Ellsworth": {
     "population": 56,
@@ -861,7 +1717,15 @@
     "median_home_value": 291700,
     "median_age": 52.0,
     "college_pct": 21.7,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 6.5,
+    "foreign_born_pct": 0.0,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 8.7
   },
   "Enfield": {
     "population": 4488,
@@ -869,7 +1733,15 @@
     "median_home_value": 343600,
     "median_age": 54.4,
     "college_pct": 46.2,
-    "white_pct": 96.9
+    "white_pct": 96.9,
+    "black_pct": 1.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.1,
+    "homeowner_pct": 83.0,
+    "veteran_pct": 13.5,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 13.2,
+    "unemployment_pct": 0.0
   },
   "Franconia": {
     "population": 1133,
@@ -877,7 +1749,15 @@
     "median_home_value": 494700,
     "median_age": 55.8,
     "college_pct": 59.2,
-    "white_pct": 94.4
+    "white_pct": 94.4,
+    "black_pct": 0.5,
+    "asian_pct": 0.9,
+    "hispanic_pct": 3.7,
+    "homeowner_pct": 79.0,
+    "veteran_pct": 8.8,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 10.6,
+    "unemployment_pct": 0.9
   },
   "Grafton": {
     "population": 1248,
@@ -885,7 +1765,15 @@
     "median_home_value": 256400,
     "median_age": 43.6,
     "college_pct": 26.4,
-    "white_pct": 92.7
+    "white_pct": 92.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 2.9,
+    "homeowner_pct": 86.5,
+    "veteran_pct": 8.8,
+    "foreign_born_pct": 2.2,
+    "poverty_pct": 7.7,
+    "unemployment_pct": 3.3
   },
   "Groton": {
     "population": 483,
@@ -893,7 +1781,15 @@
     "median_home_value": 254800,
     "median_age": 45.4,
     "college_pct": 24.3,
-    "white_pct": 90.7
+    "white_pct": 90.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 4.1,
+    "homeowner_pct": 96.0,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 1.4,
+    "poverty_pct": 10.3,
+    "unemployment_pct": 0.2
   },
   "Hanover": {
     "population": 11702,
@@ -901,7 +1797,15 @@
     "median_home_value": 755700,
     "median_age": 27.1,
     "college_pct": 86.1,
-    "white_pct": 73.3
+    "white_pct": 73.3,
+    "black_pct": 3.4,
+    "asian_pct": 11.2,
+    "hispanic_pct": 4.7,
+    "homeowner_pct": 68.5,
+    "veteran_pct": 3.4,
+    "foreign_born_pct": 16.3,
+    "poverty_pct": 6.5,
+    "unemployment_pct": 2.3
   },
   "Haverhill": {
     "population": 4608,
@@ -909,7 +1813,15 @@
     "median_home_value": 203600,
     "median_age": 46.2,
     "college_pct": 22.2,
-    "white_pct": 93.5
+    "white_pct": 93.5,
+    "black_pct": 0.6,
+    "asian_pct": 1.0,
+    "hispanic_pct": 2.4,
+    "homeowner_pct": 75.4,
+    "veteran_pct": 10.0,
+    "foreign_born_pct": 4.8,
+    "poverty_pct": 9.8,
+    "unemployment_pct": 0.9
   },
   "Hebron": {
     "population": 817,
@@ -917,7 +1829,15 @@
     "median_home_value": 494700,
     "median_age": 60.0,
     "college_pct": 48.0,
-    "white_pct": 97.7
+    "white_pct": 97.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.1,
+    "hispanic_pct": 5.6,
+    "homeowner_pct": 89.7,
+    "veteran_pct": 11.3,
+    "foreign_born_pct": 4.5,
+    "poverty_pct": 15.2,
+    "unemployment_pct": 3.4
   },
   "Holderness": {
     "population": 1908,
@@ -925,7 +1845,15 @@
     "median_home_value": 331700,
     "median_age": 43.2,
     "college_pct": 51.4,
-    "white_pct": 93.5
+    "white_pct": 93.5,
+    "black_pct": 0.0,
+    "asian_pct": 0.1,
+    "hispanic_pct": 4.4,
+    "homeowner_pct": 79.0,
+    "veteran_pct": 10.3,
+    "foreign_born_pct": 3.1,
+    "poverty_pct": 12.0,
+    "unemployment_pct": 1.3
   },
   "Landaff": {
     "population": 431,
@@ -933,7 +1861,15 @@
     "median_home_value": 267500,
     "median_age": 56.7,
     "college_pct": 29.2,
-    "white_pct": 96.5
+    "white_pct": 96.5,
+    "black_pct": 1.6,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.5,
+    "homeowner_pct": 85.7,
+    "veteran_pct": 9.1,
+    "foreign_born_pct": 0.7,
+    "poverty_pct": 4.4,
+    "unemployment_pct": 4.1
   },
   "Lebanon": {
     "population": 14759,
@@ -941,7 +1877,15 @@
     "median_home_value": 345100,
     "median_age": 38.6,
     "college_pct": 56.4,
-    "white_pct": 85.5
+    "white_pct": 85.5,
+    "black_pct": 0.6,
+    "asian_pct": 7.4,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 49.8,
+    "veteran_pct": 6.0,
+    "foreign_born_pct": 9.2,
+    "poverty_pct": 8.6,
+    "unemployment_pct": 0.6
   },
   "Lincoln": {
     "population": 1484,
@@ -949,7 +1893,15 @@
     "median_home_value": 312000,
     "median_age": 52.9,
     "college_pct": 41.8,
-    "white_pct": 86.3
+    "white_pct": 86.3,
+    "black_pct": 1.0,
+    "asian_pct": 12.1,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 75.9,
+    "veteran_pct": 9.3,
+    "foreign_born_pct": 11.8,
+    "poverty_pct": 4.9,
+    "unemployment_pct": 2.2
   },
   "Lisbon": {
     "population": 1633,
@@ -957,7 +1909,15 @@
     "median_home_value": 190800,
     "median_age": 45.1,
     "college_pct": 27.3,
-    "white_pct": 96.7
+    "white_pct": 96.7,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 3.1,
+    "homeowner_pct": 70.3,
+    "veteran_pct": 8.5,
+    "foreign_born_pct": 3.6,
+    "poverty_pct": 12.0,
+    "unemployment_pct": 1.9
   },
   "Littleton": {
     "population": 6031,
@@ -965,7 +1925,15 @@
     "median_home_value": 249000,
     "median_age": 43.8,
     "college_pct": 24.7,
-    "white_pct": 92.8
+    "white_pct": 92.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 5.0,
+    "homeowner_pct": 55.8,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 1.1,
+    "poverty_pct": 15.9,
+    "unemployment_pct": 2.1
   },
   "Livermore": {
     "population": 0,
@@ -973,7 +1941,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Lyman": {
     "population": 487,
@@ -981,7 +1957,15 @@
     "median_home_value": 253400,
     "median_age": 56.5,
     "college_pct": 28.9,
-    "white_pct": 91.2
+    "white_pct": 91.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 90.2,
+    "veteran_pct": 12.9,
+    "foreign_born_pct": 3.1,
+    "poverty_pct": 10.7,
+    "unemployment_pct": 3.6
   },
   "Lyme": {
     "population": 1672,
@@ -989,7 +1973,15 @@
     "median_home_value": 651400,
     "median_age": 51.1,
     "college_pct": 68.4,
-    "white_pct": 91.0
+    "white_pct": 91.0,
+    "black_pct": 0.5,
+    "asian_pct": 2.5,
+    "hispanic_pct": 4.1,
+    "homeowner_pct": 87.0,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 6.2,
+    "poverty_pct": 1.6,
+    "unemployment_pct": 4.7
   },
   "Monroe": {
     "population": 807,
@@ -997,7 +1989,15 @@
     "median_home_value": 257100,
     "median_age": 50.6,
     "college_pct": 24.4,
-    "white_pct": 99.3
+    "white_pct": 99.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 93.7,
+    "veteran_pct": 15.4,
+    "foreign_born_pct": 0.7,
+    "poverty_pct": 5.2,
+    "unemployment_pct": 3.4
   },
   "Orange": {
     "population": 301,
@@ -1005,7 +2005,15 @@
     "median_home_value": 300000,
     "median_age": 44.8,
     "college_pct": 42.2,
-    "white_pct": 86.0
+    "white_pct": 86.0,
+    "black_pct": 0.7,
+    "asian_pct": 0.3,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 98.3,
+    "veteran_pct": 6.1,
+    "foreign_born_pct": 1.0,
+    "poverty_pct": 6.6,
+    "unemployment_pct": 0.0
   },
   "Orford": {
     "population": 1289,
@@ -1013,7 +2021,15 @@
     "median_home_value": 261700,
     "median_age": 48.4,
     "college_pct": 42.0,
-    "white_pct": 96.4
+    "white_pct": 96.4,
+    "black_pct": 1.4,
+    "asian_pct": 0.2,
+    "hispanic_pct": 2.9,
+    "homeowner_pct": 77.7,
+    "veteran_pct": 9.1,
+    "foreign_born_pct": 1.1,
+    "poverty_pct": 7.8,
+    "unemployment_pct": 3.2
   },
   "Piermont": {
     "population": 928,
@@ -1021,7 +2037,15 @@
     "median_home_value": 327700,
     "median_age": 47.4,
     "college_pct": 42.6,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.5,
+    "asian_pct": 1.4,
+    "hispanic_pct": 2.2,
+    "homeowner_pct": 74.9,
+    "veteran_pct": 8.9,
+    "foreign_born_pct": 3.9,
+    "poverty_pct": 5.3,
+    "unemployment_pct": 1.7
   },
   "Plymouth": {
     "population": 6618,
@@ -1029,7 +2053,15 @@
     "median_home_value": 277300,
     "median_age": 26.8,
     "college_pct": 52.1,
-    "white_pct": 87.3
+    "white_pct": 87.3,
+    "black_pct": 2.8,
+    "asian_pct": 2.3,
+    "hispanic_pct": 4.9,
+    "homeowner_pct": 56.3,
+    "veteran_pct": 3.8,
+    "foreign_born_pct": 4.6,
+    "poverty_pct": 17.2,
+    "unemployment_pct": 3.6
   },
   "Rumney": {
     "population": 1440,
@@ -1037,7 +2069,15 @@
     "median_home_value": 286600,
     "median_age": 44.4,
     "college_pct": 40.0,
-    "white_pct": 91.7
+    "white_pct": 91.7,
+    "black_pct": 0.4,
+    "asian_pct": 1.7,
+    "hispanic_pct": 5.6,
+    "homeowner_pct": 75.5,
+    "veteran_pct": 5.9,
+    "foreign_born_pct": 1.9,
+    "poverty_pct": 11.3,
+    "unemployment_pct": 3.1
   },
   "Sugar Hill": {
     "population": 625,
@@ -1045,7 +2085,15 @@
     "median_home_value": 608600,
     "median_age": 60.2,
     "college_pct": 58.8,
-    "white_pct": 97.6
+    "white_pct": 97.6,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 93.7,
+    "veteran_pct": 5.4,
+    "foreign_born_pct": 4.3,
+    "poverty_pct": 2.3,
+    "unemployment_pct": 0.5
   },
   "Thornton": {
     "population": 2763,
@@ -1053,7 +2101,15 @@
     "median_home_value": 289700,
     "median_age": 47.3,
     "college_pct": 42.3,
-    "white_pct": 96.1
+    "white_pct": 96.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.7,
+    "hispanic_pct": 1.6,
+    "homeowner_pct": 83.3,
+    "veteran_pct": 5.5,
+    "foreign_born_pct": 5.9,
+    "poverty_pct": 8.6,
+    "unemployment_pct": 1.1
   },
   "Warren": {
     "population": 862,
@@ -1061,7 +2117,15 @@
     "median_home_value": 220500,
     "median_age": 52.7,
     "college_pct": 25.0,
-    "white_pct": 89.3
+    "white_pct": 89.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.6,
+    "hispanic_pct": 6.5,
+    "homeowner_pct": 84.5,
+    "veteran_pct": 6.8,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 10.9,
+    "unemployment_pct": 1.4
   },
   "Waterville Valley": {
     "population": 269,
@@ -1069,7 +2133,15 @@
     "median_home_value": 376800,
     "median_age": 57.1,
     "college_pct": 70.2,
-    "white_pct": 96.7
+    "white_pct": 96.7,
+    "black_pct": 0.0,
+    "asian_pct": 1.5,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 84.2,
+    "veteran_pct": 5.2,
+    "foreign_born_pct": 10.8,
+    "poverty_pct": 8.2,
+    "unemployment_pct": 0.0
   },
   "Wentworth": {
     "population": 1075,
@@ -1077,7 +2149,15 @@
     "median_home_value": 274200,
     "median_age": 37.7,
     "college_pct": 31.4,
-    "white_pct": 94.6
+    "white_pct": 94.6,
+    "black_pct": 0.6,
+    "asian_pct": 2.0,
+    "hispanic_pct": 4.0,
+    "homeowner_pct": 88.0,
+    "veteran_pct": 8.0,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 10.0,
+    "unemployment_pct": 0.0
   },
   "Woodstock": {
     "population": 1240,
@@ -1085,7 +2165,15 @@
     "median_home_value": 310800,
     "median_age": 50.4,
     "college_pct": 45.7,
-    "white_pct": 91.0
+    "white_pct": 91.0,
+    "black_pct": 0.0,
+    "asian_pct": 1.0,
+    "hispanic_pct": 7.9,
+    "homeowner_pct": 74.5,
+    "veteran_pct": 3.3,
+    "foreign_born_pct": 6.2,
+    "poverty_pct": 6.4,
+    "unemployment_pct": 1.1
   },
   "Amherst": {
     "population": 11821,
@@ -1093,7 +2181,15 @@
     "median_home_value": 494500,
     "median_age": 45.6,
     "college_pct": 64.0,
-    "white_pct": 94.9
+    "white_pct": 94.9,
+    "black_pct": 0.0,
+    "asian_pct": 1.2,
+    "hispanic_pct": 3.8,
+    "homeowner_pct": 90.9,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 4.4,
+    "poverty_pct": 4.6,
+    "unemployment_pct": 1.5
   },
   "Antrim": {
     "population": 2657,
@@ -1101,7 +2197,15 @@
     "median_home_value": 272000,
     "median_age": 46.2,
     "college_pct": 31.8,
-    "white_pct": 94.7
+    "white_pct": 94.7,
+    "black_pct": 0.3,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.4,
+    "homeowner_pct": 80.9,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 6.9,
+    "unemployment_pct": 1.5
   },
   "Bedford": {
     "population": 23580,
@@ -1109,7 +2213,15 @@
     "median_home_value": 582000,
     "median_age": 44.4,
     "college_pct": 61.4,
-    "white_pct": 84.3
+    "white_pct": 84.3,
+    "black_pct": 0.6,
+    "asian_pct": 8.1,
+    "hispanic_pct": 4.3,
+    "homeowner_pct": 83.4,
+    "veteran_pct": 5.5,
+    "foreign_born_pct": 10.5,
+    "poverty_pct": 3.0,
+    "unemployment_pct": 0.9
   },
   "Bennington": {
     "population": 1494,
@@ -1117,7 +2229,15 @@
     "median_home_value": 249700,
     "median_age": 42.3,
     "college_pct": 32.1,
-    "white_pct": 93.8
+    "white_pct": 93.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 3.6,
+    "homeowner_pct": 68.0,
+    "veteran_pct": 12.7,
+    "foreign_born_pct": 2.1,
+    "poverty_pct": 5.4,
+    "unemployment_pct": 2.7
   },
   "Brookline": {
     "population": 5697,
@@ -1125,7 +2245,15 @@
     "median_home_value": 480100,
     "median_age": 41.2,
     "college_pct": 58.1,
-    "white_pct": 93.4
+    "white_pct": 93.4,
+    "black_pct": 1.5,
+    "asian_pct": 1.1,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 94.9,
+    "veteran_pct": 9.2,
+    "foreign_born_pct": 4.0,
+    "poverty_pct": 0.5,
+    "unemployment_pct": 0.4
   },
   "Deering": {
     "population": 1843,
@@ -1133,7 +2261,15 @@
     "median_home_value": 278400,
     "median_age": 47.3,
     "college_pct": 29.5,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.4,
+    "asian_pct": 0.7,
+    "hispanic_pct": 2.0,
+    "homeowner_pct": 88.7,
+    "veteran_pct": 10.0,
+    "foreign_born_pct": 2.2,
+    "poverty_pct": 13.8,
+    "unemployment_pct": 3.1
   },
   "Francestown": {
     "population": 1347,
@@ -1141,7 +2277,15 @@
     "median_home_value": 379200,
     "median_age": 51.7,
     "college_pct": 52.9,
-    "white_pct": 96.3
+    "white_pct": 96.3,
+    "black_pct": 0.4,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 95.5,
+    "veteran_pct": 8.0,
+    "foreign_born_pct": 5.0,
+    "poverty_pct": 7.1,
+    "unemployment_pct": 2.0
   },
   "Goffstown": {
     "population": 18526,
@@ -1149,7 +2293,15 @@
     "median_home_value": 350700,
     "median_age": 40.9,
     "college_pct": 39.3,
-    "white_pct": 89.7
+    "white_pct": 89.7,
+    "black_pct": 0.9,
+    "asian_pct": 3.1,
+    "hispanic_pct": 2.1,
+    "homeowner_pct": 82.1,
+    "veteran_pct": 6.2,
+    "foreign_born_pct": 5.0,
+    "poverty_pct": 6.3,
+    "unemployment_pct": 0.4
   },
   "Greenfield": {
     "population": 1816,
@@ -1157,7 +2309,15 @@
     "median_home_value": 314500,
     "median_age": 48.7,
     "college_pct": 27.8,
-    "white_pct": 92.6
+    "white_pct": 92.6,
+    "black_pct": 0.8,
+    "asian_pct": 0.2,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 83.1,
+    "veteran_pct": 11.1,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 8.3,
+    "unemployment_pct": 2.3
   },
   "Greenville": {
     "population": 2219,
@@ -1165,7 +2325,15 @@
     "median_home_value": null,
     "median_age": 41.4,
     "college_pct": 17.0,
-    "white_pct": 89.0
+    "white_pct": 89.0,
+    "black_pct": 2.5,
+    "asian_pct": 1.3,
+    "hispanic_pct": 5.6,
+    "homeowner_pct": 68.1,
+    "veteran_pct": 13.5,
+    "foreign_born_pct": 0.5,
+    "poverty_pct": 11.0,
+    "unemployment_pct": 4.1
   },
   "Hancock": {
     "population": 1757,
@@ -1173,7 +2341,15 @@
     "median_home_value": 427600,
     "median_age": 55.3,
     "college_pct": 58.2,
-    "white_pct": 91.5
+    "white_pct": 91.5,
+    "black_pct": 1.3,
+    "asian_pct": 1.0,
+    "hispanic_pct": 3.5,
+    "homeowner_pct": 85.2,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 7.3,
+    "poverty_pct": 3.4,
+    "unemployment_pct": 1.0
   },
   "Hillsborough": {
     "population": 5967,
@@ -1181,7 +2357,15 @@
     "median_home_value": 245000,
     "median_age": 39.5,
     "college_pct": 23.9,
-    "white_pct": 89.1
+    "white_pct": 89.1,
+    "black_pct": 0.6,
+    "asian_pct": 0.2,
+    "hispanic_pct": 5.0,
+    "homeowner_pct": 90.7,
+    "veteran_pct": 13.1,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 5.7,
+    "unemployment_pct": 1.3
   },
   "Hollis": {
     "population": 8530,
@@ -1189,7 +2373,15 @@
     "median_home_value": 622800,
     "median_age": 48.1,
     "college_pct": 52.1,
-    "white_pct": 85.6
+    "white_pct": 85.6,
+    "black_pct": 6.2,
+    "asian_pct": 1.7,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 89.7,
+    "veteran_pct": 6.7,
+    "foreign_born_pct": 5.4,
+    "poverty_pct": 2.1,
+    "unemployment_pct": 1.3
   },
   "Hudson": {
     "population": 25476,
@@ -1197,7 +2389,15 @@
     "median_home_value": 407100,
     "median_age": 45.1,
     "college_pct": 35.4,
-    "white_pct": 89.6
+    "white_pct": 89.6,
+    "black_pct": 2.2,
+    "asian_pct": 2.5,
+    "hispanic_pct": 2.9,
+    "homeowner_pct": 84.5,
+    "veteran_pct": 7.1,
+    "foreign_born_pct": 6.4,
+    "poverty_pct": 4.2,
+    "unemployment_pct": 3.5
   },
   "Litchfield": {
     "population": 8495,
@@ -1205,7 +2405,15 @@
     "median_home_value": 443600,
     "median_age": 43.0,
     "college_pct": 44.7,
-    "white_pct": 95.8
+    "white_pct": 95.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.9,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 84.3,
+    "veteran_pct": 13.4,
+    "foreign_born_pct": 5.4,
+    "poverty_pct": 1.3,
+    "unemployment_pct": 2.3
   },
   "Lyndeborough": {
     "population": 1699,
@@ -1213,7 +2421,15 @@
     "median_home_value": 334000,
     "median_age": 49.0,
     "college_pct": 38.4,
-    "white_pct": 88.1
+    "white_pct": 88.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.1,
+    "homeowner_pct": 93.3,
+    "veteran_pct": 8.0,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 2.1,
+    "unemployment_pct": 7.5
   },
   "Manchester": {
     "population": 115415,
@@ -1221,7 +2437,15 @@
     "median_home_value": 336300,
     "median_age": 37.9,
     "college_pct": 33.5,
-    "white_pct": 76.7
+    "white_pct": 76.7,
+    "black_pct": 5.3,
+    "asian_pct": 4.6,
+    "hispanic_pct": 13.4,
+    "homeowner_pct": 49.3,
+    "veteran_pct": 6.2,
+    "foreign_born_pct": 14.7,
+    "poverty_pct": 10.7,
+    "unemployment_pct": 2.8
   },
   "Mason": {
     "population": 1443,
@@ -1229,7 +2453,15 @@
     "median_home_value": 356900,
     "median_age": 43.9,
     "college_pct": 36.2,
-    "white_pct": 91.8
+    "white_pct": 91.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.6,
+    "hispanic_pct": 6.2,
+    "homeowner_pct": 89.6,
+    "veteran_pct": 7.2,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 5.7,
+    "unemployment_pct": 2.3
   },
   "Merrimack": {
     "population": 27656,
@@ -1237,7 +2469,15 @@
     "median_home_value": 407400,
     "median_age": 41.6,
     "college_pct": 49.0,
-    "white_pct": 88.4
+    "white_pct": 88.4,
+    "black_pct": 1.0,
+    "asian_pct": 4.5,
+    "hispanic_pct": 5.2,
+    "homeowner_pct": 89.1,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 7.0,
+    "poverty_pct": 3.4,
+    "unemployment_pct": 1.5
   },
   "Milford": {
     "population": 16258,
@@ -1245,7 +2485,15 @@
     "median_home_value": 363500,
     "median_age": 37.8,
     "college_pct": 34.4,
-    "white_pct": 88.8
+    "white_pct": 88.8,
+    "black_pct": 0.7,
+    "asian_pct": 1.8,
+    "hispanic_pct": 2.1,
+    "homeowner_pct": 64.4,
+    "veteran_pct": 8.2,
+    "foreign_born_pct": 6.6,
+    "poverty_pct": 4.1,
+    "unemployment_pct": 1.4
   },
   "Mont Vernon": {
     "population": 2619,
@@ -1253,7 +2501,15 @@
     "median_home_value": 479900,
     "median_age": 43.5,
     "college_pct": 50.4,
-    "white_pct": 94.1
+    "white_pct": 94.1,
+    "black_pct": 0.6,
+    "asian_pct": 1.0,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 92.8,
+    "veteran_pct": 5.1,
+    "foreign_born_pct": 8.1,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 0.9
   },
   "Nashua": {
     "population": 91131,
@@ -1261,7 +2517,15 @@
     "median_home_value": 373100,
     "median_age": 39.7,
     "college_pct": 40.5,
-    "white_pct": 75.1
+    "white_pct": 75.1,
+    "black_pct": 2.7,
+    "asian_pct": 7.6,
+    "hispanic_pct": 14.0,
+    "homeowner_pct": 56.4,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 16.4,
+    "poverty_pct": 7.1,
+    "unemployment_pct": 3.4
   },
   "New Boston": {
     "population": 6131,
@@ -1269,7 +2533,15 @@
     "median_home_value": 437100,
     "median_age": 40.3,
     "college_pct": 43.1,
-    "white_pct": 97.1
+    "white_pct": 97.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 89.9,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 0.6,
+    "poverty_pct": 5.8,
+    "unemployment_pct": 2.3
   },
   "New Ipswich": {
     "population": 5274,
@@ -1277,7 +2549,15 @@
     "median_home_value": 317900,
     "median_age": 38.1,
     "college_pct": 30.7,
-    "white_pct": 91.7
+    "white_pct": 91.7,
+    "black_pct": 0.0,
+    "asian_pct": 2.4,
+    "hispanic_pct": 1.6,
+    "homeowner_pct": 86.4,
+    "veteran_pct": 6.6,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 1.8,
+    "unemployment_pct": 2.3
   },
   "Pelham": {
     "population": 14333,
@@ -1285,7 +2565,15 @@
     "median_home_value": 484500,
     "median_age": 43.0,
     "college_pct": 37.7,
-    "white_pct": 89.4
+    "white_pct": 89.4,
+    "black_pct": 1.5,
+    "asian_pct": 2.2,
+    "hispanic_pct": 4.4,
+    "homeowner_pct": 88.1,
+    "veteran_pct": 6.7,
+    "foreign_born_pct": 5.3,
+    "poverty_pct": 3.0,
+    "unemployment_pct": 1.9
   },
   "Peterborough": {
     "population": 6456,
@@ -1293,7 +2581,15 @@
     "median_home_value": 355900,
     "median_age": 51.6,
     "college_pct": 59.4,
-    "white_pct": 95.8
+    "white_pct": 95.8,
+    "black_pct": 0.7,
+    "asian_pct": 0.4,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 56.2,
+    "veteran_pct": 5.6,
+    "foreign_born_pct": 2.1,
+    "poverty_pct": 7.6,
+    "unemployment_pct": 1.1
   },
   "Sharon": {
     "population": 440,
@@ -1301,7 +2597,15 @@
     "median_home_value": 458300,
     "median_age": 49.6,
     "college_pct": 42.2,
-    "white_pct": 98.9
+    "white_pct": 98.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.5,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 91.2,
+    "veteran_pct": 14.1,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 6.7,
+    "unemployment_pct": 1.7
   },
   "Temple": {
     "population": 1367,
@@ -1309,7 +2613,15 @@
     "median_home_value": 362200,
     "median_age": 44.6,
     "college_pct": 34.1,
-    "white_pct": 95.3
+    "white_pct": 95.3,
+    "black_pct": 0.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 79.8,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 10.2,
+    "unemployment_pct": 1.7
   },
   "Weare": {
     "population": 9141,
@@ -1317,7 +2629,15 @@
     "median_home_value": 363100,
     "median_age": 47.3,
     "college_pct": 44.1,
-    "white_pct": 93.8
+    "white_pct": 93.8,
+    "black_pct": 1.0,
+    "asian_pct": 0.5,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 94.1,
+    "veteran_pct": 11.4,
+    "foreign_born_pct": 3.2,
+    "poverty_pct": 1.3,
+    "unemployment_pct": 0.0
   },
   "Wilton": {
     "population": 3935,
@@ -1325,7 +2645,15 @@
     "median_home_value": 368000,
     "median_age": 46.1,
     "college_pct": 41.7,
-    "white_pct": 92.2
+    "white_pct": 92.2,
+    "black_pct": 0.0,
+    "asian_pct": 1.5,
+    "hispanic_pct": 4.2,
+    "homeowner_pct": 77.2,
+    "veteran_pct": 8.4,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 3.7,
+    "unemployment_pct": 2.0
   },
   "Windsor": {
     "population": 209,
@@ -1333,7 +2661,15 @@
     "median_home_value": 314900,
     "median_age": 44.5,
     "college_pct": 11.0,
-    "white_pct": 90.0
+    "white_pct": 90.0,
+    "black_pct": 5.7,
+    "asian_pct": 0.0,
+    "hispanic_pct": 5.3,
+    "homeowner_pct": 96.4,
+    "veteran_pct": 14.9,
+    "foreign_born_pct": 2.9,
+    "poverty_pct": 9.8,
+    "unemployment_pct": 3.3
   },
   "Allenstown": {
     "population": 4727,
@@ -1341,7 +2677,15 @@
     "median_home_value": 232900,
     "median_age": 36.6,
     "college_pct": 17.9,
-    "white_pct": 83.1
+    "white_pct": 83.1,
+    "black_pct": 6.2,
+    "asian_pct": 1.4,
+    "hispanic_pct": 5.3,
+    "homeowner_pct": 79.8,
+    "veteran_pct": 9.4,
+    "foreign_born_pct": 6.2,
+    "poverty_pct": 12.2,
+    "unemployment_pct": 1.7
   },
   "Andover": {
     "population": 2185,
@@ -1349,7 +2693,15 @@
     "median_home_value": 330500,
     "median_age": 47.6,
     "college_pct": 31.0,
-    "white_pct": 95.7
+    "white_pct": 95.7,
+    "black_pct": 2.8,
+    "asian_pct": 0.2,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 89.3,
+    "veteran_pct": 11.8,
+    "foreign_born_pct": 4.1,
+    "poverty_pct": 9.8,
+    "unemployment_pct": 1.1
   },
   "Boscawen": {
     "population": 4002,
@@ -1357,7 +2709,15 @@
     "median_home_value": 267300,
     "median_age": 45.4,
     "college_pct": 22.1,
-    "white_pct": 96.8
+    "white_pct": 96.8,
+    "black_pct": 0.5,
+    "asian_pct": 1.0,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 72.9,
+    "veteran_pct": 13.0,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 11.1,
+    "unemployment_pct": 3.6
   },
   "Bow": {
     "population": 8295,
@@ -1365,7 +2725,15 @@
     "median_home_value": 443700,
     "median_age": 40.6,
     "college_pct": 61.3,
-    "white_pct": 94.1
+    "white_pct": 94.1,
+    "black_pct": 0.2,
+    "asian_pct": 1.4,
+    "hispanic_pct": 1.8,
+    "homeowner_pct": 90.4,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 5.0,
+    "poverty_pct": 2.2,
+    "unemployment_pct": 1.9
   },
   "Bradford": {
     "population": 1522,
@@ -1373,7 +2741,15 @@
     "median_home_value": 314200,
     "median_age": 48.5,
     "college_pct": 35.0,
-    "white_pct": 97.2
+    "white_pct": 97.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 88.1,
+    "veteran_pct": 10.9,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 6.2,
+    "unemployment_pct": 0.2
   },
   "Canterbury": {
     "population": 2391,
@@ -1381,7 +2757,15 @@
     "median_home_value": 415400,
     "median_age": 46.1,
     "college_pct": 48.6,
-    "white_pct": 87.6
+    "white_pct": 87.6,
+    "black_pct": 0.8,
+    "asian_pct": 0.3,
+    "hispanic_pct": 10.4,
+    "homeowner_pct": 92.4,
+    "veteran_pct": 8.2,
+    "foreign_born_pct": 4.9,
+    "poverty_pct": 4.9,
+    "unemployment_pct": 1.7
   },
   "Chichester": {
     "population": 2722,
@@ -1389,7 +2773,15 @@
     "median_home_value": 360100,
     "median_age": 45.5,
     "college_pct": 36.3,
-    "white_pct": 95.4
+    "white_pct": 95.4,
+    "black_pct": 0.1,
+    "asian_pct": 0.5,
+    "hispanic_pct": 2.0,
+    "homeowner_pct": 90.8,
+    "veteran_pct": 10.3,
+    "foreign_born_pct": 2.2,
+    "poverty_pct": 4.7,
+    "unemployment_pct": 0.9
   },
   "Concord": {
     "population": 44219,
@@ -1397,7 +2789,15 @@
     "median_home_value": 323700,
     "median_age": 40.7,
     "college_pct": 40.1,
-    "white_pct": 86.6
+    "white_pct": 86.6,
+    "black_pct": 3.7,
+    "asian_pct": 3.2,
+    "hispanic_pct": 3.8,
+    "homeowner_pct": 57.4,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 7.8,
+    "poverty_pct": 8.7,
+    "unemployment_pct": 2.7
   },
   "Danbury": {
     "population": 1539,
@@ -1405,7 +2805,15 @@
     "median_home_value": 213000,
     "median_age": 46.2,
     "college_pct": 16.6,
-    "white_pct": 97.3
+    "white_pct": 97.3,
+    "black_pct": 0.3,
+    "asian_pct": 0.4,
+    "hispanic_pct": 1.8,
+    "homeowner_pct": 92.7,
+    "veteran_pct": 12.2,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 15.2,
+    "unemployment_pct": 3.1
   },
   "Dunbarton": {
     "population": 3055,
@@ -1413,7 +2821,15 @@
     "median_home_value": 436500,
     "median_age": 47.1,
     "college_pct": 42.9,
-    "white_pct": 96.7
+    "white_pct": 96.7,
+    "black_pct": 0.2,
+    "asian_pct": 0.9,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 95.1,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 2.5,
+    "unemployment_pct": 3.3
   },
   "Epsom": {
     "population": 4896,
@@ -1421,7 +2837,15 @@
     "median_home_value": 298100,
     "median_age": 49.7,
     "college_pct": 38.9,
-    "white_pct": 94.5
+    "white_pct": 94.5,
+    "black_pct": 0.0,
+    "asian_pct": 1.0,
+    "hispanic_pct": 1.2,
+    "homeowner_pct": 88.6,
+    "veteran_pct": 8.2,
+    "foreign_born_pct": 3.5,
+    "poverty_pct": 4.2,
+    "unemployment_pct": 2.8
   },
   "Franklin": {
     "population": 8757,
@@ -1429,7 +2853,15 @@
     "median_home_value": 243800,
     "median_age": 42.9,
     "college_pct": 19.2,
-    "white_pct": 94.2
+    "white_pct": 94.2,
+    "black_pct": 0.3,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 62.3,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 4.1,
+    "poverty_pct": 6.4,
+    "unemployment_pct": 2.9
   },
   "Henniker": {
     "population": 6161,
@@ -1437,7 +2869,15 @@
     "median_home_value": 317600,
     "median_age": 28.9,
     "college_pct": 42.3,
-    "white_pct": 94.3
+    "white_pct": 94.3,
+    "black_pct": 1.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 5.2,
+    "homeowner_pct": 63.1,
+    "veteran_pct": 2.9,
+    "foreign_born_pct": 1.5,
+    "poverty_pct": 12.2,
+    "unemployment_pct": 1.1
   },
   "Hill": {
     "population": 878,
@@ -1445,7 +2885,15 @@
     "median_home_value": 248300,
     "median_age": 48.4,
     "college_pct": 25.8,
-    "white_pct": 95.2
+    "white_pct": 95.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.3,
+    "homeowner_pct": 89.7,
+    "veteran_pct": 10.6,
+    "foreign_born_pct": 1.5,
+    "poverty_pct": 8.3,
+    "unemployment_pct": 1.5
   },
   "Hooksett": {
     "population": 14949,
@@ -1453,7 +2901,15 @@
     "median_home_value": 370300,
     "median_age": 40.6,
     "college_pct": 38.9,
-    "white_pct": 89.4
+    "white_pct": 89.4,
+    "black_pct": 0.8,
+    "asian_pct": 2.5,
+    "hispanic_pct": 2.6,
+    "homeowner_pct": 78.1,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 3.6,
+    "poverty_pct": 3.6,
+    "unemployment_pct": 1.1
   },
   "Hopkinton": {
     "population": 5976,
@@ -1461,7 +2917,15 @@
     "median_home_value": 441200,
     "median_age": 44.0,
     "college_pct": 57.3,
-    "white_pct": 93.8
+    "white_pct": 93.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.1,
+    "homeowner_pct": 87.1,
+    "veteran_pct": 10.1,
+    "foreign_born_pct": 1.8,
+    "poverty_pct": 6.0,
+    "unemployment_pct": 1.3
   },
   "Loudon": {
     "population": 5656,
@@ -1469,7 +2933,15 @@
     "median_home_value": 314400,
     "median_age": 50.2,
     "college_pct": 28.0,
-    "white_pct": 97.4
+    "white_pct": 97.4,
+    "black_pct": 0.0,
+    "asian_pct": 0.3,
+    "hispanic_pct": 0.3,
+    "homeowner_pct": 87.8,
+    "veteran_pct": 9.2,
+    "foreign_born_pct": 2.8,
+    "poverty_pct": 4.7,
+    "unemployment_pct": 0.7
   },
   "Newbury": {
     "population": 1969,
@@ -1477,7 +2949,15 @@
     "median_home_value": 439200,
     "median_age": 48.4,
     "college_pct": 58.2,
-    "white_pct": 97.0
+    "white_pct": 97.0,
+    "black_pct": 0.8,
+    "asian_pct": 0.6,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 88.9,
+    "veteran_pct": 8.8,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 2.6,
+    "unemployment_pct": 0.4
   },
   "New London": {
     "population": 4422,
@@ -1485,7 +2965,15 @@
     "median_home_value": 462400,
     "median_age": 46.6,
     "college_pct": 65.4,
-    "white_pct": 90.3
+    "white_pct": 90.3,
+    "black_pct": 1.5,
+    "asian_pct": 2.2,
+    "hispanic_pct": 2.1,
+    "homeowner_pct": 86.9,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 6.6,
+    "poverty_pct": 2.8,
+    "unemployment_pct": 1.2
   },
   "Northfield": {
     "population": 4929,
@@ -1493,7 +2981,15 @@
     "median_home_value": 260000,
     "median_age": 43.8,
     "college_pct": 24.5,
-    "white_pct": 92.2
+    "white_pct": 92.2,
+    "black_pct": 0.8,
+    "asian_pct": 0.8,
+    "hispanic_pct": 2.8,
+    "homeowner_pct": 75.8,
+    "veteran_pct": 8.7,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 8.6,
+    "unemployment_pct": 2.3
   },
   "Pembroke": {
     "population": 7359,
@@ -1501,7 +2997,15 @@
     "median_home_value": 344000,
     "median_age": 43.0,
     "college_pct": 30.2,
-    "white_pct": 97.1
+    "white_pct": 97.1,
+    "black_pct": 0.3,
+    "asian_pct": 0.4,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 72.4,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 10.8,
+    "unemployment_pct": 1.9
   },
   "Pittsfield": {
     "population": 4094,
@@ -1509,7 +3013,15 @@
     "median_home_value": 270600,
     "median_age": 42.7,
     "college_pct": 20.4,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.1,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.9,
+    "homeowner_pct": 64.6,
+    "veteran_pct": 12.3,
+    "foreign_born_pct": 0.2,
+    "poverty_pct": 7.1,
+    "unemployment_pct": 1.6
   },
   "Salisbury": {
     "population": 1561,
@@ -1517,7 +3029,15 @@
     "median_home_value": 316500,
     "median_age": 51.0,
     "college_pct": 32.2,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 0.2,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 94.7,
+    "veteran_pct": 10.8,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 6.2,
+    "unemployment_pct": 2.2
   },
   "Sutton": {
     "population": 2164,
@@ -1525,7 +3045,15 @@
     "median_home_value": 295400,
     "median_age": 49.2,
     "college_pct": 46.4,
-    "white_pct": 87.8
+    "white_pct": 87.8,
+    "black_pct": 0.0,
+    "asian_pct": 2.5,
+    "hispanic_pct": 2.4,
+    "homeowner_pct": 96.1,
+    "veteran_pct": 9.9,
+    "foreign_born_pct": 7.8,
+    "poverty_pct": 4.8,
+    "unemployment_pct": 2.7
   },
   "Warner": {
     "population": 2938,
@@ -1533,7 +3061,15 @@
     "median_home_value": 322400,
     "median_age": 43.2,
     "college_pct": 41.7,
-    "white_pct": 91.2
+    "white_pct": 91.2,
+    "black_pct": 1.1,
+    "asian_pct": 0.9,
+    "hispanic_pct": 2.7,
+    "homeowner_pct": 74.4,
+    "veteran_pct": 7.2,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 7.5,
+    "unemployment_pct": 0.9
   },
   "Webster": {
     "population": 2228,
@@ -1541,7 +3077,15 @@
     "median_home_value": 296500,
     "median_age": 42.2,
     "college_pct": 33.6,
-    "white_pct": 96.2
+    "white_pct": 96.2,
+    "black_pct": 0.0,
+    "asian_pct": 1.3,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 95.0,
+    "veteran_pct": 8.7,
+    "foreign_born_pct": 2.5,
+    "poverty_pct": 9.6,
+    "unemployment_pct": 0.5
   },
   "Wilmot": {
     "population": 1424,
@@ -1549,7 +3093,15 @@
     "median_home_value": 373000,
     "median_age": 52.7,
     "college_pct": 60.7,
-    "white_pct": 94.8
+    "white_pct": 94.8,
+    "black_pct": 0.0,
+    "asian_pct": 3.7,
+    "hispanic_pct": 0.9,
+    "homeowner_pct": 83.8,
+    "veteran_pct": 7.3,
+    "foreign_born_pct": 3.6,
+    "poverty_pct": 2.0,
+    "unemployment_pct": 1.3
   },
   "County subdivisions not defined, Rockingham County, New Hampshire": {
     "population": 0,
@@ -1557,7 +3109,15 @@
     "median_home_value": null,
     "median_age": null,
     "college_pct": null,
-    "white_pct": null
+    "white_pct": null,
+    "black_pct": null,
+    "asian_pct": null,
+    "hispanic_pct": null,
+    "homeowner_pct": null,
+    "veteran_pct": null,
+    "foreign_born_pct": null,
+    "poverty_pct": null,
+    "unemployment_pct": null
   },
   "Atkinson": {
     "population": 7222,
@@ -1565,7 +3125,15 @@
     "median_home_value": 489100,
     "median_age": 55.4,
     "college_pct": 41.6,
-    "white_pct": 93.5
+    "white_pct": 93.5,
+    "black_pct": 0.0,
+    "asian_pct": 2.5,
+    "hispanic_pct": 3.2,
+    "homeowner_pct": 94.0,
+    "veteran_pct": 10.6,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 2.4,
+    "unemployment_pct": 4.4
   },
   "Auburn": {
     "population": 6031,
@@ -1573,7 +3141,15 @@
     "median_home_value": 547900,
     "median_age": 44.7,
     "college_pct": 52.2,
-    "white_pct": 94.7
+    "white_pct": 94.7,
+    "black_pct": 1.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 3.7,
+    "homeowner_pct": 93.7,
+    "veteran_pct": 8.5,
+    "foreign_born_pct": 3.0,
+    "poverty_pct": 1.4,
+    "unemployment_pct": 1.1
   },
   "Brentwood": {
     "population": 4575,
@@ -1581,7 +3157,15 @@
     "median_home_value": 501300,
     "median_age": 44.3,
     "college_pct": 52.7,
-    "white_pct": 95.5
+    "white_pct": 95.5,
+    "black_pct": 0.4,
+    "asian_pct": 0.9,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 96.3,
+    "veteran_pct": 8.6,
+    "foreign_born_pct": 5.4,
+    "poverty_pct": 2.8,
+    "unemployment_pct": 3.0
   },
   "Candia": {
     "population": 4087,
@@ -1589,7 +3173,15 @@
     "median_home_value": 391600,
     "median_age": 47.6,
     "college_pct": 25.6,
-    "white_pct": 93.1
+    "white_pct": 93.1,
+    "black_pct": 1.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 90.6,
+    "veteran_pct": 11.5,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 2.1,
+    "unemployment_pct": 2.2
   },
   "Chester": {
     "population": 5263,
@@ -1597,7 +3189,15 @@
     "median_home_value": 479500,
     "median_age": 46.8,
     "college_pct": 43.5,
-    "white_pct": 96.5
+    "white_pct": 96.5,
+    "black_pct": 0.2,
+    "asian_pct": 1.0,
+    "hispanic_pct": 1.9,
+    "homeowner_pct": 97.4,
+    "veteran_pct": 10.6,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 1.6,
+    "unemployment_pct": 2.1
   },
   "Danville": {
     "population": 4489,
@@ -1605,7 +3205,15 @@
     "median_home_value": 409400,
     "median_age": 44.4,
     "college_pct": 34.1,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.0,
+    "asian_pct": 1.9,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 95.5,
+    "veteran_pct": 7.1,
+    "foreign_born_pct": 1.4,
+    "poverty_pct": 11.2,
+    "unemployment_pct": 1.0
   },
   "Deerfield": {
     "population": 4901,
@@ -1613,7 +3221,15 @@
     "median_home_value": 393100,
     "median_age": 42.5,
     "college_pct": 43.2,
-    "white_pct": 95.0
+    "white_pct": 95.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.6,
+    "hispanic_pct": 2.0,
+    "homeowner_pct": 91.6,
+    "veteran_pct": 7.0,
+    "foreign_born_pct": 4.3,
+    "poverty_pct": 5.7,
+    "unemployment_pct": 1.7
   },
   "Derry": {
     "population": 34335,
@@ -1621,7 +3237,15 @@
     "median_home_value": 381700,
     "median_age": 39.7,
     "college_pct": 35.1,
-    "white_pct": 93.1
+    "white_pct": 93.1,
+    "black_pct": 1.0,
+    "asian_pct": 1.3,
+    "hispanic_pct": 4.0,
+    "homeowner_pct": 70.0,
+    "veteran_pct": 8.3,
+    "foreign_born_pct": 4.3,
+    "poverty_pct": 4.9,
+    "unemployment_pct": 4.2
   },
   "East Kingston": {
     "population": 2274,
@@ -1629,7 +3253,15 @@
     "median_home_value": 495600,
     "median_age": 53.0,
     "college_pct": 47.3,
-    "white_pct": 95.0
+    "white_pct": 95.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.5,
+    "homeowner_pct": 96.0,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 1.1,
+    "poverty_pct": 13.8,
+    "unemployment_pct": 0.5
   },
   "Epping": {
     "population": 7300,
@@ -1637,7 +3269,15 @@
     "median_home_value": 421400,
     "median_age": 46.5,
     "college_pct": 34.4,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.6,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.6,
+    "homeowner_pct": 85.4,
+    "veteran_pct": 7.1,
+    "foreign_born_pct": 1.3,
+    "poverty_pct": 6.7,
+    "unemployment_pct": 1.9
   },
   "Exeter": {
     "population": 16098,
@@ -1645,7 +3285,15 @@
     "median_home_value": 431200,
     "median_age": 44.5,
     "college_pct": 55.8,
-    "white_pct": 91.1
+    "white_pct": 91.1,
+    "black_pct": 0.9,
+    "asian_pct": 3.4,
+    "hispanic_pct": 2.4,
+    "homeowner_pct": 66.6,
+    "veteran_pct": 7.7,
+    "foreign_born_pct": 6.1,
+    "poverty_pct": 6.5,
+    "unemployment_pct": 1.8
   },
   "Fremont": {
     "population": 4783,
@@ -1653,7 +3301,15 @@
     "median_home_value": 405400,
     "median_age": 44.8,
     "college_pct": 35.7,
-    "white_pct": 93.2
+    "white_pct": 93.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.9,
+    "hispanic_pct": 2.1,
+    "homeowner_pct": 92.0,
+    "veteran_pct": 13.1,
+    "foreign_born_pct": 3.8,
+    "poverty_pct": 5.6,
+    "unemployment_pct": 0.8
   },
   "Greenland": {
     "population": 4070,
@@ -1661,7 +3317,15 @@
     "median_home_value": 595100,
     "median_age": 50.4,
     "college_pct": 52.8,
-    "white_pct": 92.8
+    "white_pct": 92.8,
+    "black_pct": 2.9,
+    "asian_pct": 2.4,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 87.4,
+    "veteran_pct": 10.6,
+    "foreign_born_pct": 4.9,
+    "poverty_pct": 0.4,
+    "unemployment_pct": 0.0
   },
   "Hampstead": {
     "population": 9062,
@@ -1669,7 +3333,15 @@
     "median_home_value": 472000,
     "median_age": 45.8,
     "college_pct": 39.3,
-    "white_pct": 90.7
+    "white_pct": 90.7,
+    "black_pct": 0.6,
+    "asian_pct": 1.4,
+    "hispanic_pct": 1.0,
+    "homeowner_pct": 81.9,
+    "veteran_pct": 7.6,
+    "foreign_born_pct": 3.7,
+    "poverty_pct": 3.2,
+    "unemployment_pct": 1.6
   },
   "Hampton": {
     "population": 16366,
@@ -1677,7 +3349,15 @@
     "median_home_value": 492800,
     "median_age": 54.7,
     "college_pct": 43.1,
-    "white_pct": 95.7
+    "white_pct": 95.7,
+    "black_pct": 0.6,
+    "asian_pct": 1.1,
+    "hispanic_pct": 1.3,
+    "homeowner_pct": 75.3,
+    "veteran_pct": 9.5,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 5.7,
+    "unemployment_pct": 2.3
   },
   "Hampton Falls": {
     "population": 2357,
@@ -1685,7 +3365,15 @@
     "median_home_value": 664900,
     "median_age": 45.7,
     "college_pct": 52.9,
-    "white_pct": 85.6
+    "white_pct": 85.6,
+    "black_pct": 0.5,
+    "asian_pct": 1.1,
+    "hispanic_pct": 5.0,
+    "homeowner_pct": 84.5,
+    "veteran_pct": 5.2,
+    "foreign_born_pct": 14.9,
+    "poverty_pct": 3.4,
+    "unemployment_pct": 1.9
   },
   "Kensington": {
     "population": 1989,
@@ -1693,7 +3381,15 @@
     "median_home_value": 591400,
     "median_age": 46.4,
     "college_pct": 47.4,
-    "white_pct": 89.4
+    "white_pct": 89.4,
+    "black_pct": 0.0,
+    "asian_pct": 4.8,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 91.3,
+    "veteran_pct": 6.0,
+    "foreign_born_pct": 6.8,
+    "poverty_pct": 1.5,
+    "unemployment_pct": 2.7
   },
   "Kingston": {
     "population": 6261,
@@ -1701,7 +3397,15 @@
     "median_home_value": 442400,
     "median_age": 52.5,
     "college_pct": 35.0,
-    "white_pct": 96.3
+    "white_pct": 96.3,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 1.1,
+    "homeowner_pct": 79.3,
+    "veteran_pct": 8.1,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 4.2,
+    "unemployment_pct": 2.3
   },
   "Londonderry": {
     "population": 26217,
@@ -1709,7 +3413,15 @@
     "median_home_value": 464100,
     "median_age": 42.5,
     "college_pct": 47.9,
-    "white_pct": 93.5
+    "white_pct": 93.5,
+    "black_pct": 0.6,
+    "asian_pct": 1.3,
+    "hispanic_pct": 4.1,
+    "homeowner_pct": 85.1,
+    "veteran_pct": 7.8,
+    "foreign_born_pct": 4.1,
+    "poverty_pct": 2.1,
+    "unemployment_pct": 3.6
   },
   "New Castle": {
     "population": 948,
@@ -1717,7 +3429,15 @@
     "median_home_value": 1612700,
     "median_age": 56.8,
     "college_pct": 71.4,
-    "white_pct": 96.6
+    "white_pct": 96.6,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 0.0,
+    "homeowner_pct": 91.6,
+    "veteran_pct": 15.6,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 3.7,
+    "unemployment_pct": 0.0
   },
   "Newfields": {
     "population": 2010,
@@ -1725,7 +3445,15 @@
     "median_home_value": 617600,
     "median_age": 43.7,
     "college_pct": 67.0,
-    "white_pct": 94.5
+    "white_pct": 94.5,
+    "black_pct": 0.0,
+    "asian_pct": 0.8,
+    "hispanic_pct": 1.6,
+    "homeowner_pct": 95.9,
+    "veteran_pct": 4.0,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 1.8,
+    "unemployment_pct": 2.1
   },
   "Newington": {
     "population": 899,
@@ -1733,7 +3461,15 @@
     "median_home_value": 750000,
     "median_age": 48.8,
     "college_pct": 64.0,
-    "white_pct": 89.7
+    "white_pct": 89.7,
+    "black_pct": 0.0,
+    "asian_pct": 1.3,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 85.7,
+    "veteran_pct": 14.1,
+    "foreign_born_pct": 6.5,
+    "poverty_pct": 4.8,
+    "unemployment_pct": 0.5
   },
   "Newmarket": {
     "population": 9431,
@@ -1741,7 +3477,15 @@
     "median_home_value": 384900,
     "median_age": 39.3,
     "college_pct": 49.7,
-    "white_pct": 92.5
+    "white_pct": 92.5,
+    "black_pct": 0.7,
+    "asian_pct": 1.8,
+    "hispanic_pct": 1.8,
+    "homeowner_pct": 52.4,
+    "veteran_pct": 7.4,
+    "foreign_born_pct": 5.0,
+    "poverty_pct": 4.3,
+    "unemployment_pct": 1.1
   },
   "Newton": {
     "population": 4825,
@@ -1749,7 +3493,15 @@
     "median_home_value": 429400,
     "median_age": 45.5,
     "college_pct": 35.0,
-    "white_pct": 90.1
+    "white_pct": 90.1,
+    "black_pct": 1.4,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 90.1,
+    "veteran_pct": 5.1,
+    "foreign_born_pct": 3.9,
+    "poverty_pct": 6.0,
+    "unemployment_pct": 2.2
   },
   "North Hampton": {
     "population": 4537,
@@ -1757,7 +3509,15 @@
     "median_home_value": 611800,
     "median_age": 51.3,
     "college_pct": 52.4,
-    "white_pct": 91.3
+    "white_pct": 91.3,
+    "black_pct": 0.2,
+    "asian_pct": 3.9,
+    "hispanic_pct": 4.3,
+    "homeowner_pct": 89.5,
+    "veteran_pct": 11.5,
+    "foreign_born_pct": 4.9,
+    "poverty_pct": 2.9,
+    "unemployment_pct": 1.2
   },
   "Northwood": {
     "population": 4653,
@@ -1765,7 +3525,15 @@
     "median_home_value": 356100,
     "median_age": 36.9,
     "college_pct": 41.7,
-    "white_pct": 90.4
+    "white_pct": 90.4,
+    "black_pct": 2.3,
+    "asian_pct": 0.5,
+    "hispanic_pct": 5.1,
+    "homeowner_pct": 91.2,
+    "veteran_pct": 13.5,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 8.6,
+    "unemployment_pct": 1.6
   },
   "Nottingham": {
     "population": 5304,
@@ -1773,7 +3541,15 @@
     "median_home_value": 419100,
     "median_age": 40.3,
     "college_pct": 41.8,
-    "white_pct": 90.3
+    "white_pct": 90.3,
+    "black_pct": 0.5,
+    "asian_pct": 0.5,
+    "hispanic_pct": 1.2,
+    "homeowner_pct": 93.6,
+    "veteran_pct": 10.3,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 2.9,
+    "unemployment_pct": 0.8
   },
   "Plaistow": {
     "population": 7850,
@@ -1781,7 +3557,15 @@
     "median_home_value": 382100,
     "median_age": 42.1,
     "college_pct": 36.0,
-    "white_pct": 86.0
+    "white_pct": 86.0,
+    "black_pct": 0.9,
+    "asian_pct": 0.3,
+    "hispanic_pct": 7.1,
+    "homeowner_pct": 82.5,
+    "veteran_pct": 8.7,
+    "foreign_born_pct": 2.8,
+    "poverty_pct": 5.0,
+    "unemployment_pct": 2.2
   },
   "Portsmouth": {
     "population": 22332,
@@ -1789,7 +3573,15 @@
     "median_home_value": 640600,
     "median_age": 42.4,
     "college_pct": 63.4,
-    "white_pct": 87.6
+    "white_pct": 87.6,
+    "black_pct": 1.1,
+    "asian_pct": 3.9,
+    "hispanic_pct": 3.5,
+    "homeowner_pct": 52.1,
+    "veteran_pct": 7.2,
+    "foreign_born_pct": 9.2,
+    "poverty_pct": 5.5,
+    "unemployment_pct": 1.4
   },
   "Raymond": {
     "population": 10837,
@@ -1797,7 +3589,15 @@
     "median_home_value": 342500,
     "median_age": 43.3,
     "college_pct": 24.6,
-    "white_pct": 88.5
+    "white_pct": 88.5,
+    "black_pct": 3.8,
+    "asian_pct": 1.2,
+    "hispanic_pct": 5.0,
+    "homeowner_pct": 81.5,
+    "veteran_pct": 7.6,
+    "foreign_born_pct": 4.5,
+    "poverty_pct": 6.3,
+    "unemployment_pct": 2.8
   },
   "Rye": {
     "population": 5577,
@@ -1805,7 +3605,15 @@
     "median_home_value": 960600,
     "median_age": 54.3,
     "college_pct": 60.4,
-    "white_pct": 98.0
+    "white_pct": 98.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.4,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 81.8,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 5.7,
+    "poverty_pct": 6.6,
+    "unemployment_pct": 2.2
   },
   "Salem": {
     "population": 30646,
@@ -1813,7 +3621,15 @@
     "median_home_value": 438500,
     "median_age": 44.5,
     "college_pct": 39.1,
-    "white_pct": 86.5
+    "white_pct": 86.5,
+    "black_pct": 1.3,
+    "asian_pct": 4.2,
+    "hispanic_pct": 9.2,
+    "homeowner_pct": 76.8,
+    "veteran_pct": 6.3,
+    "foreign_born_pct": 10.6,
+    "poverty_pct": 4.7,
+    "unemployment_pct": 1.8
   },
   "Sandown": {
     "population": 6590,
@@ -1821,7 +3637,15 @@
     "median_home_value": 402400,
     "median_age": 38.9,
     "college_pct": 28.2,
-    "white_pct": 95.9
+    "white_pct": 95.9,
+    "black_pct": 0.0,
+    "asian_pct": 0.3,
+    "hispanic_pct": 1.2,
+    "homeowner_pct": 83.3,
+    "veteran_pct": 5.8,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 10.2,
+    "unemployment_pct": 3.0
   },
   "Seabrook": {
     "population": 8427,
@@ -1829,7 +3653,15 @@
     "median_home_value": 432400,
     "median_age": 53.2,
     "college_pct": 26.1,
-    "white_pct": 89.5
+    "white_pct": 89.5,
+    "black_pct": 0.8,
+    "asian_pct": 0.7,
+    "hispanic_pct": 3.6,
+    "homeowner_pct": 71.8,
+    "veteran_pct": 9.9,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 11.0,
+    "unemployment_pct": 4.8
   },
   "South Hampton": {
     "population": 953,
@@ -1837,7 +3669,15 @@
     "median_home_value": 626900,
     "median_age": 48.2,
     "college_pct": 49.2,
-    "white_pct": 97.6
+    "white_pct": 97.6,
+    "black_pct": 0.5,
+    "asian_pct": 0.7,
+    "hispanic_pct": 2.7,
+    "homeowner_pct": 90.3,
+    "veteran_pct": 6.5,
+    "foreign_born_pct": 2.4,
+    "poverty_pct": 3.9,
+    "unemployment_pct": 1.6
   },
   "Stratham": {
     "population": 7742,
@@ -1845,7 +3685,15 @@
     "median_home_value": 599500,
     "median_age": 41.8,
     "college_pct": 65.7,
-    "white_pct": 94.0
+    "white_pct": 94.0,
+    "black_pct": 0.0,
+    "asian_pct": 3.0,
+    "hispanic_pct": 2.2,
+    "homeowner_pct": 91.9,
+    "veteran_pct": 6.7,
+    "foreign_born_pct": 5.6,
+    "poverty_pct": 3.2,
+    "unemployment_pct": 2.3
   },
   "Windham": {
     "population": 15922,
@@ -1853,7 +3701,15 @@
     "median_home_value": 684700,
     "median_age": 42.7,
     "college_pct": 66.1,
-    "white_pct": 83.5
+    "white_pct": 83.5,
+    "black_pct": 0.8,
+    "asian_pct": 7.5,
+    "hispanic_pct": 3.5,
+    "homeowner_pct": 95.5,
+    "veteran_pct": 4.1,
+    "foreign_born_pct": 9.5,
+    "poverty_pct": 2.2,
+    "unemployment_pct": 2.1
   },
   "Barrington": {
     "population": 9420,
@@ -1861,7 +3717,15 @@
     "median_home_value": 349500,
     "median_age": 38.7,
     "college_pct": 44.4,
-    "white_pct": 89.4
+    "white_pct": 89.4,
+    "black_pct": 1.7,
+    "asian_pct": 0.0,
+    "hispanic_pct": 2.7,
+    "homeowner_pct": 90.4,
+    "veteran_pct": 10.4,
+    "foreign_born_pct": 0.9,
+    "poverty_pct": 6.9,
+    "unemployment_pct": 1.6
   },
   "Dover": {
     "population": 33070,
@@ -1869,7 +3733,15 @@
     "median_home_value": 398500,
     "median_age": 37.6,
     "college_pct": 49.2,
-    "white_pct": 87.4
+    "white_pct": 87.4,
+    "black_pct": 1.3,
+    "asian_pct": 3.3,
+    "hispanic_pct": 3.7,
+    "homeowner_pct": 51.3,
+    "veteran_pct": 5.8,
+    "foreign_born_pct": 5.2,
+    "poverty_pct": 8.1,
+    "unemployment_pct": 3.0
   },
   "Durham": {
     "population": 15054,
@@ -1877,7 +3749,15 @@
     "median_home_value": 469900,
     "median_age": 20.7,
     "college_pct": 77.8,
-    "white_pct": 87.9
+    "white_pct": 87.9,
+    "black_pct": 0.5,
+    "asian_pct": 3.9,
+    "hispanic_pct": 3.7,
+    "homeowner_pct": 65.2,
+    "veteran_pct": 2.7,
+    "foreign_born_pct": 4.6,
+    "poverty_pct": 17.2,
+    "unemployment_pct": 2.4
   },
   "Farmington": {
     "population": 6786,
@@ -1885,7 +3765,15 @@
     "median_home_value": 273100,
     "median_age": 45.9,
     "college_pct": 20.5,
-    "white_pct": 91.8
+    "white_pct": 91.8,
+    "black_pct": 1.3,
+    "asian_pct": 2.7,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 75.3,
+    "veteran_pct": 9.4,
+    "foreign_born_pct": 3.7,
+    "poverty_pct": 11.0,
+    "unemployment_pct": 2.5
   },
   "Lee": {
     "population": 4558,
@@ -1893,7 +3781,15 @@
     "median_home_value": 449300,
     "median_age": 42.6,
     "college_pct": 53.2,
-    "white_pct": 76.6
+    "white_pct": 76.6,
+    "black_pct": 0.0,
+    "asian_pct": 7.4,
+    "hispanic_pct": 10.8,
+    "homeowner_pct": 95.1,
+    "veteran_pct": 6.7,
+    "foreign_born_pct": 5.2,
+    "poverty_pct": 2.3,
+    "unemployment_pct": 2.2
   },
   "Madbury": {
     "population": 2121,
@@ -1901,7 +3797,15 @@
     "median_home_value": 459300,
     "median_age": 38.5,
     "college_pct": 54.6,
-    "white_pct": 84.0
+    "white_pct": 84.0,
+    "black_pct": 3.2,
+    "asian_pct": 2.4,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 80.4,
+    "veteran_pct": 5.9,
+    "foreign_born_pct": 6.6,
+    "poverty_pct": 5.3,
+    "unemployment_pct": 1.5
   },
   "Middleton": {
     "population": 1654,
@@ -1909,7 +3813,15 @@
     "median_home_value": 271700,
     "median_age": 41.0,
     "college_pct": 23.1,
-    "white_pct": 89.4
+    "white_pct": 89.4,
+    "black_pct": 1.4,
+    "asian_pct": 1.9,
+    "hispanic_pct": 2.3,
+    "homeowner_pct": 94.8,
+    "veteran_pct": 12.4,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 6.2,
+    "unemployment_pct": 2.6
   },
   "Milton": {
     "population": 4531,
@@ -1917,7 +3829,15 @@
     "median_home_value": 287700,
     "median_age": 45.7,
     "college_pct": 18.6,
-    "white_pct": 95.4
+    "white_pct": 95.4,
+    "black_pct": 0.0,
+    "asian_pct": 1.2,
+    "hispanic_pct": 0.8,
+    "homeowner_pct": 84.4,
+    "veteran_pct": 11.0,
+    "foreign_born_pct": 2.3,
+    "poverty_pct": 7.2,
+    "unemployment_pct": 2.4
   },
   "New Durham": {
     "population": 2735,
@@ -1925,7 +3845,15 @@
     "median_home_value": 307400,
     "median_age": 43.7,
     "college_pct": 34.3,
-    "white_pct": 95.6
+    "white_pct": 95.6,
+    "black_pct": 0.0,
+    "asian_pct": 0.2,
+    "hispanic_pct": 0.7,
+    "homeowner_pct": 91.5,
+    "veteran_pct": 7.6,
+    "foreign_born_pct": 0.2,
+    "poverty_pct": 6.0,
+    "unemployment_pct": 7.3
   },
   "Rochester": {
     "population": 32866,
@@ -1933,7 +3861,15 @@
     "median_home_value": 262600,
     "median_age": 43.4,
     "college_pct": 26.7,
-    "white_pct": 92.8
+    "white_pct": 92.8,
+    "black_pct": 0.8,
+    "asian_pct": 1.8,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 65.5,
+    "veteran_pct": 9.7,
+    "foreign_born_pct": 3.4,
+    "poverty_pct": 8.5,
+    "unemployment_pct": 1.9
   },
   "Rollinsford": {
     "population": 2617,
@@ -1941,7 +3877,15 @@
     "median_home_value": 353800,
     "median_age": 41.3,
     "college_pct": 39.8,
-    "white_pct": 92.0
+    "white_pct": 92.0,
+    "black_pct": 1.3,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.1,
+    "homeowner_pct": 79.6,
+    "veteran_pct": 9.0,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 7.2,
+    "unemployment_pct": 2.7
   },
   "Somersworth": {
     "population": 12060,
@@ -1949,7 +3893,15 @@
     "median_home_value": 295800,
     "median_age": 38.2,
     "college_pct": 28.7,
-    "white_pct": 83.8
+    "white_pct": 83.8,
+    "black_pct": 2.6,
+    "asian_pct": 2.9,
+    "hispanic_pct": 5.8,
+    "homeowner_pct": 61.9,
+    "veteran_pct": 9.9,
+    "foreign_born_pct": 5.8,
+    "poverty_pct": 11.4,
+    "unemployment_pct": 1.7
   },
   "Strafford": {
     "population": 4271,
@@ -1957,7 +3909,15 @@
     "median_home_value": 402400,
     "median_age": 47.8,
     "college_pct": 40.4,
-    "white_pct": 86.9
+    "white_pct": 86.9,
+    "black_pct": 2.7,
+    "asian_pct": 5.1,
+    "hispanic_pct": 2.8,
+    "homeowner_pct": 93.9,
+    "veteran_pct": 6.9,
+    "foreign_born_pct": 4.0,
+    "poverty_pct": 8.7,
+    "unemployment_pct": 3.4
   },
   "Acworth": {
     "population": 854,
@@ -1965,7 +3925,15 @@
     "median_home_value": 253400,
     "median_age": 46.4,
     "college_pct": 21.2,
-    "white_pct": 91.8
+    "white_pct": 91.8,
+    "black_pct": 0.2,
+    "asian_pct": 2.8,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 91.3,
+    "veteran_pct": 8.1,
+    "foreign_born_pct": 5.3,
+    "poverty_pct": 8.1,
+    "unemployment_pct": 0.0
   },
   "Charlestown": {
     "population": 4872,
@@ -1973,7 +3941,15 @@
     "median_home_value": 172500,
     "median_age": 47.8,
     "college_pct": 17.3,
-    "white_pct": 90.1
+    "white_pct": 90.1,
+    "black_pct": 0.0,
+    "asian_pct": 2.4,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 73.4,
+    "veteran_pct": 11.2,
+    "foreign_born_pct": 2.7,
+    "poverty_pct": 13.5,
+    "unemployment_pct": 1.1
   },
   "Claremont": {
     "population": 13054,
@@ -1981,7 +3957,15 @@
     "median_home_value": 171900,
     "median_age": 42.8,
     "college_pct": 20.3,
-    "white_pct": 88.0
+    "white_pct": 88.0,
+    "black_pct": 1.3,
+    "asian_pct": 0.4,
+    "hispanic_pct": 5.1,
+    "homeowner_pct": 57.1,
+    "veteran_pct": 9.3,
+    "foreign_born_pct": 1.6,
+    "poverty_pct": 15.2,
+    "unemployment_pct": 2.0
   },
   "Cornish": {
     "population": 1771,
@@ -1989,7 +3973,15 @@
     "median_home_value": 277400,
     "median_age": 57.4,
     "college_pct": 40.8,
-    "white_pct": 90.2
+    "white_pct": 90.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.8,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 95.3,
+    "veteran_pct": 10.1,
+    "foreign_born_pct": 2.9,
+    "poverty_pct": 5.4,
+    "unemployment_pct": 0.7
   },
   "Croydon": {
     "population": 928,
@@ -1997,7 +3989,15 @@
     "median_home_value": 299100,
     "median_age": 43.5,
     "college_pct": 17.1,
-    "white_pct": 90.4
+    "white_pct": 90.4,
+    "black_pct": 5.5,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.7,
+    "homeowner_pct": 87.8,
+    "veteran_pct": 12.1,
+    "foreign_born_pct": 2.2,
+    "poverty_pct": 5.4,
+    "unemployment_pct": 1.9
   },
   "Goshen": {
     "population": 982,
@@ -2005,7 +4005,15 @@
     "median_home_value": 226000,
     "median_age": 55.0,
     "college_pct": 20.7,
-    "white_pct": 96.8
+    "white_pct": 96.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.6,
+    "homeowner_pct": 86.4,
+    "veteran_pct": 5.8,
+    "foreign_born_pct": 1.4,
+    "poverty_pct": 6.6,
+    "unemployment_pct": 4.1
   },
   "Grantham": {
     "population": 3434,
@@ -2013,7 +4021,15 @@
     "median_home_value": 351100,
     "median_age": 51.0,
     "college_pct": 61.4,
-    "white_pct": 100.0
+    "white_pct": 100.0,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 100.0,
+    "veteran_pct": 10.1,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 0.0,
+    "unemployment_pct": 1.8
   },
   "Langdon": {
     "population": 763,
@@ -2021,7 +4037,15 @@
     "median_home_value": 256100,
     "median_age": 48.9,
     "college_pct": 28.9,
-    "white_pct": 92.9
+    "white_pct": 92.9,
+    "black_pct": 4.3,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.1,
+    "homeowner_pct": 90.5,
+    "veteran_pct": 6.4,
+    "foreign_born_pct": 2.6,
+    "poverty_pct": 5.0,
+    "unemployment_pct": 1.8
   },
   "Lempster": {
     "population": 920,
@@ -2029,7 +4053,15 @@
     "median_home_value": 219800,
     "median_age": 49.4,
     "college_pct": 21.1,
-    "white_pct": 96.2
+    "white_pct": 96.2,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 94.4,
+    "veteran_pct": 7.6,
+    "foreign_born_pct": 1.0,
+    "poverty_pct": 6.3,
+    "unemployment_pct": 1.7
   },
   "Newport": {
     "population": 6357,
@@ -2037,7 +4069,15 @@
     "median_home_value": 198900,
     "median_age": 44.1,
     "college_pct": 33.5,
-    "white_pct": 93.0
+    "white_pct": 93.0,
+    "black_pct": 1.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.5,
+    "homeowner_pct": 64.2,
+    "veteran_pct": 7.2,
+    "foreign_born_pct": 1.3,
+    "poverty_pct": 11.5,
+    "unemployment_pct": 0.8
   },
   "Plainfield": {
     "population": 2493,
@@ -2045,7 +4085,15 @@
     "median_home_value": 394300,
     "median_age": 41.2,
     "college_pct": 45.9,
-    "white_pct": 92.2
+    "white_pct": 92.2,
+    "black_pct": 0.4,
+    "asian_pct": 1.5,
+    "hispanic_pct": 0.2,
+    "homeowner_pct": 92.2,
+    "veteran_pct": 11.3,
+    "foreign_born_pct": 4.2,
+    "poverty_pct": 4.5,
+    "unemployment_pct": 0.2
   },
   "Springfield": {
     "population": 1071,
@@ -2053,7 +4101,15 @@
     "median_home_value": 327700,
     "median_age": 51.1,
     "college_pct": 44.7,
-    "white_pct": 93.8
+    "white_pct": 93.8,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 89.3,
+    "veteran_pct": 10.0,
+    "foreign_born_pct": 2.5,
+    "poverty_pct": 3.3,
+    "unemployment_pct": 0.2
   },
   "Sunapee": {
     "population": 3398,
@@ -2061,7 +4117,15 @@
     "median_home_value": 355000,
     "median_age": 56.5,
     "college_pct": 47.1,
-    "white_pct": 98.1
+    "white_pct": 98.1,
+    "black_pct": 0.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 1.4,
+    "homeowner_pct": 82.4,
+    "veteran_pct": 7.5,
+    "foreign_born_pct": 2.5,
+    "poverty_pct": 16.1,
+    "unemployment_pct": 0.7
   },
   "Unity": {
     "population": 1501,
@@ -2069,7 +4133,15 @@
     "median_home_value": 232000,
     "median_age": 54.2,
     "college_pct": 19.3,
-    "white_pct": 96.3
+    "white_pct": 96.3,
+    "black_pct": 1.8,
+    "asian_pct": 0.1,
+    "hispanic_pct": 1.8,
+    "homeowner_pct": 95.0,
+    "veteran_pct": 10.3,
+    "foreign_born_pct": 1.7,
+    "poverty_pct": 11.0,
+    "unemployment_pct": 0.9
   },
   "Washington": {
     "population": 1131,
@@ -2077,6 +4149,14 @@
     "median_home_value": 290500,
     "median_age": 55.3,
     "college_pct": 29.7,
-    "white_pct": 97.1
+    "white_pct": 97.1,
+    "black_pct": 1.0,
+    "asian_pct": 0.0,
+    "hispanic_pct": 0.4,
+    "homeowner_pct": 92.1,
+    "veteran_pct": 15.2,
+    "foreign_born_pct": 4.5,
+    "poverty_pct": 7.3,
+    "unemployment_pct": 0.7
   }
 }

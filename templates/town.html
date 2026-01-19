@@ -164,6 +164,46 @@
                     <td class="text-right">{{ demographics.college_pct }}%</td>
                 </tr>
                 {% endif %}
+                {% if demographics.homeowner_pct %}
+                <tr>
+                    <td>Homeowners</td>
+                    <td class="text-right">{{ demographics.homeowner_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.veteran_pct %}
+                <tr>
+                    <td>Veterans</td>
+                    <td class="text-right">{{ demographics.veteran_pct }}%</td>
+                </tr>
+                {% endif %}
+            </table>
+
+            <h4 style="margin-top: 1rem; font-size: 0.9rem;">Race & Ethnicity</h4>
+            <table class="demo-table">
+                {% if demographics.white_pct %}
+                <tr>
+                    <td>White</td>
+                    <td class="text-right">{{ demographics.white_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.black_pct and demographics.black_pct >= 0.5 %}
+                <tr>
+                    <td>Black</td>
+                    <td class="text-right">{{ demographics.black_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.asian_pct and demographics.asian_pct >= 0.5 %}
+                <tr>
+                    <td>Asian</td>
+                    <td class="text-right">{{ demographics.asian_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.hispanic_pct and demographics.hispanic_pct >= 0.5 %}
+                <tr>
+                    <td>Hispanic/Latino</td>
+                    <td class="text-right">{{ demographics.hispanic_pct }}%</td>
+                </tr>
+                {% endif %}
             </table>
         </div>
         {% endif %}

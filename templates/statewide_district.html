@@ -2,6 +2,19 @@
 
 {% block title %}{{ info.office }} District {{ info.district }} - NH Election Results{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+#district-map {
+    height: 200px;
+    width: 100%;
+    background: #f5f5f5;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>
@@ -73,6 +86,10 @@
     </div>
 
     <aside class="sidebar">
+        <div class="sidebar-section">
+            <div id="district-map"></div>
+        </div>
+
         {% if topline %}
         <div class="sidebar-section">
             <h3>Topline Results</h3>
@@ -137,6 +154,46 @@
                     <td class="text-right">{{ demographics.college_pct }}%</td>
                 </tr>
                 {% endif %}
+                {% if demographics.homeowner_pct %}
+                <tr>
+                    <td>Homeowners</td>
+                    <td class="text-right">{{ demographics.homeowner_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.veteran_pct %}
+                <tr>
+                    <td>Veterans</td>
+                    <td class="text-right">{{ demographics.veteran_pct }}%</td>
+                </tr>
+                {% endif %}
+            </table>
+
+            <h4 style="margin-top: 1rem; font-size: 0.9rem;">Race & Ethnicity</h4>
+            <table class="demo-table">
+                {% if demographics.white_pct %}
+                <tr>
+                    <td>White</td>
+                    <td class="text-right">{{ demographics.white_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.black_pct and demographics.black_pct >= 0.5 %}
+                <tr>
+                    <td>Black</td>
+                    <td class="text-right">{{ demographics.black_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.asian_pct and demographics.asian_pct >= 0.5 %}
+                <tr>
+                    <td>Asian</td>
+                    <td class="text-right">{{ demographics.asian_pct }}%</td>
+                </tr>
+                {% endif %}
+                {% if demographics.hispanic_pct and demographics.hispanic_pct >= 0.5 %}
+                <tr>
+                    <td>Hispanic/Latino</td>
+                    <td class="text-right">{{ demographics.hispanic_pct }}%</td>
+                </tr>
+                {% endif %}
             </table>
         </div>
         {% endif %}
@@ -151,4 +208,46 @@
         </div>
     </aside>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const districtTowns = {{ info.towns | tojson }};
+
+const map = L.map('district-map', {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19
+}).addTo(map);
+
+fetch('/static/data/nh-towns.geojson')
+    .then(r => r.json())
+    .then(geojson => {
+        const districtFeatures = geojson.features.filter(f =>
+            districtTowns.includes(f.properties.name)
+        );
+
+        const layer = L.geoJSON(districtFeatures, {
+            style: {
+                fillColor: '{% if "R" in lean %}#8b0000{% else %}#1e3a5f{% endif %}',
+                weight: 1,
+                opacity: 1,
+                color: '#333',
+                fillOpacity: 0.6
+            }
+        }).addTo(map);
+
+        if (layer.getBounds().isValid()) {
+            map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+        }
+    });
+</script>
 {% endblock %}

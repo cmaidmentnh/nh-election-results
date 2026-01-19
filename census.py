@@ -11,32 +11,41 @@ from functools import lru_cache
 # Census API endpoint
 CENSUS_API = "https://api.census.gov/data/2023/acs/acs5"
 
-# Variables to fetch
-# B01001_001E: Total population
-# B19013_001E: Median household income
-# B25077_001E: Median home value
-# B15003_022E: Bachelor's degree
-# B15003_023E: Master's degree
-# B15003_024E: Professional degree
-# B15003_025E: Doctorate
-# B15003_001E: Total 25+ for education denominator
-# B01002_001E: Median age
-# B02001_002E: White alone
-# B02001_001E: Total for race denominator
-
+# Variables to fetch - see https://api.census.gov/data/2023/acs/acs5/variables.html
 VARIABLES = [
     "NAME",
+    # Population & Age
     "B01001_001E",  # Total population
+    "B01002_001E",  # Median age
+    # Income & Housing
     "B19013_001E",  # Median household income
     "B25077_001E",  # Median home value
-    "B01002_001E",  # Median age
-    "B15003_001E",  # Education: Total 25+
+    "B25003_001E",  # Housing tenure: Total occupied units
+    "B25003_002E",  # Owner occupied
+    # Education (25+)
+    "B15003_001E",  # Total 25+
     "B15003_022E",  # Bachelor's
     "B15003_023E",  # Master's
     "B15003_024E",  # Professional
     "B15003_025E",  # Doctorate
-    "B02001_001E",  # Race: Total
+    # Race
+    "B02001_001E",  # Total
     "B02001_002E",  # White alone
+    "B02001_003E",  # Black alone
+    "B02001_005E",  # Asian alone
+    "B03001_003E",  # Hispanic/Latino (any race)
+    # Veterans
+    "B21001_001E",  # Civilian 18+ total
+    "B21001_002E",  # Veterans
+    # Foreign born
+    "B05002_001E",  # Total for nativity
+    "B05002_013E",  # Foreign born
+    # Poverty
+    "B17001_001E",  # Poverty status total
+    "B17001_002E",  # Below poverty level
+    # Employment
+    "B23025_001E",  # Employment total 16+
+    "B23025_005E",  # Unemployed
 ]
 
 # Cache file path
@@ -81,6 +90,29 @@ def fetch_census_data():
             # Race
             race_total = safe_int(record.get('B02001_001E'))
             white = safe_int(record.get('B02001_002E'))
+            black = safe_int(record.get('B02001_003E'))
+            asian = safe_int(record.get('B02001_005E'))
+            hispanic = safe_int(record.get('B03001_003E'))
+
+            # Housing
+            housing_total = safe_int(record.get('B25003_001E'))
+            owner_occupied = safe_int(record.get('B25003_002E'))
+
+            # Veterans
+            civ_18_total = safe_int(record.get('B21001_001E'))
+            veterans = safe_int(record.get('B21001_002E'))
+
+            # Foreign born
+            nativity_total = safe_int(record.get('B05002_001E'))
+            foreign_born = safe_int(record.get('B05002_013E'))
+
+            # Poverty
+            poverty_total = safe_int(record.get('B17001_001E'))
+            below_poverty = safe_int(record.get('B17001_002E'))
+
+            # Employment
+            labor_total = safe_int(record.get('B23025_001E'))
+            unemployed = safe_int(record.get('B23025_005E'))
 
             results[town] = {
                 'population': pop,
@@ -88,7 +120,17 @@ def fetch_census_data():
                 'median_home_value': home_value if home_value > 0 else None,
                 'median_age': median_age if median_age and median_age > 0 else None,
                 'college_pct': round(college_plus / edu_total * 100, 1) if edu_total > 0 else None,
+                # Race
                 'white_pct': round(white / race_total * 100, 1) if race_total > 0 else None,
+                'black_pct': round(black / race_total * 100, 1) if race_total > 0 else None,
+                'asian_pct': round(asian / race_total * 100, 1) if race_total > 0 else None,
+                'hispanic_pct': round(hispanic / pop * 100, 1) if pop > 0 else None,
+                # Other
+                'homeowner_pct': round(owner_occupied / housing_total * 100, 1) if housing_total > 0 else None,
+                'veteran_pct': round(veterans / civ_18_total * 100, 1) if civ_18_total > 0 else None,
+                'foreign_born_pct': round(foreign_born / nativity_total * 100, 1) if nativity_total > 0 else None,
+                'poverty_pct': round(below_poverty / poverty_total * 100, 1) if poverty_total > 0 else None,
+                'unemployment_pct': round(unemployed / labor_total * 100, 1) if labor_total > 0 else None,
             }
 
         return results
@@ -157,17 +199,23 @@ def get_district_demographics(towns):
     data = get_census_data()
 
     total_pop = 0
-    weighted_income = 0
-    weighted_home_value = 0
-    weighted_age = 0
-    weighted_college = 0
-    weighted_white = 0
 
-    income_pop = 0
-    home_value_pop = 0
-    age_pop = 0
-    college_pop = 0
-    white_pop = 0
+    # Weighted accumulators and population trackers for each metric
+    metrics = {
+        'median_income': {'weighted': 0, 'pop': 0},
+        'median_home_value': {'weighted': 0, 'pop': 0},
+        'median_age': {'weighted': 0, 'pop': 0},
+        'college_pct': {'weighted': 0, 'pop': 0},
+        'white_pct': {'weighted': 0, 'pop': 0},
+        'black_pct': {'weighted': 0, 'pop': 0},
+        'asian_pct': {'weighted': 0, 'pop': 0},
+        'hispanic_pct': {'weighted': 0, 'pop': 0},
+        'homeowner_pct': {'weighted': 0, 'pop': 0},
+        'veteran_pct': {'weighted': 0, 'pop': 0},
+        'foreign_born_pct': {'weighted': 0, 'pop': 0},
+        'poverty_pct': {'weighted': 0, 'pop': 0},
+        'unemployment_pct': {'weighted': 0, 'pop': 0},
+    }
 
     for town in towns:
         t = data.get(town, {})
@@ -177,34 +225,22 @@ def get_district_demographics(towns):
 
         total_pop += pop
 
-        if t.get('median_income'):
-            weighted_income += t['median_income'] * pop
-            income_pop += pop
+        for key in metrics:
+            if t.get(key) is not None:
+                metrics[key]['weighted'] += t[key] * pop
+                metrics[key]['pop'] += pop
 
-        if t.get('median_home_value'):
-            weighted_home_value += t['median_home_value'] * pop
-            home_value_pop += pop
+    result = {'population': total_pop}
+    for key, vals in metrics.items():
+        if vals['pop'] > 0:
+            if key in ('median_income', 'median_home_value'):
+                result[key] = round(vals['weighted'] / vals['pop'])
+            else:
+                result[key] = round(vals['weighted'] / vals['pop'], 1)
+        else:
+            result[key] = None
 
-        if t.get('median_age'):
-            weighted_age += t['median_age'] * pop
-            age_pop += pop
-
-        if t.get('college_pct') is not None:
-            weighted_college += t['college_pct'] * pop
-            college_pop += pop
-
-        if t.get('white_pct') is not None:
-            weighted_white += t['white_pct'] * pop
-            white_pop += pop
-
-    return {
-        'population': total_pop,
-        'median_income': round(weighted_income / income_pop) if income_pop > 0 else None,
-        'median_home_value': round(weighted_home_value / home_value_pop) if home_value_pop > 0 else None,
-        'median_age': round(weighted_age / age_pop, 1) if age_pop > 0 else None,
-        'college_pct': round(weighted_college / college_pop, 1) if college_pop > 0 else None,
-        'white_pct': round(weighted_white / white_pop, 1) if white_pop > 0 else None,
-    }
+    return result
 
 
 def get_statewide_demographics():
