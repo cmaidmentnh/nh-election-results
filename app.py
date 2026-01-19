@@ -123,7 +123,7 @@ def district(county, district):
     for r in results:
         year = r['year']
         if year not in by_year:
-            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'r_votes': 0, 'd_votes': 0}
+            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'top_r': 0, 'top_d': 0}
         candidate = {
             'name': r['candidate'],
             'party': r['party'],
@@ -131,21 +131,22 @@ def district(county, district):
             'is_winner': r['is_winner']
         }
         by_year[year]['candidates'].append(candidate)
+        # Track TOP vote-getter per party (for fair margin calculation in multi-member races)
         if r['party'] == 'Republican':
-            by_year[year]['r_votes'] += r['total_votes']
+            by_year[year]['top_r'] = max(by_year[year]['top_r'], r['total_votes'])
         elif r['party'] == 'Democratic':
-            by_year[year]['d_votes'] += r['total_votes']
+            by_year[year]['top_d'] = max(by_year[year]['top_d'], r['total_votes'])
         if r['is_winner']:
             if r['party'] == 'Republican':
                 by_year[year]['r_seats'] += 1
             elif r['party'] == 'Democratic':
                 by_year[year]['d_seats'] += 1
 
-    # Calculate margins for each year
+    # Calculate margins using TOP vote-getter per party (fair for multi-member races)
     for year, data in by_year.items():
-        total = data['r_votes'] + data['d_votes']
+        total = data['top_r'] + data['top_d']
         if total > 0:
-            data['margin'] = round((data['r_votes'] - data['d_votes']) / total * 100, 1)
+            data['margin'] = round((data['top_r'] - data['top_d']) / total * 100, 1)
         else:
             data['margin'] = 0
 
@@ -302,23 +303,24 @@ def statewide_district(office, district):
     for r in results:
         year = r['year']
         if year not in by_year:
-            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'r_votes': 0, 'd_votes': 0}
+            by_year[year] = {'seats': r['seats'], 'candidates': [], 'r_seats': 0, 'd_seats': 0, 'top_r': 0, 'top_d': 0}
         by_year[year]['candidates'].append(r)
+        # Track TOP vote-getter per party
         if r['party'] == 'Republican':
-            by_year[year]['r_votes'] += r['votes']
+            by_year[year]['top_r'] = max(by_year[year]['top_r'], r['votes'])
         elif r['party'] == 'Democratic':
-            by_year[year]['d_votes'] += r['votes']
+            by_year[year]['top_d'] = max(by_year[year]['top_d'], r['votes'])
         if r['is_winner']:
             if r['party'] == 'Republican':
                 by_year[year]['r_seats'] += 1
             elif r['party'] == 'Democratic':
                 by_year[year]['d_seats'] += 1
 
-    # Calculate margins for each year
+    # Calculate margins using TOP vote-getter per party
     for year, data in by_year.items():
-        total = data['r_votes'] + data['d_votes']
+        total = data['top_r'] + data['top_d']
         if total > 0:
-            data['margin'] = round((data['r_votes'] - data['d_votes']) / total * 100, 1)
+            data['margin'] = round((data['top_r'] - data['top_d']) / total * 100, 1)
         else:
             data['margin'] = 0
 
