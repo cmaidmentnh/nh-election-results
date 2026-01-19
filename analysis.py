@@ -3604,24 +3604,41 @@ def get_bellwether_analysis():
             statewide_margins[year] = round(margin, 1)
 
     # Get town-level State Rep votes
+    # Use CTE to pick only the canonical race (highest total votes) for each district/year
+    # This avoids double-counting from duplicate race imports
     cursor.execute("""
+        WITH race_totals AS (
+            SELECT r.id as race_id, e.year, r.county, r.district, SUM(res.votes) as total
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.election_type = 'general'
+            AND o.name = 'State Representative'
+            GROUP BY r.id
+        ),
+        canonical_races AS (
+            SELECT race_id, year, county, district
+            FROM race_totals rt
+            WHERE rt.total = (
+                SELECT MAX(rt2.total)
+                FROM race_totals rt2
+                WHERE rt2.year = rt.year AND rt2.county = rt.county AND rt2.district = rt.district
+            )
+        )
         SELECT
-            e.year,
+            cr.year,
             res.municipality,
             c.party,
             SUM(res.votes) as votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
-        WHERE e.election_type = 'general'
-        AND o.name = 'State Representative'
-        AND c.party IN ('Republican', 'Democratic')
+        JOIN canonical_races cr ON res.race_id = cr.race_id
+        WHERE c.party IN ('Republican', 'Democratic')
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
         AND res.municipality NOT GLOB '[0-9]*'
-        GROUP BY e.year, res.municipality, c.party
+        GROUP BY cr.year, res.municipality, c.party
     """)
 
     town_data = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0}))
