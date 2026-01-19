@@ -4217,7 +4217,7 @@ def get_trump_comparison():
     for row in cursor.fetchall():
         town, r, d = row
         if r + d > 0:
-            trump_by_town[town] = ((r - d) / (r + d)) * 100
+            trump_by_town[town] = {'r': r, 'd': d}
 
     # Get State Rep margins by district in 2024
     cursor.execute("""
@@ -4284,26 +4284,18 @@ def get_trump_comparison():
         d_avg = d_votes / n_d
         rep_margin = ((r_avg - d_avg) / (r_avg + d_avg)) * 100
 
-        # Calculate Trump margin for this district's towns
+        # Calculate Trump margin for this district's towns (vote-weighted)
         trump_r = 0
         trump_d = 0
         for town in data['towns']:
             if town in trump_by_town:
-                # We need raw votes - recalculate
-                pass
+                trump_r += trump_by_town[town]['r']
+                trump_d += trump_by_town[town]['d']
 
-        # Get Trump votes for district towns
-        district_trump_votes = []
-        for town in data['towns']:
-            if town in trump_by_town:
-                district_trump_votes.append(trump_by_town[town])
-
-        if not district_trump_votes:
+        if trump_r + trump_d == 0:
             continue
 
-        # Average Trump margin across towns (simple average since we don't have per-town population here)
-        # Better: get actual votes
-        trump_margin = sum(district_trump_votes) / len(district_trump_votes)
+        trump_margin = ((trump_r - trump_d) / (trump_r + trump_d)) * 100
 
         # Gap: positive means R outperformed Trump
         gap = rep_margin - trump_margin
