@@ -58,12 +58,10 @@
                         {% if d.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.pvi|abs) }}{% if not d.contested %} <span class="uncontested">(U)</span>{% endif %}
                     </td>
                     <td data-value="{{ d.trend }}">
-                        {% if d.trend > 1 %}
+                        {% if d.trend >= 0 %}
                         <span class="trend-indicator r">&#9650; +{{ "%.1f"|format(d.trend) }}</span>
-                        {% elif d.trend < -1 %}
-                        <span class="trend-indicator d">&#9660; {{ "%.1f"|format(d.trend) }}</span>
                         {% else %}
-                        <span class="trend-indicator">&#8212; {{ "%.1f"|format(d.trend) }}</span>
+                        <span class="trend-indicator d">&#9660; {{ "%.1f"|format(d.trend) }}</span>
                         {% endif %}
                     </td>
                     <td class="towns-cell">{% if d.towns %}{{ d.towns|join(', ') }}{% else %}&mdash;{% endif %}</td>
