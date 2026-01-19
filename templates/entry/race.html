@@ -4,15 +4,35 @@
 
 {% block content %}
 <style>
-    .container { max-width: 1400px; }
+    .container { max-width: none; padding: 1rem; }
+    #results-table {
+        width: auto;
+        border-collapse: collapse;
+    }
     #results-table input[type="number"] {
-        width: 60px;
-        padding: 0.25rem;
-        font-size: 0.9rem;
+        width: 55px;
+        padding: 0.2rem;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+    #results-table input[type="number"]:focus {
+        outline: 2px solid #1e3a5f;
+        border-color: #1e3a5f;
     }
     #results-table th, #results-table td {
-        padding: 0.35rem 0.5rem;
+        padding: 0.25rem 0.4rem;
+        font-size: 13px;
     }
+    #results-table th {
+        background: #f0f0f0;
+        position: sticky;
+        top: 0;
+    }
+    #results-table tbody tr:hover {
+        background: #f9f9f9;
+    }
+    .card { padding: 0.75rem; }
 </style>
 <p><a href="{{ url_for('entry.election_races', election_id=race.election_id) }}">&larr; Back to Races</a></p>
 
@@ -29,14 +49,14 @@
     <h3>Enter Vote Counts</h3>
     <p class="text-small text-muted" style="margin-bottom: 1rem;">Enter votes for each candidate in each town. Changes save automatically.</p>
 
-    <table id="results-table" style="min-width: 100%; white-space: nowrap;">
+    <table id="results-table">
         <thead>
             <tr>
                 <th>Town</th>
                 {% for c in candidates %}
                 <th style="text-align: center;">
-                    {{ c.name }}<br>
-                    <span class="text-small {% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}" style="{% if c.party == 'Republican' %}color: #8b0000;{% elif c.party == 'Democratic' %}color: #1e3a5f;{% endif %}">{{ c.party or '-' }}</span>
+                    {{ c.name }}
+                    <span style="font-weight: normal; {% if c.party == 'Republican' %}color: #8b0000;{% elif c.party == 'Democratic' %}color: #1e3a5f;{% else %}color: #666;{% endif %}">({{ c.party[0] if c.party else '?' }})</span>
                 </th>
                 {% endfor %}
                 <th style="text-align: center;">Total</th>
