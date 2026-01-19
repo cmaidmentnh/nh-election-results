@@ -1,5 +1,20 @@
 # NH Election Results - Claude Reference
 
+## CRITICAL: Server Port Assignments
+
+**DO NOT CHANGE THESE PORTS. EVER.**
+
+| App | Port | Service | Domain |
+|-----|------|---------|--------|
+| nh-civic-crm | 5000 | nh-civic-crm.service | action.nhhouse.gop |
+| nh-legislators-api | 5001 | nh-legislators-api.service | API |
+| nh-whip-count | 5004 | nh-whip-count.service | whip.nhhouse.gop |
+| nh-election-results | 5006 | nh-election-results.service | elections.nhhouse.gop |
+
+All apps run on server: `138.197.20.97`
+
+---
+
 ## Deployment
 
 ```bash
@@ -35,6 +50,8 @@ Key tables:
 - `offices` - Office names
 - `district_compositions` - Which towns are in which districts
 - `voter_registration` - Ballots cast data for turnout
+- `users` - Admin/user accounts for results entry
+- `result_audit` - Audit log for result changes
 
 ## Git Workflow
 
@@ -43,3 +60,9 @@ Always commit, push, AND deploy:
 git add -A && git commit -m "message" && git push
 ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
 ```
+
+## Admin Portal
+
+- Login: https://elections.nhhouse.gop/login
+- Admin panel: /admin/
+- Results entry: /entry/
