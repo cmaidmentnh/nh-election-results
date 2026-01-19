@@ -1044,9 +1044,8 @@ def get_towns_in_district(office, district, county=None):
 def get_district_pvi(office, district, county=None):
     """
     Calculate PVI for a district based on CURRENT district composition.
-    Uses the towns in the current district and calculates their combined voting
-    history across all years (2016-2024).
-    PVI = District R% - Statewide R% (only for competitive races)
+    PVI = (R votes in district towns from contested races) / (R+D votes in district towns)
+        - (R votes statewide from contested races) / (R+D votes statewide)
     """
     # First, get the towns currently in this district
     towns = get_towns_in_district(office, district, county)
@@ -1063,49 +1062,61 @@ def get_district_pvi(office, district, county=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get candidate-level voting data for these specific towns across ALL years
-    # We need candidate-level to properly handle multi-member races (use top vote-getter per party)
     placeholders = ','.join('?' * len(towns))
+
+    # Get R/D votes by year for contested races only, summed for district towns
     cursor.execute(f"""
-        SELECT
-            e.year,
-            r.id as race_id,
-            c.party,
-            SUM(res.votes) as votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        WHERE res.municipality IN ({placeholders})
-        AND e.election_type = 'general'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        AND c.party IN ('Republican', 'Democratic')
-        GROUP BY e.year, r.id, c.name, c.party
+        WITH race_totals AS (
+            SELECT e.year, r.id as race_id, res.municipality,
+                   SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+                   SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE res.municipality IN ({placeholders})
+            AND e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY e.year, r.id, res.municipality
+        ),
+        contested AS (
+            SELECT year, municipality, r, d
+            FROM race_totals
+            WHERE r > 0 AND d > 0
+        )
+        SELECT year, SUM(r) as r, SUM(d) as d
+        FROM contested
+        GROUP BY year
     """, towns)
 
-    # Group by year and race, find top vote-getter per party per race
-    race_candidates = defaultdict(lambda: defaultdict(list))  # year -> race_id -> list of (party, votes)
-    for row in cursor.fetchall():
-        year, race_id, party, votes = row
-        race_candidates[year][race_id].append({'party': party, 'votes': votes})
+    district_by_year = {}
+    for year, r, d in cursor.fetchall():
+        district_by_year[year] = {'r_votes': r, 'd_votes': d, 'total': r + d}
 
-    # Aggregate using TOP vote-getter per party per race (fair for multi-member races)
-    district_by_year = defaultdict(lambda: {'r_votes': 0, 'd_votes': 0, 'total': 0})
-
-    for year, races in race_candidates.items():
-        for race_id, candidates in races.items():
-            top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
-            top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
-            # Only count if BOTH parties had candidates
-            if top_r > 0 and top_d > 0:
-                district_by_year[year]['r_votes'] += top_r
-                district_by_year[year]['d_votes'] += top_d
-                district_by_year[year]['total'] += top_r + top_d
+    # Get statewide baseline for all contested races
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT e.year, r.id as race_id,
+                   SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+                   SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.election_type = 'general'
+            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            GROUP BY e.year, r.id
+            HAVING r > 0 AND d > 0
+        )
+        SELECT year, SUM(r) as total_r, SUM(d) as total_d
+        FROM race_totals
+        GROUP BY year
+    """)
+    statewide = {}
+    for year, total_r, total_d in cursor.fetchall():
+        statewide[year] = {'r_pct': total_r / (total_r + total_d) * 100}
 
     conn.close()
-
-    # Get statewide baseline
-    statewide = get_statewide_baseline()
 
     # Calculate PVI for each year
     pvi_by_year = {}
@@ -1126,15 +1137,13 @@ def get_district_pvi(office, district, county=None):
                 'state_r_pct': round(state_r_pct, 1)
             }
 
-    # Calculate trend
-    if len(years) >= 2 and years[0] in pvi_by_year and years[-1] in pvi_by_year:
-        first_pvi = pvi_by_year[years[0]]['pvi']
-        last_pvi = pvi_by_year[years[-1]]['pvi']
-        trend = last_pvi - first_pvi
+    # Calculate trend (2022 → 2024)
+    if 2022 in pvi_by_year and 2024 in pvi_by_year:
+        trend = pvi_by_year[2024]['pvi'] - pvi_by_year[2022]['pvi']
     else:
         trend = 0
 
-    current_pvi = pvi_by_year.get(years[-1], {}).get('pvi', 0) if years else 0
+    current_pvi = pvi_by_year.get(2024, {}).get('pvi', 0)
 
     return {
         'current_pvi': current_pvi,
