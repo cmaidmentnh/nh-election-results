@@ -55,7 +55,7 @@
                     <td><strong>{{ d.district }}</strong></td>
                     {% endif %}
                     <td class="{% if d.pvi > 0 %}r{% else %}d{% endif %}" data-value="{{ d.pvi }}">
-                        {% if d.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.pvi|abs) }}
+                        {% if d.pvi > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(d.pvi|abs) }}{% if not d.contested %} <span class="uncontested">(U)</span>{% endif %}
                     </td>
                     <td data-value="{{ d.trend }}">
                         {% if d.trend > 1 %}
@@ -66,7 +66,7 @@
                         <span class="trend-indicator">&#8212; {{ "%.1f"|format(d.trend) }}</span>
                         {% endif %}
                     </td>
-                    <td class="towns-cell">{{ d.towns|join(', ') }}</td>
+                    <td class="towns-cell">{% if d.towns %}{{ d.towns|join(', ') }}{% else %}&mdash;{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -83,6 +83,11 @@
 }
 .trend-indicator.d {
     color: var(--democrat);
+}
+.uncontested {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    font-weight: normal;
 }
 .towns-cell {
     font-size: 0.85rem;
