@@ -26,7 +26,7 @@
         {% set yr_data = data.by_year[year] %}
         <div class="section">
             <div class="section-header">
-                <h2>{{ year }} Results</h2>
+                <h2><a href="{{ url_for('office_year', office_name=office_name, year=year) }}">{{ year }} Results</a></h2>
                 <span class="{% if yr_data.margin > 0 %}r{% else %}d{% endif %}">
                     {% if yr_data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(yr_data.margin|abs) }}% overall
                 </span>

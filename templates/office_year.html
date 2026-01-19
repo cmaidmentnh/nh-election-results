@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ office }} {{ year }} Results - NH Election Results{% endblock %}
+
+{% block head %}
+<style>
+.county-section {
+    margin-bottom: 2rem;
+}
+.county-header {
+    background: var(--bg-alt);
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.county-header:hover {
+    background: #eee;
+}
+.county-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.county-header .toggle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+.county-content {
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 1rem;
+}
+.county-content.collapsed {
+    display: none;
+}
+.race-card {
+    border: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+}
+.race-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.race-header h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+.race-header .margin {
+    font-weight: 600;
+}
+.race-candidates {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.25rem;
+}
+.race-candidate {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.9rem;
+}
+.race-candidate.winner {
+    font-weight: 600;
+}
+.race-candidate .name {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.race-candidate .check {
+    color: #22c55e;
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ office }} - {{ year }}</h1>
+    <p class="subtitle">
+        <a href="{{ url_for('office_detail', office_name=office_name) }}">&larr; All years</a>
+    </p>
+</div>
+
+<div class="metrics">
+    <div class="metric">
+        <div class="metric-value">
+            <span class="r">{{ total_r_seats }}</span>-<span class="d">{{ total_d_seats }}</span>
+        </div>
+        <div class="metric-label">Seats Won</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value">{{ races|length }}</div>
+        <div class="metric-label">Races</div>
+    </div>
+    <div class="metric">
+        {% set margin = ((total_r_votes - total_d_votes) / (total_r_votes + total_d_votes) * 100) if (total_r_votes + total_d_votes) > 0 else 0 %}
+        <div class="metric-value {% if margin > 0 %}r{% else %}d{% endif %}">
+            {% if margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(margin|abs) }}%
+        </div>
+        <div class="metric-label">Overall Margin</div>
+    </div>
+</div>
+
+<div class="section">
+    <p class="text-muted mb-2">Click a county to expand/collapse. {{ "{:,}".format(total_r_votes) }} R votes / {{ "{:,}".format(total_d_votes) }} D votes total.</p>
+
+    {% for county in by_county.keys()|sort %}
+    {% set county_races = by_county[county] %}
+    <div class="county-section">
+        <div class="county-header" onclick="toggleCounty(this)">
+            <h3>
+                {{ county }}
+                <span class="text-muted" style="font-weight: normal; font-size: 0.9rem;">({{ county_races|length }} races)</span>
+            </h3>
+            <span class="toggle">+</span>
+        </div>
+        <div class="county-content collapsed">
+            {% for race in county_races %}
+            <div class="race-card">
+                <div class="race-header">
+                    <h4>
+                        {% if race.county %}
+                        <a href="{{ url_for('district', county=race.county, district=race.district) }}">District {{ race.district }}</a>
+                        {% elif race.district %}
+                        <a href="{{ url_for('statewide_district', office=office, district=race.district) }}">District {{ race.district }}</a>
+                        {% else %}
+                        Statewide
+                        {% endif %}
+                        {% if race.seats > 1 %}<span class="text-muted">({{ race.seats }} seats)</span>{% endif %}
+                    </h4>
+                    <span class="margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
+                        {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                    </span>
+                </div>
+                <div class="race-candidates">
+                    {% for c in race.candidates %}
+                    <div class="race-candidate {% if c.is_winner %}winner{% endif %}">
+                        <span class="name">
+                            <span class="{% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}">{{ c.name }}</span>
+                            {% if c.is_winner %}<span class="check">✓</span>{% endif %}
+                        </span>
+                        <span>{{ "{:,}".format(c.votes) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCounty(header) {
+    const content = header.nextElementSibling;
+    const toggle = header.querySelector('.toggle');
+    content.classList.toggle('collapsed');
+    toggle.textContent = content.classList.contains('collapsed') ? '+' : '−';
+}
+
+// Expand first county by default
+document.addEventListener('DOMContentLoaded', function() {
+    const first = document.querySelector('.county-header');
+    if (first) toggleCounty(first);
+});
+</script>
+{% endblock %}

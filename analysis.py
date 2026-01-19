@@ -1553,6 +1553,86 @@ def get_office_results(office):
     }
 
 
+def get_office_year_results(office, year):
+    """
+    Get all races for a specific office and year.
+    Returns list of races with candidates, ordered by county/district.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            r.district,
+            r.county,
+            r.seats,
+            c.name as candidate,
+            c.party,
+            SUM(res.votes) as total_votes,
+            RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        GROUP BY r.id, c.id
+        ORDER BY r.county, CAST(r.district AS INTEGER), total_votes DESC
+    """, (office, year))
+
+    races = []
+    current_race = None
+
+    for row in cursor.fetchall():
+        district, county, seats, candidate, party, votes, rank = row
+        race_key = (district, county)
+
+        if race_key != current_race:
+            current_race = race_key
+            # Calculate margin for this race
+            races.append({
+                'district': district,
+                'county': county,
+                'seats': seats,
+                'candidates': [],
+                'top_r': 0,
+                'top_d': 0
+            })
+
+        race = races[-1]
+        is_winner = rank <= seats
+        race['candidates'].append({
+            'name': candidate,
+            'party': party,
+            'votes': votes,
+            'is_winner': is_winner
+        })
+
+        # Track top vote-getter per party for margin calculation
+        if party == 'Republican':
+            race['top_r'] = max(race['top_r'], votes)
+        elif party == 'Democratic':
+            race['top_d'] = max(race['top_d'], votes)
+
+    conn.close()
+
+    # Calculate margin for each race
+    for race in races:
+        total = race['top_r'] + race['top_d']
+        if total > 0:
+            race['margin'] = round((race['top_r'] - race['top_d']) / total * 100, 1)
+        else:
+            race['margin'] = 0
+        # Clean up temp fields
+        del race['top_r']
+        del race['top_d']
+
+    return races
+
+
 def get_incumbent_analysis():
     """
     Track incumbents - candidates who won in year N and ran again in year N+2.

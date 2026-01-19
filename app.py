@@ -397,7 +397,53 @@ def office_detail(office_name):
         return f"Office '{office_name}' not found", 404
 
     office_data = analysis.get_office_results(office)
-    return render_template('office.html', office=office, data=office_data)
+    return render_template('office.html', office=office, office_name=office_name, data=office_data)
+
+
+@app.route('/office/<office_name>/<int:year>')
+def office_year(office_name, year):
+    """Office results for a specific year with all races."""
+    office_map = {
+        'president': 'President of the United States',
+        'governor': 'Governor',
+        'us-senate': 'United States Senator',
+        'us-house': 'Representative in Congress',
+        'state-senate': 'State Senator',
+        'state-house': 'State Representative',
+        'exec-council': 'Executive Councilor'
+    }
+    office = office_map.get(office_name)
+    if not office:
+        return f"Office '{office_name}' not found", 404
+
+    races = analysis.get_office_year_results(office, year)
+    if not races:
+        return f"No results for {office} in {year}", 404
+
+    # Group by county for State Rep
+    by_county = {}
+    for race in races:
+        county = race.get('county') or 'Statewide'
+        if county not in by_county:
+            by_county[county] = []
+        by_county[county].append(race)
+
+    # Calculate totals
+    total_r_seats = sum(1 for r in races for c in r['candidates'] if c['is_winner'] and c['party'] == 'Republican')
+    total_d_seats = sum(1 for r in races for c in r['candidates'] if c['is_winner'] and c['party'] == 'Democratic')
+    total_r_votes = sum(c['votes'] for r in races for c in r['candidates'] if c['party'] == 'Republican')
+    total_d_votes = sum(c['votes'] for r in races for c in r['candidates'] if c['party'] == 'Democratic')
+
+    return render_template('office_year.html',
+                         office=office,
+                         office_name=office_name,
+                         year=year,
+                         races=races,
+                         by_county=by_county,
+                         total_r_seats=total_r_seats,
+                         total_d_seats=total_d_seats,
+                         total_r_votes=total_r_votes,
+                         total_d_votes=total_d_votes)
 
 
 @app.route('/incumbents')
