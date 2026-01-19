@@ -67,11 +67,14 @@ def get_town_summary(town):
     """
     Get a comprehensive summary of a town's voting patterns.
     Returns headline insights, not raw data.
+
+    For multi-member races (State Rep), uses TOP vote-getter per party
+    to avoid skewing results when one party runs more candidates.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get all results for this town
+    # Get all results for this town with candidate-level detail
     cursor.execute("""
         SELECT
             e.year,
@@ -89,7 +92,7 @@ def get_town_summary(town):
         WHERE res.municipality = ?
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        ORDER BY e.year, o.name
+        ORDER BY e.year, o.name, res.votes DESC
     """, (town,))
 
     results = cursor.fetchall()
@@ -97,47 +100,57 @@ def get_town_summary(town):
         conn.close()
         return None
 
-    # Aggregate by year and office
-    by_year = defaultdict(lambda: defaultdict(lambda: {'R': 0, 'D': 0, 'Other': 0, 'total': 0}))
+    # Track individual candidate votes by year/office
+    # For multi-member races, we'll use top vote-getter per party
+    candidate_votes = defaultdict(lambda: defaultdict(list))  # year -> office -> list of (party, votes)
 
     for row in results:
         year = row['year']
         office = row['office']
         party = row['party']
         votes = row['votes']
+        candidate_votes[year][office].append({'party': party, 'votes': votes})
 
-        if party == 'Republican':
-            by_year[year][office]['R'] += votes
-        elif party == 'Democratic':
-            by_year[year][office]['D'] += votes
-        else:
-            by_year[year][office]['Other'] += votes
-        by_year[year][office]['total'] += votes
-
-    # Calculate margins by year
-    years = sorted(by_year.keys())
+    # Calculate margins by year using TOP vote-getter per party
+    years = sorted(candidate_votes.keys())
     margins_by_year = {}
+    by_year = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0, 'total': 0}))
 
     for year in years:
-        total_r = sum(d['R'] for d in by_year[year].values())
-        total_d = sum(d['D'] for d in by_year[year].values())
-        total_all = sum(d['total'] for d in by_year[year].values())
+        year_top_r = 0
+        year_top_d = 0
+        year_total = 0
 
-        if total_all > 0:
-            r_pct = (total_r / total_all) * 100
-            d_pct = (total_d / total_all) * 100
+        for office, candidates in candidate_votes[year].items():
+            # Find top vote-getter per party for this office
+            top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
+            top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
+            total = sum(c['votes'] for c in candidates)
+
+            by_year[year][office]['top_r'] = top_r
+            by_year[year][office]['top_d'] = top_d
+            by_year[year][office]['total'] = total
+
+            year_top_r += top_r
+            year_top_d += top_d
+            year_total += total
+
+        if year_top_r + year_top_d > 0:
+            total_top = year_top_r + year_top_d
+            r_pct = (year_top_r / total_top) * 100
+            d_pct = (year_top_d / total_top) * 100
             margin = r_pct - d_pct
             margins_by_year[year] = {
                 'r_pct': round(r_pct, 1),
                 'd_pct': round(d_pct, 1),
                 'margin': round(margin, 1),
-                'r_votes': total_r,
-                'd_votes': total_d,
-                'total_votes': total_all
+                'r_votes': year_top_r,
+                'd_votes': year_top_d,
+                'total_votes': year_total
             }
 
     # Calculate trend (change from first to last year)
-    if len(years) >= 2:
+    if len(years) >= 2 and years[0] in margins_by_year and years[-1] in margins_by_year:
         first_margin = margins_by_year[years[0]]['margin']
         last_margin = margins_by_year[years[-1]]['margin']
         trend = last_margin - first_margin
@@ -146,7 +159,7 @@ def get_town_summary(town):
         trend = 0
         trend_direction = 'stable'
 
-    # Detect ticket splitting
+    # Detect ticket splitting using top vote-getter comparison
     ticket_splits = []
     for year in years:
         offices = by_year[year]
@@ -157,9 +170,9 @@ def get_town_summary(town):
         for office in ['President of the United States', 'Governor']:
             if office in offices:
                 data = offices[office]
-                if data['R'] > data['D']:
+                if data['top_r'] > data['top_d']:
                     top_ticket = 'R'
-                elif data['D'] > data['R']:
+                elif data['top_d'] > data['top_r']:
                     top_ticket = 'D'
                 top_ticket_office = office
                 break
@@ -169,9 +182,9 @@ def get_town_summary(town):
             for office in ['State Representative', 'State Senator', 'Executive Councilor']:
                 if office in offices:
                     data = offices[office]
-                    if data['R'] > data['D']:
+                    if data['top_r'] > data['top_d']:
                         down_ballot = 'R'
-                    elif data['D'] > data['R']:
+                    elif data['top_d'] > data['top_r']:
                         down_ballot = 'D'
                     else:
                         continue
@@ -328,22 +341,22 @@ def get_town_race_details(town, year):
             'is_winner': is_winner
         })
 
-    # Calculate margins for each race
-    # Normalized margin: R% - D% where each is percentage of R+D total only
-    # This normalizes for unequal number of candidates per party
+    # Calculate margins for each race using TOP vote-getter per party
+    # This is fair for multi-member races where one party may run more candidates
     for race_key, race in races.items():
-        r_votes = sum(c['votes'] for c in race['candidates'] if c['party'] == 'Republican')
-        d_votes = sum(c['votes'] for c in race['candidates'] if c['party'] == 'Democratic')
+        # Find top vote-getter per party
+        top_r = max((c['votes'] for c in race['candidates'] if c['party'] == 'Republican'), default=0)
+        top_d = max((c['votes'] for c in race['candidates'] if c['party'] == 'Democratic'), default=0)
         total = sum(c['votes'] for c in race['candidates'])
-        rd_total = r_votes + d_votes  # R+D only for normalized margin
+        rd_total = top_r + top_d
 
         if rd_total > 0:
-            race['r_votes'] = r_votes
-            race['d_votes'] = d_votes
-            race['margin'] = r_votes - d_votes
-            # Normalized margin: (R-D) / (R+D) * 100
-            race['margin_pct'] = round((r_votes - d_votes) / rd_total * 100, 1)
-            race['winner_party'] = 'R' if r_votes > d_votes else 'D' if d_votes > r_votes else 'Tie'
+            race['r_votes'] = top_r
+            race['d_votes'] = top_d
+            race['margin'] = top_r - top_d
+            # Margin based on top vote-getters: (top_R - top_D) / (top_R + top_D) * 100
+            race['margin_pct'] = round((top_r - top_d) / rd_total * 100, 1)
+            race['winner_party'] = 'R' if top_r > top_d else 'D' if top_d > top_r else 'Tie'
         else:
             race['r_votes'] = 0
             race['d_votes'] = 0
@@ -1025,16 +1038,15 @@ def get_district_pvi(office, district, county=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get voting data for these specific towns across ALL years
-    # This aggregates votes from ALL races these towns voted in (not just the specific office)
+    # Get candidate-level voting data for these specific towns across ALL years
+    # We need candidate-level to properly handle multi-member races (use top vote-getter per party)
     placeholders = ','.join('?' * len(towns))
     cursor.execute(f"""
         SELECT
             e.year,
             r.id as race_id,
-            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-            SUM(res.votes) as total_votes
+            c.party,
+            SUM(res.votes) as votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
@@ -1042,19 +1054,28 @@ def get_district_pvi(office, district, county=None):
         WHERE res.municipality IN ({placeholders})
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY e.year, r.id
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY e.year, r.id, c.name, c.party
     """, towns)
 
-    # Aggregate only competitive races
+    # Group by year and race, find top vote-getter per party per race
+    race_candidates = defaultdict(lambda: defaultdict(list))  # year -> race_id -> list of (party, votes)
+    for row in cursor.fetchall():
+        year, race_id, party, votes = row
+        race_candidates[year][race_id].append({'party': party, 'votes': votes})
+
+    # Aggregate using TOP vote-getter per party per race (fair for multi-member races)
     district_by_year = defaultdict(lambda: {'r_votes': 0, 'd_votes': 0, 'total': 0})
 
-    for row in cursor.fetchall():
-        year, race_id, r_votes, d_votes, total = row
-        # Only count if BOTH parties had candidates
-        if r_votes > 0 and d_votes > 0:
-            district_by_year[year]['r_votes'] += r_votes
-            district_by_year[year]['d_votes'] += d_votes
-            district_by_year[year]['total'] += total
+    for year, races in race_candidates.items():
+        for race_id, candidates in races.items():
+            top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
+            top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
+            # Only count if BOTH parties had candidates
+            if top_r > 0 and top_d > 0:
+                district_by_year[year]['r_votes'] += top_r
+                district_by_year[year]['d_votes'] += top_d
+                district_by_year[year]['total'] += top_r + top_d
 
     conn.close()
 
@@ -1724,10 +1745,12 @@ def get_districts_map_data(year=None, metric='margin'):
                 code = county_codes[county] + str(district)
                 house_district_seats[code] = seats or 1
 
-        # Get all historical House votes by town
+        # Get all historical House votes by town using TOP vote-getter per party per race
+        # This is fair for multi-member races where one party may run more candidates
         cursor.execute("""
             SELECT
                 res.municipality,
+                r.id as race_id,
                 c.party,
                 SUM(res.votes) as votes
             FROM results res
@@ -1740,18 +1763,26 @@ def get_districts_map_data(year=None, metric='margin'):
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             AND c.party IN ('Republican', 'Democratic')
-            GROUP BY res.municipality, c.party
+            GROUP BY res.municipality, r.id, c.name, c.party
         """)
-        house_town_votes = defaultdict(lambda: {'r': 0, 'd': 0})
-        for muni, party, votes in cursor.fetchall():
+
+        # Group by town and race, then find top vote-getter per party
+        town_race_candidates = defaultdict(lambda: defaultdict(list))
+        for muni, race_id, party, votes in cursor.fetchall():
             if ' Ward ' in muni:
                 base = muni[:muni.index(' Ward ')]
             else:
                 base = muni
-            if party == 'Republican':
-                house_town_votes[base]['r'] += votes
-            elif party == 'Democratic':
-                house_town_votes[base]['d'] += votes
+            town_race_candidates[base][race_id].append({'party': party, 'votes': votes})
+
+        # Calculate total using top vote-getter per party per race
+        house_town_votes = defaultdict(lambda: {'r': 0, 'd': 0})
+        for town, races in town_race_candidates.items():
+            for race_id, candidates in races.items():
+                top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
+                top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
+                house_town_votes[town]['r'] += top_r
+                house_town_votes[town]['d'] += top_d
 
         # Calculate margin for each current district using historical town data
         for code, towns in house_district_towns.items():
@@ -1875,9 +1906,9 @@ def get_districts_map_data(year=None, metric='margin'):
             r_winners = sum(1 for w in winners if w['party'] == 'Republican')
             d_winners = sum(1 for w in winners if w['party'] == 'Democratic')
 
-            # Calculate total votes
-            r_votes = sum(c['votes'] for c in r_candidates)
-            d_votes = sum(c['votes'] for c in d_candidates)
+            # Calculate votes using TOP vote-getter per party (fair for multi-member)
+            top_r = max((c['votes'] for c in r_candidates), default=0)
+            top_d = max((c['votes'] for c in d_candidates), default=0)
             total_votes = sum(c['votes'] for c in candidates)
 
             if num_seats > 1 and len(candidates) > num_seats:
@@ -1898,8 +1929,9 @@ def get_districts_map_data(year=None, metric='margin'):
                 else:
                     margin = 0
             else:
-                # Single seat or no losers: use vote margin
-                margin = ((r_votes - d_votes) / total_votes * 100) if total_votes > 0 else 0
+                # Single seat or no losers: use top vote-getter margin
+                rd_total = top_r + top_d
+                margin = ((top_r - top_d) / rd_total * 100) if rd_total > 0 else 0
 
             # For State House, include top candidates for display
             top_candidates = []
@@ -1912,8 +1944,8 @@ def get_districts_map_data(year=None, metric='margin'):
 
             data[code] = {
                 'margin': round(margin, 1),
-                'r_votes': r_votes,
-                'd_votes': d_votes,
+                'r_votes': top_r,
+                'd_votes': top_d,
                 'total_votes': total_votes,
                 'seats': num_seats,
                 'r_seats': r_winners,
