@@ -26,7 +26,7 @@
                         <th>Seats</th>
                         <th class="text-right">Margin</th>
                         <th class="text-right">Trend</th>
-                        <th class="text-right">Volatility</th>
+                        <th>Flip</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -43,7 +43,15 @@
                         <td class="text-right {% if d.trend and d.trend > 0 %}r{% elif d.trend and d.trend < 0 %}d{% endif %}">
                             {% if d.trend is not none %}{% if d.trend > 0 %}+{% endif %}{{ d.trend }}{% else %}—{% endif %}
                         </td>
-                        <td class="text-right">{{ d.volatility }}</td>
+                        <td>
+                            {% if d.trend and d.trend < 0 and d.winner == 'R' %}
+                                <span class="d">R→D</span>
+                            {% elif d.trend and d.trend > 0 and d.winner == 'D' %}
+                                <span class="r">D→R</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
