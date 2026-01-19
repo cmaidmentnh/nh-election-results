@@ -1,0 +1,2082 @@
+{
+  "Alton": {
+    "population": 5953,
+    "median_income": 115599,
+    "median_home_value": 379900,
+    "median_age": 55.1,
+    "college_pct": 35.3,
+    "white_pct": 95.1
+  },
+  "Barnstead": {
+    "population": 4972,
+    "median_income": 97500,
+    "median_home_value": 307600,
+    "median_age": 43.0,
+    "college_pct": 29.3,
+    "white_pct": 93.8
+  },
+  "Belmont": {
+    "population": 7383,
+    "median_income": 78415,
+    "median_home_value": 264500,
+    "median_age": 48.5,
+    "college_pct": 19.4,
+    "white_pct": 95.9
+  },
+  "Center Harbor": {
+    "population": 958,
+    "median_income": 105000,
+    "median_home_value": 394800,
+    "median_age": 60.4,
+    "college_pct": 44.3,
+    "white_pct": 95.7
+  },
+  "Gilford": {
+    "population": 7785,
+    "median_income": 115423,
+    "median_home_value": 388700,
+    "median_age": 46.0,
+    "college_pct": 43.0,
+    "white_pct": 90.3
+  },
+  "Gilmanton": {
+    "population": 3997,
+    "median_income": 114484,
+    "median_home_value": 333800,
+    "median_age": 46.7,
+    "college_pct": 42.9,
+    "white_pct": 97.3
+  },
+  "Laconia": {
+    "population": 16982,
+    "median_income": 68427,
+    "median_home_value": 308800,
+    "median_age": 44.9,
+    "college_pct": 25.3,
+    "white_pct": 91.3
+  },
+  "Meredith": {
+    "population": 6706,
+    "median_income": 70069,
+    "median_home_value": 441500,
+    "median_age": 54.7,
+    "college_pct": 43.6,
+    "white_pct": 95.9
+  },
+  "New Hampton": {
+    "population": 2484,
+    "median_income": 84130,
+    "median_home_value": 364900,
+    "median_age": 51.6,
+    "college_pct": 34.3,
+    "white_pct": 96.8
+  },
+  "Sanbornton": {
+    "population": 3054,
+    "median_income": 92279,
+    "median_home_value": 392900,
+    "median_age": 45.2,
+    "college_pct": 38.9,
+    "white_pct": 94.6
+  },
+  "Tilton": {
+    "population": 4026,
+    "median_income": 66591,
+    "median_home_value": 209000,
+    "median_age": 46.1,
+    "college_pct": 28.8,
+    "white_pct": 95.1
+  },
+  "Albany": {
+    "population": 819,
+    "median_income": 61042,
+    "median_home_value": 238300,
+    "median_age": 46.8,
+    "college_pct": 36.8,
+    "white_pct": 86.9
+  },
+  "Bartlett": {
+    "population": 3257,
+    "median_income": 60147,
+    "median_home_value": 359200,
+    "median_age": 57.4,
+    "college_pct": 45.1,
+    "white_pct": 96.9
+  },
+  "Brookfield": {
+    "population": 653,
+    "median_income": 95625,
+    "median_home_value": 374600,
+    "median_age": 51.5,
+    "college_pct": 36.5,
+    "white_pct": 95.6
+  },
+  "Chatham": {
+    "population": 433,
+    "median_income": 78281,
+    "median_home_value": 300000,
+    "median_age": 48.5,
+    "college_pct": 36.4,
+    "white_pct": 90.1
+  },
+  "Conway": {
+    "population": 10068,
+    "median_income": 69219,
+    "median_home_value": 271700,
+    "median_age": 53.5,
+    "college_pct": 38.5,
+    "white_pct": 95.4
+  },
+  "Eaton": {
+    "population": 423,
+    "median_income": 75833,
+    "median_home_value": 348100,
+    "median_age": 60.1,
+    "college_pct": 52.0,
+    "white_pct": 99.1
+  },
+  "Effingham": {
+    "population": 1758,
+    "median_income": 77426,
+    "median_home_value": 276500,
+    "median_age": 41.7,
+    "college_pct": 21.8,
+    "white_pct": 92.2
+  },
+  "Freedom": {
+    "population": 1369,
+    "median_income": 71875,
+    "median_home_value": 369800,
+    "median_age": 60.1,
+    "college_pct": 42.2,
+    "white_pct": 98.7
+  },
+  "Hale's location, Carroll County, New Hampshire": {
+    "population": 216,
+    "median_income": 168750,
+    "median_home_value": 859000,
+    "median_age": 65.2,
+    "college_pct": 54.2,
+    "white_pct": 98.1
+  },
+  "Hart's Location": {
+    "population": 49,
+    "median_income": 75455,
+    "median_home_value": 188900,
+    "median_age": 66.3,
+    "college_pct": 0.0,
+    "white_pct": 100.0
+  },
+  "Jackson": {
+    "population": 1046,
+    "median_income": 89861,
+    "median_home_value": 670000,
+    "median_age": 58.3,
+    "college_pct": 60.7,
+    "white_pct": 95.7
+  },
+  "Madison": {
+    "population": 2634,
+    "median_income": 103393,
+    "median_home_value": 360200,
+    "median_age": 43.1,
+    "college_pct": 35.1,
+    "white_pct": 93.9
+  },
+  "Moultonborough": {
+    "population": 5043,
+    "median_income": 94286,
+    "median_home_value": 516800,
+    "median_age": 57.8,
+    "college_pct": 47.5,
+    "white_pct": 96.7
+  },
+  "Ossipee": {
+    "population": 4478,
+    "median_income": 73050,
+    "median_home_value": 283700,
+    "median_age": 54.7,
+    "college_pct": 28.6,
+    "white_pct": 90.8
+  },
+  "Sandwich": {
+    "population": 1745,
+    "median_income": 130982,
+    "median_home_value": 383900,
+    "median_age": 62.8,
+    "college_pct": 61.4,
+    "white_pct": 96.3
+  },
+  "Tamworth": {
+    "population": 2867,
+    "median_income": 72381,
+    "median_home_value": 356400,
+    "median_age": 45.1,
+    "college_pct": 36.4,
+    "white_pct": 91.8
+  },
+  "Tuftonboro": {
+    "population": 2536,
+    "median_income": 98319,
+    "median_home_value": 446500,
+    "median_age": 55.1,
+    "college_pct": 36.6,
+    "white_pct": 97.7
+  },
+  "Wakefield": {
+    "population": 5337,
+    "median_income": 84709,
+    "median_home_value": 299500,
+    "median_age": 51.4,
+    "college_pct": 24.7,
+    "white_pct": 95.8
+  },
+  "Wolfeboro": {
+    "population": 6528,
+    "median_income": 84484,
+    "median_home_value": 432300,
+    "median_age": 56.5,
+    "college_pct": 42.5,
+    "white_pct": 94.2
+  },
+  "Alstead": {
+    "population": 1625,
+    "median_income": 59091,
+    "median_home_value": 236300,
+    "median_age": 52.5,
+    "college_pct": 26.3,
+    "white_pct": 96.5
+  },
+  "Chesterfield": {
+    "population": 3592,
+    "median_income": 110737,
+    "median_home_value": 312600,
+    "median_age": 51.4,
+    "college_pct": 41.9,
+    "white_pct": 94.6
+  },
+  "Dublin": {
+    "population": 1632,
+    "median_income": 100852,
+    "median_home_value": 383300,
+    "median_age": 50.2,
+    "college_pct": 47.6,
+    "white_pct": 94.1
+  },
+  "Fitzwilliam": {
+    "population": 2317,
+    "median_income": 91076,
+    "median_home_value": 273800,
+    "median_age": 49.5,
+    "college_pct": 36.2,
+    "white_pct": 91.7
+  },
+  "Gilsum": {
+    "population": 719,
+    "median_income": 70833,
+    "median_home_value": 216800,
+    "median_age": 44.1,
+    "college_pct": 17.3,
+    "white_pct": 97.4
+  },
+  "Harrisville": {
+    "population": 942,
+    "median_income": 98611,
+    "median_home_value": 360300,
+    "median_age": 57.4,
+    "college_pct": 50.8,
+    "white_pct": 92.6
+  },
+  "Hinsdale": {
+    "population": 3987,
+    "median_income": 68979,
+    "median_home_value": 181800,
+    "median_age": 50.8,
+    "college_pct": 13.9,
+    "white_pct": 95.6
+  },
+  "Jaffrey": {
+    "population": 5413,
+    "median_income": 87527,
+    "median_home_value": 244900,
+    "median_age": 43.8,
+    "college_pct": 34.3,
+    "white_pct": 93.4
+  },
+  "Keene": {
+    "population": 22923,
+    "median_income": 78183,
+    "median_home_value": 232500,
+    "median_age": 35.9,
+    "college_pct": 43.4,
+    "white_pct": 92.5
+  },
+  "Marlborough": {
+    "population": 2121,
+    "median_income": 73828,
+    "median_home_value": 253200,
+    "median_age": 44.9,
+    "college_pct": 39.0,
+    "white_pct": 97.3
+  },
+  "Marlow": {
+    "population": 848,
+    "median_income": 104605,
+    "median_home_value": 283100,
+    "median_age": 50.2,
+    "college_pct": 30.8,
+    "white_pct": 98.5
+  },
+  "Nelson": {
+    "population": 586,
+    "median_income": 91250,
+    "median_home_value": 341500,
+    "median_age": 46.0,
+    "college_pct": 64.5,
+    "white_pct": 86.9
+  },
+  "Richmond": {
+    "population": 1225,
+    "median_income": 92083,
+    "median_home_value": 301500,
+    "median_age": 53.0,
+    "college_pct": 33.8,
+    "white_pct": 93.0
+  },
+  "Rindge": {
+    "population": 6482,
+    "median_income": 102662,
+    "median_home_value": 343800,
+    "median_age": 35.8,
+    "college_pct": 37.6,
+    "white_pct": 85.7
+  },
+  "Roxbury": {
+    "population": 276,
+    "median_income": 69583,
+    "median_home_value": null,
+    "median_age": 38.7,
+    "college_pct": 34.1,
+    "white_pct": 99.3
+  },
+  "Stoddard": {
+    "population": 1156,
+    "median_income": 91125,
+    "median_home_value": 299300,
+    "median_age": 50.1,
+    "college_pct": 30.3,
+    "white_pct": 96.5
+  },
+  "Sullivan": {
+    "population": 699,
+    "median_income": 95625,
+    "median_home_value": 210600,
+    "median_age": 46.8,
+    "college_pct": 22.7,
+    "white_pct": 88.1
+  },
+  "Surry": {
+    "population": 998,
+    "median_income": 109167,
+    "median_home_value": 279600,
+    "median_age": 45.2,
+    "college_pct": 32.4,
+    "white_pct": 97.1
+  },
+  "Swanzey": {
+    "population": 7351,
+    "median_income": 78045,
+    "median_home_value": 247300,
+    "median_age": 52.2,
+    "college_pct": 28.2,
+    "white_pct": 90.9
+  },
+  "Troy": {
+    "population": 2034,
+    "median_income": 79375,
+    "median_home_value": 233600,
+    "median_age": 39.3,
+    "college_pct": 28.8,
+    "white_pct": 96.2
+  },
+  "Walpole": {
+    "population": 3671,
+    "median_income": 76875,
+    "median_home_value": 278800,
+    "median_age": 44.7,
+    "college_pct": 31.2,
+    "white_pct": 85.8
+  },
+  "Westmoreland": {
+    "population": 2146,
+    "median_income": 98684,
+    "median_home_value": 322700,
+    "median_age": 55.4,
+    "college_pct": 47.9,
+    "white_pct": 97.7
+  },
+  "Winchester": {
+    "population": 4202,
+    "median_income": 65943,
+    "median_home_value": 232000,
+    "median_age": 40.9,
+    "college_pct": 18.7,
+    "white_pct": 94.1
+  },
+  "Atkinson and Gilmanton Academy grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Beans grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Beans purchase, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Berlin": {
+    "population": 9473,
+    "median_income": 43972,
+    "median_home_value": 113500,
+    "median_age": 44.3,
+    "college_pct": 14.2,
+    "white_pct": 89.9
+  },
+  "Cambridge township, Coos County, New Hampshire": {
+    "population": 21,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": 0.0,
+    "white_pct": 100.0
+  },
+  "Carroll": {
+    "population": 715,
+    "median_income": 78750,
+    "median_home_value": 229100,
+    "median_age": 59.5,
+    "college_pct": 33.2,
+    "white_pct": 98.9
+  },
+  "Chandlers purchase, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Clarksville": {
+    "population": 281,
+    "median_income": 73203,
+    "median_home_value": 173200,
+    "median_age": 51.7,
+    "college_pct": 18.5,
+    "white_pct": 98.9
+  },
+  "Colebrook": {
+    "population": 1871,
+    "median_income": 51809,
+    "median_home_value": 180500,
+    "median_age": 53.6,
+    "college_pct": 20.4,
+    "white_pct": 97.0
+  },
+  "Columbia": {
+    "population": 710,
+    "median_income": 59750,
+    "median_home_value": 186300,
+    "median_age": 48.4,
+    "college_pct": 15.1,
+    "white_pct": 95.9
+  },
+  "Crawfords purchase, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Cutts grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Dalton": {
+    "population": 964,
+    "median_income": 74583,
+    "median_home_value": 156300,
+    "median_age": 43.6,
+    "college_pct": 20.7,
+    "white_pct": 96.4
+  },
+  "Dixs grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Dixville township, Coos County, New Hampshire": {
+    "population": 8,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": 70.5,
+    "college_pct": 25.0,
+    "white_pct": 87.5
+  },
+  "Dummer": {
+    "population": 320,
+    "median_income": 95114,
+    "median_home_value": 221600,
+    "median_age": 53.1,
+    "college_pct": 19.0,
+    "white_pct": 99.1
+  },
+  "Errol": {
+    "population": 296,
+    "median_income": 70104,
+    "median_home_value": 269800,
+    "median_age": 60.8,
+    "college_pct": 11.9,
+    "white_pct": 100.0
+  },
+  "Ervings location, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Gorham": {
+    "population": 2695,
+    "median_income": 59303,
+    "median_home_value": 144500,
+    "median_age": 55.3,
+    "college_pct": 23.9,
+    "white_pct": 96.7
+  },
+  "Greens grant, Coos County, New Hampshire": {
+    "population": 25,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": 32.9,
+    "college_pct": 61.9,
+    "white_pct": 72.0
+  },
+  "Hadleys purchase, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Jefferson": {
+    "population": 1012,
+    "median_income": 66776,
+    "median_home_value": 305900,
+    "median_age": 58.6,
+    "college_pct": 33.8,
+    "white_pct": 98.3
+  },
+  "Kilkenny township, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Lancaster": {
+    "population": 3227,
+    "median_income": 93389,
+    "median_home_value": 204700,
+    "median_age": 46.6,
+    "college_pct": 28.2,
+    "white_pct": 95.4
+  },
+  "Low and Burbanks grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Martins location, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Milan": {
+    "population": 1354,
+    "median_income": 66250,
+    "median_home_value": 239700,
+    "median_age": 49.5,
+    "college_pct": 20.1,
+    "white_pct": 95.2
+  },
+  "Millsfield township, Coos County, New Hampshire": {
+    "population": 5,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": 60.0,
+    "white_pct": 100.0
+  },
+  "Northumberland": {
+    "population": 1900,
+    "median_income": 49353,
+    "median_home_value": 111900,
+    "median_age": 48.0,
+    "college_pct": 11.0,
+    "white_pct": 91.8
+  },
+  "Odell township, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Pinkhams grant, Coos County, New Hampshire": {
+    "population": 8,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": 0.0,
+    "white_pct": 100.0
+  },
+  "Pittsburg": {
+    "population": 691,
+    "median_income": 53977,
+    "median_home_value": 266800,
+    "median_age": 64.8,
+    "college_pct": 15.4,
+    "white_pct": 99.0
+  },
+  "Randolph": {
+    "population": 381,
+    "median_income": 95000,
+    "median_home_value": 300000,
+    "median_age": 52.6,
+    "college_pct": 61.4,
+    "white_pct": 96.6
+  },
+  "Sargents purchase, Coos County, New Hampshire": {
+    "population": 42,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": 100.0,
+    "white_pct": 100.0
+  },
+  "Second College grant, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Shelburne": {
+    "population": 515,
+    "median_income": 82361,
+    "median_home_value": 272500,
+    "median_age": 48.6,
+    "college_pct": 36.8,
+    "white_pct": 97.1
+  },
+  "Stark": {
+    "population": 519,
+    "median_income": 67292,
+    "median_home_value": 198600,
+    "median_age": 49.4,
+    "college_pct": 11.7,
+    "white_pct": 97.3
+  },
+  "Stewartstown": {
+    "population": 1012,
+    "median_income": 55750,
+    "median_home_value": 167400,
+    "median_age": 55.1,
+    "college_pct": 8.8,
+    "white_pct": 94.8
+  },
+  "Stratford": {
+    "population": 832,
+    "median_income": 44271,
+    "median_home_value": 156300,
+    "median_age": 53.7,
+    "college_pct": 10.6,
+    "white_pct": 94.6
+  },
+  "Success township, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Thompson and Meserves purchase, Coos County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Wentworth location, Coos County, New Hampshire": {
+    "population": 12,
+    "median_income": 42500,
+    "median_home_value": null,
+    "median_age": 74.3,
+    "college_pct": 16.7,
+    "white_pct": 100.0
+  },
+  "Whitefield": {
+    "population": 2497,
+    "median_income": 61012,
+    "median_home_value": 216300,
+    "median_age": 51.2,
+    "college_pct": 25.7,
+    "white_pct": 98.0
+  },
+  "Alexandria": {
+    "population": 1919,
+    "median_income": 84125,
+    "median_home_value": 285600,
+    "median_age": 53.0,
+    "college_pct": 27.5,
+    "white_pct": 95.9
+  },
+  "Ashland": {
+    "population": 2207,
+    "median_income": 54495,
+    "median_home_value": 188600,
+    "median_age": 37.9,
+    "college_pct": 31.6,
+    "white_pct": 86.0
+  },
+  "Bath": {
+    "population": 1049,
+    "median_income": 70298,
+    "median_home_value": 219200,
+    "median_age": 50.9,
+    "college_pct": 30.3,
+    "white_pct": 96.5
+  },
+  "Benton": {
+    "population": 377,
+    "median_income": 66842,
+    "median_home_value": 277300,
+    "median_age": 62.6,
+    "college_pct": 17.3,
+    "white_pct": 94.4
+  },
+  "Bethlehem": {
+    "population": 2523,
+    "median_income": 83990,
+    "median_home_value": 269400,
+    "median_age": 52.4,
+    "college_pct": 45.3,
+    "white_pct": 98.2
+  },
+  "Bridgewater": {
+    "population": 1290,
+    "median_income": 78500,
+    "median_home_value": 355300,
+    "median_age": 50.6,
+    "college_pct": 30.1,
+    "white_pct": 95.5
+  },
+  "Bristol": {
+    "population": 3265,
+    "median_income": 77781,
+    "median_home_value": 216900,
+    "median_age": 44.5,
+    "college_pct": 26.4,
+    "white_pct": 88.3
+  },
+  "Campton": {
+    "population": 3380,
+    "median_income": 109943,
+    "median_home_value": 282800,
+    "median_age": 49.3,
+    "college_pct": 44.2,
+    "white_pct": 92.3
+  },
+  "Canaan": {
+    "population": 3801,
+    "median_income": 77689,
+    "median_home_value": 237900,
+    "median_age": 45.6,
+    "college_pct": 26.1,
+    "white_pct": 87.9
+  },
+  "Dorchester": {
+    "population": 431,
+    "median_income": 58750,
+    "median_home_value": 124400,
+    "median_age": 56.1,
+    "college_pct": 33.9,
+    "white_pct": 85.4
+  },
+  "Easton": {
+    "population": 360,
+    "median_income": 101875,
+    "median_home_value": 389700,
+    "median_age": 60.1,
+    "college_pct": 52.1,
+    "white_pct": 94.7
+  },
+  "Ellsworth": {
+    "population": 56,
+    "median_income": 82083,
+    "median_home_value": 291700,
+    "median_age": 52.0,
+    "college_pct": 21.7,
+    "white_pct": 100.0
+  },
+  "Enfield": {
+    "population": 4488,
+    "median_income": 96695,
+    "median_home_value": 343600,
+    "median_age": 54.4,
+    "college_pct": 46.2,
+    "white_pct": 96.9
+  },
+  "Franconia": {
+    "population": 1133,
+    "median_income": 76726,
+    "median_home_value": 494700,
+    "median_age": 55.8,
+    "college_pct": 59.2,
+    "white_pct": 94.4
+  },
+  "Grafton": {
+    "population": 1248,
+    "median_income": 72188,
+    "median_home_value": 256400,
+    "median_age": 43.6,
+    "college_pct": 26.4,
+    "white_pct": 92.7
+  },
+  "Groton": {
+    "population": 483,
+    "median_income": 73750,
+    "median_home_value": 254800,
+    "median_age": 45.4,
+    "college_pct": 24.3,
+    "white_pct": 90.7
+  },
+  "Hanover": {
+    "population": 11702,
+    "median_income": 163654,
+    "median_home_value": 755700,
+    "median_age": 27.1,
+    "college_pct": 86.1,
+    "white_pct": 73.3
+  },
+  "Haverhill": {
+    "population": 4608,
+    "median_income": 72201,
+    "median_home_value": 203600,
+    "median_age": 46.2,
+    "college_pct": 22.2,
+    "white_pct": 93.5
+  },
+  "Hebron": {
+    "population": 817,
+    "median_income": 91667,
+    "median_home_value": 494700,
+    "median_age": 60.0,
+    "college_pct": 48.0,
+    "white_pct": 97.7
+  },
+  "Holderness": {
+    "population": 1908,
+    "median_income": 84896,
+    "median_home_value": 331700,
+    "median_age": 43.2,
+    "college_pct": 51.4,
+    "white_pct": 93.5
+  },
+  "Landaff": {
+    "population": 431,
+    "median_income": 79167,
+    "median_home_value": 267500,
+    "median_age": 56.7,
+    "college_pct": 29.2,
+    "white_pct": 96.5
+  },
+  "Lebanon": {
+    "population": 14759,
+    "median_income": 92288,
+    "median_home_value": 345100,
+    "median_age": 38.6,
+    "college_pct": 56.4,
+    "white_pct": 85.5
+  },
+  "Lincoln": {
+    "population": 1484,
+    "median_income": 65990,
+    "median_home_value": 312000,
+    "median_age": 52.9,
+    "college_pct": 41.8,
+    "white_pct": 86.3
+  },
+  "Lisbon": {
+    "population": 1633,
+    "median_income": 61313,
+    "median_home_value": 190800,
+    "median_age": 45.1,
+    "college_pct": 27.3,
+    "white_pct": 96.7
+  },
+  "Littleton": {
+    "population": 6031,
+    "median_income": 54545,
+    "median_home_value": 249000,
+    "median_age": 43.8,
+    "college_pct": 24.7,
+    "white_pct": 92.8
+  },
+  "Livermore": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Lyman": {
+    "population": 487,
+    "median_income": 68654,
+    "median_home_value": 253400,
+    "median_age": 56.5,
+    "college_pct": 28.9,
+    "white_pct": 91.2
+  },
+  "Lyme": {
+    "population": 1672,
+    "median_income": 141719,
+    "median_home_value": 651400,
+    "median_age": 51.1,
+    "college_pct": 68.4,
+    "white_pct": 91.0
+  },
+  "Monroe": {
+    "population": 807,
+    "median_income": 85217,
+    "median_home_value": 257100,
+    "median_age": 50.6,
+    "college_pct": 24.4,
+    "white_pct": 99.3
+  },
+  "Orange": {
+    "population": 301,
+    "median_income": 117000,
+    "median_home_value": 300000,
+    "median_age": 44.8,
+    "college_pct": 42.2,
+    "white_pct": 86.0
+  },
+  "Orford": {
+    "population": 1289,
+    "median_income": 85938,
+    "median_home_value": 261700,
+    "median_age": 48.4,
+    "college_pct": 42.0,
+    "white_pct": 96.4
+  },
+  "Piermont": {
+    "population": 928,
+    "median_income": 93393,
+    "median_home_value": 327700,
+    "median_age": 47.4,
+    "college_pct": 42.6,
+    "white_pct": 95.6
+  },
+  "Plymouth": {
+    "population": 6618,
+    "median_income": 74696,
+    "median_home_value": 277300,
+    "median_age": 26.8,
+    "college_pct": 52.1,
+    "white_pct": 87.3
+  },
+  "Rumney": {
+    "population": 1440,
+    "median_income": 77143,
+    "median_home_value": 286600,
+    "median_age": 44.4,
+    "college_pct": 40.0,
+    "white_pct": 91.7
+  },
+  "Sugar Hill": {
+    "population": 625,
+    "median_income": 137500,
+    "median_home_value": 608600,
+    "median_age": 60.2,
+    "college_pct": 58.8,
+    "white_pct": 97.6
+  },
+  "Thornton": {
+    "population": 2763,
+    "median_income": 81094,
+    "median_home_value": 289700,
+    "median_age": 47.3,
+    "college_pct": 42.3,
+    "white_pct": 96.1
+  },
+  "Warren": {
+    "population": 862,
+    "median_income": 59167,
+    "median_home_value": 220500,
+    "median_age": 52.7,
+    "college_pct": 25.0,
+    "white_pct": 89.3
+  },
+  "Waterville Valley": {
+    "population": 269,
+    "median_income": 103333,
+    "median_home_value": 376800,
+    "median_age": 57.1,
+    "college_pct": 70.2,
+    "white_pct": 96.7
+  },
+  "Wentworth": {
+    "population": 1075,
+    "median_income": 105000,
+    "median_home_value": 274200,
+    "median_age": 37.7,
+    "college_pct": 31.4,
+    "white_pct": 94.6
+  },
+  "Woodstock": {
+    "population": 1240,
+    "median_income": 71500,
+    "median_home_value": 310800,
+    "median_age": 50.4,
+    "college_pct": 45.7,
+    "white_pct": 91.0
+  },
+  "Amherst": {
+    "population": 11821,
+    "median_income": 150938,
+    "median_home_value": 494500,
+    "median_age": 45.6,
+    "college_pct": 64.0,
+    "white_pct": 94.9
+  },
+  "Antrim": {
+    "population": 2657,
+    "median_income": 88958,
+    "median_home_value": 272000,
+    "median_age": 46.2,
+    "college_pct": 31.8,
+    "white_pct": 94.7
+  },
+  "Bedford": {
+    "population": 23580,
+    "median_income": 160253,
+    "median_home_value": 582000,
+    "median_age": 44.4,
+    "college_pct": 61.4,
+    "white_pct": 84.3
+  },
+  "Bennington": {
+    "population": 1494,
+    "median_income": 78071,
+    "median_home_value": 249700,
+    "median_age": 42.3,
+    "college_pct": 32.1,
+    "white_pct": 93.8
+  },
+  "Brookline": {
+    "population": 5697,
+    "median_income": 165942,
+    "median_home_value": 480100,
+    "median_age": 41.2,
+    "college_pct": 58.1,
+    "white_pct": 93.4
+  },
+  "Deering": {
+    "population": 1843,
+    "median_income": 97039,
+    "median_home_value": 278400,
+    "median_age": 47.3,
+    "college_pct": 29.5,
+    "white_pct": 95.6
+  },
+  "Francestown": {
+    "population": 1347,
+    "median_income": 96094,
+    "median_home_value": 379200,
+    "median_age": 51.7,
+    "college_pct": 52.9,
+    "white_pct": 96.3
+  },
+  "Goffstown": {
+    "population": 18526,
+    "median_income": 113220,
+    "median_home_value": 350700,
+    "median_age": 40.9,
+    "college_pct": 39.3,
+    "white_pct": 89.7
+  },
+  "Greenfield": {
+    "population": 1816,
+    "median_income": 99038,
+    "median_home_value": 314500,
+    "median_age": 48.7,
+    "college_pct": 27.8,
+    "white_pct": 92.6
+  },
+  "Greenville": {
+    "population": 2219,
+    "median_income": 87974,
+    "median_home_value": null,
+    "median_age": 41.4,
+    "college_pct": 17.0,
+    "white_pct": 89.0
+  },
+  "Hancock": {
+    "population": 1757,
+    "median_income": 92692,
+    "median_home_value": 427600,
+    "median_age": 55.3,
+    "college_pct": 58.2,
+    "white_pct": 91.5
+  },
+  "Hillsborough": {
+    "population": 5967,
+    "median_income": 93421,
+    "median_home_value": 245000,
+    "median_age": 39.5,
+    "college_pct": 23.9,
+    "white_pct": 89.1
+  },
+  "Hollis": {
+    "population": 8530,
+    "median_income": 156140,
+    "median_home_value": 622800,
+    "median_age": 48.1,
+    "college_pct": 52.1,
+    "white_pct": 85.6
+  },
+  "Hudson": {
+    "population": 25476,
+    "median_income": 124973,
+    "median_home_value": 407100,
+    "median_age": 45.1,
+    "college_pct": 35.4,
+    "white_pct": 89.6
+  },
+  "Litchfield": {
+    "population": 8495,
+    "median_income": 155881,
+    "median_home_value": 443600,
+    "median_age": 43.0,
+    "college_pct": 44.7,
+    "white_pct": 95.8
+  },
+  "Lyndeborough": {
+    "population": 1699,
+    "median_income": 111012,
+    "median_home_value": 334000,
+    "median_age": 49.0,
+    "college_pct": 38.4,
+    "white_pct": 88.1
+  },
+  "Manchester": {
+    "population": 115415,
+    "median_income": 77415,
+    "median_home_value": 336300,
+    "median_age": 37.9,
+    "college_pct": 33.5,
+    "white_pct": 76.7
+  },
+  "Mason": {
+    "population": 1443,
+    "median_income": 105227,
+    "median_home_value": 356900,
+    "median_age": 43.9,
+    "college_pct": 36.2,
+    "white_pct": 91.8
+  },
+  "Merrimack": {
+    "population": 27656,
+    "median_income": 129302,
+    "median_home_value": 407400,
+    "median_age": 41.6,
+    "college_pct": 49.0,
+    "white_pct": 88.4
+  },
+  "Milford": {
+    "population": 16258,
+    "median_income": 94514,
+    "median_home_value": 363500,
+    "median_age": 37.8,
+    "college_pct": 34.4,
+    "white_pct": 88.8
+  },
+  "Mont Vernon": {
+    "population": 2619,
+    "median_income": 161500,
+    "median_home_value": 479900,
+    "median_age": 43.5,
+    "college_pct": 50.4,
+    "white_pct": 94.1
+  },
+  "Nashua": {
+    "population": 91131,
+    "median_income": 92457,
+    "median_home_value": 373100,
+    "median_age": 39.7,
+    "college_pct": 40.5,
+    "white_pct": 75.1
+  },
+  "New Boston": {
+    "population": 6131,
+    "median_income": 151412,
+    "median_home_value": 437100,
+    "median_age": 40.3,
+    "college_pct": 43.1,
+    "white_pct": 97.1
+  },
+  "New Ipswich": {
+    "population": 5274,
+    "median_income": 100417,
+    "median_home_value": 317900,
+    "median_age": 38.1,
+    "college_pct": 30.7,
+    "white_pct": 91.7
+  },
+  "Pelham": {
+    "population": 14333,
+    "median_income": 126804,
+    "median_home_value": 484500,
+    "median_age": 43.0,
+    "college_pct": 37.7,
+    "white_pct": 89.4
+  },
+  "Peterborough": {
+    "population": 6456,
+    "median_income": 97319,
+    "median_home_value": 355900,
+    "median_age": 51.6,
+    "college_pct": 59.4,
+    "white_pct": 95.8
+  },
+  "Sharon": {
+    "population": 440,
+    "median_income": 110556,
+    "median_home_value": 458300,
+    "median_age": 49.6,
+    "college_pct": 42.2,
+    "white_pct": 98.9
+  },
+  "Temple": {
+    "population": 1367,
+    "median_income": 86528,
+    "median_home_value": 362200,
+    "median_age": 44.6,
+    "college_pct": 34.1,
+    "white_pct": 95.3
+  },
+  "Weare": {
+    "population": 9141,
+    "median_income": 115833,
+    "median_home_value": 363100,
+    "median_age": 47.3,
+    "college_pct": 44.1,
+    "white_pct": 93.8
+  },
+  "Wilton": {
+    "population": 3935,
+    "median_income": 118071,
+    "median_home_value": 368000,
+    "median_age": 46.1,
+    "college_pct": 41.7,
+    "white_pct": 92.2
+  },
+  "Windsor": {
+    "population": 209,
+    "median_income": 97500,
+    "median_home_value": 314900,
+    "median_age": 44.5,
+    "college_pct": 11.0,
+    "white_pct": 90.0
+  },
+  "Allenstown": {
+    "population": 4727,
+    "median_income": 80219,
+    "median_home_value": 232900,
+    "median_age": 36.6,
+    "college_pct": 17.9,
+    "white_pct": 83.1
+  },
+  "Andover": {
+    "population": 2185,
+    "median_income": 88125,
+    "median_home_value": 330500,
+    "median_age": 47.6,
+    "college_pct": 31.0,
+    "white_pct": 95.7
+  },
+  "Boscawen": {
+    "population": 4002,
+    "median_income": 76625,
+    "median_home_value": 267300,
+    "median_age": 45.4,
+    "college_pct": 22.1,
+    "white_pct": 96.8
+  },
+  "Bow": {
+    "population": 8295,
+    "median_income": 161482,
+    "median_home_value": 443700,
+    "median_age": 40.6,
+    "college_pct": 61.3,
+    "white_pct": 94.1
+  },
+  "Bradford": {
+    "population": 1522,
+    "median_income": 88482,
+    "median_home_value": 314200,
+    "median_age": 48.5,
+    "college_pct": 35.0,
+    "white_pct": 97.2
+  },
+  "Canterbury": {
+    "population": 2391,
+    "median_income": 116466,
+    "median_home_value": 415400,
+    "median_age": 46.1,
+    "college_pct": 48.6,
+    "white_pct": 87.6
+  },
+  "Chichester": {
+    "population": 2722,
+    "median_income": 112750,
+    "median_home_value": 360100,
+    "median_age": 45.5,
+    "college_pct": 36.3,
+    "white_pct": 95.4
+  },
+  "Concord": {
+    "population": 44219,
+    "median_income": 83701,
+    "median_home_value": 323700,
+    "median_age": 40.7,
+    "college_pct": 40.1,
+    "white_pct": 86.6
+  },
+  "Danbury": {
+    "population": 1539,
+    "median_income": 66458,
+    "median_home_value": 213000,
+    "median_age": 46.2,
+    "college_pct": 16.6,
+    "white_pct": 97.3
+  },
+  "Dunbarton": {
+    "population": 3055,
+    "median_income": 134205,
+    "median_home_value": 436500,
+    "median_age": 47.1,
+    "college_pct": 42.9,
+    "white_pct": 96.7
+  },
+  "Epsom": {
+    "population": 4896,
+    "median_income": 92623,
+    "median_home_value": 298100,
+    "median_age": 49.7,
+    "college_pct": 38.9,
+    "white_pct": 94.5
+  },
+  "Franklin": {
+    "population": 8757,
+    "median_income": 69870,
+    "median_home_value": 243800,
+    "median_age": 42.9,
+    "college_pct": 19.2,
+    "white_pct": 94.2
+  },
+  "Henniker": {
+    "population": 6161,
+    "median_income": 87344,
+    "median_home_value": 317600,
+    "median_age": 28.9,
+    "college_pct": 42.3,
+    "white_pct": 94.3
+  },
+  "Hill": {
+    "population": 878,
+    "median_income": 79313,
+    "median_home_value": 248300,
+    "median_age": 48.4,
+    "college_pct": 25.8,
+    "white_pct": 95.2
+  },
+  "Hooksett": {
+    "population": 14949,
+    "median_income": 106906,
+    "median_home_value": 370300,
+    "median_age": 40.6,
+    "college_pct": 38.9,
+    "white_pct": 89.4
+  },
+  "Hopkinton": {
+    "population": 5976,
+    "median_income": 130216,
+    "median_home_value": 441200,
+    "median_age": 44.0,
+    "college_pct": 57.3,
+    "white_pct": 93.8
+  },
+  "Loudon": {
+    "population": 5656,
+    "median_income": 94867,
+    "median_home_value": 314400,
+    "median_age": 50.2,
+    "college_pct": 28.0,
+    "white_pct": 97.4
+  },
+  "Newbury": {
+    "population": 1969,
+    "median_income": 122958,
+    "median_home_value": 439200,
+    "median_age": 48.4,
+    "college_pct": 58.2,
+    "white_pct": 97.0
+  },
+  "New London": {
+    "population": 4422,
+    "median_income": 94318,
+    "median_home_value": 462400,
+    "median_age": 46.6,
+    "college_pct": 65.4,
+    "white_pct": 90.3
+  },
+  "Northfield": {
+    "population": 4929,
+    "median_income": 84552,
+    "median_home_value": 260000,
+    "median_age": 43.8,
+    "college_pct": 24.5,
+    "white_pct": 92.2
+  },
+  "Pembroke": {
+    "population": 7359,
+    "median_income": 95307,
+    "median_home_value": 344000,
+    "median_age": 43.0,
+    "college_pct": 30.2,
+    "white_pct": 97.1
+  },
+  "Pittsfield": {
+    "population": 4094,
+    "median_income": 66823,
+    "median_home_value": 270600,
+    "median_age": 42.7,
+    "college_pct": 20.4,
+    "white_pct": 95.6
+  },
+  "Salisbury": {
+    "population": 1561,
+    "median_income": 105625,
+    "median_home_value": 316500,
+    "median_age": 51.0,
+    "college_pct": 32.2,
+    "white_pct": 95.9
+  },
+  "Sutton": {
+    "population": 2164,
+    "median_income": 134375,
+    "median_home_value": 295400,
+    "median_age": 49.2,
+    "college_pct": 46.4,
+    "white_pct": 87.8
+  },
+  "Warner": {
+    "population": 2938,
+    "median_income": 97708,
+    "median_home_value": 322400,
+    "median_age": 43.2,
+    "college_pct": 41.7,
+    "white_pct": 91.2
+  },
+  "Webster": {
+    "population": 2228,
+    "median_income": 104250,
+    "median_home_value": 296500,
+    "median_age": 42.2,
+    "college_pct": 33.6,
+    "white_pct": 96.2
+  },
+  "Wilmot": {
+    "population": 1424,
+    "median_income": 115469,
+    "median_home_value": 373000,
+    "median_age": 52.7,
+    "college_pct": 60.7,
+    "white_pct": 94.8
+  },
+  "County subdivisions not defined, Rockingham County, New Hampshire": {
+    "population": 0,
+    "median_income": null,
+    "median_home_value": null,
+    "median_age": null,
+    "college_pct": null,
+    "white_pct": null
+  },
+  "Atkinson": {
+    "population": 7222,
+    "median_income": 144481,
+    "median_home_value": 489100,
+    "median_age": 55.4,
+    "college_pct": 41.6,
+    "white_pct": 93.5
+  },
+  "Auburn": {
+    "population": 6031,
+    "median_income": 146290,
+    "median_home_value": 547900,
+    "median_age": 44.7,
+    "college_pct": 52.2,
+    "white_pct": 94.7
+  },
+  "Brentwood": {
+    "population": 4575,
+    "median_income": 161318,
+    "median_home_value": 501300,
+    "median_age": 44.3,
+    "college_pct": 52.7,
+    "white_pct": 95.5
+  },
+  "Candia": {
+    "population": 4087,
+    "median_income": 121058,
+    "median_home_value": 391600,
+    "median_age": 47.6,
+    "college_pct": 25.6,
+    "white_pct": 93.1
+  },
+  "Chester": {
+    "population": 5263,
+    "median_income": 138606,
+    "median_home_value": 479500,
+    "median_age": 46.8,
+    "college_pct": 43.5,
+    "white_pct": 96.5
+  },
+  "Danville": {
+    "population": 4489,
+    "median_income": 112845,
+    "median_home_value": 409400,
+    "median_age": 44.4,
+    "college_pct": 34.1,
+    "white_pct": 95.6
+  },
+  "Deerfield": {
+    "population": 4901,
+    "median_income": 126625,
+    "median_home_value": 393100,
+    "median_age": 42.5,
+    "college_pct": 43.2,
+    "white_pct": 95.0
+  },
+  "Derry": {
+    "population": 34335,
+    "median_income": 104718,
+    "median_home_value": 381700,
+    "median_age": 39.7,
+    "college_pct": 35.1,
+    "white_pct": 93.1
+  },
+  "East Kingston": {
+    "population": 2274,
+    "median_income": 133500,
+    "median_home_value": 495600,
+    "median_age": 53.0,
+    "college_pct": 47.3,
+    "white_pct": 95.0
+  },
+  "Epping": {
+    "population": 7300,
+    "median_income": 101354,
+    "median_home_value": 421400,
+    "median_age": 46.5,
+    "college_pct": 34.4,
+    "white_pct": 95.6
+  },
+  "Exeter": {
+    "population": 16098,
+    "median_income": 96483,
+    "median_home_value": 431200,
+    "median_age": 44.5,
+    "college_pct": 55.8,
+    "white_pct": 91.1
+  },
+  "Fremont": {
+    "population": 4783,
+    "median_income": 125774,
+    "median_home_value": 405400,
+    "median_age": 44.8,
+    "college_pct": 35.7,
+    "white_pct": 93.2
+  },
+  "Greenland": {
+    "population": 4070,
+    "median_income": 147132,
+    "median_home_value": 595100,
+    "median_age": 50.4,
+    "college_pct": 52.8,
+    "white_pct": 92.8
+  },
+  "Hampstead": {
+    "population": 9062,
+    "median_income": 99536,
+    "median_home_value": 472000,
+    "median_age": 45.8,
+    "college_pct": 39.3,
+    "white_pct": 90.7
+  },
+  "Hampton": {
+    "population": 16366,
+    "median_income": 94427,
+    "median_home_value": 492800,
+    "median_age": 54.7,
+    "college_pct": 43.1,
+    "white_pct": 95.7
+  },
+  "Hampton Falls": {
+    "population": 2357,
+    "median_income": 155787,
+    "median_home_value": 664900,
+    "median_age": 45.7,
+    "college_pct": 52.9,
+    "white_pct": 85.6
+  },
+  "Kensington": {
+    "population": 1989,
+    "median_income": 156250,
+    "median_home_value": 591400,
+    "median_age": 46.4,
+    "college_pct": 47.4,
+    "white_pct": 89.4
+  },
+  "Kingston": {
+    "population": 6261,
+    "median_income": 103665,
+    "median_home_value": 442400,
+    "median_age": 52.5,
+    "college_pct": 35.0,
+    "white_pct": 96.3
+  },
+  "Londonderry": {
+    "population": 26217,
+    "median_income": 130841,
+    "median_home_value": 464100,
+    "median_age": 42.5,
+    "college_pct": 47.9,
+    "white_pct": 93.5
+  },
+  "New Castle": {
+    "population": 948,
+    "median_income": 193558,
+    "median_home_value": 1612700,
+    "median_age": 56.8,
+    "college_pct": 71.4,
+    "white_pct": 96.6
+  },
+  "Newfields": {
+    "population": 2010,
+    "median_income": 191625,
+    "median_home_value": 617600,
+    "median_age": 43.7,
+    "college_pct": 67.0,
+    "white_pct": 94.5
+  },
+  "Newington": {
+    "population": 899,
+    "median_income": 156042,
+    "median_home_value": 750000,
+    "median_age": 48.8,
+    "college_pct": 64.0,
+    "white_pct": 89.7
+  },
+  "Newmarket": {
+    "population": 9431,
+    "median_income": 94345,
+    "median_home_value": 384900,
+    "median_age": 39.3,
+    "college_pct": 49.7,
+    "white_pct": 92.5
+  },
+  "Newton": {
+    "population": 4825,
+    "median_income": 135648,
+    "median_home_value": 429400,
+    "median_age": 45.5,
+    "college_pct": 35.0,
+    "white_pct": 90.1
+  },
+  "North Hampton": {
+    "population": 4537,
+    "median_income": 136170,
+    "median_home_value": 611800,
+    "median_age": 51.3,
+    "college_pct": 52.4,
+    "white_pct": 91.3
+  },
+  "Northwood": {
+    "population": 4653,
+    "median_income": 117841,
+    "median_home_value": 356100,
+    "median_age": 36.9,
+    "college_pct": 41.7,
+    "white_pct": 90.4
+  },
+  "Nottingham": {
+    "population": 5304,
+    "median_income": 108459,
+    "median_home_value": 419100,
+    "median_age": 40.3,
+    "college_pct": 41.8,
+    "white_pct": 90.3
+  },
+  "Plaistow": {
+    "population": 7850,
+    "median_income": 109040,
+    "median_home_value": 382100,
+    "median_age": 42.1,
+    "college_pct": 36.0,
+    "white_pct": 86.0
+  },
+  "Portsmouth": {
+    "population": 22332,
+    "median_income": 105756,
+    "median_home_value": 640600,
+    "median_age": 42.4,
+    "college_pct": 63.4,
+    "white_pct": 87.6
+  },
+  "Raymond": {
+    "population": 10837,
+    "median_income": 92002,
+    "median_home_value": 342500,
+    "median_age": 43.3,
+    "college_pct": 24.6,
+    "white_pct": 88.5
+  },
+  "Rye": {
+    "population": 5577,
+    "median_income": 138295,
+    "median_home_value": 960600,
+    "median_age": 54.3,
+    "college_pct": 60.4,
+    "white_pct": 98.0
+  },
+  "Salem": {
+    "population": 30646,
+    "median_income": 101339,
+    "median_home_value": 438500,
+    "median_age": 44.5,
+    "college_pct": 39.1,
+    "white_pct": 86.5
+  },
+  "Sandown": {
+    "population": 6590,
+    "median_income": 137813,
+    "median_home_value": 402400,
+    "median_age": 38.9,
+    "college_pct": 28.2,
+    "white_pct": 95.9
+  },
+  "Seabrook": {
+    "population": 8427,
+    "median_income": 87021,
+    "median_home_value": 432400,
+    "median_age": 53.2,
+    "college_pct": 26.1,
+    "white_pct": 89.5
+  },
+  "South Hampton": {
+    "population": 953,
+    "median_income": 138393,
+    "median_home_value": 626900,
+    "median_age": 48.2,
+    "college_pct": 49.2,
+    "white_pct": 97.6
+  },
+  "Stratham": {
+    "population": 7742,
+    "median_income": 141438,
+    "median_home_value": 599500,
+    "median_age": 41.8,
+    "college_pct": 65.7,
+    "white_pct": 94.0
+  },
+  "Windham": {
+    "population": 15922,
+    "median_income": 189450,
+    "median_home_value": 684700,
+    "median_age": 42.7,
+    "college_pct": 66.1,
+    "white_pct": 83.5
+  },
+  "Barrington": {
+    "population": 9420,
+    "median_income": 99706,
+    "median_home_value": 349500,
+    "median_age": 38.7,
+    "college_pct": 44.4,
+    "white_pct": 89.4
+  },
+  "Dover": {
+    "population": 33070,
+    "median_income": 92748,
+    "median_home_value": 398500,
+    "median_age": 37.6,
+    "college_pct": 49.2,
+    "white_pct": 87.4
+  },
+  "Durham": {
+    "population": 15054,
+    "median_income": 126658,
+    "median_home_value": 469900,
+    "median_age": 20.7,
+    "college_pct": 77.8,
+    "white_pct": 87.9
+  },
+  "Farmington": {
+    "population": 6786,
+    "median_income": 63712,
+    "median_home_value": 273100,
+    "median_age": 45.9,
+    "college_pct": 20.5,
+    "white_pct": 91.8
+  },
+  "Lee": {
+    "population": 4558,
+    "median_income": 140321,
+    "median_home_value": 449300,
+    "median_age": 42.6,
+    "college_pct": 53.2,
+    "white_pct": 76.6
+  },
+  "Madbury": {
+    "population": 2121,
+    "median_income": 144635,
+    "median_home_value": 459300,
+    "median_age": 38.5,
+    "college_pct": 54.6,
+    "white_pct": 84.0
+  },
+  "Middleton": {
+    "population": 1654,
+    "median_income": 101375,
+    "median_home_value": 271700,
+    "median_age": 41.0,
+    "college_pct": 23.1,
+    "white_pct": 89.4
+  },
+  "Milton": {
+    "population": 4531,
+    "median_income": 99750,
+    "median_home_value": 287700,
+    "median_age": 45.7,
+    "college_pct": 18.6,
+    "white_pct": 95.4
+  },
+  "New Durham": {
+    "population": 2735,
+    "median_income": 99122,
+    "median_home_value": 307400,
+    "median_age": 43.7,
+    "college_pct": 34.3,
+    "white_pct": 95.6
+  },
+  "Rochester": {
+    "population": 32866,
+    "median_income": 79388,
+    "median_home_value": 262600,
+    "median_age": 43.4,
+    "college_pct": 26.7,
+    "white_pct": 92.8
+  },
+  "Rollinsford": {
+    "population": 2617,
+    "median_income": 83153,
+    "median_home_value": 353800,
+    "median_age": 41.3,
+    "college_pct": 39.8,
+    "white_pct": 92.0
+  },
+  "Somersworth": {
+    "population": 12060,
+    "median_income": 79677,
+    "median_home_value": 295800,
+    "median_age": 38.2,
+    "college_pct": 28.7,
+    "white_pct": 83.8
+  },
+  "Strafford": {
+    "population": 4271,
+    "median_income": 122083,
+    "median_home_value": 402400,
+    "median_age": 47.8,
+    "college_pct": 40.4,
+    "white_pct": 86.9
+  },
+  "Acworth": {
+    "population": 854,
+    "median_income": 80000,
+    "median_home_value": 253400,
+    "median_age": 46.4,
+    "college_pct": 21.2,
+    "white_pct": 91.8
+  },
+  "Charlestown": {
+    "population": 4872,
+    "median_income": 48614,
+    "median_home_value": 172500,
+    "median_age": 47.8,
+    "college_pct": 17.3,
+    "white_pct": 90.1
+  },
+  "Claremont": {
+    "population": 13054,
+    "median_income": 54520,
+    "median_home_value": 171900,
+    "median_age": 42.8,
+    "college_pct": 20.3,
+    "white_pct": 88.0
+  },
+  "Cornish": {
+    "population": 1771,
+    "median_income": 89046,
+    "median_home_value": 277400,
+    "median_age": 57.4,
+    "college_pct": 40.8,
+    "white_pct": 90.2
+  },
+  "Croydon": {
+    "population": 928,
+    "median_income": 106250,
+    "median_home_value": 299100,
+    "median_age": 43.5,
+    "college_pct": 17.1,
+    "white_pct": 90.4
+  },
+  "Goshen": {
+    "population": 982,
+    "median_income": 59583,
+    "median_home_value": 226000,
+    "median_age": 55.0,
+    "college_pct": 20.7,
+    "white_pct": 96.8
+  },
+  "Grantham": {
+    "population": 3434,
+    "median_income": 113510,
+    "median_home_value": 351100,
+    "median_age": 51.0,
+    "college_pct": 61.4,
+    "white_pct": 100.0
+  },
+  "Langdon": {
+    "population": 763,
+    "median_income": 91250,
+    "median_home_value": 256100,
+    "median_age": 48.9,
+    "college_pct": 28.9,
+    "white_pct": 92.9
+  },
+  "Lempster": {
+    "population": 920,
+    "median_income": 85227,
+    "median_home_value": 219800,
+    "median_age": 49.4,
+    "college_pct": 21.1,
+    "white_pct": 96.2
+  },
+  "Newport": {
+    "population": 6357,
+    "median_income": 76866,
+    "median_home_value": 198900,
+    "median_age": 44.1,
+    "college_pct": 33.5,
+    "white_pct": 93.0
+  },
+  "Plainfield": {
+    "population": 2493,
+    "median_income": 118618,
+    "median_home_value": 394300,
+    "median_age": 41.2,
+    "college_pct": 45.9,
+    "white_pct": 92.2
+  },
+  "Springfield": {
+    "population": 1071,
+    "median_income": 98281,
+    "median_home_value": 327700,
+    "median_age": 51.1,
+    "college_pct": 44.7,
+    "white_pct": 93.8
+  },
+  "Sunapee": {
+    "population": 3398,
+    "median_income": 99194,
+    "median_home_value": 355000,
+    "median_age": 56.5,
+    "college_pct": 47.1,
+    "white_pct": 98.1
+  },
+  "Unity": {
+    "population": 1501,
+    "median_income": 82778,
+    "median_home_value": 232000,
+    "median_age": 54.2,
+    "college_pct": 19.3,
+    "white_pct": 96.3
+  },
+  "Washington": {
+    "population": 1131,
+    "median_income": 85417,
+    "median_home_value": 290500,
+    "median_age": 55.3,
+    "college_pct": 29.7,
+    "white_pct": 97.1
+  }
+}

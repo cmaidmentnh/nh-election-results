@@ -7,6 +7,7 @@ Insight-driven web app for exploring NH election data
 from flask import Flask, render_template, jsonify, request
 import queries
 import analysis
+import census
 
 app = Flask(__name__)
 
@@ -43,6 +44,9 @@ def index():
     closest_races = analysis.get_closest_races(latest_year, limit=8)
     biggest_shifts = analysis.get_biggest_shifts(prev_year, latest_year, limit=8) if prev_year else []
 
+    # Statewide demographics
+    demographics = census.get_statewide_demographics()
+
     return render_template('index.html',
                          stats=stats,
                          statewide=statewide,
@@ -54,7 +58,8 @@ def index():
                          closest_races=closest_races,
                          biggest_shifts=biggest_shifts,
                          towns=towns,
-                         counties=counties)
+                         counties=counties,
+                         demographics=demographics)
 
 
 @app.route('/town/<name>')
@@ -81,13 +86,17 @@ def town(name):
     key_races = analysis.get_town_key_races(name)
     representation = analysis.get_town_representation(name)
 
+    # Get demographics
+    demographics = census.get_town_demographics(name)
+
     return render_template('town.html',
                          summary=summary,
                          races=races,
                          comparison=comparison,
                          pvi=pvi,
                          key_races=key_races,
-                         representation=representation)
+                         representation=representation,
+                         demographics=demographics)
 
 
 @app.route('/town/<name>/<int:year>')
@@ -120,6 +129,9 @@ def district(county, district):
 
     # Get POTUS and Governor results for this district
     topline = analysis.get_district_topline_races(office, district, county)
+
+    # Get demographics for district towns
+    demographics = census.get_district_demographics(info['towns']) if info and info.get('towns') else {}
 
     # Group by year and calculate insights
     by_year = {}
@@ -158,7 +170,8 @@ def district(county, district):
                          by_year=by_year,
                          pvi=pvi,
                          lean=lean,
-                         topline=topline)
+                         topline=topline,
+                         demographics=demographics)
 
 
 @app.route('/county/<name>')
@@ -305,6 +318,9 @@ def statewide_district(office, district):
     # Get POTUS and Governor results for this district
     topline = analysis.get_district_topline_races(office, district)
 
+    # Get demographics for district towns
+    demographics = census.get_district_demographics(info['towns']) if info and info.get('towns') else {}
+
     # Group by year
     by_year = {}
     for r in results:
@@ -336,7 +352,8 @@ def statewide_district(office, district):
                          by_year=by_year,
                          pvi=pvi,
                          lean=lean,
-                         topline=topline)
+                         topline=topline,
+                         demographics=demographics)
 
 
 # ============== NEW FEATURE ROUTES ==============

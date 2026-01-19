@@ -138,6 +138,36 @@
         </div>
         {% endif %}
 
+        {% if demographics and demographics.population %}
+        <div class="sidebar-section">
+            <h3>Demographics</h3>
+            <table class="demo-table">
+                <tr>
+                    <td>Population</td>
+                    <td class="text-right">{{ "{:,}".format(demographics.population) }}</td>
+                </tr>
+                {% if demographics.median_income %}
+                <tr>
+                    <td>Median Income</td>
+                    <td class="text-right">${{ "{:,}".format(demographics.median_income) }}</td>
+                </tr>
+                {% endif %}
+                {% if demographics.median_age %}
+                <tr>
+                    <td>Median Age</td>
+                    <td class="text-right">{{ demographics.median_age }}</td>
+                </tr>
+                {% endif %}
+                {% if demographics.college_pct %}
+                <tr>
+                    <td>College Degree+</td>
+                    <td class="text-right">{{ demographics.college_pct }}%</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        {% endif %}
+
         <div class="sidebar-section">
             <h3>County</h3>
             <a href="{{ url_for('county', name=summary.county) }}">{{ summary.county }} County</a>
