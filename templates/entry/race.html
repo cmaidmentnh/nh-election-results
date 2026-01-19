@@ -6,18 +6,18 @@
 <style>
     .container { max-width: none; }
     .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    #results-table { border-collapse: collapse; }
-    #results-table th, #results-table td { padding: 0.4rem 0.5rem; white-space: nowrap; font-size: 14px; }
-    #results-table input { width: 60px; text-align: right; padding: 0.3rem; font-size: 14px; border: 1px solid #ccc; border-radius: 3px; }
-    #results-table th:first-child { text-align: left; position: sticky; left: 0; background: #f5f5f5; z-index: 1; min-width: 120px; }
-    #results-table td:first-child { position: sticky; left: 0; background: white; min-width: 120px; }
-    #results-table tbody tr:nth-child(odd) td:first-child { background: #fafafa; }
-    #results-table tbody tr:hover { background: #f0f7ff; }
+    .results-table { border-collapse: collapse; }
+    .results-table th, .results-table td { padding: 0.4rem 0.5rem; white-space: nowrap; font-size: 14px; }
+    .results-table input { width: 60px; text-align: right; padding: 0.3rem; font-size: 14px; border: 1px solid #ccc; border-radius: 3px; }
+    .results-table th:first-child { text-align: left; position: sticky; left: 0; background: #f5f5f5; z-index: 1; min-width: 120px; }
+    .results-table td:first-child { position: sticky; left: 0; background: white; min-width: 120px; }
+    .results-table tbody tr:nth-child(odd) td:first-child { background: #fafafa; }
+    .results-table tbody tr:hover { background: #f0f7ff; }
     @media (max-width: 768px) {
         .container { padding: 0.5rem; }
-        #results-table th, #results-table td { padding: 0.3rem; font-size: 12px; }
-        #results-table input { width: 50px; font-size: 14px; padding: 0.4rem 0.2rem; }
-        #results-table th:first-child, #results-table td:first-child { min-width: 100px; }
+        .results-table th, .results-table td { padding: 0.3rem; font-size: 12px; }
+        .results-table input { width: 50px; font-size: 14px; padding: 0.4rem 0.2rem; }
+        .results-table th:first-child, .results-table td:first-child { min-width: 100px; }
         h2 { font-size: 1.1rem; }
     }
 </style>
@@ -32,12 +32,13 @@
 </div>
 {% else %}
 
-<div class="card">
-    <h3>Enter Vote Counts</h3>
-    <p class="text-small text-muted" style="margin-bottom: 1rem;">Enter votes for each candidate in each town. Changes save automatically.</p>
+{% set parties = candidates|map(attribute='party')|unique|list %}
+{% for party in parties %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="{% if party == 'Republican' %}color:#8b0000{% elif party == 'Democratic' %}color:#1e3a5f{% endif %}">{{ party }} Ballot</h3>
 
     <div class="table-wrapper">
-    <table id="results-table">
+    <table class="results-table" data-party="{{ party }}">
         <thead>
             <tr>
                 <th>Candidate</th>
@@ -48,15 +49,16 @@
             </tr>
         </thead>
         <tbody>
-            {% for c in candidates %}
+            {% for c in candidates if c.party == party %}
             <tr data-candidate="{{ c.id }}">
-                <td><strong>{{ c.name }}</strong> <span style="{% if c.party == 'Republican' %}color:#8b0000{% elif c.party == 'Democratic' %}color:#1e3a5f{% endif %}">({{ c.party[0] if c.party else '?' }})</span></td>
+                <td><strong>{{ c.name }}</strong></td>
                 {% for town in towns %}
                 <td style="text-align: center;">
                     <input type="number"
                            class="vote-input"
                            data-town="{{ town }}"
                            data-candidate="{{ c.id }}"
+                           data-party="{{ party }}"
                            value="{{ results.get(town, {}).get(c.id, 0) }}"
                            min="0">
                 </td>
@@ -69,14 +71,15 @@
             <tr style="font-weight: 600; background: #f5f5f5;">
                 <td>TOTAL</td>
                 {% for town in towns %}
-                <td class="col-total" data-town="{{ town }}" style="text-align: center;">0</td>
+                <td class="col-total" data-town="{{ town }}" data-party="{{ party }}" style="text-align: center;">0</td>
                 {% endfor %}
-                <td id="grand-total" style="text-align: center;">0</td>
+                <td class="party-total" data-party="{{ party }}" style="text-align: center;">0</td>
             </tr>
         </tfoot>
     </table>
     </div>
 </div>
+{% endfor %}
 
 <div class="card">
     <div id="save-status" style="padding: 0.5rem; text-align: center;">
@@ -93,31 +96,36 @@ const raceId = {{ race.id }};
 let saveTimeout = null;
 
 function updateTotals() {
-    // Row totals (per candidate)
-    document.querySelectorAll('#results-table tbody tr').forEach(row => {
-        let total = 0;
-        row.querySelectorAll('.vote-input').forEach(input => {
-            total += parseInt(input.value) || 0;
-        });
-        row.querySelector('.row-total').textContent = total.toLocaleString();
-    });
+    // Process each party table separately
+    document.querySelectorAll('.results-table').forEach(table => {
+        const party = table.dataset.party;
 
-    // Column totals (per town)
-    const towns = [...new Set([...document.querySelectorAll('.vote-input')].map(i => i.dataset.town))];
-    towns.forEach(town => {
-        let total = 0;
-        document.querySelectorAll(`.vote-input[data-town="${town}"]`).forEach(input => {
-            total += parseInt(input.value) || 0;
+        // Row totals (per candidate)
+        table.querySelectorAll('tbody tr').forEach(row => {
+            let total = 0;
+            row.querySelectorAll('.vote-input').forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            row.querySelector('.row-total').textContent = total.toLocaleString();
         });
-        document.querySelector(`.col-total[data-town="${town}"]`).textContent = total.toLocaleString();
-    });
 
-    // Grand total
-    let grandTotal = 0;
-    document.querySelectorAll('.vote-input').forEach(input => {
-        grandTotal += parseInt(input.value) || 0;
+        // Column totals (per town within this party)
+        const towns = [...new Set([...table.querySelectorAll('.vote-input')].map(i => i.dataset.town))];
+        towns.forEach(town => {
+            let total = 0;
+            table.querySelectorAll(`.vote-input[data-town="${town}"]`).forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            table.querySelector(`.col-total[data-town="${town}"]`).textContent = total.toLocaleString();
+        });
+
+        // Party total
+        let partyTotal = 0;
+        table.querySelectorAll('.vote-input').forEach(input => {
+            partyTotal += parseInt(input.value) || 0;
+        });
+        table.querySelector('.party-total').textContent = partyTotal.toLocaleString();
     });
-    document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
 }
 
 function saveResults() {
