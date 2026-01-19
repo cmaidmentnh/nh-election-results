@@ -534,7 +534,10 @@ def get_party_control(year):
 
 
 def get_closest_races(year, limit=10):
-    """Get races with the smallest margins."""
+    """Get races with the smallest margins.
+
+    Uses MAX (top vote-getter per party) to normalize for slate size in multi-member races.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -546,9 +549,8 @@ def get_closest_races(year, limit=10):
                 r.district,
                 r.county,
                 r.seats,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-                SUM(res.votes) as total_votes
+                MAX(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                MAX(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
@@ -561,7 +563,7 @@ def get_closest_races(year, limit=10):
         )
         SELECT
             office, district, county,
-            r_votes, d_votes, total_votes,
+            r_votes, d_votes,
             CASE WHEN r_votes + d_votes > 0
                 THEN ROUND((r_votes - d_votes) * 100.0 / (r_votes + d_votes), 1)
                 ELSE 0
@@ -574,7 +576,7 @@ def get_closest_races(year, limit=10):
 
     results = []
     for row in cursor.fetchall():
-        office, district, county, r_votes, d_votes, total, margin = row
+        office, district, county, r_votes, d_votes, margin = row
         results.append({
             'office': office,
             'district': district,
