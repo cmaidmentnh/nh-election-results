@@ -209,8 +209,11 @@ def get_town_summary(town):
 
     conn.close()
 
-    # Build summary
-    latest_year = years[-1]
+    # Build summary - find latest year with R/D data
+    if not margins_by_year:
+        return None  # No R/D data at all
+
+    latest_year = max(margins_by_year.keys())
     latest_margin = margins_by_year[latest_year]
 
     # Generate headline
