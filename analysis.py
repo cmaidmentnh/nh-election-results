@@ -4140,7 +4140,8 @@ def get_trump_comparison():
         'r_votes': 0,
         'd_votes': 0,
         'seats': 1,
-        'r_candidates': set()
+        'r_candidates': set(),
+        'd_candidates': set()
     })
 
     for row in cursor.fetchall():
@@ -4153,6 +4154,7 @@ def get_trump_comparison():
             district_data[key]['r_candidates'].add(candidate)
         else:
             district_data[key]['d_votes'] += votes
+            district_data[key]['d_candidates'].add(candidate)
 
     conn.close()
 
@@ -4162,13 +4164,18 @@ def get_trump_comparison():
         r_votes = data['r_votes']
         d_votes = data['d_votes']
         seats = data['seats']
+        n_r = len(data['r_candidates'])
+        n_d = len(data['d_candidates'])
 
         # Skip uncontested races
-        if r_votes == 0 or d_votes == 0:
+        if r_votes == 0 or d_votes == 0 or n_r == 0 or n_d == 0:
             continue
 
-        # Calculate State Rep margin (normalize for seats)
-        rep_margin = ((r_votes - d_votes) / (r_votes + d_votes)) * 100
+        # Normalize votes by number of candidates per party
+        # This handles 1R vs 2D races fairly
+        r_avg = r_votes / n_r
+        d_avg = d_votes / n_d
+        rep_margin = ((r_avg - d_avg) / (r_avg + d_avg)) * 100
 
         # Calculate Trump margin for this district's towns
         trump_r = 0
