@@ -590,7 +590,10 @@ def get_closest_races(year, limit=10):
 
 
 def get_biggest_shifts(year1, year2, limit=10):
-    """Get races with biggest margin shifts between two years."""
+    """Get races with biggest margin shifts between two years.
+
+    Uses top vote-getter per party (not sum) to normalize for slate size differences.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -601,8 +604,8 @@ def get_biggest_shifts(year1, year2, limit=10):
                 o.name as office,
                 r.district,
                 r.county,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+                MAX(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                MAX(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
