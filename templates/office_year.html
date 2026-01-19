@@ -91,9 +91,7 @@
 .race-towns {
     font-size: 0.8rem;
     color: var(--text-muted);
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border);
+    margin-bottom: 0.5rem;
 }
 </style>
 {% endblock %}
@@ -157,6 +155,9 @@
                         {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
                     </span>
                 </div>
+                {% if race.towns %}
+                <div class="race-towns">{{ race.towns|join(', ') }}</div>
+                {% endif %}
                 <ul class="race-candidates">
                     {% for c in race.candidates %}
                     <li class="race-candidate {% if c.is_winner %}winner{% endif %}">
@@ -167,11 +168,6 @@
                     </li>
                     {% endfor %}
                 </ul>
-                {% if race.towns %}
-                <div class="race-towns">
-                    {{ race.towns|join(', ') }}
-                </div>
-                {% endif %}
             </div>
             {% endfor %}
         </div>
