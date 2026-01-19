@@ -15,7 +15,7 @@
             <div class="section-header">
                 <h2>Bellwether Towns</h2>
             </div>
-            <p class="text-muted mb-2">Towns that most closely match statewide results (Gov/President)</p>
+            <p class="text-muted mb-2">Towns whose State Rep vote best predicts NH House control</p>
 
             <table>
                 <thead>
@@ -39,9 +39,10 @@
             </table>
 
             <p class="text-muted mt-2" style="font-size: 0.85rem;">
-                <strong>Statewide margins (Gov):</strong>
-                {% for year, margin in bellwether.statewide_margins.items()|sort %}
-                {{ year }}: <span class="{% if margin > 0 %}r{% else %}d{% endif %}">{% if margin > 0 %}R+{% else %}D+{% endif %}{{ margin|abs }}%</span>{% if not loop.last %}, {% endif %}
+                <strong>House control:</strong>
+                {% for year, ctrl in bellwether.house_control.items()|sort %}
+                {% set seats = bellwether.seats_by_year[year] %}
+                {{ year }}: <span class="{% if ctrl == 'R' %}r{% else %}d{% endif %}">{{ ctrl }} ({{ seats.R }}-{{ seats.D }})</span>{% if not loop.last %}, {% endif %}
                 {% endfor %}
             </p>
         </div>
