@@ -453,6 +453,59 @@ def get_district_towns(county, district, office='State Representative'):
     return towns
 
 
+def get_district_candidates(county, district, office='State Representative', year=2024):
+    """Get ALL candidates for a district in a given year, sorted by votes."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # First get the number of seats
+    cursor.execute("""
+        SELECT r.seats
+        FROM races r
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        LIMIT 1
+    """, (county, str(district), office, year))
+    row = cursor.fetchone()
+    seats = row[0] if row else 1
+
+    # Get all candidates ordered by votes
+    cursor.execute("""
+        SELECT c.name, c.party, SUM(res.votes) as total_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY c.id
+        ORDER BY total_votes DESC
+    """, (county, str(district), office, year))
+
+    candidates = []
+    for i, row in enumerate(cursor.fetchall()):
+        candidates.append({
+            'name': row[0],
+            'party': row[1],
+            'votes': row[2],
+            'winner': i < seats
+        })
+
+    conn.close()
+    return {'seats': seats, 'candidates': candidates}
+
+
 def get_district_winners(county, district, office='State Representative', year=2024):
     """Get the winning candidates for a district in a given year (top N by votes where N = seats)."""
     conn = get_connection()

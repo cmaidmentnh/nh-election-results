@@ -483,11 +483,13 @@ def deep_analysis():
 def stats():
     """Comprehensive statistical analysis page."""
     swing = analysis.get_swing_analysis()
+    multi_seat = analysis.get_multi_seat_analysis()
     correlation = analysis.get_correlation_analysis()
     trends = analysis.get_long_term_trends()
 
     return render_template('stats.html',
                          swing=swing,
+                         multi_seat=multi_seat,
                          correlation=correlation,
                          trends=trends)
 

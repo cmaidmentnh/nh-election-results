@@ -3584,6 +3584,126 @@ def get_swing_analysis():
     }
 
 
+def get_multi_seat_analysis():
+    """
+    Analyze multi-seat districts looking at marginal seats.
+    For each district, find the gap between the last winner and first loser.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get all multi-seat State Rep districts
+    cursor.execute("""
+        SELECT DISTINCT r.county, r.district, r.seats
+        FROM races r
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = 'State Representative'
+        AND r.seats > 1
+        AND e.year = 2024
+        AND e.election_type = 'general'
+    """)
+
+    districts = []
+    for county, district, seats in cursor.fetchall():
+        # Get candidate data for multiple years
+        years_data = {}
+        for year in [2016, 2018, 2020, 2022, 2024]:
+            data = queries.get_district_candidates(county, district, 'State Representative', year)
+            if data['candidates']:
+                years_data[year] = data
+
+        if 2024 not in years_data:
+            continue
+
+        data_2024 = years_data[2024]
+        candidates = data_2024['candidates']
+        seats = data_2024['seats']
+
+        if len(candidates) <= seats:
+            continue  # No losers = uncontested
+
+        # Find last winner and first loser
+        winners = [c for c in candidates if c['winner']]
+        losers = [c for c in candidates if not c['winner']]
+
+        if not winners or not losers:
+            continue
+
+        last_winner = winners[-1]  # Lowest vote-getter who won
+        first_loser = losers[0]    # Highest vote-getter who lost
+
+        # Calculate the gap
+        gap = last_winner['votes'] - first_loser['votes']
+        total_votes = last_winner['votes'] + first_loser['votes']
+        gap_pct = round((gap / total_votes) * 100, 1) if total_votes > 0 else 0
+
+        # Determine which party's seat is at risk
+        at_risk_party = last_winner['party']
+        challenger_party = first_loser['party']
+
+        # Count seats by party
+        r_seats = len([w for w in winners if w['party'] == 'Republican'])
+        d_seats = len([w for w in winners if w['party'] == 'Democratic'])
+
+        # Calculate long-term trend using all available years
+        margins = []
+        for year in sorted(years_data.keys()):
+            yr_data = years_data[year]
+            yr_candidates = yr_data['candidates']
+            r_votes = max([c['votes'] for c in yr_candidates if c['party'] == 'Republican'], default=0)
+            d_votes = max([c['votes'] for c in yr_candidates if c['party'] == 'Democratic'], default=0)
+            if r_votes > 0 and d_votes > 0:
+                total = r_votes + d_votes
+                margins.append({'year': year, 'margin': round((r_votes - d_votes) / total * 100, 1)})
+
+        # Calculate trend (average change per cycle)
+        trend = None
+        if len(margins) >= 2:
+            first_margin = margins[0]['margin']
+            last_margin = margins[-1]['margin']
+            years_span = margins[-1]['year'] - margins[0]['year']
+            if years_span > 0:
+                trend = round((last_margin - first_margin) / (years_span / 2), 1)  # per cycle
+
+        towns = queries.get_district_towns(county, district, 'State Representative')
+
+        districts.append({
+            'county': county,
+            'district': district,
+            'seats': seats,
+            'r_seats': r_seats,
+            'd_seats': d_seats,
+            'last_winner': last_winner,
+            'first_loser': first_loser,
+            'gap': gap,
+            'gap_pct': gap_pct,
+            'at_risk_party': at_risk_party[0],  # R or D
+            'challenger_party': challenger_party[0],
+            'margins': margins,
+            'trend': trend,
+            'towns': towns
+        })
+
+    conn.close()
+
+    # Sort by smallest gap (most vulnerable)
+    districts.sort(key=lambda x: x['gap'])
+
+    # Only include cross-party challenges (where challenger is opposite party)
+    cross_party = [d for d in districts if d['at_risk_party'] != d['challenger_party']]
+
+    # Separate by which party's seat is at risk
+    r_at_risk = [d for d in cross_party if d['at_risk_party'] == 'R'][:15]
+    d_at_risk = [d for d in cross_party if d['at_risk_party'] == 'D'][:15]
+
+    return {
+        'all': cross_party[:30],
+        'r_at_risk': r_at_risk,
+        'd_at_risk': d_at_risk
+    }
+
+
 def get_correlation_analysis():
     """
     Analyze correlations between various factors:

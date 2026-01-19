@@ -63,37 +63,83 @@
             </table>
             {% endif %}
 
-            {% if swing.competitive_multi %}
-            <h3 class="mt-2">Competitive Multi-Seat Districts</h3>
-            <p class="text-muted" style="font-size: 0.9em;">Multi-seat districts with close margins — typically split between parties</p>
+            {% if multi_seat.d_at_risk %}
+            <h3 class="mt-2">D Seats at Risk</h3>
+            <p class="text-muted" style="font-size: 0.9em;">Multi-seat districts where a D seat could flip to R</p>
             <table>
                 <thead>
                     <tr>
                         <th>District</th>
                         <th>Seats</th>
-                        <th class="text-right">2022</th>
-                        <th class="text-right">2024</th>
+                        <th>Marginal Race</th>
+                        <th class="text-right">Trend</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for d in swing.competitive_multi[:10] %}
-                    {% set r_seats = d.winners|selectattr('party', 'equalto', 'Republican')|list|length %}
-                    {% set d_seats = d.winners|selectattr('party', 'equalto', 'Democratic')|list|length %}
+                    {% for d in multi_seat.d_at_risk %}
                     <tr>
                         <td>
                             <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
                             <br><span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
                         </td>
                         <td>
-                            {% if r_seats > 0 %}<span class="r">{{ r_seats }}R</span>{% endif %}
-                            {% if r_seats > 0 and d_seats > 0 %}/{% endif %}
-                            {% if d_seats > 0 %}<span class="d">{{ d_seats }}D</span>{% endif %}
+                            {% if d.r_seats > 0 %}<span class="r">{{ d.r_seats }}R</span>{% endif %}
+                            {% if d.r_seats > 0 and d.d_seats > 0 %}/{% endif %}
+                            {% if d.d_seats > 0 %}<span class="d">{{ d.d_seats }}D</span>{% endif %}
                         </td>
-                        <td class="text-right {% if d.margin22 and d.margin22 > 0 %}r{% elif d.margin22 and d.margin22 < 0 %}d{% endif %}">
-                            {% if d.margin22 is not none %}{% if d.margin22 > 0 %}R+{% else %}D+{% endif %}{{ d.margin22|abs }}%{% else %}—{% endif %}
+                        <td>
+                            <span class="d">{{ d.last_winner.name.split(' ')[-1] }}</span> beat
+                            <span class="r">{{ d.first_loser.name.split(' ')[-1] }}</span>
+                            by <strong>{{ "{:,}".format(d.gap) }}</strong> votes ({{ d.gap_pct }}%)
                         </td>
-                        <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
-                            {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
+                        <td class="text-right">
+                            {% if d.trend %}
+                                <span class="{% if d.trend > 0 %}r{% else %}d{% endif %}">
+                                    {% if d.trend > 0 %}R{% else %}D{% endif %}+{{ d.trend|abs }}/cycle
+                                </span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if multi_seat.r_at_risk %}
+            <h3 class="mt-2">R Seats at Risk</h3>
+            <p class="text-muted" style="font-size: 0.9em;">Multi-seat districts where an R seat could flip to D</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th>Seats</th>
+                        <th>Marginal Race</th>
+                        <th class="text-right">Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in multi_seat.r_at_risk %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
+                            <br><span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                        </td>
+                        <td>
+                            {% if d.r_seats > 0 %}<span class="r">{{ d.r_seats }}R</span>{% endif %}
+                            {% if d.r_seats > 0 and d.d_seats > 0 %}/{% endif %}
+                            {% if d.d_seats > 0 %}<span class="d">{{ d.d_seats }}D</span>{% endif %}
+                        </td>
+                        <td>
+                            <span class="r">{{ d.last_winner.name.split(' ')[-1] }}</span> beat
+                            <span class="d">{{ d.first_loser.name.split(' ')[-1] }}</span>
+                            by <strong>{{ "{:,}".format(d.gap) }}</strong> votes ({{ d.gap_pct }}%)
+                        </td>
+                        <td class="text-right">
+                            {% if d.trend %}
+                                <span class="{% if d.trend > 0 %}r{% else %}d{% endif %}">
+                                    {% if d.trend > 0 %}R{% else %}D{% endif %}+{{ d.trend|abs }}/cycle
+                                </span>
+                            {% else %}—{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
