@@ -4,12 +4,28 @@ NH Election Results Explorer
 Insight-driven web app for exploring NH election data
 """
 
+import os
 from flask import Flask, render_template, jsonify, request
 import queries
 import analysis
 import census
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Set up Flask-Login
+from auth import auth_bp, login_manager
+from admin import admin_bp
+from entry import entry_bp
+
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Please log in to access this page.'
+
+# Register blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(entry_bp)
 
 
 @app.route('/')

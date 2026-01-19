@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<h2>User Management</h2>
+
+<div class="card">
+    <h3>Create New User</h3>
+    <form method="POST" action="{{ url_for('admin.create_user_route') }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Create User</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>All Users</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>
+                    {% if user.role == 'admin' %}
+                    <span class="badge badge-admin">Admin</span>
+                    {% else %}
+                    <span class="badge badge-user">User</span>
+                    {% endif %}
+                </td>
+                <td class="text-small text-muted">{{ user.created_at[:10] if user.created_at else '-' }}</td>
+                <td class="text-small text-muted">{{ user.last_login[:16] if user.last_login else 'Never' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.reset_password_route', user_id=user.id) }}" style="display: inline;">
+                        <input type="password" name="password" placeholder="New password" style="width: 100px; padding: 0.2rem;">
+                        <button type="submit" class="btn btn-small btn-primary">Reset</button>
+                    </form>
+                    {% if user.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('admin.delete_user_route', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Delete this user?');">
+                        <button type="submit" class="btn btn-small btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

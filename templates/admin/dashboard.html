@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2>Dashboard</h2>
+
+<div class="card">
+    <h3>Quick Actions</h3>
+    <p style="margin-bottom: 1rem;">
+        <a href="{{ url_for('admin.elections') }}" class="btn btn-primary">Manage Elections</a>
+        <a href="{{ url_for('entry.index') }}" class="btn btn-primary">Enter Results</a>
+    </p>
+</div>
+
+<div class="card">
+    <h3>Recent Elections</h3>
+    {% if recent_elections %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Year</th>
+                <th>Type</th>
+                <th>Party</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in recent_elections %}
+            <tr>
+                <td>{{ e.id }}</td>
+                <td>{{ e.year }}</td>
+                <td>{{ e.election_type }}</td>
+                <td>{{ e.party or '-' }}</td>
+                <td><a href="{{ url_for('admin.election_detail', election_id=e.id) }}">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No elections found.</p>
+    {% endif %}
+</div>
+
+{% if special_races > 0 %}
+<div class="card">
+    <h3>Special Elections</h3>
+    <p>{{ special_races }} race(s) in special elections need results entry.</p>
+    <a href="{{ url_for('entry.index') }}">Go to Results Entry</a>
+</div>
+{% endif %}
+{% endblock %}

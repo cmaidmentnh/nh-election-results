@@ -1,0 +1,98 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ race.office_name }} - {{ race.county }} {{ race.district }}{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('admin.election_detail', election_id=race.election_id) }}">&larr; Back to Election</a></p>
+
+<h2>{{ race.office_name }} - {% if race.county %}{{ race.county }} {% endif %}District {{ race.district }}</h2>
+<p class="text-muted">{{ race.year }} {{ race.election_type }}{% if race.election_party %} ({{ race.election_party }}){% endif %} | {{ race.seats }} seat(s)</p>
+
+{% if towns %}
+<div class="card">
+    <h3>Towns in District</h3>
+    <p>{{ towns|join(', ') }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Add Candidate</h3>
+    <form method="POST" action="{{ url_for('admin.add_candidate', race_id=race.id) }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required placeholder="Full name or last name">
+            </div>
+            <div class="form-group">
+                <label>Party</label>
+                <select name="party">
+                    <option value="Republican">Republican</option>
+                    <option value="Democratic">Democratic</option>
+                    <option value="Libertarian">Libertarian</option>
+                    <option value="">Other/None</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Candidate</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Candidates</h3>
+    {% if candidates %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Party</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in candidates %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.party or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No candidates yet. Add one above.</p>
+    {% endif %}
+</div>
+
+{% if results %}
+<div class="card">
+    <h3>Current Results</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Town</th>
+                <th>Candidate</th>
+                <th>Party</th>
+                <th>Votes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.municipality }}</td>
+                <td>{{ r.candidate_name }}</td>
+                <td>{{ r.party or '-' }}</td>
+                <td>{{ r.votes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="card">
+    <p>
+        <a href="{{ url_for('entry.race_entry', race_id=race.id) }}" class="btn btn-primary">Enter/Edit Results</a>
+        <form method="POST" action="{{ url_for('admin.delete_race', race_id=race.id) }}" style="display: inline;" onsubmit="return confirm('Delete this race and all results?');">
+            <button type="submit" class="btn btn-danger">Delete Race</button>
+        </form>
+    </p>
+</div>
+{% endblock %}

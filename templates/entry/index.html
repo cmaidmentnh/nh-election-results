@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Enter Results{% endblock %}
+
+{% block content %}
+<h2>Enter Results</h2>
+
+<div class="card">
+    <h3>Select an Election</h3>
+    {% if elections %}
+    <table>
+        <thead>
+            <tr>
+                <th>Year</th>
+                <th>Type</th>
+                <th>Party</th>
+                <th>Races</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in elections %}
+            <tr>
+                <td>{{ e.year }}</td>
+                <td>{{ e.election_type }}</td>
+                <td>{{ e.party or '-' }}</td>
+                <td>{{ e.race_count }}</td>
+                <td><a href="{{ url_for('entry.election_races', election_id=e.id) }}" class="btn btn-small btn-primary">Enter Results</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No active elections found. Contact an admin to set up an election.</p>
+    {% endif %}
+</div>
+{% endblock %}

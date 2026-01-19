@@ -1,0 +1,151 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Enter Results - {{ race.county }} {{ race.district }}{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('entry.election_races', election_id=race.election_id) }}">&larr; Back to Races</a></p>
+
+<h2>{{ race.office_name }} - {% if race.county %}{{ race.county }} {% endif %}District {{ race.district }}</h2>
+<p class="text-muted">{{ race.year }} {{ race.election_type }}{% if race.election_party %} ({{ race.election_party }}){% endif %}</p>
+
+{% if not candidates %}
+<div class="card">
+    <p class="text-muted">No candidates have been added to this race yet. An admin needs to add candidates first.</p>
+</div>
+{% else %}
+
+<div class="card">
+    <h3>Enter Vote Counts</h3>
+    <p class="text-small text-muted" style="margin-bottom: 1rem;">Enter votes for each candidate in each town. Changes save automatically.</p>
+
+    <table id="results-table">
+        <thead>
+            <tr>
+                <th>Town</th>
+                {% for c in candidates %}
+                <th style="text-align: center;">
+                    {{ c.name }}<br>
+                    <span class="text-small {% if c.party == 'Republican' %}r{% elif c.party == 'Democratic' %}d{% endif %}" style="{% if c.party == 'Republican' %}color: #8b0000;{% elif c.party == 'Democratic' %}color: #1e3a5f;{% endif %}">{{ c.party or '-' }}</span>
+                </th>
+                {% endfor %}
+                <th style="text-align: center;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for town in towns %}
+            <tr data-town="{{ town }}">
+                <td>{{ town }}</td>
+                {% for c in candidates %}
+                <td style="text-align: center;">
+                    <input type="number"
+                           class="vote-input"
+                           data-town="{{ town }}"
+                           data-candidate="{{ c.id }}"
+                           value="{{ results.get(town, {}).get(c.id, 0) }}"
+                           min="0"
+                           style="width: 70px; text-align: center; padding: 0.3rem;">
+                </td>
+                {% endfor %}
+                <td class="row-total" style="text-align: center; font-weight: 600;">0</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="font-weight: 600; background: #f5f5f5;">
+                <td>TOTAL</td>
+                {% for c in candidates %}
+                <td class="col-total" data-candidate="{{ c.id }}" style="text-align: center;">0</td>
+                {% endfor %}
+                <td id="grand-total" style="text-align: center;">0</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="card">
+    <div id="save-status" style="padding: 0.5rem; text-align: center;">
+        <span class="text-muted">Changes save automatically</span>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const raceId = {{ race.id }};
+let saveTimeout = null;
+
+function updateTotals() {
+    // Row totals
+    document.querySelectorAll('#results-table tbody tr').forEach(row => {
+        let total = 0;
+        row.querySelectorAll('.vote-input').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        row.querySelector('.row-total').textContent = total.toLocaleString();
+    });
+
+    // Column totals
+    const candidates = [...new Set([...document.querySelectorAll('.vote-input')].map(i => i.dataset.candidate))];
+    candidates.forEach(candId => {
+        let total = 0;
+        document.querySelectorAll(`.vote-input[data-candidate="${candId}"]`).forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        document.querySelector(`.col-total[data-candidate="${candId}"]`).textContent = total.toLocaleString();
+    });
+
+    // Grand total
+    let grandTotal = 0;
+    document.querySelectorAll('.vote-input').forEach(input => {
+        grandTotal += parseInt(input.value) || 0;
+    });
+    document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
+}
+
+function saveResults() {
+    const results = [];
+    document.querySelectorAll('.vote-input').forEach(input => {
+        results.push({
+            town: input.dataset.town,
+            candidate_id: parseInt(input.dataset.candidate),
+            votes: parseInt(input.value) || 0
+        });
+    });
+
+    document.getElementById('save-status').innerHTML = '<span style="color: #666;">Saving...</span>';
+
+    fetch(`/entry/race/${raceId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results: results })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('save-status').innerHTML = '<span style="color: #166534;">Saved!</span>';
+            setTimeout(() => {
+                document.getElementById('save-status').innerHTML = '<span class="text-muted">Changes save automatically</span>';
+            }, 2000);
+        } else {
+            document.getElementById('save-status').innerHTML = '<span style="color: #8b0000;">Error saving</span>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('save-status').innerHTML = '<span style="color: #8b0000;">Error: ' + err + '</span>';
+    });
+}
+
+document.querySelectorAll('.vote-input').forEach(input => {
+    input.addEventListener('input', () => {
+        updateTotals();
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveResults, 1000);
+    });
+});
+
+// Initial totals
+updateTotals();
+</script>
+{% endblock %}

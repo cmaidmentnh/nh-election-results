@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ election.year }} {{ election.election_type }}{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('entry.index') }}">&larr; All Elections</a></p>
+
+<h2>{{ election.year }} {{ election.election_type }}{% if election.party %} ({{ election.party }}){% endif %}</h2>
+
+<div class="card">
+    <h3>Select a Race</h3>
+    {% if races %}
+    <table>
+        <thead>
+            <tr>
+                <th>Office</th>
+                <th>District</th>
+                <th>Seats</th>
+                <th>Entered</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in races %}
+            <tr>
+                <td>{{ r.office_name }}</td>
+                <td>{% if r.county %}{{ r.county }} {% endif %}{{ r.district or 'Statewide' }}</td>
+                <td>{{ r.seats }}</td>
+                <td>{{ r.entered_count }} results</td>
+                <td><a href="{{ url_for('entry.race_entry', race_id=r.id) }}" class="btn btn-small btn-primary">Enter</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No races in this election yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

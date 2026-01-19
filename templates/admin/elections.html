@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Elections{% endblock %}
+
+{% block content %}
+<h2>Election Management</h2>
+
+<div class="card">
+    <h3>Create New Election</h3>
+    <form method="POST" action="{{ url_for('admin.create_election') }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Year</label>
+                <input type="number" name="year" value="2025" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="election_type" required>
+                    <option value="special_primary">Special Primary</option>
+                    <option value="special_general">Special General</option>
+                    <option value="primary">Primary</option>
+                    <option value="general">General</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Party (for primaries)</label>
+                <select name="party">
+                    <option value="">- Both / N/A -</option>
+                    <option value="Republican">Republican</option>
+                    <option value="Democratic">Democratic</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Redistricting Cycle</label>
+                <select name="redistricting_cycle">
+                    <option value="2022-2030">2022-2030</option>
+                    <option value="2012-2020">2012-2020</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Election</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>All Elections</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Year</th>
+                <th>Type</th>
+                <th>Party</th>
+                <th>Races</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in elections %}
+            <tr>
+                <td>{{ e.id }}</td>
+                <td>{{ e.year }}</td>
+                <td>{{ e.election_type }}</td>
+                <td>{{ e.party or '-' }}</td>
+                <td>{{ e.race_count }}</td>
+                <td>
+                    <a href="{{ url_for('admin.election_detail', election_id=e.id) }}">Edit</a>
+                    {% if e.race_count == 0 %}
+                    <form method="POST" action="{{ url_for('admin.delete_election', election_id=e.id) }}" style="display: inline;" onsubmit="return confirm('Delete this election?');">
+                        <button type="submit" class="btn btn-small btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

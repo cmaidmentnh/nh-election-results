@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Audit Log{% endblock %}
+
+{% block content %}
+<h2>Audit Log</h2>
+
+<div class="card">
+    <h3>Recent Changes</h3>
+    {% if audit_log %}
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Race ID</th>
+                <th>Town</th>
+                <th>Action</th>
+                <th>Old</th>
+                <th>New</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in audit_log %}
+            <tr>
+                <td class="text-small">{{ a.created_at[:16] if a.created_at else '-' }}</td>
+                <td>{{ a.username }}</td>
+                <td>{{ a.race_id }}</td>
+                <td>{{ a.municipality or '-' }}</td>
+                <td>{{ a.action }}</td>
+                <td class="text-small text-muted">{{ a.old_values or '-' }}</td>
+                <td class="text-small">{{ a.new_values or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No audit entries yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
