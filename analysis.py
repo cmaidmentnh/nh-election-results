@@ -1391,6 +1391,7 @@ def get_redistricting_impact():
 def get_office_results(office):
     """
     Get comprehensive results for a specific office across all years.
+    Uses top vote-getter per party per race for accurate margin calculation.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -1420,6 +1421,8 @@ def get_office_results(office):
 
     by_year = defaultdict(lambda: {'races': [], 'r_seats': 0, 'd_seats': 0, 'total_r_votes': 0, 'total_d_votes': 0})
     current_race = None
+    race_top_r = {}  # Track top R vote-getter per race
+    race_top_d = {}  # Track top D vote-getter per race
 
     for row in cursor.fetchall():
         year, district, county, seats, candidate, party, votes, rank = row
@@ -1433,6 +1436,8 @@ def get_office_results(office):
                 'seats': seats,
                 'candidates': []
             })
+            race_top_r[race_key] = 0
+            race_top_d[race_key] = 0
 
         race = by_year[year]['races'][-1]
         is_winner = rank <= seats
@@ -1443,16 +1448,26 @@ def get_office_results(office):
             'is_winner': is_winner
         })
 
+        # Track top vote-getter per party per race
         if party == 'Republican':
-            by_year[year]['total_r_votes'] += votes
+            race_top_r[race_key] = max(race_top_r[race_key], votes)
             if is_winner:
                 by_year[year]['r_seats'] += 1
         elif party == 'Democratic':
-            by_year[year]['total_d_votes'] += votes
+            race_top_d[race_key] = max(race_top_d[race_key], votes)
             if is_winner:
                 by_year[year]['d_seats'] += 1
 
     conn.close()
+
+    # Sum up top vote-getters per race for accurate totals
+    for race_key, top_r in race_top_r.items():
+        year = race_key[0]
+        by_year[year]['total_r_votes'] += top_r
+
+    for race_key, top_d in race_top_d.items():
+        year = race_key[0]
+        by_year[year]['total_d_votes'] += top_d
 
     # Calculate margins per year
     for year, data in by_year.items():
