@@ -45,6 +45,13 @@
                 {{ year }}: <span class="{% if ctrl == 'R' %}r{% else %}d{% endif %}">{{ ctrl }} ({{ seats.R }}-{{ seats.D }})</span>{% if not loop.last %}, {% endif %}
                 {% endfor %}
             </p>
+            <p class="text-muted mt-2" style="font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <strong>Methodology:</strong> For each town, we sum all State Representative votes by party across all districts that include that town.
+                If the town's total R votes exceed D votes, we predict R control; otherwise D.
+                <strong>Accuracy</strong> = how many elections (out of 5) the town correctly predicted which party would win the House majority.
+                <strong>Avg Deviation</strong> = how far the town's R-D margin differs from the statewide State Rep margin (lower = closer to statewide).
+                Towns are ranked by accuracy first, then by lowest deviation.
+            </p>
         </div>
 
         <!-- Ticket Splitting -->
