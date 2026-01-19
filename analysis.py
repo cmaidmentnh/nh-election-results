@@ -7,6 +7,7 @@ Generates meaningful insights from election data
 import sqlite3
 from pathlib import Path
 from collections import defaultdict
+import queries
 
 DB_PATH = Path(__file__).parent / "nh_elections.db"
 
@@ -3530,6 +3531,8 @@ def get_swing_analysis():
         trending_against = trend_valid and ((winner24 == 'R' and trend < 0) or (winner24 == 'D' and trend > 0))
 
         if is_competitive or trending_against or volatility > 5:
+            # Get towns in this district
+            towns = queries.get_district_towns(county, district, 'State Representative')
             swing_districts.append({
                 'county': county,
                 'district': district,
@@ -3540,6 +3543,7 @@ def get_swing_analysis():
                 'volatility': round(volatility, 1),
                 'contested': True,
                 'trend_valid': trend_valid,
+                'towns': towns,
                 'flip_likelihood': 'High' if abs(margin24) < 5 and trending_against else
                                    'Medium' if abs(margin24) < 10 else 'Low'
             })
@@ -3548,11 +3552,18 @@ def get_swing_analysis():
     swing_districts.sort(key=lambda x: abs(x['margin']))
 
     conn.close()
+
+    # Get trending districts (sorted by trend magnitude, limited for display)
+    trending_r = sorted([d for d in swing_districts if d['trend_valid'] and d['trend'] > 3],
+                       key=lambda x: -x['trend'])[:15]
+    trending_d = sorted([d for d in swing_districts if d['trend_valid'] and d['trend'] < -3],
+                       key=lambda x: x['trend'])[:15]
+
     return {
         'swing_districts': swing_districts[:50],
         'high_flip': [d for d in swing_districts if d['flip_likelihood'] == 'High'],
-        'trending_r': [d for d in swing_districts if d['trend_valid'] and d['trend'] > 3][:20],
-        'trending_d': [d for d in swing_districts if d['trend_valid'] and d['trend'] < -3][:20]
+        'trending_r': trending_r,
+        'trending_d': trending_d
     }
 
 

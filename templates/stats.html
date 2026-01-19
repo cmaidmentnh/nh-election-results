@@ -32,7 +32,10 @@
                 <tbody>
                     {% for d in swing.high_flip[:15] %}
                     <tr>
-                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td>
+                            <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
+                            <span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                        </td>
                         <td>{{ d.seats }}</td>
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
@@ -57,9 +60,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for d in swing.trending_r[:10] %}
+                    {% for d in swing.trending_r %}
                     <tr>
-                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td>
+                            <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
+                            <span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                        </td>
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
                         </td>
@@ -79,9 +85,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for d in swing.trending_d[:10] %}
+                    {% for d in swing.trending_d %}
                     <tr>
-                        <td><a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a></td>
+                        <td>
+                            <a href="{{ url_for('district', county=d.county, district=d.district) }}">{{ d.county }} {{ d.district }}</a>
+                            <span class="text-muted" style="font-size: 0.85em;">{{ d.towns|join(', ') }}</span>
+                        </td>
                         <td class="text-right {% if d.margin > 0 %}r{% else %}d{% endif %}">
                             {% if d.margin > 0 %}R+{% else %}D+{% endif %}{{ d.margin|abs }}%
                         </td>
