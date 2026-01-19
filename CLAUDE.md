@@ -4,12 +4,15 @@
 
 **DO NOT CHANGE THESE PORTS. EVER.**
 
-| App | Port | Service | Domain |
-|-----|------|---------|--------|
-| nh-civic-crm | 5000 | nh-civic-crm.service | action.nhhouse.gop |
-| nh-legislators-api | 5001 | nh-legislators-api.service | API |
+| App | Port | Service | Domains |
+|-----|------|---------|---------|
+| nh-civic-crm | 5000 | nh-civic-crm.service | actioncenter.winthehouse.gop, actioncenter.rebuildnh.com, actioncenter.nhfc-ontarget.org |
+| nh-legislators-api | 5001 | nh-legislators-api.service | (internal API) |
+| secure-messenger | 5003 | secure-messenger.service | (internal) |
 | nh-whip-count | 5004 | nh-whip-count.service | whip.nhhouse.gop |
+| nh-legislators-api (alt?) | 5005 | (check) | (internal) |
 | nh-election-results | 5006 | nh-election-results.service | elections.nhhouse.gop |
+| granitesend | 5007 | granitesend.service | granitesend.com |
 
 All apps run on server: `138.197.20.97`
 
