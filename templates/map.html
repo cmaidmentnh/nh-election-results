@@ -394,10 +394,17 @@ info.update = function(props) {
         // Show candidates if available (specific year selected)
         if (data.candidates && data.candidates.length > 0) {
             html += '<div style="margin:6px 0;font-size:0.85rem;">';
+            const numSeats = data.seats || 1;
             data.candidates.forEach((c, i) => {
                 const partyColor = c.party === 'R' ? '#8b0000' : (c.party === 'D' ? '#1e3a5f' : '#666');
-                const lastName = c.name.split(' ').pop();
-                const isWinner = i === 0;
+                // Extract last name, excluding common suffixes
+                const nameParts = c.name.split(' ');
+                const suffixes = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V'];
+                let lastName = nameParts.pop();
+                while (suffixes.includes(lastName) && nameParts.length > 0) {
+                    lastName = nameParts.pop();
+                }
+                const isWinner = i < numSeats;
                 html += `<div style="color:${partyColor};${isWinner ? 'font-weight:600;' : ''}">${lastName} (${c.party}): ${c.votes?.toLocaleString() || '?'}${isWinner ? ' ✓' : ''}</div>`;
             });
             html += '</div>';

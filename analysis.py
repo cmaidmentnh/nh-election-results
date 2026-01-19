@@ -1873,6 +1873,22 @@ def get_districts_map_data(year=None, metric='margin'):
             }
     else:
         # Specific year - use that year's data directly
+        # First get seat counts
+        cursor.execute(f"""
+            SELECT r.county, r.district, r.seats
+            FROM races r
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Representative'
+            AND {year_clause}
+            AND e.election_type = 'general'
+        """)
+        district_seats = {}
+        for county, district, seats in cursor.fetchall():
+            if county in county_codes:
+                code = county_codes[county] + str(district)
+                district_seats[code] = seats or 1
+
         cursor.execute(f"""
             SELECT
                 r.county,
@@ -1905,7 +1921,7 @@ def get_districts_map_data(year=None, metric='margin'):
                     'votes': votes
                 })
 
-        # Process each district - determine number of seats and calculate metrics
+        # Process each district - use actual seat count from database
         for code, candidates in district_candidates.items():
             # Sort by votes descending
             candidates.sort(key=lambda x: -x['votes'])
@@ -1914,9 +1930,9 @@ def get_districts_map_data(year=None, metric='margin'):
             r_candidates = [c for c in candidates if c['party'] == 'Republican']
             d_candidates = [c for c in candidates if c['party'] == 'Democratic']
 
-            # Determine number of seats (half of major party candidates, roughly)
-            num_seats = max(len(r_candidates), len(d_candidates))
-            if num_seats == 0:
+            # Use actual seat count from database
+            num_seats = district_seats.get(code, 1)
+            if len(candidates) == 0:
                 continue
 
             # Get winners (top N vote-getters)
