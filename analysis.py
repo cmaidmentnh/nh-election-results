@@ -1326,46 +1326,41 @@ def get_town_representation(town):
 
 def get_turnout_analysis():
     """
-    Analyze turnout trends across towns and years using presidential vote totals.
+    Analyze turnout trends across towns and years using official ballots cast data.
     Returns towns with biggest turnout changes, overall trends, etc.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get total votes in presidential races by town/year (as proxy for turnout)
+    # Get turnout by town and year from voter_registration table (ballots_cast)
     cursor.execute("""
         SELECT
-            res.municipality as town,
+            v.municipality as town,
             e.year,
-            SUM(res.votes) as total_votes
-        FROM results res
-        JOIN candidates c ON res.candidate_id = c.id
-        JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o ON r.office_id = o.id
+            v.ballots_cast
+        FROM voter_registration v
+        JOIN elections e ON v.election_id = e.id
         WHERE e.election_type = 'general'
-        AND o.name = 'President of the United States'
-        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        GROUP BY res.municipality, e.year
-        ORDER BY res.municipality, e.year
+        AND v.ballots_cast > 0
+        ORDER BY v.municipality, e.year
     """)
 
     town_turnout = defaultdict(dict)
     for row in cursor.fetchall():
-        town, year, votes = row
-        if not town or town in ['TOTALS', 'Court ordered recount']:
+        town, year, ballots = row
+        if not town:
             continue
         # Normalize ward names to town names
         if ' Ward ' in town:
             base_town = town[:town.index(' Ward ')]
             if base_town not in town_turnout or year not in town_turnout[base_town]:
                 town_turnout[base_town][year] = 0
-            town_turnout[base_town][year] += votes
+            town_turnout[base_town][year] += ballots
         else:
-            town_turnout[town][year] = votes
+            town_turnout[town][year] = ballots
 
-    # Calculate changes (presidential years only)
-    presidential_years = [2016, 2020, 2024]
+    # Calculate changes
+    years = [2016, 2018, 2020, 2022, 2024]
     turnout_changes = []
 
     for town, by_year in town_turnout.items():
@@ -1386,7 +1381,7 @@ def get_turnout_analysis():
 
     # Statewide totals
     statewide = {}
-    for year in presidential_years:
+    for year in years:
         total = sum(by_year.get(year, 0) for by_year in town_turnout.values())
         statewide[year] = total
 
@@ -1397,7 +1392,7 @@ def get_turnout_analysis():
         'biggest_gains': biggest_gains,
         'biggest_losses': biggest_losses,
         'statewide': statewide,
-        'years': presidential_years
+        'years': years
     }
 
 

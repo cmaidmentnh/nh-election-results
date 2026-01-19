@@ -19,12 +19,13 @@ ELECTION_IDS = {
 }
 
 # Files to import
+FILES_DIR = "/Users/chrismaidment/Desktop/Data-Elections/election_files"
 BALLOTS_FILES = {
-    2016: "/Users/chrismaidment/Downloads/2016-ge-ballots-cast.xls",
-    2018: "/Users/chrismaidment/Downloads/2018-ge-ballots-cast_0.xls",
-    2020: "/Users/chrismaidment/Downloads/2020-ge-ballots-cast.xls",
-    2022: "/Users/chrismaidment/Downloads/2022-ge-ballots-cast_3.xls",
-    2024: "/Users/chrismaidment/Downloads/2024-ge-ballots-cast_14.xls"
+    2016: f"{FILES_DIR}/2016-ge-ballots-cast.xls",
+    2018: f"{FILES_DIR}/2018-ge-ballots-cast_0.xls",
+    2020: f"{FILES_DIR}/2020-ge-ballots-cast.xls",
+    2022: f"{FILES_DIR}/2022-ge-ballots-cast_3.xls",
+    2024: f"{FILES_DIR}/2024-ge-ballots-cast_14.xls"
 }
 
 
