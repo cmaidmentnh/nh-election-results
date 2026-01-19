@@ -69,13 +69,52 @@ def get_town_summary(town):
     Get a comprehensive summary of a town's voting patterns.
     Returns headline insights, not raw data.
 
-    For multi-member races (State Rep), uses TOP vote-getter per party
-    to avoid skewing results when one party runs more candidates.
+    For State Rep: uses total party votes from deduplicated canonical races.
+    For other offices: uses top vote-getter per party (same as total for single-candidate races).
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get all results for this town with candidate-level detail
+    # First, get State Rep votes using deduplicated canonical races
+    cursor.execute("""
+        WITH race_totals AS (
+            SELECT r.id as race_id, e.year, r.county, r.district, SUM(res.votes) as total
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE e.election_type = 'general'
+            AND o.name = 'State Representative'
+            GROUP BY r.id
+        ),
+        canonical_races AS (
+            SELECT race_id, year, county, district
+            FROM race_totals rt
+            WHERE rt.total = (
+                SELECT MAX(rt2.total)
+                FROM race_totals rt2
+                WHERE rt2.year = rt.year AND rt2.county = rt.county AND rt2.district = rt.district
+            )
+        )
+        SELECT
+            cr.year,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN canonical_races cr ON res.race_id = cr.race_id
+        WHERE res.municipality = ?
+        AND c.party IN ('Republican', 'Democratic')
+        GROUP BY cr.year, c.party
+    """, (town,))
+
+    # Store State Rep totals by year
+    state_rep_by_year = defaultdict(lambda: {'R': 0, 'D': 0})
+    for year, party, votes in cursor.fetchall():
+        p = 'R' if party == 'Republican' else 'D'
+        state_rep_by_year[year][p] = votes
+
+    # Get all other results for this town
     cursor.execute("""
         SELECT
             e.year,
@@ -93,17 +132,17 @@ def get_town_summary(town):
         WHERE res.municipality = ?
         AND e.election_type = 'general'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND o.name != 'State Representative'
         ORDER BY e.year, o.name, res.votes DESC
     """, (town,))
 
     results = cursor.fetchall()
-    if not results:
+    if not results and not state_rep_by_year:
         conn.close()
         return None
 
-    # Track individual candidate votes by year/office
-    # For multi-member races, we'll use top vote-getter per party
-    candidate_votes = defaultdict(lambda: defaultdict(list))  # year -> office -> list of (party, votes)
+    # Track individual candidate votes by year/office (for non-State-Rep)
+    candidate_votes = defaultdict(lambda: defaultdict(list))
 
     for row in results:
         year = row['year']
@@ -112,8 +151,10 @@ def get_town_summary(town):
         votes = row['votes']
         candidate_votes[year][office].append({'party': party, 'votes': votes})
 
-    # Calculate margins by year using TOP vote-getter per party
-    years = sorted(candidate_votes.keys())
+    # Calculate margins by year
+    # Combine years from both queries
+    all_years = set(candidate_votes.keys()) | set(state_rep_by_year.keys())
+    years = sorted(all_years)
     margins_by_year = {}
     by_year = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0, 'total': 0}))
 
@@ -122,8 +163,8 @@ def get_town_summary(town):
         year_top_d = 0
         year_total = 0
 
-        for office, candidates in candidate_votes[year].items():
-            # Find top vote-getter per party for this office
+        # Add non-State-Rep offices (using top vote-getter)
+        for office, candidates in candidate_votes.get(year, {}).items():
             top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
             top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
             total = sum(c['votes'] for c in candidates)
@@ -135,6 +176,18 @@ def get_town_summary(town):
             year_top_r += top_r
             year_top_d += top_d
             year_total += total
+
+        # Add State Rep (using deduplicated total party votes)
+        if year in state_rep_by_year:
+            sr_r = state_rep_by_year[year]['R']
+            sr_d = state_rep_by_year[year]['D']
+            by_year[year]['State Representative']['top_r'] = sr_r
+            by_year[year]['State Representative']['top_d'] = sr_d
+            by_year[year]['State Representative']['total'] = sr_r + sr_d
+
+            year_top_r += sr_r
+            year_top_d += sr_d
+            year_total += sr_r + sr_d
 
         if year_top_r + year_top_d > 0:
             total_top = year_top_r + year_top_d
