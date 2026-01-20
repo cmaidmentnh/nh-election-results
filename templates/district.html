@@ -84,7 +84,31 @@
 
         {% if topline %}
         <div class="sidebar-section">
-            <h3>Topline Results</h3>
+            <h3>Topline Results <span style="font-size:11px;font-weight:normal;color:#666;">(click year for details)</span></h3>
+            <style>
+                .topline-row { cursor: pointer; }
+                .topline-row:hover { background: #f5f5f5; }
+                .year-popover {
+                    display: none;
+                    position: fixed;
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 16px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 1000;
+                    min-width: 280px;
+                    font-size: 13px;
+                }
+                .year-popover.active { display: block; }
+                .year-popover h4 { margin: 0 0 12px; font-size: 15px; }
+                .year-popover table { width: 100%; border-collapse: collapse; }
+                .year-popover td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+                .year-popover tr:last-child td { border-bottom: none; }
+                .year-popover .office-name { font-weight: 500; }
+                .year-popover .votes { text-align: right; font-family: monospace; }
+                .year-popover .margin { text-align: right; font-weight: 600; }
+            </style>
             <table class="topline-table">
                 <thead>
                     <tr>
@@ -95,7 +119,7 @@
                 </thead>
                 <tbody>
                     {% for year in topline.keys()|sort(reverse=true) %}
-                    <tr>
+                    <tr class="topline-row" data-year="{{ year }}">
                         <td>{{ year }}</td>
                         <td>
                             {% if 'President of the United States' in topline[year] %}
@@ -118,6 +142,7 @@
                 </tbody>
             </table>
         </div>
+        <div class="year-popover" id="yearPopover"></div>
         {% endif %}
 
         {% if demographics and demographics.population %}
@@ -206,6 +231,58 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const districtTowns = {{ info.towns | tojson }};
+const townResults = {{ town_results | tojson }};
+const toplineData = {{ topline|tojson }};
+const raceData = {{ by_year|tojson }};
+const officeName = "State Representative";
+
+// Popover functionality
+document.querySelectorAll('.topline-row').forEach(row => {
+    row.addEventListener('click', function(e) {
+        const year = parseInt(this.dataset.year);
+        const popover = document.getElementById('yearPopover');
+        const rect = this.getBoundingClientRect();
+
+        let html = `<h4>${year} Results in District</h4><table>`;
+
+        // President
+        if (toplineData[year] && toplineData[year]['President of the United States']) {
+            const p = toplineData[year]['President of the United States'];
+            const margin = p.margin > 0 ? `<span class="r">R+${p.margin.toFixed(1)}</span>` : `<span class="d">D+${Math.abs(p.margin).toFixed(1)}</span>`;
+            html += `<tr><td class="office-name">President</td><td class="votes"><span class="r">${p.r.toLocaleString()}</span> - <span class="d">${p.d.toLocaleString()}</span></td><td class="margin">${margin}</td></tr>`;
+        }
+
+        // Governor
+        if (toplineData[year] && toplineData[year]['Governor']) {
+            const g = toplineData[year]['Governor'];
+            const margin = g.margin > 0 ? `<span class="r">R+${g.margin.toFixed(1)}</span>` : `<span class="d">D+${Math.abs(g.margin).toFixed(1)}</span>`;
+            html += `<tr><td class="office-name">Governor</td><td class="votes"><span class="r">${g.r.toLocaleString()}</span> - <span class="d">${g.d.toLocaleString()}</span></td><td class="margin">${margin}</td></tr>`;
+        }
+
+        // Current office race
+        if (raceData[year]) {
+            const race = raceData[year];
+            const margin = race.margin > 0 ? `<span class="r">R+${race.margin.toFixed(1)}</span>` : `<span class="d">D+${Math.abs(race.margin).toFixed(1)}</span>`;
+            html += `<tr style="background:#f8f8f8;"><td class="office-name">${officeName}</td><td class="votes"><span class="r">${race.top_r.toLocaleString()}</span> - <span class="d">${race.top_d.toLocaleString()}</span></td><td class="margin">${margin}</td></tr>`;
+        }
+
+        html += '</table><p style="margin:8px 0 0;font-size:11px;color:#666;">Click elsewhere to close</p>';
+        popover.innerHTML = html;
+
+        // Position popover
+        popover.style.top = (rect.bottom + 5) + 'px';
+        popover.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+        popover.classList.add('active');
+    });
+});
+
+// Close popover when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.topline-row') && !e.target.closest('.year-popover')) {
+        const popover = document.getElementById('yearPopover');
+        if (popover) popover.classList.remove('active');
+    }
+});
 
 // Name normalization for unincorporated places
 const nameMap = {
@@ -221,6 +298,38 @@ const nameMap = {
 
 function normalizeGeoName(geoName) {
     return nameMap[geoName] || geoName;
+}
+
+// Color scale based on margin (positive = R, negative = D)
+function getMarginColor(margin) {
+    // Clamp margin to reasonable range for color intensity
+    const intensity = Math.min(Math.abs(margin), 50) / 50;
+    if (margin > 0) {
+        // Republican - red shades
+        const r = Math.round(139 + (116 * intensity));  // 139-255
+        const g = Math.round(139 * (1 - intensity));     // 139-0
+        const b = Math.round(139 * (1 - intensity));     // 139-0
+        return `rgb(${r}, ${g}, ${b})`;
+    } else {
+        // Democratic - blue shades
+        const r = Math.round(100 * (1 - intensity));     // 100-0
+        const g = Math.round(100 + (50 * (1 - intensity)));  // 100-150
+        const b = Math.round(139 + (116 * intensity));   // 139-255
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+}
+
+function getTownData(townName) {
+    // Try exact match first
+    if (townResults[townName]) return townResults[townName];
+    // Try normalized name
+    const normalized = nameMap[townName];
+    if (normalized && townResults[normalized]) return townResults[normalized];
+    // Try reverse lookup
+    for (const [from, to] of Object.entries(nameMap)) {
+        if (to === townName && townResults[from]) return townResults[from];
+    }
+    return null;
 }
 
 const map = L.map('district-map', {
@@ -246,12 +355,28 @@ fetch('/static/data/nh-towns.geojson')
         });
 
         const layer = L.geoJSON(districtFeatures, {
-            style: {
-                fillColor: '{% if "R" in lean %}#8b0000{% else %}#1e3a5f{% endif %}',
-                weight: 1,
-                opacity: 1,
-                color: '#333',
-                fillOpacity: 0.6
+            style: function(feature) {
+                const townName = feature.properties.name;
+                const data = getTownData(townName);
+                const margin = data ? data.margin : 0;
+                return {
+                    fillColor: getMarginColor(margin),
+                    weight: 1,
+                    opacity: 1,
+                    color: '#333',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                const townName = feature.properties.name;
+                const data = getTownData(townName);
+                if (data) {
+                    const marginText = data.margin > 0 ? `R+${data.margin}` : `D+${Math.abs(data.margin)}`;
+                    layer.bindTooltip(`<strong>${townName}</strong><br>${marginText}<br>R: ${data.r.toLocaleString()} | D: ${data.d.toLocaleString()}`, {
+                        direction: 'top',
+                        offset: [0, -5]
+                    });
+                }
             }
         }).addTo(map);
 

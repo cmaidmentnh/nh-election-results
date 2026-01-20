@@ -181,13 +181,17 @@ def district(county, district):
         else:
             data['margin'] = 0
 
+    # Get town-level results for map coloring
+    town_results = queries.get_district_town_results(county, district, office)
+
     return render_template('district.html',
                          info=info,
                          by_year=by_year,
                          pvi=pvi,
                          lean=lean,
                          topline=topline,
-                         demographics=demographics)
+                         demographics=demographics,
+                         town_results=town_results)
 
 
 @app.route('/county/<name>')

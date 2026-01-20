@@ -716,6 +716,61 @@ def get_candidate_history(candidate_id):
     return results
 
 
+def get_district_town_results(county, district, office='State Representative', year=None):
+    """Get town-level R/D margins for a county district.
+
+    Returns a dict keyed by town name with R votes, D votes, and margin.
+    Used for coloring maps by town performance.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Use most recent general election year if not specified
+    if year is None:
+        cursor.execute("SELECT MAX(year) FROM elections WHERE election_type = 'general'")
+        year = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT
+            res.municipality,
+            SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+            SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.county = ?
+        AND r.district = ?
+        AND o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        AND res.municipality NOT GLOB '[0-9]*'
+        AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
+        GROUP BY res.municipality
+    """, (county, str(district), office, year))
+
+    town_results = {}
+    for row in cursor.fetchall():
+        town = row[0]
+        r_votes = row[1] or 0
+        d_votes = row[2] or 0
+        total = r_votes + d_votes
+        if total > 0:
+            margin = round((r_votes - d_votes) / total * 100, 1)
+        else:
+            margin = 0
+        town_results[town] = {
+            'r': r_votes,
+            'd': d_votes,
+            'margin': margin
+        }
+
+    conn.close()
+    return town_results
+
+
 def get_statewide_district_town_results(office, district, year=None):
     """Get town-level R/D margins for a statewide district.
 
