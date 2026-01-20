@@ -1070,7 +1070,7 @@ def get_towns_in_district(office, district, county=None):
             WHERE o.name = ?
             AND r.district = ?
             AND r.county = ?
-            AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+            AND e.year = (SELECT MAX(e2.year) FROM elections e2 WHERE e2.election_type = 'general')
             AND res.municipality NOT GLOB '[0-9]*'
             AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
             ORDER BY res.municipality
@@ -1085,7 +1085,7 @@ def get_towns_in_district(office, district, county=None):
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = ?
             AND r.district = ?
-            AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+            AND e.year = (SELECT MAX(e2.year) FROM elections e2 WHERE e2.election_type = 'general')
             AND res.municipality NOT GLOB '[0-9]*'
             AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
             ORDER BY res.municipality
@@ -1359,7 +1359,7 @@ def get_town_representation(town):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE res.municipality = ?
-        AND e.year = (SELECT MAX(e2.year) FROM elections e2)
+        AND e.year = (SELECT MAX(e2.year) FROM elections e2 WHERE e2.election_type = 'general')
         AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress')
         ORDER BY o.name
     """, (town,))
