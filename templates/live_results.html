@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Live Results - {{ election.year }} {{ election.election_type|title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+.live-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    color: white;
+    padding: 2rem;
+    margin: -1rem -1rem 2rem;
+    border-radius: 0 0 8px 8px;
+}
+.live-header h1 {
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
+}
+.live-header .subtitle {
+    opacity: 0.8;
+    font-size: 1.1rem;
+}
+.live-badge {
+    display: inline-block;
+    background: #dc2626;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    animation: pulse 2s infinite;
+    margin-left: 1rem;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.races-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+}
+
+.race-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+.race-card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+.race-card-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.race-card-header .party-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.party-badge.r { background: #fee2e2; color: #991b1b; }
+.party-badge.d { background: #dbeafe; color: #1e40af; }
+
+.race-content {
+    padding: 1.5rem;
+}
+
+.reporting-bar {
+    margin-bottom: 1.5rem;
+}
+.reporting-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+.reporting-track {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.reporting-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.candidates-list {
+    margin-bottom: 1.5rem;
+}
+.candidate-row {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.candidate-row:last-child {
+    border-bottom: none;
+}
+.candidate-row.leader {
+    background: #f0fdf4;
+    margin: 0 -1.5rem;
+    padding: 0.75rem 1.5rem;
+}
+.candidate-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+.candidate-rank {
+    width: 28px;
+    height: 28px;
+    background: #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-right: 0.75rem;
+}
+.candidate-row.leader .candidate-rank {
+    background: #22c55e;
+    color: white;
+}
+.map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+.candidate-info {
+    flex: 1;
+}
+.candidate-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+.candidate-party {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.candidate-votes {
+    text-align: right;
+}
+.candidate-votes .count {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.candidate-votes .pct {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.vote-bar {
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+.vote-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+.vote-bar-fill.r { background: #dc2626; }
+.vote-bar-fill.d { background: #2563eb; }
+
+.projection-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+.projection-box h4 {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.projection-leader {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.projection-prob {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #22c55e;
+}
+.projection-note {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+.race-map {
+    height: 250px;
+    width: 100%;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.town-tooltip {
+    font-size: 13px;
+    line-height: 1.4;
+}
+.town-tooltip strong {
+    font-size: 14px;
+}
+.town-tooltip .result-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+.no-results svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.refresh-note {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="live-header">
+    <h1>
+        {{ election.year }} {{ election.election_type|replace('_', ' ')|title }}
+        <span class="live-badge">Live</span>
+    </h1>
+    <p class="subtitle">Results updated as towns report</p>
+</div>
+
+{% if not race_data %}
+<div class="no-results">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <p>No races found for this election.</p>
+</div>
+{% else %}
+
+<div class="races-grid">
+{% for data in race_data %}
+    <div class="race-card" id="race-{{ data.race.id }}">
+        <div class="race-card-header">
+            <h2>
+                {{ data.race.office_name }}
+                {% if data.race.county %}{{ data.race.county }}{% endif %}
+                {% if data.race.district %}District {{ data.race.district }}{% endif %}
+                {% if election.party %}
+                <span class="party-badge {% if election.party == 'Republican' %}r{% else %}d{% endif %}">
+                    {{ election.party }} Primary
+                </span>
+                {% endif %}
+            </h2>
+        </div>
+
+        <div class="race-content">
+            <!-- Reporting Progress -->
+            <div class="reporting-bar">
+                <div class="reporting-label">
+                    <span><strong>{{ data.pct_reported }}%</strong> of expected vote reported</span>
+                    <span>{{ data.towns_reporting }}/{{ data.towns_total }} towns</span>
+                </div>
+                <div class="reporting-track">
+                    <div class="reporting-fill" style="width: {{ data.pct_reported }}%"></div>
+                </div>
+            </div>
+
+            {% if data.total_votes == 0 %}
+            <div class="no-results">
+                <p>Waiting for results...</p>
+            </div>
+            {% else %}
+
+            <!-- Win Probability -->
+            {% if data.win_probability and data.candidates %}
+            <div class="projection-box">
+                <h4>Projected Winner</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div class="projection-leader">{{ data.candidates[0].name }}</div>
+                        <div class="projection-note">Based on {{ data.pct_reported }}% reporting</div>
+                    </div>
+                    <div class="projection-prob">{{ data.win_probability }}%</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Candidates List -->
+            <div class="candidates-list">
+                {% for candidate in data.candidates %}
+                <div class="candidate-row {% if loop.first %}leader{% endif %}">
+                    <div class="candidate-color" data-candidate-idx="{{ loop.index0 }}"></div>
+                    <div class="candidate-rank">{{ loop.index }}</div>
+                    <div class="candidate-info">
+                        <div class="candidate-name">{{ candidate.name }}</div>
+                        <div class="candidate-party">{{ candidate.party }}</div>
+                        <div class="vote-bar">
+                            <div class="vote-bar-fill" data-candidate-idx="{{ loop.index0 }}"
+                                 style="width: {{ candidate.percentage }}%"></div>
+                        </div>
+                    </div>
+                    <div class="candidate-votes">
+                        <div class="count">{{ "{:,}".format(candidate.total_votes) }}</div>
+                        <div class="pct">{{ candidate.percentage }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Map -->
+            <div class="race-map" id="map-{{ data.race.id }}"></div>
+            <div class="map-legend" id="legend-{{ data.race.id }}">
+                {% for candidate in data.candidates %}
+                <div class="legend-item">
+                    <div class="legend-color" data-candidate-idx="{{ loop.index0 }}"></div>
+                    <span>{{ candidate.name }}</span>
+                </div>
+                {% endfor %}
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e5e7eb;"></div>
+                    <span>Not reported</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<p class="refresh-note">Page auto-refreshes every 30 seconds</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Race data from server
+const raceData = {{ race_data | tojson }};
+
+// Name normalization for unincorporated places
+const nameMap = {
+    'Atkinson & Gilmanton': 'Atkinson & Gilmanton Academy Grant',
+    'Second College': 'Second College Grant',
+    'Low & Burbanks': 'Low and Burbanks Grant',
+    'Thompson & Meserve': 'Thompson and Meserves Purchase',
+    "Pinkham's Grant": 'Pinkhams Grant',
+    "Hart's Location": 'Harts Location',
+    'Wentworths Location': "Wentworth's Location",
+    "Wentworth's Location": 'Wentworths Location'
+};
+
+function normalizeGeoName(geoName) {
+    return nameMap[geoName] || geoName;
+}
+
+// Generate distinct colors for candidates
+const candidateColors = {};
+const colorPalette = [
+    '#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea',
+    '#0891b2', '#c026d3', '#ea580c', '#4f46e5', '#059669'
+];
+
+function getCandidateColor(candidateName, candidates) {
+    if (!candidateColors[candidateName]) {
+        // Find candidate index to assign color
+        const idx = candidates.findIndex(c => c.name === candidateName);
+        candidateColors[candidateName] = colorPalette[idx % colorPalette.length];
+    }
+    return candidateColors[candidateName];
+}
+
+// Color scale for margin - uses leader's color with intensity based on margin
+function getMarginColor(leader, margin, reported, candidates) {
+    if (!reported) return '#e5e7eb'; // Gray for not reported
+    if (!leader) return '#94a3b8';
+
+    const baseColor = getCandidateColor(leader, candidates);
+    // Parse hex color
+    const r = parseInt(baseColor.slice(1, 3), 16);
+    const g = parseInt(baseColor.slice(3, 5), 16);
+    const b = parseInt(baseColor.slice(5, 7), 16);
+
+    // Intensity based on margin (higher margin = more saturated)
+    const intensity = Math.min(margin, 50) / 50;
+    const blend = 0.4 + (intensity * 0.6); // 40% to 100% saturation
+
+    // Blend with white based on intensity
+    const nr = Math.round(255 - (255 - r) * blend);
+    const ng = Math.round(255 - (255 - g) * blend);
+    const nb = Math.round(255 - (255 - b) * blend);
+
+    return `rgb(${nr}, ${ng}, ${nb})`;
+}
+
+// Initialize maps
+fetch('/static/data/nh-towns.geojson')
+    .then(r => r.json())
+    .then(geojson => {
+        raceData.forEach(data => {
+            if (data.total_votes === 0) return;
+
+            const mapEl = document.getElementById(`map-${data.race.id}`);
+            if (!mapEl) return;
+
+            const map = L.map(mapEl, {
+                zoomControl: false,
+                attributionControl: false,
+                dragging: true,
+                touchZoom: true,
+                scrollWheelZoom: false,
+                doubleClickZoom: true
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(map);
+
+            // Filter to towns in this district
+            const districtTowns = data.towns;
+            const townResults = data.town_results;
+            const townCandidateResults = data.town_candidate_results;
+
+            const districtFeatures = geojson.features.filter(f => {
+                const geoName = f.properties.name;
+                const normalizedName = normalizeGeoName(geoName);
+                return districtTowns.includes(geoName) || districtTowns.includes(normalizedName);
+            });
+
+            const candidates = data.candidates;
+
+            const layer = L.geoJSON(districtFeatures, {
+                style: function(feature) {
+                    const townName = feature.properties.name;
+                    const result = townResults[townName] || townResults[normalizeGeoName(townName)];
+                    const leader = result ? result.leader : null;
+                    const margin = result ? result.margin : 0;
+                    const reported = result ? result.reported : false;
+
+                    return {
+                        fillColor: getMarginColor(leader, margin, reported, candidates),
+                        weight: 2,
+                        opacity: 1,
+                        color: reported ? '#333' : '#999',
+                        fillOpacity: reported ? 0.7 : 0.3
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const townName = feature.properties.name;
+                    const candidates = townCandidateResults[townName] || townCandidateResults[normalizeGeoName(townName)] || [];
+
+                    if (candidates.length > 0) {
+                        let html = `<div class="town-tooltip"><strong>${townName}</strong><br>`;
+                        candidates.forEach(c => {
+                            html += `<div class="result-row"><span>${c.name}</span><span>${c.votes.toLocaleString()}</span></div>`;
+                        });
+                        html += '</div>';
+                        layer.bindTooltip(html, { direction: 'top', offset: [0, -10] });
+                    } else {
+                        layer.bindTooltip(`<strong>${townName}</strong><br>Not yet reported`, { direction: 'top' });
+                    }
+                }
+            }).addTo(map);
+
+            if (layer.getBounds().isValid()) {
+                map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+            }
+        });
+    });
+
+// Set candidate colors in UI
+document.querySelectorAll('[data-candidate-idx]').forEach(el => {
+    const idx = parseInt(el.dataset.candidateIdx);
+    el.style.background = colorPalette[idx % colorPalette.length];
+});
+
+// Auto-refresh every 30 seconds
+setTimeout(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

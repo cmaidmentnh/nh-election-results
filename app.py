@@ -599,5 +599,280 @@ def stats():
                          trends=trends)
 
 
+# ============== LIVE RESULTS ==============
+
+@app.route('/live/<int:election_id>')
+def live_results(election_id):
+    """Live results display for an election (e.g., special primary)."""
+    import sqlite3
+    conn = sqlite3.connect('nh_elections.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # Get election info
+    cursor.execute("SELECT * FROM elections WHERE id = ?", (election_id,))
+    election = cursor.fetchone()
+    if not election:
+        return "Election not found", 404
+
+    # Get all races in this election
+    cursor.execute("""
+        SELECT r.*, o.name as office_name
+        FROM races r
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.election_id = ?
+        ORDER BY o.name, r.county, r.district
+    """, (election_id,))
+    races = [dict(row) for row in cursor.fetchall()]
+
+    # For each race, get candidates, results, and calculate stats
+    race_data = []
+    for race in races:
+        race_id = race['id']
+
+        # Get candidates with total votes
+        cursor.execute("""
+            SELECT c.id, c.name, c.party, COALESCE(SUM(res.votes), 0) as total_votes
+            FROM candidates c
+            LEFT JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
+            WHERE c.id IN (SELECT DISTINCT candidate_id FROM results WHERE race_id = ?)
+            GROUP BY c.id
+            ORDER BY total_votes DESC
+        """, (race_id, race_id))
+        candidates = [dict(row) for row in cursor.fetchall()]
+
+        # Calculate total votes in race
+        total_votes = sum(c['total_votes'] for c in candidates)
+
+        # Add percentage to each candidate
+        for c in candidates:
+            c['percentage'] = round(c['total_votes'] / total_votes * 100, 1) if total_votes > 0 else 0
+
+        # Get town-level results for the map
+        # For primaries, we color by leading candidate, not party
+        cursor.execute("""
+            SELECT res.municipality, c.id as candidate_id, c.name, c.party, res.votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            WHERE res.race_id = ?
+            ORDER BY res.municipality, res.votes DESC
+        """, (race_id,))
+
+        town_results = {}
+        current_town = None
+        town_candidates_temp = []
+
+        for row in cursor.fetchall():
+            town = row['municipality']
+            if town != current_town:
+                if current_town and town_candidates_temp:
+                    # Process previous town
+                    total = sum(tc['votes'] for tc in town_candidates_temp)
+                    leader = town_candidates_temp[0] if town_candidates_temp else None
+                    second = town_candidates_temp[1] if len(town_candidates_temp) > 1 else None
+                    margin = 0
+                    if total > 0 and leader and second:
+                        margin = round((leader['votes'] - second['votes']) / total * 100, 1)
+                    town_results[current_town] = {
+                        'total': total,
+                        'leader': leader['name'] if leader else None,
+                        'leader_party': leader['party'] if leader else None,
+                        'leader_votes': leader['votes'] if leader else 0,
+                        'margin': margin,
+                        'reported': total > 0
+                    }
+                current_town = town
+                town_candidates_temp = []
+
+            town_candidates_temp.append({
+                'id': row['candidate_id'],
+                'name': row['name'],
+                'party': row['party'],
+                'votes': row['votes']
+            })
+
+        # Process last town
+        if current_town and town_candidates_temp:
+            total = sum(tc['votes'] for tc in town_candidates_temp)
+            leader = town_candidates_temp[0] if town_candidates_temp else None
+            second = town_candidates_temp[1] if len(town_candidates_temp) > 1 else None
+            margin = 0
+            if total > 0 and leader and second:
+                margin = round((leader['votes'] - second['votes']) / total * 100, 1)
+            town_results[current_town] = {
+                'total': total,
+                'leader': leader['name'] if leader else None,
+                'leader_party': leader['party'] if leader else None,
+                'leader_votes': leader['votes'] if leader else 0,
+                'margin': margin,
+                'reported': total > 0
+            }
+
+        # Get individual candidate results by town for hover
+        cursor.execute("""
+            SELECT res.municipality, c.id as candidate_id, c.name, c.party, res.votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            WHERE res.race_id = ?
+            ORDER BY res.municipality, res.votes DESC
+        """, (race_id,))
+        town_candidate_results = {}
+        for row in cursor.fetchall():
+            town = row['municipality']
+            if town not in town_candidate_results:
+                town_candidate_results[town] = []
+            town_candidate_results[town].append({
+                'name': row['name'],
+                'party': row['party'],
+                'votes': row['votes']
+            })
+
+        # Get 2024 turnout for weighted percentage calculation
+        cursor.execute("""
+            SELECT res.municipality, SUM(res.votes) as votes_2024
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE e.year = 2024 AND e.election_type = 'general'
+            AND r.county = ? AND r.district = ?
+            GROUP BY res.municipality
+        """, (race['county'], race['district']))
+        turnout_2024 = {row['municipality']: row['votes_2024'] for row in cursor.fetchall()}
+
+        # Calculate weighted percentage reported
+        total_expected = sum(turnout_2024.values()) if turnout_2024 else 0
+        reported_weight = 0
+        towns_reporting = 0
+        towns_total = len(turnout_2024)
+
+        for town, data in town_results.items():
+            if data['reported'] and town in turnout_2024:
+                reported_weight += turnout_2024[town]
+                towns_reporting += 1
+
+        pct_reported = round(reported_weight / total_expected * 100, 1) if total_expected > 0 else 0
+
+        # Calculate projected winner and win probability
+        leader = candidates[0] if candidates else None
+        projected_total = 0
+        projected_votes = {c['id']: c['total_votes'] for c in candidates}
+
+        if leader and pct_reported > 0:
+            # Project remaining votes based on current ratios
+            remaining_pct = 100 - pct_reported
+            for c in candidates:
+                ratio = c['total_votes'] / total_votes if total_votes > 0 else 0
+                projected_votes[c['id']] = c['total_votes'] + (ratio * total_votes * remaining_pct / pct_reported) if pct_reported > 0 else c['total_votes']
+
+            projected_total = sum(projected_votes.values())
+
+        # Add projection to candidates
+        for c in candidates:
+            c['projected_votes'] = round(projected_votes.get(c['id'], c['total_votes']))
+            c['projected_pct'] = round(c['projected_votes'] / projected_total * 100, 1) if projected_total > 0 else c['percentage']
+
+        # Win probability (simple model based on lead and reporting)
+        win_probability = None
+        if len(candidates) >= 2 and pct_reported > 10:
+            lead = candidates[0]['total_votes'] - candidates[1]['total_votes']
+            margin_pct = (candidates[0]['percentage'] - candidates[1]['percentage'])
+            # Simple model: higher lead + more reported = higher confidence
+            confidence = min(99, max(1, 50 + margin_pct * 2 + pct_reported * 0.3))
+            win_probability = round(confidence)
+
+        race_data.append({
+            'race': race,
+            'candidates': candidates,
+            'total_votes': total_votes,
+            'town_results': town_results,
+            'town_candidate_results': town_candidate_results,
+            'pct_reported': pct_reported,
+            'towns_reporting': towns_reporting,
+            'towns_total': towns_total,
+            'win_probability': win_probability,
+            'towns': list(turnout_2024.keys())
+        })
+
+    conn.close()
+
+    return render_template('live_results.html',
+                         election=dict(election),
+                         race_data=race_data)
+
+
+@app.route('/api/live/<int:election_id>')
+def api_live_results(election_id):
+    """API endpoint for live results polling."""
+    import sqlite3
+    conn = sqlite3.connect('nh_elections.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM elections WHERE id = ?", (election_id,))
+    election = cursor.fetchone()
+    if not election:
+        return jsonify({'error': 'Election not found'}), 404
+
+    cursor.execute("""
+        SELECT r.id, r.county, r.district, o.name as office_name,
+               (SELECT SUM(votes) FROM results WHERE race_id = r.id) as total_votes
+        FROM races r
+        JOIN offices o ON r.office_id = o.id
+        WHERE r.election_id = ?
+    """, (election_id,))
+
+    races = []
+    for race_row in cursor.fetchall():
+        race_id = race_row['id']
+
+        cursor.execute("""
+            SELECT c.id, c.name, c.party, COALESCE(SUM(res.votes), 0) as votes
+            FROM candidates c
+            LEFT JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
+            WHERE c.id IN (SELECT DISTINCT candidate_id FROM results WHERE race_id = ?)
+            GROUP BY c.id
+            ORDER BY votes DESC
+        """, (race_id, race_id))
+
+        candidates = [dict(row) for row in cursor.fetchall()]
+        total = sum(c['votes'] for c in candidates)
+
+        for c in candidates:
+            c['percentage'] = round(c['votes'] / total * 100, 1) if total > 0 else 0
+
+        # Town results
+        cursor.execute("""
+            SELECT res.municipality, c.name, c.party, res.votes
+            FROM results res
+            JOIN candidates c ON res.candidate_id = c.id
+            WHERE res.race_id = ?
+        """, (race_id,))
+
+        town_data = {}
+        for row in cursor.fetchall():
+            town = row['municipality']
+            if town not in town_data:
+                town_data[town] = {'candidates': [], 'total': 0}
+            town_data[town]['candidates'].append({
+                'name': row['name'],
+                'party': row['party'],
+                'votes': row['votes']
+            })
+            town_data[town]['total'] += row['votes']
+
+        races.append({
+            'id': race_id,
+            'office': race_row['office_name'],
+            'county': race_row['county'],
+            'district': race_row['district'],
+            'candidates': candidates,
+            'total_votes': total,
+            'towns': town_data
+        })
+
+    conn.close()
+    return jsonify({'election': dict(election), 'races': races})
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
