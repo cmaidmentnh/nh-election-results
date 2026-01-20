@@ -92,7 +92,7 @@
 
         {% if topline %}
         <div class="sidebar-section">
-            <h3>Topline Results</h3>
+            <h3>Topline Results <span style="font-size:11px;font-weight:normal;color:#666;">(click for details)</span></h3>
             <table class="topline-table">
                 <thead>
                     <tr>
@@ -108,16 +108,26 @@
                         <td>
                             {% if 'President of the United States' in topline[year] %}
                             {% set p = topline[year]['President of the United States'] %}
-                            <span class="{% if p.margin > 0 %}r{% else %}d{% endif %}">
-                                {% if p.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(p.margin|abs) }}
+                            <span class="topline-cell {% if p.margin > 0 %}r{% else %}d{% endif %}"
+                                  data-r="{{ '{:,}'.format(p.r) }}" data-d="{{ '{:,}'.format(p.d) }}"
+                                  title="R: {{ '{:,}'.format(p.r) }} | D: {{ '{:,}'.format(p.d) }}">
+                                <span class="margin-display">{% if p.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(p.margin|abs) }}</span>
+                                <span class="votes-display" style="display:none;">
+                                    <span class="r">{{ '{:,}'.format(p.r) }}</span>-<span class="d">{{ '{:,}'.format(p.d) }}</span>
+                                </span>
                             </span>
                             {% else %}&mdash;{% endif %}
                         </td>
                         <td>
                             {% if 'Governor' in topline[year] %}
                             {% set g = topline[year]['Governor'] %}
-                            <span class="{% if g.margin > 0 %}r{% else %}d{% endif %}">
-                                {% if g.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(g.margin|abs) }}
+                            <span class="topline-cell {% if g.margin > 0 %}r{% else %}d{% endif %}"
+                                  data-r="{{ '{:,}'.format(g.r) }}" data-d="{{ '{:,}'.format(g.d) }}"
+                                  title="R: {{ '{:,}'.format(g.r) }} | D: {{ '{:,}'.format(g.d) }}">
+                                <span class="margin-display">{% if g.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(g.margin|abs) }}</span>
+                                <span class="votes-display" style="display:none;">
+                                    <span class="r">{{ '{:,}'.format(g.r) }}</span>-<span class="d">{{ '{:,}'.format(g.d) }}</span>
+                                </span>
                             </span>
                             {% else %}&mdash;{% endif %}
                         </td>
@@ -126,6 +136,22 @@
                 </tbody>
             </table>
         </div>
+        <script>
+        document.querySelectorAll('.topline-cell').forEach(cell => {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', function() {
+                const margin = this.querySelector('.margin-display');
+                const votes = this.querySelector('.votes-display');
+                if (margin.style.display === 'none') {
+                    margin.style.display = '';
+                    votes.style.display = 'none';
+                } else {
+                    margin.style.display = 'none';
+                    votes.style.display = '';
+                }
+            });
+        });
+        </script>
         {% endif %}
 
         {% if demographics and demographics.population %}
