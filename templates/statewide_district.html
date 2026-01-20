@@ -290,6 +290,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const districtTowns = {{ info.towns | tojson }};
+const townResults = {{ town_results | tojson }};
 
 // Name normalization for unincorporated places
 const nameMap = {
@@ -305,6 +306,38 @@ const nameMap = {
 
 function normalizeGeoName(geoName) {
     return nameMap[geoName] || geoName;
+}
+
+// Color scale based on margin (positive = R, negative = D)
+function getMarginColor(margin) {
+    // Clamp margin to reasonable range for color intensity
+    const intensity = Math.min(Math.abs(margin), 50) / 50;
+    if (margin > 0) {
+        // Republican - red shades
+        const r = Math.round(139 + (116 * intensity));  // 139-255
+        const g = Math.round(139 * (1 - intensity));     // 139-0
+        const b = Math.round(139 * (1 - intensity));     // 139-0
+        return `rgb(${r}, ${g}, ${b})`;
+    } else {
+        // Democratic - blue shades
+        const r = Math.round(100 * (1 - intensity));     // 100-0
+        const g = Math.round(100 + (50 * (1 - intensity)));  // 100-150
+        const b = Math.round(139 + (116 * intensity));   // 139-255
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+}
+
+function getTownData(townName) {
+    // Try exact match first
+    if (townResults[townName]) return townResults[townName];
+    // Try normalized name
+    const normalized = nameMap[townName];
+    if (normalized && townResults[normalized]) return townResults[normalized];
+    // Try reverse lookup
+    for (const [from, to] of Object.entries(nameMap)) {
+        if (to === townName && townResults[from]) return townResults[from];
+    }
+    return null;
 }
 
 const map = L.map('district-map', {
@@ -330,12 +363,28 @@ fetch('/static/data/nh-towns.geojson')
         });
 
         const layer = L.geoJSON(districtFeatures, {
-            style: {
-                fillColor: '{% if "R" in lean %}#8b0000{% else %}#1e3a5f{% endif %}',
-                weight: 1,
-                opacity: 1,
-                color: '#333',
-                fillOpacity: 0.6
+            style: function(feature) {
+                const townName = feature.properties.name;
+                const data = getTownData(townName);
+                const margin = data ? data.margin : 0;
+                return {
+                    fillColor: getMarginColor(margin),
+                    weight: 1,
+                    opacity: 1,
+                    color: '#333',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                const townName = feature.properties.name;
+                const data = getTownData(townName);
+                if (data) {
+                    const marginText = data.margin > 0 ? `R+${data.margin}` : `D+${Math.abs(data.margin)}`;
+                    layer.bindTooltip(`<strong>${townName}</strong><br>${marginText}<br>R: ${data.r.toLocaleString()} | D: ${data.d.toLocaleString()}`, {
+                        direction: 'top',
+                        offset: [0, -5]
+                    });
+                }
             }
         }).addTo(map);
 

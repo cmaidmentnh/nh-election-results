@@ -363,13 +363,17 @@ def statewide_district(office, district):
         else:
             data['margin'] = 0
 
+    # Get town-level results for map coloring
+    town_results = queries.get_statewide_district_town_results(office, district)
+
     return render_template('statewide_district.html',
                          info=info,
                          by_year=by_year,
                          pvi=pvi,
                          lean=lean,
                          topline=topline,
-                         demographics=demographics)
+                         demographics=demographics,
+                         town_results=town_results)
 
 
 # ============== NEW FEATURE ROUTES ==============
