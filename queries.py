@@ -86,7 +86,11 @@ def get_statewide_districts(office):
 
 
 def get_statewide_district_results(office, district):
-    """Get results for a statewide district - ONLY post-redistricting (2022+)."""
+    """Get results for a statewide district.
+
+    For statewide offices (State Senate, Exec Council, Congress), redistricting
+    changes are less dramatic so we show more historical data (2016+).
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -106,7 +110,7 @@ def get_statewide_district_results(office, district):
         WHERE o.name = ?
         AND r.district = ?
         AND e.election_type = 'general'
-        AND e.year >= 2022
+        AND e.year >= 2016
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, c.id
         ORDER BY e.year DESC, votes DESC
