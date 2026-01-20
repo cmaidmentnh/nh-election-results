@@ -780,6 +780,39 @@ def live_results(election_id):
             confidence = min(99, max(1, 50 + margin_pct * 2 + pct_reported * 0.3))
             win_probability = round(confidence)
 
+        # Get historical results for this district
+        historical = {}
+        cursor.execute("""
+            SELECT e.year, c.name, c.party, SUM(res.votes) as votes,
+                   r.seats,
+                   ROW_NUMBER() OVER (PARTITION BY e.year ORDER BY SUM(res.votes) DESC) as rank
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE r.county = ? AND r.district = ? AND o.name = ?
+            AND e.election_type = 'general'
+            AND e.year < 2026
+            GROUP BY e.year, c.id
+            ORDER BY e.year DESC, votes DESC
+        """, (race['county'], race['district'], race['office_name']))
+
+        for row in cursor.fetchall():
+            year = row['year']
+            if year not in historical:
+                historical[year] = {'results': [], 'turnout': 0, 'seats': row['seats']}
+            historical[year]['results'].append({
+                'name': row['name'],
+                'party': row['party'],
+                'votes': row['votes'],
+                'is_winner': row['rank'] <= row['seats']
+            })
+            historical[year]['turnout'] += row['votes']
+
+        # Keep only last 3 elections
+        historical = dict(list(historical.items())[:3])
+
         race_data.append({
             'race': race,
             'candidates': candidates,
@@ -790,7 +823,8 @@ def live_results(election_id):
             'towns_reporting': towns_reporting,
             'towns_total': towns_total,
             'win_probability': win_probability,
-            'towns': list(turnout_2024.keys())
+            'towns': list(turnout_2024.keys()),
+            'historical': historical
         })
 
     conn.close()

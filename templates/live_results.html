@@ -261,6 +261,72 @@
     font-size: 0.875rem;
     margin-top: 2rem;
 }
+
+.historical-context {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+.historical-context h4 {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.historical-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.hist-year {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+}
+.hist-year-label {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #1e3a5f;
+}
+.hist-results {
+    font-size: 0.875rem;
+}
+.hist-candidate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+.hist-candidate.winner {
+    font-weight: 600;
+}
+.hist-name {
+    flex: 1;
+}
+.hist-party {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+}
+.hist-party.r { background: #dc2626; }
+.hist-party.d { background: #2563eb; }
+.hist-votes {
+    font-variant-numeric: tabular-nums;
+    color: #6b7280;
+}
+.hist-turnout {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
 </style>
 {% endblock %}
 
@@ -312,8 +378,9 @@
             <div class="no-results">
                 <p>Waiting for results...</p>
             </div>
-            {% else %}
+            {% endif %}
 
+            {% if data.total_votes > 0 %}
             <!-- Win Probability -->
             {% if data.win_probability and data.candidates %}
             <div class="projection-box">
@@ -350,18 +417,31 @@
                 {% endfor %}
             </div>
 
-            <!-- Map -->
+            {% endif %}
+
+            <!-- Map (always show) -->
             <div class="race-map" id="map-{{ data.race.id }}"></div>
-            <div class="map-legend" id="legend-{{ data.race.id }}">
-                {% for candidate in data.candidates %}
-                <div class="legend-item">
-                    <div class="legend-color" data-candidate-idx="{{ loop.index0 }}"></div>
-                    <span>{{ candidate.name }}</span>
-                </div>
-                {% endfor %}
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #e5e7eb;"></div>
-                    <span>Not reported</span>
+
+            <!-- Historical Context -->
+            {% if data.historical %}
+            <div class="historical-context">
+                <h4>Historical Context</h4>
+                <div class="historical-grid">
+                    {% for year, hist in data.historical.items() %}
+                    <div class="hist-year">
+                        <div class="hist-year-label">{{ year }}</div>
+                        <div class="hist-results">
+                            {% for result in hist.results[:3] %}
+                            <div class="hist-candidate {% if result.is_winner %}winner{% endif %}">
+                                <span class="hist-name">{{ result.name }}</span>
+                                <span class="hist-party {{ result.party[0]|lower }}">{{ result.party[0] }}</span>
+                                <span class="hist-votes">{{ "{:,}".format(result.votes) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="hist-turnout">Turnout: {{ "{:,}".format(hist.turnout) }}</div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
@@ -440,8 +520,6 @@ fetch('/static/data/nh-towns.geojson')
     .then(r => r.json())
     .then(geojson => {
         raceData.forEach(data => {
-            if (data.total_votes === 0) return;
-
             const mapEl = document.getElementById(`map-${data.race.id}`);
             if (!mapEl) return;
 
