@@ -727,3 +727,12 @@ fetch('/static/data/nh-towns.geojson')
 
 </script>
 {% endblock %}
+
+{% block footer %}
+{% set any_official = race_data|selectattr('race.is_official')|list|length > 0 %}
+{% if any_official %}
+Official results from NH Secretary of State
+{% else %}
+Unofficial results - may not reflect final certified totals
+{% endif %}
+{% endblock %}

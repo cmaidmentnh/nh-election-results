@@ -8,6 +8,13 @@
 <h2>{{ race.office_name }} - {% if race.county %}{{ race.county }} {% endif %}District {{ race.district }}</h2>
 <p class="text-muted">{{ race.year }} {{ race.election_type }}{% if race.election_party %} ({{ race.election_party }}){% endif %} | {{ race.seats }} seat(s)</p>
 
+<div class="card">
+    <form method="POST" action="{{ url_for('admin.toggle_official', race_id=race.id) }}" style="display: flex; align-items: center; gap: 0.5rem;">
+        <input type="checkbox" name="is_official" id="is_official" value="1" {% if race.is_official %}checked{% endif %} onchange="this.form.submit()">
+        <label for="is_official" style="margin: 0; cursor: pointer;">Official results (from Secretary of State)</label>
+    </form>
+</div>
+
 {% if towns %}
 <div class="card">
     <h3>Towns in District</h3>

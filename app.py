@@ -622,7 +622,7 @@ def live_results(election_id):
 
     # Get all races in this election
     cursor.execute("""
-        SELECT r.*, o.name as office_name
+        SELECT r.*, o.name as office_name, COALESCE(r.is_official, 0) as is_official
         FROM races r
         JOIN offices o ON r.office_id = o.id
         WHERE r.election_id = ?

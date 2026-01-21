@@ -390,6 +390,22 @@ def delete_race(race_id):
     return redirect(url_for('admin.elections'))
 
 
+@admin_bp.route('/races/<int:race_id>/toggle-official', methods=['POST'])
+@admin_required
+def toggle_official(race_id):
+    """Toggle official results status for a race."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    is_official = 1 if request.form.get('is_official') else 0
+    cursor.execute("UPDATE races SET is_official = ? WHERE id = ?", (is_official, race_id))
+    conn.commit()
+    conn.close()
+
+    flash('Official status updated.', 'success')
+    return redirect(url_for('admin.race_detail', race_id=race_id))
+
+
 # ============ RESULTS VIEW ============
 
 @admin_bp.route('/results')
