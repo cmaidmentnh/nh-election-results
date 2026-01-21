@@ -47,10 +47,7 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    overflow: visible !important;
-}
-.race-card * {
-    overflow: visible !important;
+    overflow: hidden;
 }
 
 .ballots-grid {
@@ -300,12 +297,8 @@
     position: relative;
 }
 
-/* Force all containers to allow overflow */
-.race-content,
-.party-ballot,
-.ballots-grid,
 .leaflet-container {
-    overflow: visible !important;
+    overflow: hidden;
 }
 
 /* Leaflet overrides for tooltips */
