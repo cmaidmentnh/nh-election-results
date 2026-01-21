@@ -649,9 +649,19 @@ def live_results(election_id):
         # Calculate total votes in race
         total_votes = sum(c['total_votes'] for c in candidates)
 
-        # Add percentage to each candidate
+        # Add percentage to each candidate - calculate within party for primaries
+        # Group by party
+        party_totals = {}
         for c in candidates:
-            c['percentage'] = round(c['total_votes'] / total_votes * 100, 1) if total_votes > 0 else 0
+            party = c['party']
+            if party not in party_totals:
+                party_totals[party] = 0
+            party_totals[party] += c['total_votes']
+
+        # Calculate percentage within party
+        for c in candidates:
+            party_total = party_totals.get(c['party'], 0)
+            c['percentage'] = round(c['total_votes'] / party_total * 100, 1) if party_total > 0 else 0
 
         # Get town-level results for the map
         # For primaries, we color by leading candidate, not party
