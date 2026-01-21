@@ -3,6 +3,34 @@
 {% block title %}NH Election Results{% endblock %}
 
 {% block content %}
+{% if now() < datetime(2026, 1, 28) %}
+<a href="/live/27" class="special-banner">
+    <span class="banner-text">2026 Carroll County District 7 Special Primary Results</span>
+    <span class="banner-arrow">&rarr;</span>
+</a>
+<style>
+.special-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.special-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.banner-arrow {
+    font-size: 1.25rem;
+}
+</style>
+{% endif %}
 <div class="two-col">
     <!-- Main Content -->
     <div class="main-content">

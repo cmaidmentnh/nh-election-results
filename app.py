@@ -5,12 +5,17 @@ Insight-driven web app for exploring NH election data
 """
 
 import os
+from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 import queries
 import analysis
 import census
 
 app = Flask(__name__)
+
+@app.context_processor
+def inject_datetime():
+    return {'now': datetime.now, 'datetime': datetime}
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Set up Flask-Login
