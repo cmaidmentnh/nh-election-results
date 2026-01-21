@@ -12,18 +12,14 @@ entry_bp = Blueprint('entry', __name__, url_prefix='/entry')
 DATABASE = 'nh_elections.db'
 
 
-def log_audit(user_id, race_id, municipality, candidate_id, action, old_values, new_values):
-    """Log an audit entry."""
-    conn = get_db()
-    cursor = conn.cursor()
+def log_audit(cursor, user_id, race_id, municipality, candidate_id, action, old_values, new_values):
+    """Log an audit entry using an existing cursor."""
     cursor.execute("""
         INSERT INTO result_audit (user_id, race_id, municipality, candidate_id, action, old_values, new_values)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (user_id, race_id, municipality, candidate_id, action,
           json.dumps(old_values) if old_values else None,
           json.dumps(new_values) if new_values else None))
-    conn.commit()
-    conn.close()
 
 
 @entry_bp.route('/')
@@ -190,7 +186,7 @@ def save_results(race_id):
                     UPDATE results SET votes = ?
                     WHERE race_id = ? AND candidate_id = ? AND municipality = ?
                 """, (votes, race_id, candidate_id, town))
-                log_audit(current_user.id, race_id, town, candidate_id, 'update',
+                log_audit(cursor, current_user.id, race_id, town, candidate_id, 'update',
                          {'votes': old_votes}, {'votes': votes})
                 updated += 1
         else:
@@ -199,7 +195,7 @@ def save_results(race_id):
                 INSERT INTO results (race_id, candidate_id, municipality, votes)
                 VALUES (?, ?, ?, ?)
             """, (race_id, candidate_id, town, votes))
-            log_audit(current_user.id, race_id, town, candidate_id, 'create',
+            log_audit(cursor, current_user.id, race_id, town, candidate_id, 'create',
                      None, {'votes': votes})
             updated += 1
 
