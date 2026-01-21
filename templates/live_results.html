@@ -38,8 +38,8 @@
 }
 
 .races-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
 }
 
@@ -47,7 +47,30 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    overflow: hidden;
+    overflow: visible;
+}
+
+.ballots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+@media (max-width: 900px) {
+    .ballots-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.party-ballot {
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+.party-ballot.republican {
+    border-left: 4px solid #dc2626;
+}
+.party-ballot.democratic {
+    border-left: 4px solid #2563eb;
 }
 .race-card-header {
     padding: 1rem 1.5rem;
@@ -109,8 +132,9 @@
 }
 .candidate-row.leader {
     background: #f0fdf4;
-    margin: 0 -1.5rem;
-    padding: 0.75rem 1.5rem;
+    margin: 0 -1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
 }
 .candidate-color {
     width: 16px;
@@ -420,24 +444,24 @@
             </div>
             {% endif %}
 
-            <!-- Separate candidates by party -->
-            {% set parties = data.candidates|map(attribute='party')|unique|list %}
-            {% for party in parties %}
-            <div class="party-ballot" style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1rem; margin: 0 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid {% if party == 'Republican' %}#dc2626{% elif party == 'Democratic' %}#2563eb{% else %}#6b7280{% endif %}; color: {% if party == 'Republican' %}#991b1b{% elif party == 'Democratic' %}#1e40af{% else %}#374151{% endif %};">
-                    {{ party }} Ballot
+            <!-- Side-by-side party ballots -->
+            <div class="ballots-grid">
+            {% set rep_candidates = data.candidates|selectattr('party', 'equalto', 'Republican')|list %}
+            {% set dem_candidates = data.candidates|selectattr('party', 'equalto', 'Democratic')|list %}
+
+            {% if rep_candidates %}
+            <div class="party-ballot republican">
+                <h3 style="font-size: 1rem; margin: 0 0 0.75rem; color: #991b1b; font-weight: 700;">
+                    Republican Primary
                 </h3>
                 <div class="candidates-list">
-                    {% set party_candidates = data.candidates|selectattr('party', 'equalto', party)|list %}
-                    {% for candidate in party_candidates %}
-                    <div class="candidate-row {% if loop.first and candidate.total_votes == data.candidates[0].total_votes %}leader{% endif %}">
-                        <div class="candidate-color" data-candidate-name="{{ candidate.name }}"></div>
+                    {% for candidate in rep_candidates %}
+                    <div class="candidate-row {% if loop.first %}leader{% endif %}">
                         <div class="candidate-rank">{{ loop.index }}</div>
                         <div class="candidate-info">
                             <div class="candidate-name">{{ candidate.name }}</div>
                             <div class="vote-bar">
-                                <div class="vote-bar-fill {% if party == 'Republican' %}r{% elif party == 'Democratic' %}d{% endif %}"
-                                     style="width: {{ candidate.percentage }}%"></div>
+                                <div class="vote-bar-fill r" style="width: {{ candidate.percentage }}%"></div>
                             </div>
                         </div>
                         <div class="candidate-votes">
@@ -448,7 +472,33 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
+
+            {% if dem_candidates %}
+            <div class="party-ballot democratic">
+                <h3 style="font-size: 1rem; margin: 0 0 0.75rem; color: #1e40af; font-weight: 700;">
+                    Democratic Primary
+                </h3>
+                <div class="candidates-list">
+                    {% for candidate in dem_candidates %}
+                    <div class="candidate-row {% if loop.first %}leader{% endif %}">
+                        <div class="candidate-rank">{{ loop.index }}</div>
+                        <div class="candidate-info">
+                            <div class="candidate-name">{{ candidate.name }}</div>
+                            <div class="vote-bar">
+                                <div class="vote-bar-fill d" style="width: {{ candidate.percentage }}%"></div>
+                            </div>
+                        </div>
+                        <div class="candidate-votes">
+                            <div class="count">{{ "{:,}".format(candidate.total_votes) }}</div>
+                            <div class="pct">{{ candidate.percentage }}%</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            </div>
 
             {% endif %}
 
