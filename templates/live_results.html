@@ -509,6 +509,7 @@
                 <div class="race-map" id="map-{{ data.race.id }}-r"></div>
                 <div class="candidates-list">
                     {% for candidate in rep_candidates %}
+                    {% if not election.results_final or candidate.total_votes > 0 %}
                     <div class="candidate-row {% if loop.first %}leader{% endif %}">
                         <div class="candidate-rank">{{ loop.index }}</div>
                         <div class="candidate-info">
@@ -522,6 +523,7 @@
                             <div class="pct">{{ candidate.percentage }}%</div>
                         </div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -535,6 +537,7 @@
                 <div class="race-map" id="map-{{ data.race.id }}-d"></div>
                 <div class="candidates-list">
                     {% for candidate in dem_candidates %}
+                    {% if not election.results_final or candidate.total_votes > 0 %}
                     <div class="candidate-row {% if loop.first %}leader{% endif %}">
                         <div class="candidate-rank">{{ loop.index }}</div>
                         <div class="candidate-info">
@@ -548,6 +551,7 @@
                             <div class="pct">{{ candidate.percentage }}%</div>
                         </div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
