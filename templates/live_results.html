@@ -568,35 +568,11 @@
 
             {% endif %}
 
-            <!-- Historical Context -->
-            {% if data.historical %}
-            <div class="historical-context">
-                <h4>Historical Context</h4>
-                <div class="historical-grid">
-                    {% for year, hist in data.historical.items() %}
-                    <div class="hist-year">
-                        <div class="hist-year-label">{{ year }}</div>
-                        <div class="hist-results">
-                            {% for result in hist.results[:3] %}
-                            <div class="hist-candidate {% if result.is_winner %}winner{% endif %}">
-                                <span class="hist-name">{{ result.name }}</span>
-                                <span class="hist-party {{ result.party[0]|lower }}">{{ result.party[0] }}</span>
-                                <span class="hist-votes">{{ "{:,}".format(result.votes) }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <div class="hist-turnout">Turnout: {{ "{:,}".format(hist.turnout) }}</div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 {% endfor %}
 </div>
 
-<p class="refresh-note">Page auto-refreshes every 30 seconds</p>
 {% endif %}
 {% endblock %}
 
@@ -757,9 +733,5 @@ fetch('/static/data/nh-towns.geojson')
     });
 
 
-// Auto-refresh every 30 seconds
-setTimeout(() => {
-    location.reload();
-}, 30000);
 </script>
 {% endblock %}
