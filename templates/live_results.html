@@ -493,20 +493,6 @@
             {% endif %}
 
             {% if data.total_votes > 0 %}
-            <!-- Win Probability -->
-            {% if data.win_probability and data.candidates %}
-            <div class="projection-box">
-                <h4>Projected Winner</h4>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div class="projection-leader">{{ data.candidates[0].name }}</div>
-                        <div class="projection-note">Based on {{ data.pct_reported }}% reporting</div>
-                    </div>
-                    <div class="projection-prob">{{ data.win_probability }}%</div>
-                </div>
-            </div>
-            {% endif %}
-
             <!-- Side-by-side party ballots -->
             <div class="ballots-grid">
             {% set rep_candidates = data.candidates|selectattr('party', 'equalto', 'Republican')|list %}
