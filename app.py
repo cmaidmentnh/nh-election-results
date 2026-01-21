@@ -606,6 +606,34 @@ def stats():
 
 # ============== LIVE RESULTS ==============
 
+def get_registered_voters_count(towns):
+    """Get count of registered voters in given towns from voter API."""
+    import requests
+    try:
+        # Query voter API for each town and sum
+        api_url = "http://138.197.36.143:5050"
+        api_key = os.environ.get('VOTER_API_KEY', '')
+
+        if not api_key:
+            return None
+
+        total = 0
+        for town in towns:
+            resp = requests.get(
+                f"{api_url}/api/count",
+                params={'city': town},
+                headers={'X-API-Key': api_key},
+                timeout=5
+            )
+            if resp.ok:
+                data = resp.json()
+                total += data.get('count', 0)
+        return total
+    except Exception as e:
+        print(f"Error getting voter count: {e}")
+        return None
+
+
 @app.route('/live/<int:election_id>')
 def live_results(election_id):
     """Live results display for an election (e.g., special primary)."""
@@ -828,6 +856,10 @@ def live_results(election_id):
         # Keep only last 3 elections
         historical = dict(list(historical.items())[:3])
 
+        # Get registered voter count for turnout calculation
+        registered_voters = get_registered_voters_count(list(turnout_2024.keys()))
+        turnout_pct = round(total_votes / registered_voters * 100, 1) if registered_voters and registered_voters > 0 else None
+
         race_data.append({
             'race': race,
             'candidates': candidates,
@@ -839,7 +871,9 @@ def live_results(election_id):
             'towns_total': towns_total,
             'win_probability': win_probability,
             'towns': list(turnout_2024.keys()),
-            'historical': historical
+            'historical': historical,
+            'registered_voters': registered_voters,
+            'turnout_pct': turnout_pct
         })
 
     conn.close()

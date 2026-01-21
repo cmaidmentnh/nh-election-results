@@ -492,10 +492,13 @@
             {% if data.total_votes > 0 %}
             {% set rep_total = data.candidates|selectattr('party', 'equalto', 'Republican')|map(attribute='total_votes')|sum %}
             {% set dem_total = data.candidates|selectattr('party', 'equalto', 'Democratic')|map(attribute='total_votes')|sum %}
-            <div class="turnout-summary" style="display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.9rem; color: #64748b;">
-                <span><strong>Total Ballots:</strong> {{ "{:,}".format(data.total_votes) }}</span>
+            <div class="turnout-summary" style="display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; font-size: 0.9rem; color: #64748b;">
+                <span><strong>Total Ballots:</strong> {{ "{:,}".format(data.total_votes) }}{% if data.turnout_pct %} (~{{ data.turnout_pct }}% turnout){% endif %}</span>
                 <span style="color: #991b1b;"><strong>R:</strong> {{ "{:,}".format(rep_total) }}</span>
                 <span style="color: #1e40af;"><strong>D:</strong> {{ "{:,}".format(dem_total) }}</span>
+                {% if data.registered_voters %}
+                <span><strong>Registered:</strong> {{ "{:,}".format(data.registered_voters) }}</span>
+                {% endif %}
             </div>
             {% endif %}
 
