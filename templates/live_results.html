@@ -374,8 +374,13 @@
                 </div>
             </div>
 
+            <!-- Map at top -->
+            <div class="race-map" id="map-{{ data.race.id }}"></div>
+            <!-- Map Legend -->
+            <div class="map-legend" id="legend-{{ data.race.id }}"></div>
+
             {% if data.total_votes == 0 %}
-            <div class="no-results">
+            <div class="no-results" style="margin-top: 1.5rem;">
                 <p>Waiting for results...</p>
             </div>
             {% endif %}
@@ -395,32 +400,37 @@
             </div>
             {% endif %}
 
-            <!-- Candidates List -->
-            <div class="candidates-list">
-                {% for candidate in data.candidates %}
-                <div class="candidate-row {% if loop.first %}leader{% endif %}">
-                    <div class="candidate-color" data-candidate-idx="{{ loop.index0 }}"></div>
-                    <div class="candidate-rank">{{ loop.index }}</div>
-                    <div class="candidate-info">
-                        <div class="candidate-name">{{ candidate.name }}</div>
-                        <div class="candidate-party">{{ candidate.party }}</div>
-                        <div class="vote-bar">
-                            <div class="vote-bar-fill" data-candidate-idx="{{ loop.index0 }}"
-                                 style="width: {{ candidate.percentage }}%"></div>
+            <!-- Separate candidates by party -->
+            {% set parties = data.candidates|map(attribute='party')|unique|list %}
+            {% for party in parties %}
+            <div class="party-ballot" style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1rem; margin: 0 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid {% if party == 'Republican' %}#dc2626{% elif party == 'Democratic' %}#2563eb{% else %}#6b7280{% endif %}; color: {% if party == 'Republican' %}#991b1b{% elif party == 'Democratic' %}#1e40af{% else %}#374151{% endif %};">
+                    {{ party }} Ballot
+                </h3>
+                <div class="candidates-list">
+                    {% set party_candidates = data.candidates|selectattr('party', 'equalto', party)|list %}
+                    {% for candidate in party_candidates %}
+                    <div class="candidate-row {% if loop.first and candidate.total_votes == data.candidates[0].total_votes %}leader{% endif %}">
+                        <div class="candidate-color" data-candidate-name="{{ candidate.name }}"></div>
+                        <div class="candidate-rank">{{ loop.index }}</div>
+                        <div class="candidate-info">
+                            <div class="candidate-name">{{ candidate.name }}</div>
+                            <div class="vote-bar">
+                                <div class="vote-bar-fill {% if party == 'Republican' %}r{% elif party == 'Democratic' %}d{% endif %}"
+                                     style="width: {{ candidate.percentage }}%"></div>
+                            </div>
+                        </div>
+                        <div class="candidate-votes">
+                            <div class="count">{{ "{:,}".format(candidate.total_votes) }}</div>
+                            <div class="pct">{{ candidate.percentage }}%</div>
                         </div>
                     </div>
-                    <div class="candidate-votes">
-                        <div class="count">{{ "{:,}".format(candidate.total_votes) }}</div>
-                        <div class="pct">{{ candidate.percentage }}%</div>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
 
             {% endif %}
-
-            <!-- Map (always show) -->
-            <div class="race-map" id="map-{{ data.race.id }}"></div>
 
             <!-- Historical Context -->
             {% if data.historical %}
@@ -567,18 +577,21 @@ fetch('/static/data/nh-towns.geojson')
                 },
                 onEachFeature: function(feature, layer) {
                     const townName = feature.properties.name;
-                    const candidates = townCandidateResults[townName] || townCandidateResults[normalizeGeoName(townName)] || [];
+                    const townCands = townCandidateResults[townName] || townCandidateResults[normalizeGeoName(townName)] || [];
 
-                    if (candidates.length > 0) {
-                        let html = `<div class="town-tooltip"><strong>${townName}</strong><br>`;
-                        candidates.forEach(c => {
+                    let html = `<div class="town-tooltip"><strong>${townName}</strong><br>`;
+                    if (townCands.length > 0 && townCands.some(c => c.votes > 0)) {
+                        townCands.filter(c => c.votes > 0).forEach(c => {
                             html += `<div class="result-row"><span>${c.name}</span><span>${c.votes.toLocaleString()}</span></div>`;
                         });
-                        html += '</div>';
-                        layer.bindTooltip(html, { direction: 'top', offset: [0, -10] });
                     } else {
-                        layer.bindTooltip(`<strong>${townName}</strong><br>Not yet reported`, { direction: 'top' });
+                        html += '<em>Not yet reported</em>';
                     }
+                    html += '</div>';
+
+                    // Use both popup (click) and tooltip (hover)
+                    layer.bindPopup(html);
+                    layer.bindTooltip(html, { direction: 'top', offset: [0, -10], sticky: true });
                 }
             }).addTo(map);
 
@@ -588,10 +601,29 @@ fetch('/static/data/nh-towns.geojson')
         });
     });
 
-// Set candidate colors in UI
-document.querySelectorAll('[data-candidate-idx]').forEach(el => {
-    const idx = parseInt(el.dataset.candidateIdx);
-    el.style.background = colorPalette[idx % colorPalette.length];
+// Set candidate colors in UI and build legends
+raceData.forEach(data => {
+    const legendEl = document.getElementById(`legend-${data.race.id}`);
+    if (legendEl && data.candidates) {
+        data.candidates.forEach((c, idx) => {
+            const color = colorPalette[idx % colorPalette.length];
+            candidateColors[c.name] = color;
+
+            // Add to legend
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = `<div class="legend-color" style="background: ${color}"></div><span>${c.name}</span>`;
+            legendEl.appendChild(item);
+        });
+    }
+});
+
+// Apply colors by candidate name
+document.querySelectorAll('[data-candidate-name]').forEach(el => {
+    const name = el.dataset.candidateName;
+    if (candidateColors[name]) {
+        el.style.background = candidateColors[name];
+    }
 });
 
 // Auto-refresh every 30 seconds
