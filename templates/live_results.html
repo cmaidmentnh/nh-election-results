@@ -47,7 +47,10 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    overflow: visible;
+    overflow: visible !important;
+}
+.race-card * {
+    overflow: visible !important;
 }
 
 .ballots-grid {
@@ -249,39 +252,47 @@
     border-radius: 8px;
     margin-bottom: 1rem;
     position: relative;
-    z-index: 1;
 }
 
-.race-content {
-    padding: 1.5rem;
-    overflow: visible;
+/* Force all containers to allow overflow */
+.race-content,
+.party-ballot,
+.ballots-grid,
+.leaflet-container {
+    overflow: visible !important;
 }
 
-.party-ballot {
-    overflow: visible;
+/* Leaflet overrides for tooltips */
+.leaflet-pane { z-index: 400; }
+.leaflet-tile-pane { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane { z-index: 500; }
+.leaflet-marker-pane { z-index: 600; }
+.leaflet-tooltip-pane {
+    z-index: 650 !important;
+    overflow: visible !important;
+}
+.leaflet-popup-pane {
+    z-index: 700 !important;
+    overflow: visible !important;
 }
 
-/* Ensure Leaflet popups/tooltips are visible above everything */
-.leaflet-pane {
-    z-index: 1;
-}
-.leaflet-popup-pane, .leaflet-tooltip-pane {
-    z-index: 10000 !important;
-}
 .leaflet-popup, .leaflet-tooltip {
     z-index: 10000 !important;
+    position: absolute;
 }
 .leaflet-popup-content-wrapper {
     max-width: 300px;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.3);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
 }
 .leaflet-tooltip {
-    background: white;
-    border: 1px solid #999;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.3);
-    padding: 10px 14px;
-    border-radius: 6px;
+    background: white !important;
+    border: 1px solid #666 !important;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
+    padding: 10px 14px !important;
+    border-radius: 6px !important;
     white-space: nowrap;
+    pointer-events: none;
 }
 
 .town-tooltip {
@@ -685,8 +696,9 @@ fetch('/static/data/nh-towns.geojson')
                         }
                         html += '</div>';
 
-                        layer.bindPopup(html);
-                        layer.bindTooltip(html, { direction: 'top', offset: [0, -10], sticky: true });
+                        layer.bindPopup(html, { autoPan: true, keepInView: true });
+                        layer.on('mouseover', function(e) { this.openPopup(); });
+                        layer.on('mouseout', function(e) { this.closePopup(); });
                     }
                 }).addTo(map);
 
