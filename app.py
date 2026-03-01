@@ -574,6 +574,117 @@ def api_export(data_type):
     return jsonify(data)
 
 
+@app.route('/api/export/race-towns')
+def api_export_race_towns():
+    """Get per-town results for a specific office and year.
+
+    Used by mobile app to show town-by-town breakdowns for statewide races.
+    Returns candidates with votes per municipality, plus county aggregations.
+    """
+    office = request.args.get('office', '')
+    year = request.args.get('year', type=int)
+    county = request.args.get('county', '')
+    district = request.args.get('district', '')
+
+    if not office or not year:
+        return jsonify({'error': 'office and year parameters required'}), 400
+
+    conn = queries.get_connection()
+    cursor = conn.cursor()
+
+    # Build query for per-town results
+    query = """
+        SELECT
+            res.municipality,
+            c.name as candidate,
+            c.party,
+            SUM(res.votes) as votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE o.name = ?
+        AND e.year = ?
+        AND e.election_type = 'general'
+        AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+    """
+    params = [office, year]
+
+    if county:
+        query += " AND r.county = ?"
+        params.append(county)
+    if district:
+        query += " AND r.district = ?"
+        params.append(district)
+
+    query += " GROUP BY res.municipality, c.name, c.party ORDER BY res.municipality, votes DESC"
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Group by municipality
+    towns = {}
+    candidates_set = {}  # Track unique candidates with party
+    for row in rows:
+        municipality = row['municipality']
+        candidate = row['candidate']
+        party = row['party']
+        votes = row['votes']
+
+        if municipality not in towns:
+            towns[municipality] = {}
+        towns[municipality][candidate] = votes
+
+        if candidate not in candidates_set:
+            candidates_set[candidate] = party
+
+    # Build candidate list sorted by total votes
+    candidate_totals = {}
+    for town_data in towns.values():
+        for cand, votes in town_data.items():
+            candidate_totals[cand] = candidate_totals.get(cand, 0) + votes
+
+    candidates = sorted(candidate_totals.keys(), key=lambda c: candidate_totals[c], reverse=True)
+
+    # Build town results list
+    town_results = []
+    for municipality, cand_votes in towns.items():
+        entry = {'town': municipality, 'votes': {}}
+        for cand in candidates:
+            entry['votes'][cand] = cand_votes.get(cand, 0)
+        # Calculate R vs D margin
+        r_votes = sum(v for c, v in cand_votes.items() if candidates_set.get(c) == 'Republican')
+        d_votes = sum(v for c, v in cand_votes.items() if candidates_set.get(c) == 'Democratic')
+        total = r_votes + d_votes
+        entry['r_votes'] = r_votes
+        entry['d_votes'] = d_votes
+        entry['total_votes'] = sum(cand_votes.values())
+        entry['margin'] = float(round((r_votes - d_votes) / total * 100, 1)) if total > 0 else 0.0
+        town_results.append(entry)
+
+    # Sort by total votes descending
+    town_results.sort(key=lambda x: x['total_votes'], reverse=True)
+
+    # Build candidate info list
+    candidate_info = []
+    for cand in candidates:
+        candidate_info.append({
+            'name': cand,
+            'party': candidates_set.get(cand, ''),
+            'total_votes': candidate_totals[cand]
+        })
+
+    return jsonify({
+        'office': office,
+        'year': year,
+        'candidates': candidate_info,
+        'towns': town_results,
+        'total_towns': len(town_results)
+    })
+
+
 @app.route('/deep-analysis')
 def deep_analysis():
     """Deep analysis page with undervotes, turnout, ticket splitting, bellwethers."""

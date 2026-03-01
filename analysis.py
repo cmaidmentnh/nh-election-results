@@ -3003,6 +3003,7 @@ def export_race_data(year=None):
             o.name as office,
             r.county,
             r.district,
+            r.seats,
             c.name as candidate,
             c.party,
             SUM(res.votes) as total_votes
