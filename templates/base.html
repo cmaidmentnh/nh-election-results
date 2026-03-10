@@ -111,6 +111,44 @@
         </div>
     </footer>
 
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('admin.dashboard') }}" class="admin-widget" title="Admin Dashboard">&#9881;</a>
+    {% else %}
+    <button class="admin-widget" onclick="document.getElementById('login-modal').style.display='flex'" title="Admin Login">&#128274;</button>
+    <div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+        <form method="POST" action="{{ url_for('auth.login') }}" style="background:#fff;border-radius:8px;padding:28px 32px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+            <h3 style="margin:0 0 18px;font-family:Georgia,serif;color:#1e3a5f;font-size:1.2rem">Admin Login</h3>
+            <input type="text" name="username" placeholder="Username" required style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #ccc;border-radius:4px;font-size:0.95rem;box-sizing:border-box">
+            <input type="password" name="password" placeholder="Password" required style="width:100%;padding:10px;margin-bottom:16px;border:1px solid #ccc;border-radius:4px;font-size:0.95rem;box-sizing:border-box">
+            <button type="submit" style="width:100%;padding:10px;background:#1e3a5f;color:#fff;border:none;border-radius:4px;font-size:0.95rem;cursor:pointer">Log In</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <style>
+    .admin-widget {
+        position: fixed;
+        bottom: 12px;
+        left: 12px;
+        z-index: 9998;
+        background: rgba(0,0,0,0.15);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        cursor: pointer;
+        opacity: 0.4;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #333;
+    }
+    .admin-widget:hover { opacity: 0.9; background: rgba(0,0,0,0.25); }
+    </style>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
