@@ -947,9 +947,10 @@ def live_results(election_id):
             WHERE r.county = ? AND r.district = ? AND o.name = ?
             AND e.election_type = 'general'
             AND e.year < 2026
+            AND e.redistricting_cycle = (SELECT redistricting_cycle FROM elections WHERE id = ?)
             GROUP BY e.year, c.id
             ORDER BY e.year DESC, votes DESC
-        """, (race['county'], race['district'], race['office_name']))
+        """, (race['county'], race['district'], race['office_name'], election['id']))
 
         for row in cursor.fetchall():
             year = row['year']
@@ -978,9 +979,10 @@ def live_results(election_id):
             WHERE r.county = ? AND r.district = ? AND o.name = ?
             AND e.election_type = 'general'
             AND e.year < 2026
+            AND e.redistricting_cycle = (SELECT redistricting_cycle FROM elections WHERE id = ?)
             AND c.party IN ('Republican', 'Democratic')
             ORDER BY e.year DESC, res.municipality, res.votes DESC
-        """, (race['county'], race['district'], race['office_name']))
+        """, (race['county'], race['district'], race['office_name'], election['id']))
         for row in cursor.fetchall():
             year = row['year']
             if year not in historical:

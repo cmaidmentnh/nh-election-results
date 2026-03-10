@@ -546,14 +546,14 @@
             <tr>
                 <td>{{ town }}</td>
                 {% for c in r_candidates %}
-                {% set cv = 0 %}
-                {% for t in town_data %}{% if t.name == c.name %}{% set cv = t.votes %}{% endif %}{% endfor %}
-                <td class="votes">{{ "{:,}".format(cv) }}</td>
+                {% set ns = namespace(cv=0) %}
+                {% for t in town_data %}{% if t.name == c.name %}{% set ns.cv = t.votes %}{% endif %}{% endfor %}
+                <td class="votes">{{ "{:,}".format(ns.cv) }}</td>
                 {% endfor %}
                 {% for c in d_candidates %}
-                {% set cv = 0 %}
-                {% for t in town_data %}{% if t.name == c.name %}{% set cv = t.votes %}{% endif %}{% endfor %}
-                <td class="votes">{{ "{:,}".format(cv) }}</td>
+                {% set ns = namespace(cv=0) %}
+                {% for t in town_data %}{% if t.name == c.name %}{% set ns.cv = t.votes %}{% endif %}{% endfor %}
+                <td class="votes">{{ "{:,}".format(ns.cv) }}</td>
                 {% endfor %}
                 <td class="margin">
                     {% if r_total > d_total %}
