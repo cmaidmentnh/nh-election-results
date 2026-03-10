@@ -774,15 +774,14 @@ def live_results(election_id):
     for race in races:
         race_id = race['id']
 
-        # Get candidates with total votes
+        # Get candidates with total votes (include zero-vote candidates)
         cursor.execute("""
             SELECT c.id, c.name, c.party, COALESCE(SUM(res.votes), 0) as total_votes
             FROM candidates c
-            LEFT JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
-            WHERE c.id IN (SELECT DISTINCT candidate_id FROM results WHERE race_id = ?)
+            JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
             GROUP BY c.id
             ORDER BY total_votes DESC
-        """, (race_id, race_id))
+        """, (race_id,))
         candidates = [dict(row) for row in cursor.fetchall()]
 
         # Calculate total votes in race
@@ -1022,11 +1021,10 @@ def api_live_results(election_id):
         cursor.execute("""
             SELECT c.id, c.name, c.party, COALESCE(SUM(res.votes), 0) as votes
             FROM candidates c
-            LEFT JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
-            WHERE c.id IN (SELECT DISTINCT candidate_id FROM results WHERE race_id = ?)
+            JOIN results res ON c.id = res.candidate_id AND res.race_id = ?
             GROUP BY c.id
             ORDER BY votes DESC
-        """, (race_id, race_id))
+        """, (race_id,))
 
         candidates = [dict(row) for row in cursor.fetchall()]
         total = sum(c['votes'] for c in candidates)
