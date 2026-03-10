@@ -281,15 +281,45 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-.historical-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+.hist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
 }
-.hist-year {
+.hist-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+.hist-table th.r-col { color: #991b1b; text-align: right; }
+.hist-table th.d-col { color: #1e40af; text-align: right; }
+.hist-table th.margin-col { text-align: right; }
+.hist-table td {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+.hist-table td.votes { text-align: right; font-variant-numeric: tabular-nums; }
+.hist-table td.margin {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.hist-table tr.year-header td {
     background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
+    font-weight: 700;
+    color: #1e3a5f;
+    padding-top: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+.hist-table tr.total-row td {
+    font-weight: 700;
+    border-top: 2px solid #e2e8f0;
+    border-bottom: none;
+    padding-bottom: 0.75rem;
 }
 .hist-year-label {
     font-weight: 700;
@@ -492,26 +522,70 @@
 <!-- Historical Context -->
 {% if data.historical %}
 <div class="historical-section">
-    <h3>Historical Results</h3>
-    <div class="historical-grid">
-        {% for year, hist in data.historical.items() %}
-        <div class="hist-year">
-            <div class="hist-year-label">{{ year }}</div>
-            <div class="hist-results">
-                {% for r in hist.results %}
-                <div class="hist-candidate {% if r.is_winner %}winner{% endif %}">
-                    <span class="hist-party {% if r.party == 'Republican' %}r{% elif r.party == 'Democratic' %}d{% endif %}">
-                        {{ r.party[0] if r.party else '?' }}
-                    </span>
-                    <span class="hist-name">{{ r.name }}</span>
-                    <span class="hist-votes">{{ "{:,}".format(r.votes) }}</span>
-                </div>
+    <h3>Previous Results by Town</h3>
+    {% for year, hist in data.historical.items() %}
+    {% set year_towns = data.historical_by_town.get(year, {}) %}
+    {% set r_candidates = hist.results|selectattr('party', 'equalto', 'Republican')|list %}
+    {% set d_candidates = hist.results|selectattr('party', 'equalto', 'Democratic')|list %}
+    <table class="hist-table">
+        <thead>
+            <tr>
+                <th>{{ year }}</th>
+                {% for c in r_candidates %}<th class="r-col">{{ c.name }} (R)</th>{% endfor %}
+                {% for c in d_candidates %}<th class="d-col">{{ c.name }} (D)</th>{% endfor %}
+                <th class="margin-col">Margin</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for town in data.towns|sort %}
+            {% set town_data = year_towns.get(town, []) %}
+            {% set r_votes = town_data|selectattr('party', 'equalto', 'Republican')|map(attribute='votes')|list %}
+            {% set d_votes = town_data|selectattr('party', 'equalto', 'Democratic')|map(attribute='votes')|list %}
+            {% set r_total = r_votes|sum %}
+            {% set d_total = d_votes|sum %}
+            <tr>
+                <td>{{ town }}</td>
+                {% for c in r_candidates %}
+                {% set cv = 0 %}
+                {% for t in town_data %}{% if t.name == c.name %}{% set cv = t.votes %}{% endif %}{% endfor %}
+                <td class="votes">{{ "{:,}".format(cv) }}</td>
                 {% endfor %}
-            </div>
-            <div class="hist-turnout">Turnout: {{ "{:,}".format(hist.turnout) }}</div>
-        </div>
-        {% endfor %}
-    </div>
+                {% for c in d_candidates %}
+                {% set cv = 0 %}
+                {% for t in town_data %}{% if t.name == c.name %}{% set cv = t.votes %}{% endif %}{% endfor %}
+                <td class="votes">{{ "{:,}".format(cv) }}</td>
+                {% endfor %}
+                <td class="margin">
+                    {% if r_total > d_total %}
+                    <span style="color: #991b1b;">R+{{ "{:,}".format(r_total - d_total) }}</span>
+                    {% elif d_total > r_total %}
+                    <span style="color: #1e40af;">D+{{ "{:,}".format(d_total - r_total) }}</span>
+                    {% else %}&mdash;{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% set total_r = 0 %}{% set total_d = 0 %}
+            {% for town in data.towns %}
+            {% set town_data = year_towns.get(town, []) %}
+            {% for t in town_data %}{% if t.party == 'Republican' %}{% set total_r = total_r + t.votes %}{% endif %}{% if t.party == 'Democratic' %}{% set total_d = total_d + t.votes %}{% endif %}{% endfor %}
+            {% endfor %}
+            <tr class="total-row">
+                <td>Total</td>
+                {% set grand_r = hist.results|selectattr('party', 'equalto', 'Republican')|map(attribute='votes')|sum %}
+                {% set grand_d = hist.results|selectattr('party', 'equalto', 'Democratic')|map(attribute='votes')|sum %}
+                {% for c in r_candidates %}<td class="votes">{{ "{:,}".format(c.votes) }}</td>{% endfor %}
+                {% for c in d_candidates %}<td class="votes">{{ "{:,}".format(c.votes) }}</td>{% endfor %}
+                <td class="margin">
+                    {% if grand_r > grand_d %}
+                    <span style="color: #991b1b;">R+{{ "{:,}".format(grand_r - grand_d) }}</span>
+                    {% elif grand_d > grand_r %}
+                    <span style="color: #1e40af;">D+{{ "{:,}".format(grand_d - grand_r) }}</span>
+                    {% else %}&mdash;{% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    {% endfor %}
 </div>
 {% endif %}
 

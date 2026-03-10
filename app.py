@@ -966,6 +966,36 @@ def live_results(election_id):
         # Keep only last 3 elections
         historical = dict(list(historical.items())[:3])
 
+        # Get per-town historical results
+        historical_by_town = {}
+        cursor.execute("""
+            SELECT e.year, res.municipality, c.name, c.party, res.votes
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN candidates c ON res.candidate_id = c.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE r.county = ? AND r.district = ? AND o.name = ?
+            AND e.election_type = 'general'
+            AND e.year < 2026
+            AND c.party IN ('Republican', 'Democratic')
+            ORDER BY e.year DESC, res.municipality, res.votes DESC
+        """, (race['county'], race['district'], race['office_name']))
+        for row in cursor.fetchall():
+            year = row['year']
+            if year not in historical:
+                continue
+            town = row['municipality']
+            if year not in historical_by_town:
+                historical_by_town[year] = {}
+            if town not in historical_by_town[year]:
+                historical_by_town[year][town] = []
+            historical_by_town[year][town].append({
+                'name': row['name'],
+                'party': row['party'],
+                'votes': row['votes']
+            })
+
         # Get registered voter count for turnout calculation
         registered_voters = get_registered_voters_count(list(turnout_2024.keys()))
         turnout_pct = round(total_votes / registered_voters * 100, 1) if registered_voters and registered_voters > 0 else None
@@ -982,6 +1012,7 @@ def live_results(election_id):
             'win_probability': win_probability,
             'towns': list(turnout_2024.keys()),
             'historical': historical,
+            'historical_by_town': historical_by_town,
             'registered_voters': registered_voters,
             'turnout_pct': turnout_pct
         })
