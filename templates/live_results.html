@@ -401,6 +401,7 @@
 {% set is_primary = election.election_type in ('special_primary', 'state_primary') %}
 {% set real_candidates = data.candidates|rejectattr('party', 'equalto', '')|list %}
 
+<div id="race-{{ data.race.id }}">
 <!-- Header -->
 <div class="live-header">
     <h1>
@@ -454,7 +455,7 @@
         <div class="party-ballot-header r">Republican Primary</div>
         <div class="race-map" id="map-{{ data.race.id }}-r"></div>
         {% for candidate in rep_candidates %}
-        <div class="candidate-row {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
+        <div class="candidate-row cand-row-{{ candidate.id }} {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
             <div class="candidate-color-bar r"></div>
             <div class="candidate-info">
                 <div class="candidate-name">{{ candidate.name }}</div>
@@ -476,7 +477,7 @@
         <div class="party-ballot-header d">Democratic Primary</div>
         <div class="race-map" id="map-{{ data.race.id }}-d"></div>
         {% for candidate in dem_candidates %}
-        <div class="candidate-row {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
+        <div class="candidate-row cand-row-{{ candidate.id }} {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
             <div class="candidate-color-bar d"></div>
             <div class="candidate-info">
                 <div class="candidate-name">{{ candidate.name }}</div>
@@ -517,7 +518,7 @@
     <div class="candidates-panel">
         <div class="candidates-panel-header">Candidates</div>
         {% for candidate in real_candidates %}
-        <div class="candidate-row {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
+        <div class="candidate-row cand-row-{{ candidate.id }} {% if loop.first and candidate.total_votes > 0 %}leader{% endif %}">
             <div class="candidate-color-bar {% if candidate.party == 'Republican' %}r{% elif candidate.party == 'Democratic' %}d{% endif %}"></div>
             <div class="candidate-info">
                 <div class="candidate-name">{{ candidate.name }}</div>
@@ -606,6 +607,7 @@
 </div>
 {% endif %}
 
+</div><!-- /race wrapper -->
 {% endfor %}
 {% endif %}
 {% endblock %}
@@ -737,6 +739,73 @@ fetch('/static/data/nh-towns.geojson')
             initMap(generalMapEl, null);
         });
     });
+
+// Auto-refresh every 30 seconds
+const electionId = {{ election.id }};
+let refreshInterval = null;
+
+function updateResults() {
+    fetch(`/api/live/${electionId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.races) return;
+            data.races.forEach(race => {
+                const realCandidates = race.candidates.filter(c => c.party);
+                const total = race.total_votes;
+
+                // Update candidate rows
+                realCandidates.forEach((c, i) => {
+                    const rows = document.querySelectorAll(`#race-${race.id} .cand-row-${c.id}`);
+                    rows.forEach(row => {
+                        const countEl = row.querySelector('.count');
+                        const pctEl = row.querySelector('.pct');
+                        const barEl = row.querySelector('.vote-bar-fill');
+                        if (countEl) countEl.textContent = total > 0 ? c.votes.toLocaleString() : '\u2014';
+                        if (pctEl) pctEl.textContent = total > 0 ? c.percentage + '%' : '';
+                        if (barEl) barEl.style.width = c.percentage + '%';
+
+                        // Update leader highlight
+                        if (i === 0 && total > 0) {
+                            row.classList.add('leader');
+                        } else {
+                            row.classList.remove('leader');
+                        }
+                    });
+                });
+
+                // Update reporting bar
+                const reportingEl = document.querySelector(`#race-${race.id} .reporting-fill`);
+                const townsWithVotes = Object.values(race.towns).filter(t => t.total > 0).length;
+                const totalTowns = Object.keys(race.towns).length;
+                if (reportingEl && totalTowns > 0) {
+                    // Simple towns-based percentage
+                    const pct = Math.round(townsWithVotes / totalTowns * 100);
+                    reportingEl.style.width = pct + '%';
+                }
+
+                // Update total votes display
+                const turnoutEl = document.querySelector(`#race-${race.id} .turnout-total`);
+                if (turnoutEl) turnoutEl.textContent = total.toLocaleString();
+
+                // If all towns reported, swap LIVE badge to Complete
+                if (townsWithVotes >= totalTowns && total > 0) {
+                    const badge = document.querySelector('.live-badge');
+                    if (badge && badge.textContent.trim() === 'Live') {
+                        badge.textContent = 'Complete';
+                        badge.style.background = '#16a34a';
+                        badge.style.animation = 'none';
+                        clearInterval(refreshInterval);
+                    }
+                }
+            });
+        })
+        .catch(() => {}); // Silently fail on network errors
+}
+
+// Only poll if not already complete
+{% if race_data and race_data[0].towns_reporting < race_data[0].towns_total %}
+refreshInterval = setInterval(updateResults, 30000);
+{% endif %}
 </script>
 {% endblock %}
 

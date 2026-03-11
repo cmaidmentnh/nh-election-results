@@ -57,16 +57,18 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <header>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <header role="banner">
         <div class="container">
             <div class="header-top">
                 <a href="{{ url_for('index') }}" class="site-title">New Hampshire Election Results</a>
                 <div class="header-search">
-                    <input type="text" id="town-search" placeholder="Search towns..." autocomplete="off">
-                    <div id="search-results" class="search-dropdown"></div>
+                    <label for="town-search" class="sr-only">Search towns</label>
+                    <input type="text" id="town-search" placeholder="Search towns..." autocomplete="off" aria-label="Search towns">
+                    <div id="search-results" class="search-dropdown" role="listbox"></div>
                 </div>
             </div>
-            <nav>
+            <nav role="navigation" aria-label="Main navigation">
                 <a href="{{ url_for('index') }}">Home</a>
                 <div class="nav-dropdown">
                     <a href="{{ url_for('districts_browser') }}">Districts ▾</a>
@@ -149,7 +151,7 @@
     });
     </script>
 
-    <main class="container">
+    <main id="main-content" class="container" role="main">
         {% block content %}{% endblock %}
     </main>
 
