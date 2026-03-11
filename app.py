@@ -12,6 +12,7 @@ import analysis
 import census
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 1 day cache for static files
 
 @app.context_processor
 def inject_datetime():
