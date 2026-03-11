@@ -2,74 +2,228 @@
 
 {% block title %}Candidate Search - NH Election Results{% endblock %}
 
+{% block head %}
+<style>
+.search-box {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+}
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+}
+.search-form input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.search-form input:focus {
+    outline: none;
+    border-color: #1e3a5f;
+}
+.search-form button {
+    padding: 0.75rem 1.5rem;
+    background: #1e3a5f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.search-form button:hover { background: #2d5a87; }
+
+.results-count {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.race-result {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+.race-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.race-result-header .race-label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+}
+.race-result-header .race-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+.yr-badge {
+    background: #1e3a5f;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.seats-badge {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.cand-row {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid #f8fafc;
+    gap: 0.75rem;
+}
+.cand-row:last-child { border-bottom: none; }
+.cand-row.is-match {
+    background: #fefce8;
+}
+.cand-row.is-winner .cand-name { font-weight: 700; }
+.cand-color {
+    width: 4px;
+    height: 32px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.cand-color.republican { background: #dc2626; }
+.cand-color.democratic { background: #2563eb; }
+.cand-color.libertarian { background: #ca8a04; }
+.cand-name {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+.cand-winner {
+    background: #16a34a;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 0.4rem;
+}
+.cand-party {
+    font-size: 0.8rem;
+    font-weight: 600;
+    width: 80px;
+    text-align: center;
+}
+.cand-party.republican { color: #991b1b; }
+.cand-party.democratic { color: #1e40af; }
+.cand-party.libertarian { color: #92400e; }
+.cand-votes {
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #1e293b;
+    min-width: 60px;
+    text-align: right;
+}
+
+.empty-box {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 3rem;
+    text-align: center;
+    color: #94a3b8;
+}
+.empty-box svg { margin-bottom: 1rem; opacity: 0.4; }
+.empty-box p { margin: 0; font-size: 0.95rem; }
+
+@media (max-width: 768px) {
+    .race-result-header { padding: 0.6rem 1rem; }
+    .cand-row { padding: 0.5rem 1rem; gap: 0.5rem; }
+    .cand-party { width: auto; font-size: 0.7rem; }
+    .cand-votes { font-size: 0.9rem; min-width: 50px; }
+    .cand-name { font-size: 0.85rem; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>Candidate Search</h1>
-    <p class="subtitle">Search for candidates by name to see their full race results</p>
 </div>
 
-<div class="card" style="margin-bottom: 32px;">
-    <form action="{{ url_for('candidates') }}" method="get">
-        <div class="search-container" style="max-width: 100%;">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <input type="text" name="q" value="{{ query }}" placeholder="Search candidates..." class="search-input" autofocus>
-        </div>
+<div class="search-box">
+    <form action="{{ url_for('candidates') }}" method="get" class="search-form">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by candidate name..." autofocus>
+        <button type="submit">Search</button>
     </form>
 </div>
 
 {% if results %}
-<h2 class="section-title">{{ results|length }} Race{{ 's' if results|length > 1 else '' }} Found</h2>
+<div class="results-count">{{ results|length }} race{{ 's' if results|length > 1 else '' }} found</div>
 
 {% for race in results %}
-<div class="card race-card" style="margin-bottom: 16px;">
-    <div class="race-header-row">
-        <div class="race-info">
-            <span class="race-name">{{ race.office }}</span>
-            <span class="year-badge" style="margin-left: 8px;">{{ race.year }}</span>
-            {% if race.district %}
-            <span class="race-district">{{ race.county }} District {{ race.district }}</span>
-            {% endif %}
+<div class="race-result">
+    <div class="race-result-header">
+        <div>
+            <span class="race-label">{{ race.office }}{% if race.district %} &mdash; {{ race.county }} District {{ race.district }}{% endif %}</span>
         </div>
-        <div class="race-seats">{{ race.seats }} seat{{ 's' if race.seats > 1 else '' }}</div>
-    </div>
-
-    <div class="candidates-list">
-        {% for candidate in race.candidates %}
-        <div class="candidate-item {% if candidate.is_winner %}winner{% endif %} {% if candidate.is_match %}highlighted{% endif %}">
-            <span class="candidate-name">
-                {% if candidate.is_match %}<strong>{{ candidate.name }}</strong>{% else %}{{ candidate.name }}{% endif %}
-                {% if candidate.is_winner %}<span class="winner-mark">W</span>{% endif %}
-            </span>
-            <span class="candidate-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</span>
-            <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
+        <div class="race-meta">
+            <span class="yr-badge">{{ race.year }}</span>
+            <span class="seats-badge">{{ race.seats }} seat{{ 's' if race.seats > 1 else '' }}</span>
         </div>
-        {% endfor %}
     </div>
+    {% for candidate in race.candidates %}
+    <div class="cand-row {% if candidate.is_winner %}is-winner{% endif %} {% if candidate.is_match %}is-match{% endif %}">
+        <div class="cand-color {{ candidate.party|lower if candidate.party else '' }}"></div>
+        <div class="cand-name">
+            {{ candidate.name }}
+            {% if candidate.is_winner %}<span class="cand-winner">W</span>{% endif %}
+        </div>
+        <div class="cand-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</div>
+        <div class="cand-votes">{{ "{:,}".format(candidate.votes) }}</div>
+    </div>
+    {% endfor %}
 </div>
 {% endfor %}
 
 {% elif query %}
-<div class="card">
-    <div class="empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-        </svg>
-        <p>No candidates found matching "{{ query }}"</p>
-    </div>
+<div class="empty-box">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+    </svg>
+    <p>No candidates found matching "{{ query }}"</p>
 </div>
+
 {% else %}
-<div class="card">
-    <div class="empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-        </svg>
-        <p>Enter a name to search for candidates and see their full race results</p>
-    </div>
+<div class="empty-box">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+    </svg>
+    <p>Enter a name to search for candidates and see their race results</p>
 </div>
 {% endif %}
 
