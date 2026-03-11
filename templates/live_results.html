@@ -415,28 +415,6 @@
     .candidate-votes .count { font-size: 1.2rem; }
 }
 
-/* Dark mode for live results */
-@media (prefers-color-scheme: dark) {
-    .reporting-bar, .map-panel, .candidates-panel, .party-ballot, .historical-section { background: #242424; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-    .reporting-label, .map-panel-header, .candidates-panel-header, .turnout-summary { color: #aaa; }
-    .reporting-track, .vote-bar { background: #333; }
-    .candidate-row { border-bottom-color: #333; }
-    .candidate-row.leader { background: #1a2e1a; }
-    .candidate-name, .candidate-votes .count { color: #e0e0e0; }
-    .candidate-party, .candidate-votes .pct { color: #aaa; }
-    .map-panel-header, .party-ballot-header, .candidates-panel-header { border-bottom-color: #333; }
-    .map-legend, .turnout-summary { border-top-color: #333; }
-    .race-map { background: #1a1a1a; }
-    .hist-table th { color: #aaa; border-bottom-color: #444; }
-    .hist-table td { border-bottom-color: #333; }
-    .hist-table tr.total-row td { border-top-color: #444; }
-    .hist-table tr.year-header td { background: #2a2a2a; color: #6b9fd4; }
-    .historical-section h3 { color: #aaa; }
-    .no-results { color: #888; }
-    .winner-banner.r-winner { background: linear-gradient(135deg, #2a1a1a, #331a1a); color: #e05050; border-color: #e05050; }
-    .winner-banner.d-winner { background: linear-gradient(135deg, #1a2233, #1a2a44); color: #6b9fd4; border-color: #6b9fd4; }
-    .leaflet-tooltip, .town-tooltip-container { background: #333 !important; color: #e0e0e0 !important; border-color: #555 !important; }
-}
 </style>
 {% endblock %}
 
