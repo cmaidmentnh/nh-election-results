@@ -33,6 +33,12 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(entry_bp)
 
 
+@app.route('/google5dd33fe4f5c62882.html')
+def google_verification():
+    """Google Search Console verification."""
+    return app.send_static_file('google5dd33fe4f5c62882.html')
+
+
 @app.route('/manifest.json')
 def manifest_json():
     """Web app manifest."""
