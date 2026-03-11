@@ -272,6 +272,8 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     padding: 1.25rem;
     margin-bottom: 2rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .historical-section h3 {
     margin: 0 0 1rem;
@@ -285,6 +287,10 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    min-width: 400px;
+}
+.hist-table + .hist-table {
+    margin-top: 1.5rem;
 }
 .hist-table th {
     text-align: left;
@@ -301,6 +307,7 @@
 .hist-table td {
     padding: 0.4rem 0.75rem;
     border-bottom: 1px solid #f1f5f9;
+    white-space: nowrap;
 }
 .hist-table td.votes { text-align: right; font-variant-numeric: tabular-nums; }
 .hist-table td.margin {
@@ -314,6 +321,12 @@
     color: #1e3a5f;
     padding-top: 0.75rem;
     border-bottom: 1px solid #e2e8f0;
+}
+@media (max-width: 768px) {
+    .historical-section { padding: 0.75rem; }
+    .hist-table { font-size: 0.8rem; }
+    .hist-table th, .hist-table td { padding: 0.35rem 0.5rem; }
+    .hist-table th { font-size: 0.7rem; }
 }
 .hist-table tr.total-row td {
     font-weight: 700;
@@ -391,7 +404,11 @@
 <!-- Header -->
 <div class="live-header">
     <h1>
+        {% if data.towns_reporting >= data.towns_total and data.total_votes > 0 %}
+        <span class="live-badge" style="background: #16a34a; animation: none;">Complete</span>
+        {% else %}
         <span class="live-badge">Live</span>
+        {% endif %}
         {{ data.race.office_name }}
         {% if data.race.county %}{{ data.race.county }}{% endif %}
         {% if data.race.district %}District {{ data.race.district }}{% endif %}
