@@ -33,6 +33,31 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(entry_bp)
 
 
+@app.route('/manifest.json')
+def manifest_json():
+    """Web app manifest."""
+    manifest = {
+        "name": "NH Election Results",
+        "short_name": "NH Elections",
+        "description": "New Hampshire election results, analysis, and historical data",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#1e3a5f",
+        "icons": [
+            {"src": "/static/img/favicon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/static/img/favicon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    }
+    return jsonify(manifest)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """Custom 404 page."""
+    return render_template('404.html'), 404
+
+
 @app.route('/robots.txt')
 def robots_txt():
     """Serve robots.txt for search engines."""

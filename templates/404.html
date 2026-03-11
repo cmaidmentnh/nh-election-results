@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - NH Election Results{% endblock %}
+{% block meta_description %}The page you're looking for could not be found.{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 4rem 1rem;">
+    <h1 style="font-size: 4rem; color: #1e3a5f; margin: 0;">404</h1>
+    <p style="font-size: 1.25rem; color: #64748b; margin: 1rem 0 2rem;">Page not found</p>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem;">
+        <a href="/" style="display: inline-block; padding: 0.75rem 1.5rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Home</a>
+        <a href="/map" style="display: inline-block; padding: 0.75rem 1.5rem; background: #f1f5f9; color: #1e3a5f; text-decoration: none; border-radius: 8px; font-weight: 600;">Election Map</a>
+        <a href="/candidates" style="display: inline-block; padding: 0.75rem 1.5rem; background: #f1f5f9; color: #1e3a5f; text-decoration: none; border-radius: 8px; font-weight: 600;">Search Candidates</a>
+    </div>
+</div>
+{% endblock %}

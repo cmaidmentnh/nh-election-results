@@ -7,6 +7,18 @@
     <meta name="description" content="{% block meta_description %}Comprehensive New Hampshire election results, analysis, and historical data for State House, State Senate, Executive Council, and Congressional races.{% endblock %}">
     <link rel="canonical" href="https://elections.nhhouse.gop{{ request.path }}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1e3a5f">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
     <!-- Open Graph -->
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
@@ -66,7 +78,7 @@
                     </div>
                 </div>
                 <div class="nav-dropdown">
-                    <a href="#">Offices ▾</a>
+                    <a href="{{ url_for('office_detail', office_name='state-house') }}">Offices ▾</a>
                     <div class="nav-dropdown-content">
                         <a href="{{ url_for('office_detail', office_name='governor') }}">Governor</a>
                         <a href="{{ url_for('office_detail', office_name='us-senate') }}">US Senate</a>
@@ -78,7 +90,7 @@
                 <a href="{{ url_for('election_map') }}">Map</a>
                 <a href="{{ url_for('candidates') }}">Candidates</a>
                 <div class="nav-dropdown">
-                    <a href="#">Analysis ▾</a>
+                    <a href="{{ url_for('stats') }}">Analysis ▾</a>
                     <div class="nav-dropdown-content">
                         <a href="{{ url_for('stats') }}">Statistics</a>
                         <a href="{{ url_for('deep_analysis') }}">Deep Analysis</a>
