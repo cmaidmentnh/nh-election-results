@@ -5,7 +5,11 @@
 {% block content %}
 {% if now() < datetime(2026, 3, 25) %}
 <a href="/live/28" class="special-banner">
+    {% if now().date() == datetime(2026, 3, 10).date() %}
     <span class="banner-live">LIVE</span>
+    {% else %}
+    <span class="banner-live" style="background: #16a34a; animation: none;">NEW</span>
+    {% endif %}
     <span class="banner-text">Carroll County District 7 Special Election Results</span>
     <span class="banner-arrow">&rarr;</span>
 </a>
