@@ -6,7 +6,7 @@ Insight-driven web app for exploring NH election data
 
 import os
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response, make_response
 import queries
 import analysis
 import census
@@ -31,6 +31,92 @@ login_manager.login_message = 'Please log in to access this page.'
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(entry_bp)
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Serve robots.txt for search engines."""
+    content = """User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /entry/
+Disallow: /login
+Disallow: /logout
+Disallow: /api/
+
+Sitemap: https://elections.nhhouse.gop/sitemap.xml
+"""
+    return Response(content, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Dynamic sitemap for search engines."""
+    import sqlite3
+    conn = sqlite3.connect('nh_elections.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    base = 'https://elections.nhhouse.gop'
+    urls = []
+
+    # Static pages
+    static_pages = [
+        ('/', '1.0', 'weekly'),
+        ('/map', '0.8', 'monthly'),
+        ('/candidates', '0.7', 'monthly'),
+        ('/stats', '0.7', 'monthly'),
+        ('/deep-analysis', '0.7', 'monthly'),
+        ('/turnout', '0.7', 'monthly'),
+        ('/incumbents', '0.7', 'monthly'),
+        ('/ticket-splitting', '0.6', 'monthly'),
+        ('/compare', '0.6', 'monthly'),
+        ('/trump-comparison', '0.6', 'monthly'),
+        ('/redistricting', '0.6', 'monthly'),
+    ]
+    for path, priority, freq in static_pages:
+        urls.append(f'<url><loc>{base}{path}</loc><priority>{priority}</priority><changefreq>{freq}</changefreq></url>')
+
+    # District browser pages
+    for office in ['State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress']:
+        urls.append(f'<url><loc>{base}/districts?office={office.replace(" ", "+")}</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>')
+
+    # Office pages
+    for office_slug in ['governor', 'us-senate', 'us-house', 'state-senate', 'state-house']:
+        urls.append(f'<url><loc>{base}/office/{office_slug}</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>')
+
+    # Town pages
+    cursor.execute("SELECT DISTINCT municipality FROM results ORDER BY municipality")
+    for row in cursor.fetchall():
+        town = row['municipality']
+        urls.append(f'<url><loc>{base}/town/{town.replace(" ", "%20")}</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>')
+
+    # County pages
+    cursor.execute("SELECT DISTINCT county FROM races WHERE county IS NOT NULL AND county != '' ORDER BY county")
+    for row in cursor.fetchall():
+        county = row['county']
+        urls.append(f'<url><loc>{base}/county/{county.replace(" ", "%20")}</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>')
+
+    # District pages
+    cursor.execute("""
+        SELECT DISTINCT r.county, r.district FROM races r
+        JOIN elections e ON r.election_id = e.id
+        WHERE e.redistricting_cycle = '2022-2030' AND r.county IS NOT NULL
+        ORDER BY r.county, CAST(r.district AS INTEGER)
+    """)
+    for row in cursor.fetchall():
+        urls.append(f'<url><loc>{base}/district/{row["county"].replace(" ", "%20")}/{row["district"]}</loc><priority>0.5</priority><changefreq>monthly</changefreq></url>')
+
+    conn.close()
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml += '\n'.join(urls)
+    xml += '\n</urlset>'
+
+    resp = make_response(xml)
+    resp.headers['Content-Type'] = 'application/xml'
+    return resp
 
 
 @app.route('/')

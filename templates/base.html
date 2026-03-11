@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}NH Election Results{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Comprehensive New Hampshire election results, analysis, and historical data for State House, State Senate, Executive Council, and Congressional races.{% endblock %}">
+    <link rel="canonical" href="https://elections.nhhouse.gop{{ request.path }}">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ self.title() }}">
+    <meta property="og:description" content="{{ self.meta_description() }}">
+    <meta property="og:url" content="https://elections.nhhouse.gop{{ request.path }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="NH Election Results">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ self.title() }}">
+    <meta name="twitter:description" content="{{ self.meta_description() }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% block head %}{% endblock %}
