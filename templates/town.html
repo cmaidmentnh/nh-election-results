@@ -3,6 +3,12 @@
 {% block title %}{{ summary.name }} - NH Election Results{% endblock %}
 {% block meta_description %}Election results for {{ summary.name }}, New Hampshire. View historical voting data, party trends, and race results across multiple election cycles.{% endblock %}
 
+{% block jsonld %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://elections.nhhouse.gop/"},{"@type":"ListItem","position":2,"name":"{{ summary.name }}","item":"https://elections.nhhouse.gop/town/{{ summary.name|urlencode }}"}]}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>

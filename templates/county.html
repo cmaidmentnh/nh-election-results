@@ -3,6 +3,12 @@
 {% block title %}{{ summary.name }} County - NH Election Results{% endblock %}
 {% block meta_description %}Election results for {{ summary.name }} County, New Hampshire. Town-by-town results, party trends, and historical voting data.{% endblock %}
 
+{% block jsonld %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://elections.nhhouse.gop/"},{"@type":"ListItem","position":2,"name":"{{ summary.name }} County","item":"https://elections.nhhouse.gop/county/{{ summary.name|urlencode }}"}]}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>
