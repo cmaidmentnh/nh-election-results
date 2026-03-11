@@ -20,6 +20,8 @@
         <span class="lean {% if 'R' in summary.lean %}r{% else %}d{% endif %}">{{ summary.lean }}</span>
     </h1>
     <p class="subtitle">{{ summary.county }} County</p>
+    {% set share_text = summary.name + ' NH Election Results' %}
+    {% include 'includes/share_buttons.html' %}
 </div>
 
 <div class="metrics">

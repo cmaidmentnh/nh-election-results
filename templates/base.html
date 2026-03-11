@@ -52,7 +52,11 @@
     </script>
     {% block jsonld %}{% endblock %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
+    {% if ga_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ ga_id }}');</script>
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
 <body>

@@ -16,7 +16,7 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 1 day cache for static files
 
 @app.context_processor
 def inject_datetime():
-    return {'now': datetime.now, 'datetime': datetime}
+    return {'now': datetime.now, 'datetime': datetime, 'ga_id': os.environ.get('GA_MEASUREMENT_ID', '')}
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Set up Flask-Login

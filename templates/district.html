@@ -29,6 +29,8 @@
         <span class="lean {% if 'R' in lean %}r{% else %}d{% endif %}">{{ lean }}</span>
     </h1>
     <p class="subtitle">{{ info.office }}{% if info.seats > 1 %} &middot; {{ info.seats }} seats{% endif %}</p>
+    {% set share_text = info.county + ' District ' + info.district|string + ' NH Election Results' %}
+    {% include 'includes/share_buttons.html' %}
 </div>
 
 <div class="metrics">
