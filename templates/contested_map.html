@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}2026 Primary — Contested Races Map{% endblock %}
+{% block meta_description %}Map of New Hampshire 2026 state primary races where more candidates filed than there are seats — the genuinely contested primary contests, by office.{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .cm-wrap { max-width: 1200px; margin: 0 auto; }
+    .cm-head h1 { margin-bottom: .15rem; }
+    .cm-sub { color: #555; margin-bottom: 1rem; }
+    .cm-offices { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+    .cm-btn { padding: .5rem .9rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 999px;
+              cursor: pointer; font-size: .9rem; font-weight: 600; color: #334155; }
+    .cm-btn:hover { border-color: #1e3a5f; }
+    .cm-btn.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+    .cm-btn .n { font-weight: 700; }
+    .cm-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1rem; align-items: start; }
+    #cm-map { height: 640px; border-radius: 10px; border: 1px solid #e5e7eb; }
+    .cm-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem;
+                min-height: 200px; position: sticky; top: 1rem; }
+    .cm-panel h2 { font-size: 1.1rem; margin: 0 0 .25rem; }
+    .cm-panel .muted { color: #6b7280; font-size: .85rem; }
+    .cm-legend { display: flex; gap: 1rem; font-size: .8rem; color: #555; margin: .5rem 0 0; flex-wrap: wrap; }
+    .cm-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: .3rem; border: 1px solid rgba(0,0,0,.2); }
+    .cm-back { display: none; margin-bottom: .6rem; cursor: pointer; color: #1e3a5f; font-weight: 600; font-size: .85rem; }
+    .cm-race { margin-top: .9rem; }
+    .cm-race h3 { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; margin: 0 0 .35rem; }
+    .cm-race.R h3 { color: #b91c1c; } .cm-race.D h3 { color: #1d4ed8; }
+    .cm-cand { padding: .2rem 0; font-size: .9rem; border-bottom: 1px solid #f1f5f9; }
+    .cm-contested-badge { display: inline-block; background: #fef2f2; color: #b91c1c; font-size: .68rem;
+                          font-weight: 700; padding: .1rem .4rem; border-radius: 999px; text-transform: uppercase; }
+    .cm-precincts { margin-top: 1rem; }
+    .cm-precincts summary { cursor: pointer; font-weight: 600; font-size: .85rem; }
+    .cm-precincts ul { margin: .5rem 0 0 1rem; columns: 2; font-size: .82rem; color: #444; }
+    @media (max-width: 860px) { .cm-layout { grid-template-columns: 1fr; } #cm-map { height: 420px; } .cm-panel { position: static; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cm-wrap">
+  <div class="cm-head">
+    <h1>2026 Primary — Contested Races</h1>
+    <p class="cm-sub">Highlighted districts are where <strong>more candidates filed than there are seats</strong> — the genuinely contested September primaries. Pick an office, then click a district to see who's running and which precincts vote in it.</p>
+  </div>
+
+  <div class="cm-offices" id="cm-offices"></div>
+
+  <div class="cm-layout">
+    <div id="cm-map"></div>
+    <div class="cm-panel" id="cm-panel">
+      <div class="cm-back" id="cm-back">← Back to districts</div>
+      <div id="cm-panel-body"><p class="muted">Loading…</p></div>
+      <div class="cm-legend">
+        <span><i style="background:#b91c1c"></i>Contested (candidates &gt; seats)</span>
+        <span><i style="background:#dbe2ea"></i>Uncontested / single party</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const OFFICES = [
+  { key:'governor',     label:'Governor',     level:'statewide' },
+  { key:'us-senate',    label:'U.S. Senate',  level:'statewide' },
+  { key:'us-house',     label:'U.S. House',   level:'district', layers:[{file:'nh-congress-districts.geojson', prop:'Cong2022'}] },
+  { key:'exec-council', label:'Exec Council', level:'district', layers:[{file:'nh-exec-council-districts.geojson', prop:'ExecCo2022'}] },
+  { key:'state-senate', label:'State Senate', level:'district', layers:[{file:'nh-senate-districts.geojson', prop:'Senate2022'}] },
+  { key:'state-house',  label:'State Rep',    level:'house',    layers:[{file:'nh-house-districts.geojson', prop:'basehse22'}, {file:'nh-house-floterial-districts.geojson', prop:'floathse22', outline:true}] },
+  { key:'delegate',     label:'Delegate',     level:'house',    layers:[{file:'nh-house-districts.geojson', prop:'basehse22'}, {file:'nh-house-floterial-districts.geojson', prop:'floathse22', outline:true}] },
+];
+const COLOR_CONTESTED = '#b91c1c', COLOR_PLAIN = '#dbe2ea', COLOR_NONE = '#f1f5f9';
+const geoCache = {};
+let map, officeLayers = [], townLayer = null, townGeo = null;
+let current = null, defaultBounds = null;
+
+function fetchJSON(u){ return fetch(u).then(r=>r.json()); }
+function loadGeo(file){ if(geoCache[file]) return Promise.resolve(geoCache[file]);
+  return fetchJSON('/static/data/'+file).then(g=>{geoCache[file]=g;return g;}); }
+
+map = L.map('cm-map', {scrollWheelZoom:true}).setView([43.9,-71.6], 7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  {attribution:'© OpenStreetMap, © CARTO', maxZoom:18}).addTo(map);
+
+// office buttons
+const obar = document.getElementById('cm-offices');
+OFFICES.forEach(o => {
+  const b = document.createElement('button');
+  b.className='cm-btn'; b.dataset.key=o.key; b.textContent=o.label;
+  b.onclick=()=>selectOffice(o);
+  obar.appendChild(b);
+});
+
+function setActive(key){ document.querySelectorAll('.cm-btn').forEach(b=>b.classList.toggle('active', b.dataset.key===key)); }
+function clearLayers(){ officeLayers.forEach(l=>map.removeLayer(l)); officeLayers=[]; if(townLayer){map.removeLayer(townLayer);townLayer=null;} document.getElementById('cm-back').style.display='none'; }
+
+function styleFor(rec, outline){
+  if(outline){ // floterial: outline only, dashed red if contested
+    return { fill:false, color: rec&&rec.contested ? COLOR_CONTESTED : 'transparent',
+             weight: rec&&rec.contested ? 2.5 : 0, dashArray:'5,4', opacity: rec&&rec.contested?0.9:0 };
+  }
+  const color = !rec ? COLOR_NONE : (rec.contested ? COLOR_CONTESTED : COLOR_PLAIN);
+  return { fillColor:color, fillOpacity: rec? (rec.contested?0.62:0.45):0.25,
+           color:'#fff', weight:1 };
+}
+
+function selectOffice(o){
+  setActive(o.key); clearLayers();
+  fetchJSON('/api/contested/'+o.key).then(data=>{
+    current={office:o, data};
+    if(o.level==='statewide'){ return renderStatewide(o, data); }
+    const bounds = L.latLngBounds([]);
+    Promise.all(o.layers.map(layerCfg => loadGeo(layerCfg.file).then(geo=>{
+      const lyr = L.geoJSON(geo, {
+        style: f => { const code=String(f.properties[layerCfg.prop]).trim();
+                      return styleFor(data.districts[code], layerCfg.outline); },
+        onEachFeature: (f,layer)=>{
+          const code=String(f.properties[layerCfg.prop]).trim();
+          if(!code || code===' ') return;
+          const rec=data.districts[code];
+          if(rec){
+            layer.bindTooltip(districtName(o,rec)+ (rec.contested?' · contested':''), {sticky:true});
+            layer.on('click', ()=>drill(o, code));
+            if(!layerCfg.outline) bounds.extend(layer.getBounds());
+          }
+        }
+      }).addTo(map);
+      officeLayers.push(lyr);
+    }))).then(()=>{ if(bounds.isValid()){ map.fitBounds(bounds.pad(0.05)); defaultBounds=bounds; } summary(o,data); });
+  });
+}
+
+function districtName(o, rec){
+  if(o.level==='house') return (rec.county? rec.county+' ':'')+'District '+rec.district;
+  if(o.key==='us-house') return 'U.S. House District '+rec.district;
+  if(o.key==='exec-council') return 'Executive Council District '+rec.district;
+  if(o.key==='state-senate') return 'State Senate District '+rec.district;
+  return 'District '+rec.district;
+}
+
+function summary(o, data){
+  const all=Object.values(data.districts); const c=all.filter(d=>d.contested).length;
+  document.getElementById('cm-back').style.display='none';
+  document.getElementById('cm-panel-body').innerHTML =
+    `<h2>${o.label}</h2>`+
+    `<p class="muted">${c} of ${all.length} districts have a contested ${o.label} primary (more candidates than seats). Click a red district for details.</p>`;
+}
+
+function renderStatewide(o, data){
+  const rec = data.districts['STATE'];
+  loadGeo('nh-towns.geojson').then(geo=>{
+    townLayer = L.geoJSON(geo, { style: ()=>({fillColor: rec&&rec.contested?COLOR_CONTESTED:COLOR_PLAIN,
+       fillOpacity:0.5, color:'#fff', weight:1}) }).addTo(map);
+    officeLayers.push(townLayer);
+    map.fitBounds(townLayer.getBounds().pad(0.05));
+  });
+  // statewide detail straight away
+  fetchJSON('/api/contested/'+o.key+'/precincts?code=STATE').then(p=>renderDetail(o, {county:'',district:'',code:'STATE'}, p, true));
+}
+
+function drill(o, code){
+  fetchJSON('/api/contested/'+o.key+'/precincts?code='+encodeURIComponent(code)).then(p=>{
+    // highlight precinct towns
+    loadGeo('nh-towns.geojson').then(geo=>{
+      const wanted = new Set(p.towns.map(t=>t.toLowerCase()));
+      officeLayers.forEach(l=>map.removeLayer(l)); officeLayers=[];
+      if(townLayer) map.removeLayer(townLayer);
+      const b=L.latLngBounds([]);
+      townLayer = L.geoJSON(geo, {
+        filter: f => wanted.has((f.properties.name||'').toLowerCase()),
+        style: ()=>({fillColor:'#1e3a5f', fillOpacity:0.5, color:'#fff', weight:1}),
+        onEachFeature:(f,layer)=>{ layer.bindTooltip(f.properties.name); b.extend(layer.getBounds()); }
+      }).addTo(map);
+      if(b.isValid()) map.fitBounds(b.pad(0.15));
+      renderDetail(o, {code, county:p.county, district:p.district}, p, false);
+    });
+  });
+}
+
+function renderDetail(o, d, p, statewide){
+  const back=document.getElementById('cm-back');
+  back.style.display = statewide ? 'none' : 'block';
+  back.onclick=()=>selectOffice(o);
+  let title = statewide ? o.label : districtName(o, {county:d.county, district:d.district});
+  let html = `<h2>${title}</h2><p class="muted">${o.label} · ${p.seats} seat${p.seats!=1?'s':''}</p>`;
+  ['Republican','Democratic'].forEach(party=>{
+    const names=p.parties[party]||[]; if(!names.length) return;
+    const code = party==='Republican'?'R':'D';
+    const contested = names.length > p.seats;
+    html += `<div class="cm-race ${code}"><h3>${party} primary `+
+            (contested?`<span class="cm-contested-badge">contested</span>`:'')+`</h3>`+
+            `<div class="muted" style="margin-bottom:.25rem">${names.length} candidate${names.length!=1?'s':''} for ${p.seats} seat${p.seats!=1?'s':''}</div>`+
+            names.map(n=>`<div class="cm-cand">${n}</div>`).join('')+`</div>`;
+  });
+  if(p.precincts && p.precincts.length){
+    html += `<details class="cm-precincts"><summary>${p.precincts.length} precinct${p.precincts.length!=1?'s':''} vote here</summary>`+
+            `<ul>`+p.precincts.map(t=>`<li>${t}</li>`).join('')+`</ul></details>`;
+  }
+  document.getElementById('cm-panel-body').innerHTML = html;
+}
+
+// default office
+selectOffice(OFFICES.find(o=>o.key==='state-house'));
+</script>
+{% endblock %}

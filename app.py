@@ -5,6 +5,7 @@ Insight-driven web app for exploring NH election data
 """
 
 import os
+import re
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, Response, make_response
 import queries
@@ -655,6 +656,149 @@ def api_districts_map_data():
     year = request.args.get('year')  # None for average, or specific year
     metric = request.args.get('metric', 'margin')  # 'margin' or 'pvi'
     return jsonify(analysis.get_districts_map_data(year=year, metric=metric))
+
+
+# ---------------------------------------------------------------------------
+# Contested-races map (2026 primary: districts where candidates > seats)
+# ---------------------------------------------------------------------------
+import sqlite3 as _sqlite3
+
+COUNTY_ABBR = {
+    "Belknap": "BE", "Carroll": "CA", "Cheshire": "CH", "Coos": "CO",
+    "Grafton": "GR", "Hillsborough": "HI", "Merrimack": "ME",
+    "Rockingham": "RO", "Strafford": "ST", "Sullivan": "SU",
+}
+ABBR_COUNTY = {v: k for k, v in COUNTY_ABBR.items()}
+
+# url key -> (results office name, geographic level)
+CONTESTED_OFFICES = {
+    "governor":     ("Governor", "statewide"),
+    "us-senate":    ("United States Senator", "statewide"),
+    "us-house":     ("Representative in Congress", "district"),
+    "exec-council": ("Executive Councilor", "district"),
+    "state-senate": ("State Senator", "district"),
+    "state-house":  ("State Representative", "house"),
+    "delegate":     ("Delegate to the State Convention", "house"),
+}
+
+
+def _contested_db():
+    conn = _sqlite3.connect('nh_elections.db')
+    conn.row_factory = _sqlite3.Row
+    return conn
+
+
+def _district_code(level, county, district):
+    """Map a race's (county, district) to the geojson feature code."""
+    if level == "house":
+        return f"{COUNTY_ABBR.get(county, county)}{district}"
+    if level == "statewide":
+        return "STATE"
+    return str(district)
+
+
+def _decode_code(level, code):
+    """Inverse of _district_code -> (county, district)."""
+    if level == "house":
+        m = re.match(r"([A-Z]{2})(\d+)", code)
+        if m:
+            return ABBR_COUNTY.get(m.group(1), ""), m.group(2)
+        return "", ""
+    if level == "statewide":
+        return "", ""
+    return "", code
+
+
+@app.route('/contested')
+def contested_map():
+    """Public map of 2026 primary races where candidates outnumber seats."""
+    return render_template('contested_map.html')
+
+
+@app.route('/api/contested/<office_key>')
+def api_contested(office_key):
+    """Per-district contested status for an office in the 2026 primary."""
+    if office_key not in CONTESTED_OFFICES:
+        return jsonify({'error': 'unknown office'}), 404
+    office_name, level = CONTESTED_OFFICES[office_key]
+
+    conn = _contested_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT e.party, r.county AS county, r.district AS district, r.seats AS seats,
+               COUNT(rc.candidate_id) AS ncand
+        FROM races r
+        JOIN elections e   ON r.election_id = e.id
+        JOIN offices o     ON r.office_id = o.id
+        LEFT JOIN race_candidates rc
+               ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND o.name = ?
+        GROUP BY e.party, r.county, r.district, r.seats
+    """, (office_name,))
+
+    districts = {}
+    for row in cur.fetchall():
+        code = _district_code(level, row['county'] or '', row['district'] or '')
+        d = districts.setdefault(code, {
+            'code': code, 'county': row['county'] or '', 'district': row['district'] or '',
+            'seats': row['seats'], 'parties': {}, 'contested': False,
+        })
+        party = (row['party'] or 'NP')[:1]  # R / D
+        d['parties'][party] = row['ncand']
+        if row['ncand'] > (row['seats'] or 1):
+            d['contested'] = True
+    conn.close()
+
+    return jsonify({'office': office_name, 'level': level, 'districts': districts})
+
+
+@app.route('/api/contested/<office_key>/precincts')
+def api_contested_precincts(office_key):
+    """Candidates + precinct (town/ward) list for one district."""
+    if office_key not in CONTESTED_OFFICES:
+        return jsonify({'error': 'unknown office'}), 404
+    office_name, level = CONTESTED_OFFICES[office_key]
+    code = request.args.get('code', '')
+    county, district = _decode_code(level, code)
+
+    conn = _contested_db()
+    cur = conn.cursor()
+
+    # Candidates per party for this district's primary race(s).
+    cur.execute("""
+        SELECT e.party, r.seats AS seats, c.name AS name
+        FROM races r
+        JOIN elections e   ON r.election_id = e.id
+        JOIN offices o     ON r.office_id = o.id
+        JOIN race_candidates rc ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        JOIN candidates c  ON rc.candidate_id = c.id
+        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND o.name = ?
+          AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
+        ORDER BY e.party, c.name
+    """, (office_name, county, district))
+    parties, seats = {}, 1
+    for row in cur.fetchall():
+        seats = row['seats']
+        parties.setdefault(row['party'], []).append(row['name'])
+
+    # Precincts (towns/wards) that vote in this district.
+    precincts = []
+    if level == 'statewide':
+        cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
+        precincts = [r['municipality'] for r in cur.fetchall()]
+    else:
+        oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
+        if oid:
+            cur.execute("""SELECT municipality FROM municipality_districts
+                           WHERE office_id = ? AND county = ? AND district = ?
+                           ORDER BY municipality""", (oid['id'], county, district))
+            precincts = [r['municipality'] for r in cur.fetchall()]
+    conn.close()
+
+    # Base town name (ward stripped) for matching town polygons.
+    towns = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p).strip() for p in precincts})
+    return jsonify({'office': office_name, 'code': code, 'county': county, 'district': district,
+                    'seats': seats, 'parties': parties, 'precincts': precincts, 'towns': towns})
 
 
 @app.route('/api/export/<data_type>')
