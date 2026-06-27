@@ -709,10 +709,21 @@ def _decode_code(level, code):
     return "", code
 
 
+PRIMARY_DAY = datetime(2026, 9, 8).date()
+
+
 @app.route('/contested')
 def contested_map():
-    """Public map of 2026 primary races where candidates outnumber seats."""
-    return render_template('contested_map.html')
+    """Public 2026 primary portal. Preview mode (who's running) until results
+    start arriving on primary day, then it becomes live results + projections."""
+    conn = _contested_db()
+    has_results = conn.execute("""
+        SELECT 1 FROM results res JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        WHERE e.year = 2026 AND e.election_type = 'state_primary' LIMIT 1""").fetchone() is not None
+    conn.close()
+    live = datetime.now().date() >= PRIMARY_DAY or has_results
+    return render_template('contested_map.html', live_mode=live)
 
 
 @app.route('/api/contested/<office_key>')
