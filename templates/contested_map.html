@@ -28,15 +28,17 @@
   .cm-panel.R .cm-phead { color:#b91c1c; border-bottom:2px solid #fca5a5; } .cm-panel.D .cm-phead { color:#1d4ed8; border-bottom:2px solid #93c5fd; }
   .cm-mini { height:520px; background:#eef2f6; }
 
-  /* cursor-anchored hover tooltip (sits on the district, follows the cursor) */
+  /* cursor-anchored hover tooltip — fixed width, one candidate per line */
   .leaflet-tooltip.cm-tt { background:#fff; border:0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.22);
-     padding:.6rem .75rem; font-size:.85rem; color:#1a1a1a; line-height:1.35; white-space:normal; max-width:250px; }
+     padding:.55rem .7rem; font-size:.85rem; color:#1a1a1a; line-height:1.3; width:230px; white-space:normal; }
   .leaflet-tooltip.cm-tt:before { display:none; }
-  .cm-tt .tt-name { font-weight:800; font-size:.95rem; }
+  .cm-tt .tt-name { font-weight:800; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cm-tt.R .tt-name { color:#b91c1c; } .cm-tt.D .tt-name { color:#1d4ed8; }
-  .cm-tt .tt-meta { color:#64748b; font-size:.76rem; margin:.05rem 0 .35rem; }
-  .cm-tt .tt-cands { color:#334155; }
-  .cm-tt .tt-row { display:flex; justify-content:space-between; gap:1rem; padding:.05rem 0; }
+  .cm-tt .tt-meta { color:#64748b; font-size:.74rem; margin:.05rem 0 .4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cm-tt .tt-row { display:flex; justify-content:space-between; align-items:baseline; gap:.6rem; padding:.12rem 0; border-top:1px solid #f1f5f9; }
+  .cm-tt .tt-row:first-of-type { border-top:0; }
+  .cm-tt .tt-row .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cm-tt .tt-row b { flex-shrink:0; font-variant-numeric:tabular-nums; }
   .cm-tt .tt-row .star { color:#d97706; }
 
   .cm-board { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:1rem; }
@@ -161,6 +163,19 @@ async function selectOffice(o){
 
 function renderView(){
   clearInterval(refreshTimer); refreshTimer=null;
+  // Statewide (Governor, U.S. Senate): one race — show its results directly, no drilling.
+  if(curOffice.level==='statewide'){
+    document.getElementById('cm-view').style.display='none';
+    document.getElementById('cm-board').classList.add('hide');
+    document.getElementById('cm-stack').classList.add('hide');
+    loadResults(curOffice,'STATE',curParty);
+    document.getElementById('cm-drill').classList.add('show');
+    if(LIVE){ document.getElementById('cm-updated').innerHTML='<span class="cm-live"></span>auto-refresh 30s';
+      refreshTimer=setInterval(()=>loadResults(curOffice,'STATE',curParty),30000); }
+    else document.getElementById('cm-updated').textContent='';
+    return;
+  }
+  document.getElementById('cm-view').style.display='';
   document.getElementById('cm-drill').classList.remove('show');
   const board=document.getElementById('cm-board'), stack=document.getElementById('cm-stack');
   board.classList.toggle('hide', curView!=='results'); stack.classList.toggle('hide', curView!=='map');
@@ -193,15 +208,15 @@ function buildStack(){ const o=curOffice,data=curData; destroyMaps(); const stac
 
 function ttHTML(o,rec,party){
   const bd=boardByCode[rec.code]; const cands=(rec.candidates&&rec.candidates[party])||[];
-  let h=`<div class="tt-name">${districtName(o,rec)}</div>`;
-  if(LIVE && bd){ const winners=new Set(bd.projection.winners||[]);
-    h+=`<div class="tt-meta">${PARTY[party].name} · ${rec.seats} seat${rec.seats!=1?'s':''} · ${bd.reporting.expected_in||0}% counted</div><div class="tt-cands">`+
-       bd.candidates.slice(0,5).map(c=>`<div class="tt-row"><span>${winners.has(c.name)?'<span class="star">★</span> ':''}${c.name}</span><b>${c.votes.toLocaleString()}</b></div>`).join('')+`</div>`;
+  let meta, rows;
+  if(LIVE && bd){ const w=new Set(bd.projection.winners||[]);
+    meta=`${PARTY[party].name} · ${rec.seats} seat${rec.seats!=1?'s':''} · ${bd.reporting.expected_in||0}% in`;
+    rows=bd.candidates.map(c=>`<div class="tt-row"><span class="nm">${w.has(c.name)?'<span class="star">★</span> ':''}${c.name}</span><b>${c.votes.toLocaleString()}</b></div>`).join('');
   } else {
-    h+=`<div class="tt-meta">${PARTY[party].name} primary · ${rec.seats} seat${rec.seats!=1?'s':''} · ${cands.length} candidates</div>`+
-       `<div class="tt-cands">${cands.join(', ')}</div>`;
+    meta=`${PARTY[party].name} · ${rec.seats} seat${rec.seats!=1?'s':''} · ${cands.length} running`;
+    rows=cands.map(n=>`<div class="tt-row"><span class="nm">${n}</span></div>`).join('');
   }
-  return h;
+  return `<div class="tt-name">${districtName(o,rec)}</div><div class="tt-meta">${meta}</div>${rows}`;
 }
 
 function renderMini(mapId,o,def,data){
@@ -257,6 +272,7 @@ function drill(o,code,party){ document.getElementById('cm-board').classList.add(
 function loadResults(o,code,party){
   jget('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+party).then(r=>{
     const rec=(curData&&curData.districts[code])||{county:r.county,district:r.district,seats:r.seats,parties:{}};
+    document.getElementById('cm-back').style.display = code==='STATE' ? 'none' : '';
     document.getElementById('cm-dtitle').textContent=code==='STATE'?o.label:districtName(o,rec);
     document.getElementById('cm-dsub').textContent= LIVE
       ? `${o.label} · ${PARTY[party].name} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted (${r.reporting.reported}/${r.reporting.total} precincts)`
@@ -296,7 +312,7 @@ function renderPrecinctMap(o,r){ if(bigMap){try{bigMap.remove();}catch(e){} bigM
 function precinctTT(name,ps){ if(!LIVE) return `<div class="tt-name">${name}</div><div class="tt-meta">${ps.length>1?ps.length+' wards':'precinct'}</div>`;
   const reported=ps.filter(p=>p.reported); if(!reported.length) return `<div class="tt-name">${name}</div><div class="tt-meta">not yet reported</div>`;
   const totals={}; reported.forEach(p=>Object.entries(p.votes).forEach(([n,v])=>totals[n]=(totals[n]||0)+v));
-  return `<div class="tt-name">${name}</div><div class="tt-cands">`+Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v])=>`<div class="tt-row"><span>${n}</span><b>${v.toLocaleString()}</b></div>`).join('')+`</div>`; }
+  return `<div class="tt-name">${name}</div>`+Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,v])=>`<div class="tt-row"><span class="nm">${n}</span><b>${v.toLocaleString()}</b></div>`).join(''); }
 
 document.getElementById('cm-back').onclick=()=>{ document.getElementById('cm-drill').classList.remove('show'); if(bigMap){try{bigMap.remove();}catch(e){} bigMap=null;} renderView(); };
 
