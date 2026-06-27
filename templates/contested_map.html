@@ -17,6 +17,7 @@
   <p class="pt-sub">Where a party has a <strong>contested</strong> primary (more candidates than seats). Hover a district to see who's running; click for candidates and precincts. <strong>Live results & projections begin primary day, September 8.</strong></p>
   {% endif %}
 
+  {% if demo %}<div style="background:#fef9c3;border:1px solid #fde047;color:#854d0e;padding:.55rem .85rem;border-radius:8px;margin-bottom:1rem;font-weight:700;font-size:.85rem;">⚠ DEMO MODE — simulated results to preview the live experience. These are not real votes.</div>{% endif %}
   <div class="pt-score" id="pt-score"></div>
   <div class="pt-tabs" id="pt-tabs"></div>
   <div class="pt-controls">
@@ -49,6 +50,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const LIVE = {{ 'true' if live_mode else 'false' }};
+const DEMO = {{ 'true' if demo else 'false' }};
+const Q = DEMO ? '&demo=1' : '';
 const OFFICES=[
  {key:'governor',label:'Governor',level:'statewide'},
  {key:'us-senate',label:'U.S. Senate',level:'statewide'},
@@ -120,7 +123,7 @@ function renderView(){
 }
 
 function refresh(){ const o=curO,p=curP;
-  fetch('/api/contested/'+o.key+'/board?party='+p).then(r=>r.json()).then(b=>{
+  fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
     if(o!==curO||p!==curP)return; board={}; b.races.forEach(r=>board[r.code]=r);
     const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())} · 30s`;
     renderScore();
@@ -243,7 +246,7 @@ function showDetail(o,code,party){
 }
 function loadDetail(o,code,party){
   detailCtx={o,code,party};
-  fetch('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+party).then(r=>r.json()).then(r=>{
+  fetch('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+party+Q).then(r=>r.json()).then(r=>{
     const rec=(curData&&curData.districts[code])||{county:r.county,district:r.district,seats:r.seats,parties:{}};
     document.getElementById('pt-back').style.display=(code==='STATE'||o.level==='statewide')?'none':'';
     document.getElementById('pt-dtitle').textContent=code==='STATE'?o.label:districtName(o,rec);

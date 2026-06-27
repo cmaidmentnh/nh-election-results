@@ -722,8 +722,9 @@ def contested_map():
         JOIN elections e ON r.election_id = e.id
         WHERE e.year = 2026 AND e.election_type = 'state_primary' LIMIT 1""").fetchone() is not None
     conn.close()
-    live = datetime.now().date() >= PRIMARY_DAY or has_results
-    return render_template('contested_map.html', live_mode=live)
+    demo = request.args.get('demo') == '1'
+    live = demo or datetime.now().date() >= PRIMARY_DAY or has_results
+    return render_template('contested_map.html', live_mode=live, demo=demo)
 
 
 @app.route('/api/contested/<office_key>')
@@ -916,7 +917,21 @@ def _precinct_counties(cur, names):
     return {r['municipality']: (r['county'] or '') for r in cur.fetchall()}
 
 
-def _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=True):
+def _demo_results(precs, cand_ids, race_id):
+    """Deterministic simulated returns (~65% of precincts reporting) so the live
+    portal can be demoed before election night. Not stored; demo mode only."""
+    by_prec = {}
+    n_rep = max(1, int(len(precs) * 0.65))
+    strengths = [max(6, 100 - i * 22 + ((race_id * 7 + i * 13) % 22)) for i in range(len(cand_ids))]
+    for pi, p in enumerate(precs[:n_rep]):
+        h = race_id * 31 + pi * 17
+        by_prec[p] = {cid: max(1, strengths[i] + ((h + i * 101) % 25) - 12 + (pi % 4))
+                      for i, cid in enumerate(cand_ids)}
+    return by_prec
+
+
+def _compute_results(cur, office_name, level, county, district, party_full, party,
+                     with_precincts=True, demo=False):
     """Full results + region-aware projection for one party's primary in a district."""
     race = cur.execute("""
         SELECT r.id AS id, r.seats AS seats FROM races r
@@ -939,10 +954,13 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     name_by_id = {c['cid']: c['name'] for c in cands}
 
     precs = _precincts_for(cur, office_name, level, county, district)
-    res = cur.execute("SELECT municipality, candidate_id, votes FROM results WHERE race_id = ?", (race_id,)).fetchall()
-    by_prec = {}
-    for r in res:
-        by_prec.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
+    if demo:
+        by_prec = _demo_results(precs, list(name_by_id.keys()), race_id)
+    else:
+        res = cur.execute("SELECT municipality, candidate_id, votes FROM results WHERE race_id = ?", (race_id,)).fetchall()
+        by_prec = {}
+        for r in res:
+            by_prec.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
 
     overall = {cid: 0 for cid in name_by_id}
     precincts = []
@@ -1061,8 +1079,9 @@ def api_contested_results(office_key):
     party = request.args.get('party', 'R')
     party_full = 'Republican' if party == 'R' else 'Democratic'
     county, district = _decode_code(level, request.args.get('code', ''))
+    demo = request.args.get('demo') == '1'
     conn = _contested_db()
-    out = _compute_results(conn.cursor(), office_name, level, county, district, party_full, party)
+    out = _compute_results(conn.cursor(), office_name, level, county, district, party_full, party, demo=demo)
     conn.close()
     return jsonify(out)
 
@@ -1077,6 +1096,7 @@ def api_contested_board(office_key):
     office_name, level = CONTESTED_OFFICES[office_key]
     party = request.args.get('party', 'R')
     party_full = 'Republican' if party == 'R' else 'Democratic'
+    demo = request.args.get('demo') == '1'
 
     conn = _contested_db()
     cur = conn.cursor()
@@ -1095,7 +1115,7 @@ def api_contested_board(office_key):
     board = []
     for row in rows:
         county, district = row['county'] or '', row['district'] or ''
-        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False)
+        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False, demo=demo)
         r['code'] = _district_code(level, county, district)
         board.append(r)
     conn.close()
