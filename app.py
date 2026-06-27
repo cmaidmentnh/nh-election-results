@@ -803,24 +803,60 @@ def api_contested_precincts(office_key):
                     'seats': seats, 'parties': parties, 'precincts': precincts, 'towns': towns})
 
 
-@app.route('/api/contested/<office_key>/results')
-def api_contested_results(office_key):
-    """Overall + precinct-by-precinct results for one party's primary in a district.
+def _precinct_weights(cur, party_full, names):
+    """Each precinct's expected share of the district's primary vote.
 
-    Wired to the live `results` table, so it's election-night ready: before any
-    votes are entered it returns zeros / 0% reporting; as precincts are entered
-    it fills in. Projected winners = current top `seats` once anything reports
-    (the full vote-share projection model layers on top of this later)."""
-    if office_key not in CONTESTED_OFFICES:
-        return jsonify({'error': 'unknown office'}), 404
-    office_name, level = CONTESTED_OFFICES[office_key]
-    code = request.args.get('code', '')
-    party = request.args.get('party', 'R')
-    party_full = 'Republican' if party == 'R' else 'Democratic'
-    county, district = _decode_code(level, code)
+    Baseline = that party's 2024 state-primary turnout per precinct (best
+    predictor of where this party's primary vote comes from); falls back to
+    2024 general turnout (Governor), then to an equal share."""
+    if not names:
+        return {}
+    qm = ",".join("?" * len(names))
+    prim, genr = {}, {}
+    cur.execute(f"""SELECT res.municipality AS m, SUM(res.votes) AS v
+                    FROM results res JOIN races r ON res.race_id = r.id
+                    JOIN elections e ON r.election_id = e.id
+                    WHERE e.year = 2024 AND e.election_type = 'state_primary' AND e.party = ?
+                      AND res.municipality IN ({qm}) GROUP BY res.municipality""",
+                (party_full, *names))
+    for row in cur.fetchall():
+        prim[row['m']] = row['v']
+    cur.execute(f"""SELECT res.municipality AS m, SUM(res.votes) AS v
+                    FROM results res JOIN races r ON res.race_id = r.id
+                    JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                    WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
+                      AND res.municipality IN ({qm}) GROUP BY res.municipality""",
+                (*names,))
+    for row in cur.fetchall():
+        genr[row['m']] = row['v']
+    raw = {n: (prim.get(n) or genr.get(n) or 1) for n in names}
+    total = sum(raw.values()) or 1
+    return {n: raw[n] / total for n in names}
 
-    conn = _contested_db()
-    cur = conn.cursor()
+
+def _project(cand_list, seats, reported_weight, current_total):
+    """Project the finish and decide whether the result is mathematically clinched.
+
+    cand_list is already sorted by projected finish (desc). Uniform extrapolation:
+    each candidate's projected total = current votes / share of expected vote in."""
+    if reported_weight <= 0 or current_total <= 0:
+        return {'status': 'awaiting', 'winners': [], 'expected_in': round(100 * reported_weight),
+                'projected_total': None}
+    projected_total = current_total / reported_weight
+    outstanding = max(0, projected_total - current_total)
+    winners = [c['name'] for c in cand_list[:seats]]
+    if len(cand_list) > seats:
+        # Gap (current votes) between the last projected winner and first loser.
+        gap = cand_list[seats - 1]['votes'] - cand_list[seats]['votes']
+        clinched = gap > outstanding
+    else:
+        clinched = True
+    return {'status': 'clinched' if clinched else 'too_close', 'winners': winners,
+            'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total)}
+
+
+def _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=True):
+    """Full results + projection for one party's primary in a district."""
     race = cur.execute("""
         SELECT r.id AS id, r.seats AS seats FROM races r
         JOIN elections e ON r.election_id = e.id
@@ -829,10 +865,10 @@ def api_contested_results(office_key):
           AND o.name = ? AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
     """, (party_full, office_name, county, district)).fetchone()
     if not race:
-        conn.close()
-        return jsonify({'exists': False, 'office': office_name, 'party': party,
-                        'candidates': [], 'precincts': [], 'towns': [], 'seats': 1,
-                        'reporting': {'reported': 0, 'total': 0, 'pct': 0}})
+        return {'exists': False, 'office': office_name, 'party': party, 'candidates': [],
+                'precincts': [], 'towns': [], 'seats': 1,
+                'reporting': {'reported': 0, 'total': 0, 'pct': 0, 'expected_in': 0},
+                'projection': {'status': 'awaiting', 'winners': [], 'expected_in': 0}}
 
     race_id, seats = race['id'], race['seats']
     cands = cur.execute("""SELECT c.id AS cid, c.name AS name FROM race_candidates rc
@@ -858,16 +894,82 @@ def api_contested_results(office_key):
                           'votes': {name_by_id[cid]: val for cid, val in v.items() if cid in name_by_id}})
     reported_n = sum(1 for p in precincts if p['reported'])
     total = len(precincts)
-    cand_list = sorted([{'name': name_by_id[cid], 'votes': overall[cid]} for cid in name_by_id],
-                       key=lambda x: -x['votes'])
-    conn.close()
 
-    towns = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
-    return jsonify({'exists': True, 'office': office_name, 'party': party, 'county': county,
-                    'district': district, 'seats': seats, 'candidates': cand_list,
-                    'precincts': precincts, 'towns': towns,
-                    'reporting': {'reported': reported_n, 'total': total,
-                                  'pct': round(100 * reported_n / total) if total else 0}})
+    weights = _precinct_weights(cur, party_full, [p['name'] for p in precincts])
+    reported_weight = sum(weights.get(p['name'], 0) for p in precincts if p['reported'])
+    current_total = sum(overall.values())
+    cand_list = []
+    for cid in name_by_id:
+        cur_v = overall[cid]
+        proj = round(cur_v / reported_weight) if reported_weight > 0 else None
+        cand_list.append({'name': name_by_id[cid], 'votes': cur_v, 'projected': proj})
+    cand_list.sort(key=lambda x: (-(x['projected'] if x['projected'] is not None else x['votes']), -x['votes']))
+    projection = _project(cand_list, seats, reported_weight, current_total)
+
+    out = {'exists': True, 'office': office_name, 'party': party, 'county': county,
+           'district': district, 'seats': seats, 'candidates': cand_list,
+           'reporting': {'reported': reported_n, 'total': total,
+                         'pct': round(100 * reported_n / total) if total else 0,
+                         'expected_in': round(100 * reported_weight)},
+           'projection': projection}
+    if with_precincts:
+        out['precincts'] = precincts
+        out['towns'] = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
+    return out
+
+
+@app.route('/api/contested/<office_key>/results')
+def api_contested_results(office_key):
+    """Overall + precinct-by-precinct results + projection for one district."""
+    if office_key not in CONTESTED_OFFICES:
+        return jsonify({'error': 'unknown office'}), 404
+    office_name, level = CONTESTED_OFFICES[office_key]
+    party = request.args.get('party', 'R')
+    party_full = 'Republican' if party == 'R' else 'Democratic'
+    county, district = _decode_code(level, request.args.get('code', ''))
+    conn = _contested_db()
+    out = _compute_results(conn.cursor(), office_name, level, county, district, party_full, party)
+    conn.close()
+    return jsonify(out)
+
+
+@app.route('/api/contested/<office_key>/board')
+def api_contested_board(office_key):
+    """Results board: every contested district for a party, with current leader,
+    % of expected vote counted, and called / too-close / awaiting status. The
+    results-first, auto-refreshable view of election night."""
+    if office_key not in CONTESTED_OFFICES:
+        return jsonify({'error': 'unknown office'}), 404
+    office_name, level = CONTESTED_OFFICES[office_key]
+    party = request.args.get('party', 'R')
+    party_full = 'Republican' if party == 'R' else 'Democratic'
+
+    conn = _contested_db()
+    cur = conn.cursor()
+    # Contested races for this party+office.
+    rows = cur.execute("""
+        SELECT r.county AS county, r.district AS district, r.seats AS seats,
+               COUNT(rc.candidate_id) AS ncand
+        FROM races r
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o   ON r.office_id = o.id
+        JOIN race_candidates rc ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ? AND o.name = ?
+        GROUP BY r.id HAVING ncand > r.seats
+    """, (party_full, office_name)).fetchall()
+
+    board = []
+    for row in rows:
+        county, district = row['county'] or '', row['district'] or ''
+        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False)
+        r['code'] = _district_code(level, county, district)
+        board.append(r)
+    conn.close()
+    # Sort: in-progress/too-close first, then awaiting, then clinched; by expected_in desc.
+    order = {'too_close': 0, 'awaiting': 2, 'clinched': 1}
+    board.sort(key=lambda x: (order.get(x['projection']['status'], 3),
+                              -(x['reporting']['expected_in'])))
+    return jsonify({'office': office_name, 'party': party, 'level': level, 'races': board})
 
 
 @app.route('/api/export/<data_type>')
