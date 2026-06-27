@@ -726,12 +726,14 @@ def api_contested(office_key):
     cur = conn.cursor()
     cur.execute("""
         SELECT e.party, r.county AS county, r.district AS district, r.seats AS seats,
-               COUNT(rc.candidate_id) AS ncand
+               COUNT(rc.candidate_id) AS ncand,
+               GROUP_CONCAT(c.name, '|') AS names
         FROM races r
         JOIN elections e   ON r.election_id = e.id
         JOIN offices o     ON r.office_id = o.id
         LEFT JOIN race_candidates rc
                ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        LEFT JOIN candidates c ON rc.candidate_id = c.id
         WHERE e.year = 2026 AND e.election_type = 'state_primary' AND o.name = ?
         GROUP BY e.party, r.county, r.district, r.seats
     """, (office_name,))
@@ -741,10 +743,11 @@ def api_contested(office_key):
         code = _district_code(level, row['county'] or '', row['district'] or '')
         d = districts.setdefault(code, {
             'code': code, 'county': row['county'] or '', 'district': row['district'] or '',
-            'seats': row['seats'], 'parties': {}, 'contested': False,
+            'seats': row['seats'], 'parties': {}, 'candidates': {}, 'contested': False,
         })
         party = (row['party'] or 'NP')[:1]  # R / D
         d['parties'][party] = row['ncand']
+        d['candidates'][party] = row['names'].split('|') if row['names'] else []
         if row['ncand'] > (row['seats'] or 1):
             d['contested'] = True
     conn.close()
