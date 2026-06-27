@@ -845,24 +845,42 @@ def _precinct_weights(cur, party_full, names):
     return {n: raw[n] / total for n in names}
 
 
-def _project(cand_list, seats, reported_weight, current_total):
-    """Project the finish and decide whether the result is mathematically clinched.
+# How big a swing the still-uncounted vote could plausibly produce when NONE is
+# in (as a share of the total). The tolerance shrinks linearly as vote comes in,
+# so a clear leader gets called early while close races wait. Tuned so a ~30-pt
+# lead is called around 5% in, a ~10-pt lead around ~65% in, a ~3-pt lead ~90% in.
+PROJECTION_SWING = 0.30
+PROJECTION_MIN_IN = 0.01  # don't call off a single fluke precinct
 
-    cand_list is already sorted by projected finish (desc). Uniform extrapolation:
-    each candidate's projected total = current votes / share of expected vote in."""
+
+def _project(cand_list, seats, reported_weight, current_total):
+    """Project the finish and make a decision-desk call.
+
+    cand_list is sorted by projected finish (desc). Uniform extrapolation: each
+    candidate's projected total = current votes / share of expected vote in. A
+    race is CALLED when the projected margin between the last winning seat and the
+    first losing seat exceeds the plausible remaining swing (which scales with how
+    much vote is still out) — not only when it is mathematically impossible to lose."""
     if reported_weight <= 0 or current_total <= 0:
         return {'status': 'awaiting', 'winners': [], 'expected_in': round(100 * reported_weight),
                 'projected_total': None}
     projected_total = current_total / reported_weight
-    outstanding = max(0, projected_total - current_total)
     winners = [c['name'] for c in cand_list[:seats]]
-    if len(cand_list) > seats:
-        # Gap (current votes) between the last projected winner and first loser.
-        gap = cand_list[seats - 1]['votes'] - cand_list[seats]['votes']
-        clinched = gap > outstanding
+    status = 'too_close'
+    if len(cand_list) <= seats:
+        status = 'clinched'  # at most as many candidates as seats — everyone wins
     else:
-        clinched = True
-    return {'status': 'clinched' if clinched else 'too_close', 'winners': winners,
+        lead = cand_list[seats - 1]['projected'] or 0
+        trail = cand_list[seats]['projected'] or 0
+        margin = (lead - trail) / projected_total if projected_total else 0   # projected pt margin
+        outstanding = max(0.0, 1.0 - reported_weight)
+        tolerance = PROJECTION_SWING * outstanding
+        # Also always call once it's mathematically out of reach.
+        gap_votes = cand_list[seats - 1]['votes'] - cand_list[seats]['votes']
+        out_votes = max(0, projected_total - current_total)
+        if reported_weight >= PROJECTION_MIN_IN and (margin > tolerance or gap_votes > out_votes):
+            status = 'clinched'
+    return {'status': status, 'winners': winners,
             'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total)}
 
 

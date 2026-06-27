@@ -279,7 +279,12 @@ function loadResults(o,code,party){
       : `${o.label} · ${PARTY[party].name} primary · ${r.seats} seat${r.seats!=1?'s':''} · ${r.precincts.length} precincts`;
     const tog=document.getElementById('cm-ptoggle'); tog.innerHTML='';
     ['R','D'].forEach(pp=>{ if(rec.parties&&(rec.parties[pp]||0)>0){ const btn=document.createElement('button'); btn.className=(pp===party?'on ':'')+pp; btn.textContent=PARTY[pp].name; btn.onclick=()=>loadResults(o,code,pp); tog.appendChild(btn); } });
-    renderBanner(r); renderOverall(r); renderPrecinctTable(r); renderPrecinctMap(o,r);
+    renderBanner(r); renderOverall(r); renderPrecinctTable(r);
+    // A statewide map with no results yet is just a grey blob — only show the
+    // precinct map for districts, or once results are in.
+    const showMap = LIVE || code!=='STATE';
+    document.getElementById('cm-bigmap').style.display = showMap ? '' : 'none';
+    if(showMap) renderPrecinctMap(o,r);
   });
 }
 function renderBanner(r){ const el=document.getElementById('cm-banner'); if(!LIVE){ el.className='cm-banner preview'; el.textContent='Preview — results and projections appear here on primary day, September 8.'; return; }
@@ -308,7 +313,7 @@ function renderPrecinctMap(o,r){ if(bigMap){try{bigMap.remove();}catch(e){} bigM
       style:f=>{ const ps=wards[(f.properties.name||'').toLowerCase()]||[], anyIn=ps.some(x=>x.reported); return {fillColor:anyIn?PARTY[r.party].color:'#94a3b8',fillOpacity:anyIn?.62:.4,color:'#fff',weight:1}; },
       onEachFeature:(f,l)=>{ const nm=f.properties.name, ps=wards[(nm||'').toLowerCase()]||[]; l.bindTooltip(precinctTT(nm,ps),{className:'cm-tt',sticky:true});
         l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'})); l.on('mouseout',()=>l.setStyle({weight:1,color:'#fff'})); b.extend(l.getBounds()); }
-    }).addTo(bigMap); if(b.isValid()) bigMap.fitBounds(b.pad(.2)); }); }
+    }).addTo(bigMap); if(b.isValid()) bigMap.fitBounds(b.pad(.04)); }); }
 function precinctTT(name,ps){ if(!LIVE) return `<div class="tt-name">${name}</div><div class="tt-meta">${ps.length>1?ps.length+' wards':'precinct'}</div>`;
   const reported=ps.filter(p=>p.reported); if(!reported.length) return `<div class="tt-name">${name}</div><div class="tt-meta">not yet reported</div>`;
   const totals={}; reported.forEach(p=>Object.entries(p.votes).forEach(([n,v])=>totals[n]=(totals[n]||0)+v));
