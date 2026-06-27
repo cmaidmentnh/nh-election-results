@@ -1,148 +1,205 @@
 {% extends "admin/base.html" %}
-
-{% block title %}{{ municipality }} &mdash; Enter Results{% endblock %}
+{% block title %}{{ municipality }} — Enter Results{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/entry.css') }}?v=1">{% endblock %}
 
 {% block content %}
-<style>
-    .container { max-width: 760px; }
-    .place-header { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; font-size: 0.82rem; color: var(--text-muted); }
-    .place-header .item strong { color: var(--text); }
-    .ballot { margin-bottom: 1.5rem; }
-    .ballot-title { font-size: 1.1rem; font-weight: 700; padding: 0.4rem 0; }
-    .ballot-R { color: #8b0000; }
-    .ballot-D { color: #1e3a5f; }
-    .race { border: 1px solid var(--border); border-radius: 4px; margin-bottom: 0.75rem; }
-    .race-head { display: flex; justify-content: space-between; align-items: baseline;
-                 padding: 0.5rem 0.75rem; background: #f5f5f5; border-bottom: 1px solid var(--border); }
-    .race-office { font-weight: 700; font-size: 0.95rem; }
-    .race-sub { font-size: 0.78rem; color: var(--text-muted); }
-    .race-seats { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; }
-    .cand { display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.75rem; }
-    .cand:nth-child(odd) { background: #fafafa; }
-    .cand-name { font-size: 0.9rem; }
-    .cand-name .inc { font-size: 0.62rem; background: var(--primary); color: #fff; padding: 0.05rem 0.3rem;
-                      border-radius: 3px; margin-left: 0.4rem; vertical-align: middle; }
-    .vote-input { width: 90px; text-align: right; padding: 0.35rem; font-size: 1rem;
-                  border: 1px solid #ccc; border-radius: 3px; }
-    .race-total { padding: 0.35rem 0.75rem; text-align: right; font-size: 0.8rem;
-                  border-top: 1px dashed var(--border); color: var(--text-muted); }
-    .ballots-cast { padding: 0.5rem 0.75rem; background: #fffbeb; border: 1px solid #fde68a;
-                    border-radius: 4px; margin-bottom: 0.75rem; display: flex; align-items: center;
-                    justify-content: space-between; }
-    .save-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--border);
-                padding: 0.6rem 0; text-align: center; }
-</style>
+<a class="e-back" href="{{ url_for('entry.places', year=year, election_type=election_type) }}">← Polling places</a>
 
-<p><a href="{{ url_for('entry.places', year=year, election_type=election_type) }}">&larr; Polling Places</a></p>
-
-<h2 style="margin-bottom:0.25rem;">{{ municipality }}</h2>
-<div class="place-header" style="margin-bottom:1rem;">
-    {% if place_info and place_info.county %}<span class="item"><strong>County:</strong> {{ place_info.county }}</span>{% endif %}
-    {% if place_info and place_info.clerk %}<span class="item"><strong>Clerk:</strong> {{ place_info.clerk }}</span>{% endif %}
-    {% if place_info and place_info.polling_hours %}<span class="item"><strong>Hours:</strong> {{ place_info.polling_hours }}</span>{% endif %}
-    {% if place_info and place_info.polling_place %}<span class="item"><strong>Polling place:</strong> {{ place_info.polling_place }}</span>{% endif %}
+{% set total_races = groups.values()|map('length')|sum %}
+<div class="e-place-header">
+    <div class="e-county">{{ place_info.county if place_info and place_info.county else '' }}</div>
+    <h1>{{ municipality }}</h1>
+    <div class="e-place-facts">
+        {% if place_info and place_info.clerk %}<span class="f"><b>Clerk</b> {{ place_info.clerk }}</span>{% endif %}
+        {% if place_info and place_info.polling_hours %}<span class="f"><b>Hours</b> {{ place_info.polling_hours }}</span>{% endif %}
+        {% if place_info and place_info.polling_place %}<span class="f"><b>Polling place</b> {{ place_info.polling_place }}</span>{% endif %}
+    </div>
+    <div class="e-place-overall">
+        <div class="lbl"><span>Races entered</span><span id="overall-count">0 / {{ total_races }}</span></div>
+        <div class="e-bar"><i id="overall-bar" style="width:0%"></i></div>
+    </div>
 </div>
 
 {% if not groups %}
-<div class="card"><p class="text-muted">No races found for this polling place.</p></div>
+<div class="e-place-card"><p class="e-empty">No races found for this polling place.</p></div>
 {% endif %}
 
 {% set party_election = {} %}
 {% for e in elections %}{% set _ = party_election.update({e.party: e.id}) %}{% endfor %}
 
 {% for party, races in groups.items() %}
-<div class="ballot">
-    <div class="ballot-title ballot-{{ 'R' if party=='Republican' else ('D' if party=='Democratic' else '') }}">
-        {{ party }} Ballot
+{% set pcode = 'R' if party=='Republican' else ('D' if party=='Democratic' else 'G') %}
+<section class="e-ballot e-ballot-{{ pcode }}">
+    <div class="e-ballot-head">
+        <h2>{{ party }} Ballot</h2>
+        <div class="e-ballot-rule"></div>
     </div>
 
     {% set eid = party_election.get(party) %}
     {% if eid %}
-    <div class="ballots-cast">
-        <label for="ballots-{{ eid }}"><strong>{{ party }} ballots cast</strong> in {{ municipality }}</label>
-        <input type="number" min="0" id="ballots-{{ eid }}" class="ballots-input"
-               data-election="{{ eid }}" value="{{ ballots[eid] if ballots[eid] is not none else '' }}"
-               placeholder="0" style="width:110px; padding:0.35rem; text-align:right;">
+    <div class="e-ballots-cast">
+        <label for="ballots-{{ eid }}"><b>{{ party }} ballots cast</b> {{ municipality }}</label>
+        <input type="number" min="0" inputmode="numeric" id="ballots-{{ eid }}" class="e-ballots-input"
+               data-election="{{ eid }}" value="{{ ballots[eid] if ballots[eid] is not none else '' }}" placeholder="0">
     </div>
     {% endif %}
 
+    <div class="e-races">
     {% for race in races %}
-    <div class="race" id="race-{{ race.id }}">
-        <div class="race-head">
+    <div class="e-race" data-race="{{ race.id }}">
+        <div class="e-race-head">
             <div>
-                <span class="race-office">{{ race.office }}</span>
-                {% if race.label %}<div class="race-sub">{{ race.label }}</div>{% endif %}
+                <div class="e-race-office">{{ race.office }}</div>
+                {% if race.label %}<div class="e-race-sub">{{ race.label }}</div>{% endif %}
             </div>
-            <span class="race-seats">{{ race.seats }} seat{{ 's' if race.seats != 1 }}</span>
+            <span class="e-seats">{{ race.seats }} seat{{ 's' if race.seats != 1 }}</span>
         </div>
-        {% if not race.candidates %}
-        <div class="cand"><span class="text-muted text-small">No candidates filed.</span></div>
-        {% else %}
-        {% for c in race.candidates %}
-        <div class="cand">
-            <span class="cand-name">{{ c.name }}{% if c.is_incumbent %}<span class="inc">Incumbent</span>{% endif %}</span>
-            <input type="number" min="0" class="vote-input"
-                   data-race="{{ race.id }}" data-candidate="{{ c.candidate_id }}"
-                   value="{{ c.votes if c.votes is not none else '' }}" placeholder="0">
+
+        <div class="e-cands">
+            {% for c in race.candidates %}
+            <div class="e-cand">
+                <span class="e-cand-name {{ 'is-special' if c.is_writein }}">
+                    {{ c.name }}{% if c.is_writein %} <span class="e-pill">write-in</span>{% endif %}
+                </span>
+                <input type="number" min="0" inputmode="numeric" class="e-vote"
+                       data-race="{{ race.id }}" data-candidate="{{ c.candidate_id }}"
+                       value="{{ c.votes if c.votes is not none else '' }}" placeholder="0">
+            </div>
+            {% endfor %}
+
+            {# aggregate write-in line — always present #}
+            <div class="e-cand">
+                <span class="e-cand-name is-special">Write-in (total)</span>
+                <input type="number" min="0" inputmode="numeric" class="e-vote"
+                       data-race="{{ race.id }}" data-candidate="{{ race.writein_id }}"
+                       value="{{ race.writein_votes if race.writein_votes is not none else '' }}" placeholder="0">
+            </div>
+
+            {# named write-in adder — emphasized where candidates < seats #}
+            <div class="e-writein-adder" data-race="{{ race.id }}"></div>
+            <button type="button" class="e-add-writein" data-race="{{ race.id }}"
+                    {% if race.under_filled %}data-hint="1"{% endif %}>+ Add write-in name{% if race.under_filled %} <span class="e-pill">{{ race.seats - race.filed_count }} open seat{{ 's' if (race.seats - race.filed_count) != 1 }}</span>{% endif %}</button>
         </div>
-        {% endfor %}
-        <div class="race-total" data-race-total="{{ race.id }}">Total: 0</div>
-        {% endif %}
+
+        <div class="e-race-foot">
+            <span class="e-race-total">Total: <b data-race-total="{{ race.id }}">0</b></span>
+        </div>
     </div>
     {% endfor %}
-</div>
+    </div>
+</section>
 {% endfor %}
 
-<div class="save-bar">
-    <span id="save-status" class="text-muted text-small">Changes save automatically</span>
+<div class="e-savebar">
+    <span class="e-save-status" id="save-status"><span class="e-dot"></span>Changes save automatically</span>
+    <span class="e-kbd-hint"><kbd>Enter</kbd> next field · <kbd>↑</kbd><kbd>↓</kbd> move</span>
 </div>
+
+<style>
+  .e-add-writein { margin: .35rem .9rem .5rem; background: none; border: 1px dashed #cbd5e1; color: var(--e-muted);
+                   border-radius: 8px; padding: .35rem .6rem; font-size: .8rem; cursor: pointer; width: calc(100% - 1.8rem); }
+  .e-add-writein:hover { border-color: var(--e-navy); color: var(--e-navy); }
+  .e-add-writein[data-hint] { border-color: var(--e-amber); color: var(--e-amber); background: var(--e-amber-soft); font-weight: 600; }
+  .e-writein-row { display: flex; gap: .5rem; align-items: center; padding: .35rem .9rem; }
+  .e-writein-row input.wn { flex: 1; padding: .4rem .55rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: .9rem; }
+</style>
 
 <script>
 const SAVE_URL = "{{ url_for('entry.place_save', year=year, election_type=election_type, municipality=municipality) }}";
+const TOTAL_RACES = {{ total_races }};
 let saveTimeout = null;
 
-function recalc(raceId) {
+function recalcRace(raceId) {
     let total = 0;
-    document.querySelectorAll(`.vote-input[data-race="${raceId}"]`).forEach(i => total += parseInt(i.value) || 0);
+    document.querySelectorAll(`.e-vote[data-race="${raceId}"]`).forEach(i => total += parseInt(i.value) || 0);
+    document.querySelectorAll(`.e-writein-row[data-race="${raceId}"] .wv`).forEach(i => total += parseInt(i.value) || 0);
     const el = document.querySelector(`[data-race-total="${raceId}"]`);
-    if (el) el.textContent = 'Total: ' + total.toLocaleString();
+    if (el) el.textContent = total.toLocaleString();
+}
+
+function updateOverall() {
+    let entered = 0;
+    document.querySelectorAll('.e-race').forEach(race => {
+        const any = [...race.querySelectorAll('.e-vote, .wv')].some(i => i.value !== '');
+        if (any) entered++;
+    });
+    document.getElementById('overall-count').textContent = entered + ' / ' + TOTAL_RACES;
+    document.getElementById('overall-bar').style.width = (TOTAL_RACES ? 100*entered/TOTAL_RACES : 0) + '%';
 }
 
 function collect() {
-    const results = [];
-    document.querySelectorAll('.vote-input').forEach(i => {
-        if (i.value === '') return;  // skip blanks (not yet reported)
-        results.push({ race_id: +i.dataset.race, candidate_id: +i.dataset.candidate, votes: parseInt(i.value) || 0 });
-    });
-    const ballots = [];
-    document.querySelectorAll('.ballots-input').forEach(i => {
+    const results = [], writeins = [], ballots = [];
+    document.querySelectorAll('.e-vote').forEach(i => {
         if (i.value === '') return;
-        ballots.push({ election_id: +i.dataset.election, ballots_cast: parseInt(i.value) || 0 });
+        results.push({ race_id: +i.dataset.race, candidate_id: +i.dataset.candidate, votes: parseInt(i.value)||0 });
     });
-    return { results, ballots };
+    document.querySelectorAll('.e-writein-row').forEach(row => {
+        const name = row.querySelector('.wn').value.trim();
+        const votes = row.querySelector('.wv').value;
+        if (name === '' || votes === '') return;
+        writeins.push({ race_id: +row.dataset.race, name, votes: parseInt(votes)||0 });
+    });
+    document.querySelectorAll('.e-ballots-input').forEach(i => {
+        if (i.value === '') return;
+        ballots.push({ election_id: +i.dataset.election, ballots_cast: parseInt(i.value)||0 });
+    });
+    return { results, writeins, ballots };
 }
 
 function save() {
-    const status = document.getElementById('save-status');
-    status.textContent = 'Saving…';
-    fetch(SAVE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(collect()) })
+    const s = document.getElementById('save-status');
+    s.className = 'e-save-status saving'; s.innerHTML = '<span class="e-dot"></span>Saving…';
+    fetch(SAVE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) })
         .then(r => r.json())
         .then(d => {
-            if (d.success) {
-                status.textContent = '✓ Saved (' + d.updated + ' updated)';
-                setTimeout(() => status.textContent = 'Changes save automatically', 2500);
-            } else { status.textContent = 'Error saving'; }
+            if (d.success) { s.className='e-save-status saved'; s.innerHTML='<span class="e-dot"></span>Saved';
+                setTimeout(()=>{ s.className='e-save-status'; s.innerHTML='<span class="e-dot"></span>Changes save automatically'; }, 2500); }
+            else { s.className='e-save-status error'; s.innerHTML='<span class="e-dot"></span>Error saving'; }
         })
-        .catch(e => status.textContent = 'Error: ' + e);
+        .catch(e => { s.className='e-save-status error'; s.innerHTML='<span class="e-dot"></span>Error: '+e; });
 }
 
-document.querySelectorAll('.vote-input').forEach(i => {
-    i.addEventListener('input', () => { recalc(i.dataset.race); clearTimeout(saveTimeout); saveTimeout = setTimeout(save, 900); });
+function scheduleSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(save, 900); }
+
+function wireInput(i) {
+    i.addEventListener('input', () => {
+        if (i.classList.contains('e-vote') || i.classList.contains('wv')) { recalcRace(i.dataset.race || i.closest('[data-race]').dataset.race); updateOverall(); }
+        i.classList.toggle('filled', i.value !== '');
+        scheduleSave();
+    });
+    i.addEventListener('focus', () => i.select());
+}
+
+// keyboard navigation across numeric inputs
+function navInputs() { return [...document.querySelectorAll('.e-vote, .e-ballots-input, .wv')]; }
+document.addEventListener('keydown', e => {
+    if (!e.target.matches('.e-vote, .e-ballots-input, .wv')) return;
+    if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const all = navInputs(); const idx = all.indexOf(e.target);
+        const next = all[idx + (e.key === 'ArrowUp' ? -1 : 1)];
+        if (next) next.focus();
+    }
 });
-document.querySelectorAll('.ballots-input').forEach(i => {
-    i.addEventListener('input', () => { clearTimeout(saveTimeout); saveTimeout = setTimeout(save, 900); });
+
+// write-in adder
+document.querySelectorAll('.e-add-writein').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const raceId = btn.dataset.race;
+        const row = document.createElement('div');
+        row.className = 'e-writein-row'; row.dataset.race = raceId;
+        row.innerHTML = `<input class="wn" type="text" placeholder="Write-in candidate name">`
+            + `<input class="wv e-vote-like" type="number" min="0" inputmode="numeric" placeholder="0" style="width:80px;text-align:right;padding:.4rem .55rem;border:1px solid #d1d5db;border-radius:8px;">`;
+        document.querySelector(`.e-writein-adder[data-race="${raceId}"]`).appendChild(row);
+        const wv = row.querySelector('.wv'); wv.dataset.race = raceId;
+        wireInput(wv);
+        row.querySelector('.wn').addEventListener('input', scheduleSave);
+        row.querySelector('.wn').focus();
+    });
 });
-document.querySelectorAll('[data-race-total]').forEach(el => recalc(el.dataset.raceTotal));
+
+document.querySelectorAll('.e-vote, .e-ballots-input').forEach(wireInput);
+document.querySelectorAll('[data-race-total]').forEach(el => recalcRace(el.dataset.raceTotal));
+updateOverall();
 </script>
 {% endblock %}

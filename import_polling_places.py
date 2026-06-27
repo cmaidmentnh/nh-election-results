@@ -22,6 +22,16 @@ import sys
 
 from entry_sources import normkey, canonical_map, town_county_map
 
+# Unincorporated places whose SoS clerk-list name differs from the canonical
+# 2024-results spelling. Mapping them lets the polling place link to its ballot
+# (these grants/locations vote a full ballot: State Rep, Senate, Exec Council...).
+UNINCORPORATED_ALIASES = {
+    "AT.& GIL. AC. GT.": "Atkinson & Gilmanton Academy Grant",
+    "LOW & BURBANKS GRANT": "Low and Burbanks Grant",
+    "THOMPSON & MESERVE'S PURCHASE": "Thompson and Meserves Purchase",
+    "WENTWORTH'S LOCATION": "Wentworths Location",
+}
+
 
 def main():
     if len(sys.argv) < 2:
@@ -31,6 +41,7 @@ def main():
 
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
+    cur.execute("DELETE FROM polling_places")  # full authoritative reload from the CSV
     canon = canonical_map(cur)
     town_county = town_county_map(cur)
 
@@ -40,6 +51,9 @@ def main():
         2. ward-town -> base town (Derry Ward 1 -> Derry: admin wards, votes as town)
         3. unmatched (grants/purchases with no House district)
         """
+        alias = UNINCORPORATED_ALIASES.get(raw.upper().strip())
+        if alias:
+            return alias, True
         muni = canon.get(normkey(raw))
         if muni:
             return muni, True

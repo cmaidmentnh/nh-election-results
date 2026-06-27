@@ -1,34 +1,30 @@
 {% extends "admin/base.html" %}
-
 {% block title %}Enter Results{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/entry.css') }}?v=1">{% endblock %}
 
 {% block content %}
-<h2>Enter Results</h2>
-<p class="text-muted" style="margin-bottom: 1rem;">Choose an election. Entry is organized by polling place &mdash; pick a town/ward and enter every race on its ballot at once.</p>
+<h1 class="e-title">Enter Results</h1>
+<p class="e-subtitle">Entry is organized by polling place — pick a town or ward and record every race on its ballot at once.</p>
 
 {% if not events %}
-<div class="card"><p class="text-muted">No active elections found.</p></div>
+<div class="e-place-card"><p class="e-empty">No active elections found.</p></div>
 {% else %}
-<div class="card">
-    <table>
-        <thead>
-            <tr><th>Election</th><th>Ballots</th><th>Races</th><th></th></tr>
-        </thead>
-        <tbody>
-            {% for ev in events %}
-            <tr>
-                <td><strong>{{ ev.year }} {{ ev.election_type|replace('_',' ')|title }}</strong></td>
-                <td class="text-small">{{ ev.parties|replace(',', ' / ') if ev.parties else 'General' }}</td>
-                <td>{{ ev.race_count }}</td>
-                <td style="text-align: right;">
-                    <a class="btn btn-primary btn-small"
-                       href="{{ url_for('entry.places', year=ev.year, election_type=ev.election_type) }}">
-                       Enter by Polling Place &rarr;</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="e-events">
+    {% for ev in events %}
+    <a class="e-event" href="{{ url_for('entry.places', year=ev.year, election_type=ev.election_type) }}">
+        <h3>{{ ev.year }} {{ ev.election_type|replace('_',' ')|title }}</h3>
+        <div class="e-event-meta">
+            {% if ev.parties %}
+                {% for p in ev.parties.split(',')|sort %}
+                <span class="e-pill {{ 'e-pill-gop' if p=='Republican' else ('e-pill-dem' if p=='Democratic' else '') }}">{{ p }}</span>
+                {% endfor %}
+            {% else %}
+                <span class="e-pill">General</span>
+            {% endif %}
+        </div>
+        <div class="e-event-go">{{ ev.race_count }} races · Enter by polling place →</div>
+    </a>
+    {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

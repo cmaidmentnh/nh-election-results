@@ -1,68 +1,62 @@
 {% extends "admin/base.html" %}
-
 {% block title %}Polling Places{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/entry.css') }}?v=1">{% endblock %}
 
 {% block content %}
-<style>
-    .search-box { width: 100%; padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border);
-                  border-radius: 4px; margin-bottom: 1rem; }
-    .place-row { display: flex; align-items: center; justify-content: space-between;
-                 padding: 0.55rem 0.25rem; border-bottom: 1px solid var(--border); }
-    .place-row:hover { background: #f0f7ff; }
-    .place-name { font-weight: 600; }
-    .place-meta { font-size: 0.78rem; color: var(--text-muted); }
-    .progress { display: inline-block; min-width: 70px; text-align: right; font-size: 0.8rem; font-weight: 600; }
-    .progress.done { color: var(--success); }
-    .progress.partial { color: #b45309; }
-    .progress.none { color: var(--text-muted); }
-    .county-head { margin: 1.25rem 0 0.25rem; font-size: 0.8rem; text-transform: uppercase;
-                   letter-spacing: 0.04em; color: var(--text-muted); font-weight: 700; }
-    .hidden { display: none; }
-</style>
+<a class="e-back" href="{{ url_for('entry.index') }}">← Elections</a>
+<h1 class="e-title">{{ year }} {{ election_type|replace('_',' ')|title }}</h1>
+<p class="e-subtitle">{{ places|length }} polling places ·
+   {% set parties = elections|map(attribute='party')|select|list %}
+   {{ parties|join(' / ') if parties else 'General' }} ballot · click a place to enter results</p>
 
-<p><a href="{{ url_for('entry.index') }}">&larr; Elections</a></p>
-<h2>{{ year }} {{ election_type|replace('_',' ')|title }} &mdash; Polling Places</h2>
-<p class="text-muted text-small">{{ places|length }} polling places &middot;
-   {{ elections|map(attribute='party')|select|join(' / ') or 'General' }} ballot</p>
+<div class="e-toolbar">
+    <input type="text" id="search" class="e-search" placeholder="Search town or ward…" autofocus>
+</div>
 
-<input type="text" id="search" class="search-box" placeholder="Search town or ward&hellip;" autofocus>
-
-<div class="card" id="place-list">
+<div id="place-list">
     {% set ns = namespace(county='') %}
     {% for p in places %}
         {% if p.county != ns.county %}
+            {% if ns.county != '' %}</div>{% endif %}
             {% set ns.county = p.county %}
-            <div class="county-head" data-county>{{ p.county or 'Other' }}</div>
+            <div class="e-county-head" data-county>{{ p.county or 'Other' }}</div>
+            <div class="e-place-card" data-group>
         {% endif %}
-        <div class="place-row" data-name="{{ p.municipality|lower }}">
-            <div>
-                <a class="place-name"
-                   href="{{ url_for('entry.place', year=year, election_type=election_type, municipality=p.municipality) }}">{{ p.municipality }}</a>
-                {% if p.polling_hours %}<div class="place-meta">{{ p.polling_hours }}</div>{% endif %}
+        {% set cls = 'is-done' if (p.entered >= p.total and p.total > 0) else ('is-partial' if p.entered > 0 else '') %}
+        <a class="e-place {{ cls }}" data-name="{{ p.municipality|lower }}"
+           href="{{ url_for('entry.place', year=year, election_type=election_type, municipality=p.municipality) }}">
+            <div class="e-place-main">
+                <div class="e-place-name">{{ p.municipality }}</div>
+                {% if p.polling_hours %}<div class="e-place-meta">{{ p.polling_hours }}</div>{% endif %}
             </div>
-            <span class="progress {{ 'done' if p.entered >= p.total and p.total > 0 else ('partial' if p.entered > 0 else 'none') }}">
-                {{ p.entered }}/{{ p.total }}
-            </span>
-        </div>
+            <div class="e-place-prog">
+                <div class="e-bar"><i style="width: {{ (100 * p.entered / p.total)|round(0,'floor')|int if p.total else 0 }}%"></i></div>
+                <div class="e-prog-num">{{ p.entered }}/{{ p.total }}</div>
+            </div>
+            <svg class="e-place-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
     {% endfor %}
+    {% if places %}</div>{% endif %}
 </div>
+<div class="e-empty hidden" id="no-results">No polling places match.</div>
 
 <script>
 const search = document.getElementById('search');
 search.addEventListener('input', () => {
     const q = search.value.trim().toLowerCase();
-    document.querySelectorAll('.place-row').forEach(row => {
-        row.classList.toggle('hidden', q && !row.dataset.name.includes(q));
+    let anyVisible = false;
+    document.querySelectorAll('.e-place').forEach(row => {
+        const show = !q || row.dataset.name.includes(q);
+        row.classList.toggle('hidden', !show);
+        if (show) anyVisible = true;
     });
-    // Hide county headers with no visible rows.
     document.querySelectorAll('[data-county]').forEach(h => {
-        let n = h.nextElementSibling, any = false;
-        while (n && !n.hasAttribute('data-county')) {
-            if (n.classList.contains('place-row') && !n.classList.contains('hidden')) { any = true; break; }
-            n = n.nextElementSibling;
-        }
-        h.classList.toggle('hidden', !any);
+        const group = h.nextElementSibling;
+        const visible = group && group.querySelector('.e-place:not(.hidden)');
+        h.classList.toggle('hidden', !visible);
+        if (group) group.classList.toggle('hidden', !visible);
     });
+    document.getElementById('no-results').classList.toggle('hidden', anyVisible);
 });
 </script>
 {% endblock %}

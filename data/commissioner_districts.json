@@ -1,0 +1,962 @@
+{
+"CENTER HARBOR": {
+"county": "Belknap",
+"district": 1
+},
+"MEREDITH": {
+"county": "Belknap",
+"district": 1
+},
+"LACONIA": {
+"county": "Belknap",
+"district": 1
+},
+"BELMONT": {
+"county": "Belknap",
+"district": 2
+},
+"GILMANTON": {
+"county": "Belknap",
+"district": 2
+},
+"NEW HAMPTON": {
+"county": "Belknap",
+"district": 2
+},
+"SANBORNTON": {
+"county": "Belknap",
+"district": 2
+},
+"TILTON": {
+"county": "Belknap",
+"district": 2
+},
+"ALTON": {
+"county": "Belknap",
+"district": 3
+},
+"BARNSTEAD": {
+"county": "Belknap",
+"district": 3
+},
+"GILFORD": {
+"county": "Belknap",
+"district": 3
+},
+"ALBANY": {
+"county": "Carroll",
+"district": 1
+},
+"BARTLETT": {
+"county": "Carroll",
+"district": 1
+},
+"CHATHAM": {
+"county": "Carroll",
+"district": 1
+},
+"CONWAY": {
+"county": "Carroll",
+"district": 1
+},
+"HALES LOCATION": {
+"county": "Carroll",
+"district": 1
+},
+"HART'S LOCATION": {
+"county": "Carroll",
+"district": 1
+},
+"JACKSON": {
+"county": "Carroll",
+"district": 1
+},
+"SANDWICH": {
+"county": "Carroll",
+"district": 1
+},
+"MADISON": {
+"county": "Carroll",
+"district": 2
+},
+"MOULTONBOROUGH": {
+"county": "Carroll",
+"district": 2
+},
+"OSSIPEE": {
+"county": "Carroll",
+"district": 2
+},
+"TAMWORTH": {
+"county": "Carroll",
+"district": 2
+},
+"TUFTONBORO": {
+"county": "Carroll",
+"district": 2
+},
+"BROOKFIELD": {
+"county": "Carroll",
+"district": 3
+},
+"EATON": {
+"county": "Carroll",
+"district": 3
+},
+"EFFINGHAM": {
+"county": "Carroll",
+"district": 3
+},
+"FREEDOM": {
+"county": "Carroll",
+"district": 3
+},
+"WAKEFIELD": {
+"county": "Carroll",
+"district": 3
+},
+"WOLFEBORO": {
+"county": "Carroll",
+"district": 3
+},
+"CHESTERFIELD": {
+"county": "Cheshire",
+"district": 1
+},
+"FITZWILLIAM": {
+"county": "Cheshire",
+"district": 1
+},
+"HINSDALE": {
+"county": "Cheshire",
+"district": 1
+},
+"RICHMOND": {
+"county": "Cheshire",
+"district": 1
+},
+"SWANZEY": {
+"county": "Cheshire",
+"district": 1
+},
+"TROY": {
+"county": "Cheshire",
+"district": 1
+},
+"WINCHESTER": {
+"county": "Cheshire",
+"district": 1
+},
+"KEENE": {
+"county": "Cheshire",
+"district": 2
+},
+"MARLBOROUGH": {
+"county": "Cheshire",
+"district": 2
+},
+"ROXBURY": {
+"county": "Cheshire",
+"district": 2
+},
+"ALSTEAD": {
+"county": "Cheshire",
+"district": 3
+},
+"DUBLIN": {
+"county": "Cheshire",
+"district": 3
+},
+"GILSUM": {
+"county": "Cheshire",
+"district": 3
+},
+"HARRISVILLE": {
+"county": "Cheshire",
+"district": 3
+},
+"JAFFREY": {
+"county": "Cheshire",
+"district": 3
+},
+"MARLOW": {
+"county": "Cheshire",
+"district": 3
+},
+"NELSON": {
+"county": "Cheshire",
+"district": 3
+},
+"RINDGE": {
+"county": "Cheshire",
+"district": 3
+},
+"STODDARD": {
+"county": "Cheshire",
+"district": 3
+},
+"SULLIVAN": {
+"county": "Cheshire",
+"district": 3
+},
+"SURRY": {
+"county": "Cheshire",
+"district": 3
+},
+"WALPOLE": {
+"county": "Cheshire",
+"district": 3
+},
+"WESTMORELAND": {
+"county": "Cheshire",
+"district": 3
+},
+"BERLIN": {
+"county": "Coos",
+"district": 1
+},
+"MILAN": {
+"county": "Coos",
+"district": 1
+},
+"DALTON": {
+"county": "Coos",
+"district": 2
+},
+"JEFFERSON": {
+"county": "Coos",
+"district": 2
+},
+"KILKENNY": {
+"county": "Coos",
+"district": 2
+},
+"LANCASTER": {
+"county": "Coos",
+"district": 2
+},
+"NORTHUMBERLAND": {
+"county": "Coos",
+"district": 2
+},
+"RANDOLPH": {
+"county": "Coos",
+"district": 2
+},
+"WHITEFIELD": {
+"county": "Coos",
+"district": 2
+},
+"CARROLL": {
+"county": "Coos",
+"district": 3
+},
+"CLARKSVILLE": {
+"county": "Coos",
+"district": 3
+},
+"COLEBROOK": {
+"county": "Coos",
+"district": 3
+},
+"COLUMBIA": {
+"county": "Coos",
+"district": 3
+},
+"DIXVILLE": {
+"county": "Coos",
+"district": 3
+},
+"DUMMER": {
+"county": "Coos",
+"district": 3
+},
+"ERROL": {
+"county": "Coos",
+"district": 3
+},
+"GORHAM": {
+"county": "Coos",
+"district": 3
+},
+"MILLSFIELD": {
+"county": "Coos",
+"district": 3
+},
+"PITTSBURG": {
+"county": "Coos",
+"district": 3
+},
+"SHELBURNE": {
+"county": "Coos",
+"district": 3
+},
+"STARK": {
+"county": "Coos",
+"district": 3
+},
+"STEWARTSTOWN": {
+"county": "Coos",
+"district": 3
+},
+"STRATFORD": {
+"county": "Coos",
+"district": 3
+},
+"CAMBRIDGE": {
+"county": "Coos",
+"district": 3
+},
+"ENFIELD": {
+"county": "Grafton",
+"district": 1
+},
+"HANOVER": {
+"county": "Grafton",
+"district": 1
+},
+"LEBANON": {
+"county": "Grafton",
+"district": 1
+},
+"BATH": {
+"county": "Grafton",
+"district": 2
+},
+"BENTON": {
+"county": "Grafton",
+"district": 2
+},
+"BETHLEHEM": {
+"county": "Grafton",
+"district": 2
+},
+"EASTON": {
+"county": "Grafton",
+"district": 2
+},
+"FRANCONIA": {
+"county": "Grafton",
+"district": 2
+},
+"HAVERHILL": {
+"county": "Grafton",
+"district": 2
+},
+"LANDAFF": {
+"county": "Grafton",
+"district": 2
+},
+"LINCOLN": {
+"county": "Grafton",
+"district": 2
+},
+"LISBON": {
+"county": "Grafton",
+"district": 2
+},
+"LITTLETON": {
+"county": "Grafton",
+"district": 2
+},
+"LIVERMORE": {
+"county": "Grafton",
+"district": 2
+},
+"LYMAN": {
+"county": "Grafton",
+"district": 2
+},
+"LYME": {
+"county": "Grafton",
+"district": 2
+},
+"MONROE": {
+"county": "Grafton",
+"district": 2
+},
+"ORFORD": {
+"county": "Grafton",
+"district": 2
+},
+"PIERMONT": {
+"county": "Grafton",
+"district": 2
+},
+"SUGAR HILL": {
+"county": "Grafton",
+"district": 2
+},
+"THORNTON": {
+"county": "Grafton",
+"district": 2
+},
+"WATERVILLE VALLEY": {
+"county": "Grafton",
+"district": 2
+},
+"WOODSTOCK": {
+"county": "Grafton",
+"district": 2
+},
+"ALEXANDRIA": {
+"county": "Grafton",
+"district": 3
+},
+"ASHLAND": {
+"county": "Grafton",
+"district": 3
+},
+"BRIDGEWATER": {
+"county": "Grafton",
+"district": 3
+},
+"BRISTOL": {
+"county": "Grafton",
+"district": 3
+},
+"CAMPTON": {
+"county": "Grafton",
+"district": 3
+},
+"CANAAN": {
+"county": "Grafton",
+"district": 3
+},
+"DORCHESTER": {
+"county": "Grafton",
+"district": 3
+},
+"ELLSWORTH": {
+"county": "Grafton",
+"district": 3
+},
+"GRAFTON": {
+"county": "Grafton",
+"district": 3
+},
+"GROTON": {
+"county": "Grafton",
+"district": 3
+},
+"HEBRON": {
+"county": "Grafton",
+"district": 3
+},
+"HOLDERNESS": {
+"county": "Grafton",
+"district": 3
+},
+"ORANGE": {
+"county": "Grafton",
+"district": 3
+},
+"PLYMOUTH": {
+"county": "Grafton",
+"district": 3
+},
+"RUMNEY": {
+"county": "Grafton",
+"district": 3
+},
+"WARREN": {
+"county": "Grafton",
+"district": 3
+},
+"WENTWORTH": {
+"county": "Grafton",
+"district": 3
+},
+"BEDFORD": {
+"county": "Hillsborough",
+"district": 1
+},
+"MANCHESTER": {
+"county": "Hillsborough",
+"district": 1
+},
+"NEW BOSTON": {
+"county": "Hillsborough",
+"district": 1
+},
+"HUDSON": {
+"county": "Hillsborough",
+"district": 2
+},
+"LITCHFIELD": {
+"county": "Hillsborough",
+"district": 2
+},
+"PELHAM": {
+"county": "Hillsborough",
+"district": 2
+},
+"NASHUA": {
+"county": "Hillsborough",
+"district": 2
+},
+"AMHERST": {
+"county": "Hillsborough",
+"district": 3
+},
+"ANTRIM": {
+"county": "Hillsborough",
+"district": 3
+},
+"BENNINGTON": {
+"county": "Hillsborough",
+"district": 3
+},
+"BROOKLINE": {
+"county": "Hillsborough",
+"district": 3
+},
+"DEERING": {
+"county": "Hillsborough",
+"district": 3
+},
+"FRANCESTOWN": {
+"county": "Hillsborough",
+"district": 3
+},
+"GOFFSTOWN": {
+"county": "Hillsborough",
+"district": 3
+},
+"GREENFIELD": {
+"county": "Hillsborough",
+"district": 3
+},
+"GREENVILLE": {
+"county": "Hillsborough",
+"district": 3
+},
+"HANCOCK": {
+"county": "Hillsborough",
+"district": 3
+},
+"HILLSBOROUGH": {
+"county": "Hillsborough",
+"district": 3
+},
+"HOLLIS": {
+"county": "Hillsborough",
+"district": 3
+},
+"LYNDEBOROUGH": {
+"county": "Hillsborough",
+"district": 3
+},
+"MASON": {
+"county": "Hillsborough",
+"district": 3
+},
+"MERRIMACK": {
+"county": "Hillsborough",
+"district": 3
+},
+"MILFORD": {
+"county": "Hillsborough",
+"district": 3
+},
+"MONT VERNON": {
+"county": "Hillsborough",
+"district": 3
+},
+"NEW IPSWICH": {
+"county": "Hillsborough",
+"district": 3
+},
+"PETERBOROUGH": {
+"county": "Hillsborough",
+"district": 3
+},
+"SHARON": {
+"county": "Hillsborough",
+"district": 3
+},
+"TEMPLE": {
+"county": "Hillsborough",
+"district": 3
+},
+"WEARE": {
+"county": "Hillsborough",
+"district": 3
+},
+"WILTON": {
+"county": "Hillsborough",
+"district": 3
+},
+"WINDSOR": {
+"county": "Hillsborough",
+"district": 3
+},
+"BOW": {
+"county": "Merrimack",
+"district": 1
+},
+"CONCORD": {
+"county": "Merrimack",
+"district": 1
+},
+"ANDOVER": {
+"county": "Merrimack",
+"district": 2
+},
+"BOSCAWEN": {
+"county": "Merrimack",
+"district": 2
+},
+"BRADFORD": {
+"county": "Merrimack",
+"district": 2
+},
+"CANTERBURY": {
+"county": "Merrimack",
+"district": 2
+},
+"CHICHESTER": {
+"county": "Merrimack",
+"district": 2
+},
+"FRANKLIN": {
+"county": "Merrimack",
+"district": 2
+},
+"DANBURY": {
+"county": "Merrimack",
+"district": 2
+},
+"HILL": {
+"county": "Merrimack",
+"district": 2
+},
+"LOUDON": {
+"county": "Merrimack",
+"district": 2
+},
+"NEW LONDON": {
+"county": "Merrimack",
+"district": 2
+},
+"NEWBURY": {
+"county": "Merrimack",
+"district": 2
+},
+"NORTHFIELD": {
+"county": "Merrimack",
+"district": 2
+},
+"SALISBURY": {
+"county": "Merrimack",
+"district": 2
+},
+"SUTTON": {
+"county": "Merrimack",
+"district": 2
+},
+"WARNER": {
+"county": "Merrimack",
+"district": 2
+},
+"WEBSTER": {
+"county": "Merrimack",
+"district": 2
+},
+"WILMOT": {
+"county": "Merrimack",
+"district": 2
+},
+"ALLENSTOWN": {
+"county": "Merrimack",
+"district": 3
+},
+"DUNBARTON": {
+"county": "Merrimack",
+"district": 3
+},
+"EPSOM": {
+"county": "Merrimack",
+"district": 3
+},
+"HENNIKER": {
+"county": "Merrimack",
+"district": 3
+},
+"HOOKSETT": {
+"county": "Merrimack",
+"district": 3
+},
+"HOPKINTON": {
+"county": "Merrimack",
+"district": 3
+},
+"PEMBROKE": {
+"county": "Merrimack",
+"district": 3
+},
+"PITTSFIELD": {
+"county": "Merrimack",
+"district": 3
+},
+"EPPING": {
+"county": "Rockingham",
+"district": 1
+},
+"EXETER": {
+"county": "Rockingham",
+"district": 1
+},
+"GREENLAND": {
+"county": "Rockingham",
+"district": 1
+},
+"HAMPTON": {
+"county": "Rockingham",
+"district": 1
+},
+"HAMPTON FALLS": {
+"county": "Rockingham",
+"district": 1
+},
+"KENSINGTON": {
+"county": "Rockingham",
+"district": 1
+},
+"NEW CASTLE": {
+"county": "Rockingham",
+"district": 1
+},
+"NEWFIELDS": {
+"county": "Rockingham",
+"district": 1
+},
+"NEWINGTON": {
+"county": "Rockingham",
+"district": 1
+},
+"NEWMARKET": {
+"county": "Rockingham",
+"district": 1
+},
+"NORTH HAMPTON": {
+"county": "Rockingham",
+"district": 1
+},
+"PORTSMOUTH": {
+"county": "Rockingham",
+"district": 1
+},
+"RYE": {
+"county": "Rockingham",
+"district": 1
+},
+"STRATHAM": {
+"county": "Rockingham",
+"district": 1
+},
+"ATKINSON": {
+"county": "Rockingham",
+"district": 2
+},
+"DERRY": {
+"county": "Rockingham",
+"district": 2
+},
+"NEWTON": {
+"county": "Rockingham",
+"district": 2
+},
+"PLAISTOW": {
+"county": "Rockingham",
+"district": 2
+},
+"SALEM": {
+"county": "Rockingham",
+"district": 2
+},
+"SEABROOK": {
+"county": "Rockingham",
+"district": 2
+},
+"SOUTH HAMPTON": {
+"county": "Rockingham",
+"district": 2
+},
+"WINDHAM": {
+"county": "Rockingham",
+"district": 2
+},
+"AUBURN": {
+"county": "Rockingham",
+"district": 3
+},
+"BRENTWOOD": {
+"county": "Rockingham",
+"district": 3
+},
+"CANDIA": {
+"county": "Rockingham",
+"district": 3
+},
+"CHESTER": {
+"county": "Rockingham",
+"district": 3
+},
+"DANVILLE": {
+"county": "Rockingham",
+"district": 3
+},
+"DEERFIELD": {
+"county": "Rockingham",
+"district": 3
+},
+"EAST KINGSTON": {
+"county": "Rockingham",
+"district": 3
+},
+"FREMONT": {
+"county": "Rockingham",
+"district": 3
+},
+"HAMPSTEAD": {
+"county": "Rockingham",
+"district": 3
+},
+"KINGSTON": {
+"county": "Rockingham",
+"district": 3
+},
+"LONDONDERRY": {
+"county": "Rockingham",
+"district": 3
+},
+"NORTHWOOD": {
+"county": "Rockingham",
+"district": 3
+},
+"NOTTINGHAM": {
+"county": "Rockingham",
+"district": 3
+},
+"RAYMOND": {
+"county": "Rockingham",
+"district": 3
+},
+"SANDOWN": {
+"county": "Rockingham",
+"district": 3
+},
+"FARMINGTON": {
+"county": "Strafford",
+"district": 1
+},
+"MIDDLETON": {
+"county": "Strafford",
+"district": 1
+},
+"MILTON": {
+"county": "Strafford",
+"district": 1
+},
+"NEW DURHAM": {
+"county": "Strafford",
+"district": 1
+},
+"SOMERSWORTH": {
+"county": "Strafford",
+"district": 1
+},
+"DOVER": {
+"county": "Strafford",
+"district": 2
+},
+"DURHAM": {
+"county": "Strafford",
+"district": 2
+},
+"LEE": {
+"county": "Strafford",
+"district": 2
+},
+"ROLLINSFORD": {
+"county": "Strafford",
+"district": 2
+},
+"BARRINGTON": {
+"county": "Strafford",
+"district": 3
+},
+"MADBURY": {
+"county": "Strafford",
+"district": 3
+},
+"ROCHESTER": {
+"county": "Strafford",
+"district": 3
+},
+"STRAFFORD": {
+"county": "Strafford",
+"district": 3
+},
+"CORNISH": {
+"county": "Sullivan",
+"district": 1
+},
+"CLAREMONT": {
+"county": "Sullivan",
+"district": 1
+},
+"CROYDON": {
+"county": "Sullivan",
+"district": 2
+},
+"GRANTHAM": {
+"county": "Sullivan",
+"district": 2
+},
+"NEWPORT": {
+"county": "Sullivan",
+"district": 2
+},
+"PLAINFIELD": {
+"county": "Sullivan",
+"district": 2
+},
+"SPRINGFIELD": {
+"county": "Sullivan",
+"district": 2
+},
+"ACWORTH": {
+"county": "Sullivan",
+"district": 3
+},
+"CHARLESTOWN": {
+"county": "Sullivan",
+"district": 3
+},
+"GOSHEN": {
+"county": "Sullivan",
+"district": 3
+},
+"LANGDON": {
+"county": "Sullivan",
+"district": 3
+},
+"LEMPSTER": {
+"county": "Sullivan",
+"district": 3
+},
+"SUNAPEE": {
+"county": "Sullivan",
+"district": 3
+},
+"UNITY": {
+"county": "Sullivan",
+"district": 3
+},
+"WASHINGTON": {
+"county": "Sullivan",
+"district": 3
+}
+}

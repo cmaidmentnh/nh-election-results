@@ -10,6 +10,7 @@ Two entry modes share one data model (race_candidates rosters + results):
 """
 
 import json
+import re
 import sqlite3
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, abort
 from flask_login import login_required, current_user
@@ -18,6 +19,22 @@ from auth import get_db
 entry_bp = Blueprint('entry', __name__, url_prefix='/entry')
 
 DATABASE = 'nh_elections.db'
+WRITE_IN_NAME = "Write-in"
+
+
+def normalize_name(name):
+    return re.sub(r"\s+", " ", re.sub(r"[^A-Z0-9 ]", "", (name or "").upper())).strip()
+
+
+def ensure_writein_candidate(cursor):
+    """Shared pseudo-candidate for the aggregate write-in line on every race."""
+    cursor.execute("SELECT id FROM candidates WHERE name_normalized = 'WRITEIN' AND party IS NULL")
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    cursor.execute("INSERT INTO candidates (name, name_normalized, party) VALUES (?, 'WRITEIN', NULL)",
+                   (WRITE_IN_NAME,))
+    return cursor.lastrowid
 
 # Display order for offices on a polling-place ballot (top of ticket first).
 OFFICE_ORDER = [
@@ -97,20 +114,34 @@ def place_races(cursor, municipality, election_ids):
           AND COALESCE(r.county,'') = '' AND COALESCE(r.district,'') = ''
     """, (*election_ids, municipality, *election_ids))
     races = [dict(r) for r in cursor.fetchall()]
+    writein_id = ensure_writein_candidate(cursor)
 
     for race in races:
+        # recruitment_filing_id = -1 marks a named write-in roster row.
         cursor.execute("""
-            SELECT rc.candidate_id, c.name, rc.party, rc.ballot_order, rc.is_incumbent,
+            SELECT rc.candidate_id, c.name, rc.party, rc.ballot_order,
+                   (rc.recruitment_filing_id = -1) AS is_writein,
                    (SELECT votes FROM results
                       WHERE race_id = rc.race_id AND candidate_id = rc.candidate_id
                         AND municipality = ?) AS votes
             FROM race_candidates rc
             JOIN candidates c ON rc.candidate_id = c.id
-            WHERE rc.race_id = ?
-            ORDER BY rc.ballot_order, c.name
-        """, (municipality, race['id']))
+            WHERE rc.race_id = ? AND rc.candidate_id != ?
+            ORDER BY is_writein, rc.ballot_order, c.name
+        """, (municipality, race['id'], writein_id))
         race['candidates'] = [dict(c) for c in cursor.fetchall()]
         race['label'] = race_label(race['office'], race['county'], race['district'])
+
+        # Aggregate write-in line (always present).
+        cursor.execute("""SELECT votes FROM results
+                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                       (race['id'], writein_id, municipality))
+        wr = cursor.fetchone()
+        race['writein_id'] = writein_id
+        race['writein_votes'] = wr['votes'] if wr else None
+
+        race['filed_count'] = sum(1 for c in race['candidates'] if not c['is_writein'])
+        race['under_filled'] = race['filed_count'] < (race['seats'] or 1)
 
     races.sort(key=lambda r: (r['ballot_party'] or '', OFFICE_RANK.get(r['office'], 99),
                               r['county'], _district_sort(r['district'])))
@@ -241,6 +272,7 @@ def place(year, election_type, municipality):
     for race in races:
         groups.setdefault(race['ballot_party'] or 'General', []).append(race)
 
+    conn.commit()  # persist the write-in pseudo-candidate if it was just created
     conn.close()
     return render_template('entry/place.html', year=year, election_type=election_type,
                            municipality=municipality, place_info=place_info,
@@ -275,6 +307,53 @@ def place_save(year, election_type, municipality):
         if not rr or rr['election_id'] not in valid_election_ids:
             continue
 
+        cursor.execute("""SELECT votes FROM results
+                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                       (race_id, candidate_id, municipality))
+        old = cursor.fetchone()
+        if old:
+            if old['votes'] != votes:
+                cursor.execute("""UPDATE results SET votes = ?
+                                  WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                               (votes, race_id, candidate_id, municipality))
+                log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
+                          'update', {'votes': old['votes']}, {'votes': votes})
+                updated += 1
+        else:
+            cursor.execute("""INSERT INTO results (race_id, candidate_id, municipality, votes)
+                              VALUES (?, ?, ?, ?)""", (race_id, candidate_id, municipality, votes))
+            log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
+                      'create', None, {'votes': votes})
+            updated += 1
+
+    # Named write-ins: create the candidate + roster row, then record the votes.
+    for entry in data.get('writeins', []):
+        race_id = entry.get('race_id')
+        name = (entry.get('name') or '').strip()
+        votes = entry.get('votes', 0) or 0
+        if not race_id or not name:
+            continue
+        cursor.execute("""SELECT r.election_id, e.party FROM races r
+                          JOIN elections e ON r.election_id = e.id WHERE r.id = ?""", (race_id,))
+        rr = cursor.fetchone()
+        if not rr or rr['election_id'] not in valid_election_ids:
+            continue
+        norm = normalize_name(name)
+        party = rr['party']
+        cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                       (norm, party))
+        crow = cursor.fetchone()
+        if crow:
+            candidate_id = crow['id']
+        else:
+            cursor.execute("INSERT INTO candidates (name, name_normalized, party) VALUES (?,?,?)",
+                           (name, norm, party))
+            candidate_id = cursor.lastrowid
+        # Roster row flagged as a write-in (recruitment_filing_id = -1).
+        cursor.execute("""INSERT OR IGNORE INTO race_candidates
+                          (race_id, candidate_id, party, ballot_order, is_incumbent,
+                           recruitment_candidate_id, recruitment_filing_id)
+                          VALUES (?, ?, ?, 900, 0, NULL, -1)""", (race_id, candidate_id, party))
         cursor.execute("""SELECT votes FROM results
                           WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
                        (race_id, candidate_id, municipality))

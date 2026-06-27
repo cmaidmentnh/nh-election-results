@@ -21,11 +21,15 @@ NOT stored here (handled elsewhere by the entry layer):
 Idempotent. Usage: python3 build_municipality_districts.py [nh_elections.db]
 """
 
+import json
+import os
+import re
 import sqlite3
 import sys
 
 DEFAULT_DB = "nh_elections.db"
 CYCLE = "2022-2030"
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Filing/office name -> offices.name in the results DB.
 DELEGATE_OFFICE = "Delegate to the State Convention"
@@ -128,6 +132,26 @@ def main():
             upsert(cur, muni, oid, county, "", "county-wide")
             cw_count += 1
     print(f"  County-wide offices: {cw_count} town rows across {len(COUNTY_WIDE_OFFICES)} offices")
+
+    # --- 4. County Commissioner, from the town -> district map ----------------
+    # commissioner_districts.json (town.UPPER -> {county, district}) is the same
+    # authoritative map used by candidates.electhouserepublicans.com.
+    comm_oid = office_id(cur, "County Commissioner")
+    comm_path = os.path.join(HERE, "data", "commissioner_districts.json")
+    comm_count = 0
+    try:
+        comm_map = json.load(open(comm_path))
+    except FileNotFoundError:
+        comm_map = {}
+        print("  County Commissioner: data/commissioner_districts.json not found, skipped")
+    if comm_map and comm_oid:
+        for muni in muni_county:
+            base = re.sub(r"\s+Ward\s+\d+\*?$", "", muni).strip().upper()
+            rec = comm_map.get(base)
+            if rec:
+                upsert(cur, muni, comm_oid, rec["county"], str(rec["district"]), "commissioner-json")
+                comm_count += 1
+        print(f"  County Commissioner: {comm_count} town rows")
 
     conn.commit()
 

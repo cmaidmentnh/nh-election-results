@@ -153,6 +153,25 @@ def main():
 
     ensure_office(cur, "Delegate to the State Convention", "state")
     election_ids = {p: ensure_election(cur, full) for p, full in PRIMARY_PARTIES.items()}
+
+    # Idempotent reset: clear this primary's races/roster/results and any
+    # candidates a previous run created but no longer references. Lets re-runs
+    # pick up corrected seats, rosters, and filings cleanly.
+    eids = list(election_ids.values())
+    qm = ",".join("?" * len(eids))
+    cur.execute(f"SELECT id FROM races WHERE election_id IN ({qm})", eids)
+    old_race_ids = [r[0] for r in cur.fetchall()]
+    if old_race_ids:
+        rq = ",".join("?" * len(old_race_ids))
+        cur.execute(f"DELETE FROM results WHERE race_id IN ({rq})", old_race_ids)
+        cur.execute(f"DELETE FROM race_candidates WHERE race_id IN ({rq})", old_race_ids)
+        cur.execute(f"DELETE FROM races WHERE id IN ({rq})", old_race_ids)
+    # Drop candidates left orphaned by the reset (created by a prior import,
+    # not part of any historical results or remaining roster).
+    cur.execute("""DELETE FROM candidates
+                   WHERE id NOT IN (SELECT candidate_id FROM results)
+                     AND id NOT IN (SELECT candidate_id FROM race_candidates)""")
+
     # resolve office ids by results-office name
     oid_by_office = {}
     for fname, rname in OFFICE_MAP.items():
@@ -200,7 +219,11 @@ def main():
             if row:
                 race_id = row[0]
             else:
-                seats = seats_map.get((oid, county, district), 1)
+                # Delegates are apportioned exactly like State Reps for the
+                # district, so borrow the State Rep seat count.
+                seats_oid = (oid_by_office["State Representative"]
+                             if office == "Delegate to the State Convention" else oid)
+                seats = seats_map.get((seats_oid, county, district), 1)
                 cur.execute(
                     "INSERT INTO races (election_id, office_id, district, county, seats) VALUES (?,?,?,?,?)",
                     (election_id, oid, district or None, county or None, seats),
@@ -236,7 +259,7 @@ def main():
                     recruitment_candidate_id, recruitment_filing_id)
                    VALUES (?,?,?,?,?,?,?)""",
             (race_id, candidate_id, party_full, order,
-             1 if f.get("incumbent") else 0, f.get("candidate_id"), f.get("filing_id")),
+             0, f.get("candidate_id"), f.get("filing_id")),
         )
         if cur.rowcount:
             stats["roster"] += 1

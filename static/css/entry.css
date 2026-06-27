@@ -1,0 +1,180 @@
+/* ============================================================
+   NH Election Results — Results Entry UI
+   Polling-place-centric election-night data entry.
+   Light-only, newspaper-tinged, fast keyboard entry.
+   ============================================================ */
+
+:root {
+    --e-navy: #1e3a5f;
+    --e-navy-dark: #15293f;
+    --e-gop: #b91c1c;
+    --e-gop-soft: #fef2f2;
+    --e-dem: #1d4ed8;
+    --e-dem-soft: #eff6ff;
+    --e-ink: #1a1a1a;
+    --e-muted: #6b7280;
+    --e-line: #e5e7eb;
+    --e-bg: #f3f4f6;
+    --e-card: #ffffff;
+    --e-green: #15803d;
+    --e-green-soft: #f0fdf4;
+    --e-amber: #b45309;
+    --e-amber-soft: #fffbeb;
+    --e-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+    --e-shadow-lg: 0 4px 12px rgba(16,24,40,.10);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+}
+
+body { background: var(--e-bg); color: var(--e-ink); }
+.container { max-width: 1100px; }
+
+/* ---- shared bits -------------------------------------------------------- */
+.e-back { display: inline-flex; align-items: center; gap: .35rem; color: var(--e-muted);
+          font-size: .85rem; text-decoration: none; margin-bottom: .75rem; font-weight: 500; }
+.e-back:hover { color: var(--e-navy); }
+
+.e-pill { display: inline-flex; align-items: center; gap: .3rem; padding: .12rem .55rem;
+          border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+          background: #eef2f7; color: var(--e-navy); text-transform: uppercase; }
+.e-pill-gop { background: var(--e-gop-soft); color: var(--e-gop); }
+.e-pill-dem { background: var(--e-dem-soft); color: var(--e-dem); }
+
+/* ---- page title --------------------------------------------------------- */
+.e-title { font-family: var(--serif); font-size: 1.9rem; line-height: 1.1; color: var(--e-ink);
+           margin: 0 0 .15rem; font-weight: 700; }
+.e-subtitle { color: var(--e-muted); font-size: .9rem; margin-bottom: 1.25rem; }
+
+/* ============================================================
+   Election picker (index)
+   ============================================================ */
+.e-events { display: grid; gap: .85rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.e-event { display: block; background: var(--e-card); border: 1px solid var(--e-line);
+           border-radius: 12px; padding: 1.1rem 1.2rem; text-decoration: none; color: inherit;
+           box-shadow: var(--e-shadow); transition: transform .12s, box-shadow .12s, border-color .12s; }
+.e-event:hover { transform: translateY(-2px); box-shadow: var(--e-shadow-lg); border-color: #cbd5e1; }
+.e-event h3 { font-family: var(--serif); font-size: 1.3rem; margin: 0 0 .5rem; border: 0; padding: 0; }
+.e-event .e-event-meta { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .85rem; }
+.e-event .e-event-go { color: var(--e-navy); font-weight: 700; font-size: .9rem; }
+
+/* ============================================================
+   Polling-place list
+   ============================================================ */
+.e-toolbar { position: sticky; top: 0; z-index: 20; background: var(--e-bg);
+             padding: .6rem 0 .75rem; }
+.e-search { width: 100%; padding: .8rem 1rem .8rem 2.6rem; font-size: 1rem; border: 1px solid var(--e-line);
+            border-radius: 10px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M14 14l3 3'/%3E%3C/svg%3E") no-repeat .85rem center;
+            box-shadow: var(--e-shadow); }
+.e-search:focus { outline: none; border-color: var(--e-navy); box-shadow: 0 0 0 3px rgba(30,58,95,.12); }
+
+.e-county-head { margin: 1.25rem .15rem .35rem; font-size: .72rem; text-transform: uppercase;
+                 letter-spacing: .06em; color: var(--e-muted); font-weight: 800; }
+.e-place-card { background: var(--e-card); border: 1px solid var(--e-line); border-radius: 12px;
+                overflow: hidden; box-shadow: var(--e-shadow); }
+.e-place { display: flex; align-items: center; gap: 1rem; padding: .7rem 1rem; text-decoration: none;
+           color: inherit; border-bottom: 1px solid var(--e-line); }
+.e-place:last-child { border-bottom: 0; }
+.e-place:hover { background: #f8fafc; }
+.e-place-main { flex: 1; min-width: 0; }
+.e-place-name { font-weight: 700; font-size: 1rem; }
+.e-place-meta { font-size: .76rem; color: var(--e-muted); margin-top: .1rem; }
+.e-place-prog { width: 130px; flex-shrink: 0; }
+.e-bar { height: 7px; border-radius: 999px; background: #eceff3; overflow: hidden; }
+.e-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--e-navy); transition: width .25s; }
+.e-prog-num { font-size: .72rem; font-weight: 700; text-align: right; margin-top: .25rem; color: var(--e-muted); }
+.e-place.is-done .e-bar > i { background: var(--e-green); }
+.e-place.is-done .e-prog-num { color: var(--e-green); }
+.e-place.is-partial .e-bar > i { background: var(--e-amber); }
+.e-place.is-partial .e-prog-num { color: var(--e-amber); }
+.e-place-chevron { color: #cbd5e1; flex-shrink: 0; }
+.hidden { display: none !important; }
+.e-empty { text-align: center; color: var(--e-muted); padding: 2rem; }
+
+/* ============================================================
+   Place entry screen
+   ============================================================ */
+.e-place-header { background: linear-gradient(135deg, var(--e-navy), var(--e-navy-dark));
+                  color: #fff; border-radius: 14px; padding: 1.1rem 1.3rem; box-shadow: var(--e-shadow-lg);
+                  margin-bottom: 1.25rem; }
+.e-place-header h1 { font-family: var(--serif); font-size: 1.8rem; margin: 0 0 .15rem; font-weight: 700; }
+.e-place-header .e-county { font-size: .8rem; color: rgba(255,255,255,.8); text-transform: uppercase;
+                            letter-spacing: .05em; font-weight: 700; }
+.e-place-facts { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin-top: .8rem;
+                 font-size: .82rem; color: rgba(255,255,255,.92); }
+.e-place-facts .f { display: flex; gap: .35rem; }
+.e-place-facts .f b { color: rgba(255,255,255,.65); font-weight: 600; }
+.e-place-overall { margin-top: .9rem; }
+.e-place-overall .e-bar { height: 8px; background: rgba(255,255,255,.2); }
+.e-place-overall .e-bar > i { background: #fff; }
+.e-place-overall .lbl { display: flex; justify-content: space-between; font-size: .76rem;
+                        color: rgba(255,255,255,.85); margin-bottom: .3rem; font-weight: 600; }
+
+/* party ballot bands */
+.e-ballot { margin-bottom: 1.6rem; }
+.e-ballot-head { display: flex; align-items: center; gap: .6rem; margin: 0 0 .8rem; }
+.e-ballot-head h2 { font-family: var(--serif); font-size: 1.35rem; margin: 0; }
+.e-ballot-R .e-ballot-head h2 { color: var(--e-gop); }
+.e-ballot-D .e-ballot-head h2 { color: var(--e-dem); }
+.e-ballot-rule { flex: 1; height: 2px; background: var(--e-line); }
+.e-ballot-R .e-ballot-rule { background: linear-gradient(90deg, var(--e-gop), transparent); }
+.e-ballot-D .e-ballot-rule { background: linear-gradient(90deg, var(--e-dem), transparent); }
+
+.e-ballots-cast { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+                  background: var(--e-amber-soft); border: 1px solid #fde68a; border-radius: 10px;
+                  padding: .65rem .9rem; margin-bottom: .9rem; }
+.e-ballots-cast label { font-weight: 600; font-size: .9rem; }
+.e-ballots-cast label b { display: block; font-size: .72rem; color: var(--e-amber); font-weight: 700;
+                          text-transform: uppercase; letter-spacing: .03em; }
+.e-ballots-cast input { width: 120px; padding: .5rem .6rem; font-size: 1.05rem; text-align: right;
+                        border: 1px solid #fcd34d; border-radius: 8px; font-variant-numeric: tabular-nums; }
+
+/* race cards grid */
+.e-races { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.e-race { background: var(--e-card); border: 1px solid var(--e-line); border-radius: 12px;
+          box-shadow: var(--e-shadow); overflow: hidden; display: flex; flex-direction: column; }
+.e-ballot-R .e-race { border-top: 3px solid var(--e-gop); }
+.e-ballot-D .e-race { border-top: 3px solid var(--e-dem); }
+.e-race-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem;
+               padding: .7rem .9rem .6rem; border-bottom: 1px solid var(--e-line); }
+.e-race-office { font-family: var(--serif); font-weight: 700; font-size: 1.02rem; line-height: 1.2; }
+.e-race-sub { font-size: .76rem; color: var(--e-muted); margin-top: .12rem; }
+.e-seats { flex-shrink: 0; font-size: .68rem; font-weight: 700; color: var(--e-navy); background: #eef2f7;
+           padding: .15rem .5rem; border-radius: 999px; text-transform: uppercase; white-space: nowrap; }
+.e-cands { display: flex; flex-direction: column; }
+.e-cand { display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+          padding: .4rem .9rem; }
+.e-cand:nth-child(even) { background: #fafbfc; }
+.e-cand-name { font-size: .92rem; }
+.e-cand-name.is-special { color: var(--e-muted); font-style: italic; font-size: .85rem; }
+.e-vote { width: 92px; padding: .45rem .55rem; font-size: 1.05rem; text-align: right; border: 1px solid #d1d5db;
+          border-radius: 8px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.e-vote::-webkit-outer-spin-button, .e-vote::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.e-vote:focus { outline: none; border-color: var(--e-navy); box-shadow: 0 0 0 3px rgba(30,58,95,.14);
+                background: #fffef5; }
+.e-vote.filled { border-color: #86efac; background: var(--e-green-soft); }
+.e-race-foot { margin-top: auto; padding: .45rem .9rem; border-top: 1px dashed var(--e-line);
+               display: flex; justify-content: space-between; font-size: .78rem; color: var(--e-muted); }
+.e-race-total b { color: var(--e-ink); font-variant-numeric: tabular-nums; }
+.e-race-empty { padding: .75rem .9rem; color: var(--e-muted); font-size: .85rem; font-style: italic; }
+
+/* sticky save bar */
+.e-savebar { position: sticky; bottom: 0; z-index: 30; margin: 1rem -1.5rem -1.5rem;
+             background: rgba(255,255,255,.95); backdrop-filter: blur(6px);
+             border-top: 1px solid var(--e-line); padding: .7rem 1.5rem;
+             display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.e-save-status { font-size: .85rem; color: var(--e-muted); display: flex; align-items: center; gap: .45rem; }
+.e-save-status.saving { color: var(--e-navy); }
+.e-save-status.saved { color: var(--e-green); font-weight: 600; }
+.e-save-status.error { color: var(--e-gop); font-weight: 600; }
+.e-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.e-kbd-hint { font-size: .74rem; color: var(--e-muted); }
+.e-kbd-hint kbd { background: #eceff3; border: 1px solid #d1d5db; border-bottom-width: 2px;
+                  border-radius: 4px; padding: 0 .35rem; font-size: .72rem; font-family: inherit; }
+
+@media (max-width: 640px) {
+    .container { padding: .75rem; }
+    .e-title, .e-place-header h1 { font-size: 1.5rem; }
+    .e-races { grid-template-columns: 1fr; }
+    .e-savebar { margin: 1rem -.75rem -.75rem; padding: .7rem .75rem; }
+    .e-kbd-hint { display: none; }
+    .e-vote, .e-ballots-cast input { font-size: 1.1rem; }
+}
