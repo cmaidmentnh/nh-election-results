@@ -1,109 +1,46 @@
 {% extends "base.html" %}
 
 {% block title %}2026 Primary — {% if live_mode %}Live Results{% else %}Contested Races{% endif %}{% endblock %}
-{% block meta_description %}New Hampshire 2026 state primary: contested races by office, with percent of expected vote counted, projected winners, and precinct-by-precinct breakdowns.{% endblock %}
+{% block meta_description %}New Hampshire 2026 state primary results portal: contested races by office, percent of expected vote counted, projected winners, and precinct-by-precinct breakdowns.{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  .cm-wrap { max-width:1100px; margin:0 auto; }
-  .cm-head h1 { margin-bottom:.1rem; }
-  .cm-sub { color:#555; margin-bottom:1rem; max-width:820px; }
-  .cm-offices { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:.8rem; }
-  .cm-btn { padding:.5rem .95rem; border:1px solid #cbd5e1; background:#fff; border-radius:999px; cursor:pointer; font-size:.9rem; font-weight:600; color:#334155; }
-  .cm-btn:hover { border-color:#1e3a5f; } .cm-btn.active { background:#1e3a5f; color:#fff; border-color:#1e3a5f; }
-  .cm-controls { display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin-bottom:1rem; }
-  .cm-seg { display:inline-flex; border:1px solid #cbd5e1; border-radius:999px; overflow:hidden; }
-  .cm-seg button { border:0; background:#fff; padding:.4rem .9rem; font-weight:700; font-size:.85rem; cursor:pointer; color:#334155; }
-  .cm-seg button.on { background:#1e3a5f; color:#fff; }
-  .cm-seg.party button.on.R { background:#b91c1c; } .cm-seg.party button.on.D { background:#1d4ed8; }
-  .cm-updated { margin-left:auto; color:#64748b; font-size:.8rem; display:flex; align-items:center; gap:.4rem; }
-  .cm-live { width:8px; height:8px; border-radius:50%; background:#15803d; animation:cmpulse 2s infinite; }
-  @keyframes cmpulse { 0%{box-shadow:0 0 0 0 rgba(21,128,61,.5);} 70%{box-shadow:0 0 0 6px rgba(21,128,61,0);} 100%{box-shadow:0 0 0 0 rgba(21,128,61,0);} }
-
-  .cm-stack { display:flex; flex-direction:column; gap:1.3rem; }
-  .cm-stack.hide, .cm-board.hide, .cm-drill { display:none; } .cm-drill.show { display:block; }
-  .cm-panel { border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; background:#fff; }
-  .cm-phead { padding:.65rem .95rem; font-weight:700; font-size:1rem; }
-  .cm-panel.R .cm-phead { color:#b91c1c; border-bottom:2px solid #fca5a5; } .cm-panel.D .cm-phead { color:#1d4ed8; border-bottom:2px solid #93c5fd; }
-  .cm-mini { height:520px; background:#eef2f6; }
-
-  /* cursor-anchored hover tooltip — fixed width, one candidate per line */
-  .leaflet-tooltip.cm-tt { background:#fff; border:0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.22);
-     padding:.55rem .7rem; font-size:.85rem; color:#1a1a1a; line-height:1.3; width:230px; white-space:normal; }
-  .leaflet-tooltip.cm-tt:before { display:none; }
-  .cm-tt .tt-name { font-weight:800; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .cm-tt.R .tt-name { color:#b91c1c; } .cm-tt.D .tt-name { color:#1d4ed8; }
-  .cm-tt .tt-meta { color:#64748b; font-size:.74rem; margin:.05rem 0 .4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .cm-tt .tt-row { display:flex; justify-content:space-between; align-items:baseline; gap:.6rem; padding:.12rem 0; border-top:1px solid #f1f5f9; }
-  .cm-tt .tt-row:first-of-type { border-top:0; }
-  .cm-tt .tt-row .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .cm-tt .tt-row b { flex-shrink:0; font-variant-numeric:tabular-nums; }
-  .cm-tt .tt-row .star { color:#d97706; }
-
-  .cm-board { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:1rem; }
-  .cm-card { border:1px solid #e5e7eb; border-radius:12px; background:#fff; padding:.9rem 1rem; cursor:pointer; box-shadow:0 1px 3px rgba(16,24,40,.06); }
-  .cm-card:hover { box-shadow:0 6px 16px rgba(16,24,40,.12); }
-  .cm-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; }
-  .cm-card-name { font-weight:800; font-size:1.02rem; } .cm-card-sub { color:#64748b; font-size:.8rem; margin-bottom:.6rem; }
-  .cm-status { font-size:.66rem; font-weight:800; padding:.18rem .5rem; border-radius:999px; text-transform:uppercase; white-space:nowrap; }
-  .cm-status.clinched{background:#f0fdf4;color:#15803d;} .cm-status.too_close{background:#fffbeb;color:#b45309;} .cm-status.awaiting{background:#f1f5f9;color:#64748b;} .cm-status.preview{background:#eef2ff;color:#3730a3;}
-  .cm-crow { display:grid; grid-template-columns:1fr auto; gap:.25rem .6rem; align-items:center; margin-bottom:.3rem; }
-  .cm-cname { font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .cm-cname.win{font-weight:700;} .cm-cname .star{color:#d97706;}
-  .cm-cvotes { font-variant-numeric:tabular-nums; font-weight:700; font-size:.88rem; } .cm-cpct{ color:#64748b; font-weight:500; font-size:.8rem; margin-left:.3rem; }
-  .cm-cbar { grid-column:1/3; height:7px; border-radius:999px; background:#eef2f6; overflow:hidden; } .cm-cbar>i{ display:block; height:100%; }
-  .cm-more { color:#64748b; font-size:.78rem; margin-top:.2rem; } .cm-note{ color:#64748b; padding:1.6rem; text-align:center; grid-column:1/-1; }
-
-  .cm-dhead { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.6rem; }
-  .cm-back { cursor:pointer; color:#1e3a5f; font-weight:700; font-size:.9rem; } .cm-dhead h2{ margin:0; font-size:1.4rem; } .cm-dhead .sub{ color:#64748b; font-size:.9rem; }
-  .cm-ptoggle { margin-left:auto; display:flex; gap:.3rem; } .cm-ptoggle button{ border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:.3rem .85rem; font-weight:700; font-size:.82rem; cursor:pointer; } .cm-ptoggle button.on.R{background:#b91c1c;color:#fff;} .cm-ptoggle button.on.D{background:#1d4ed8;color:#fff;}
-  .cm-banner { border-radius:10px; padding:.6rem .9rem; font-weight:700; margin-bottom:1rem; font-size:.95rem; } .cm-banner.clinched{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;} .cm-banner.too_close{background:#fffbeb;color:#b45309;border:1px solid #fde68a;} .cm-banner.awaiting,.cm-banner.preview{background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;}
-  #cm-bigmap { height:440px; border-radius:12px; border:1px solid #e5e7eb; background:#eef2f6; margin-bottom:1rem; }
-  .cm-overall { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1rem 1.1rem; margin-bottom:1rem; } .cm-overall h3{ margin:0 0 .7rem; font-size:.95rem; }
-  .cm-bar-row { display:grid; grid-template-columns:190px 1fr auto; align-items:center; gap:.7rem; margin-bottom:.45rem; font-size:.9rem; }
-  .cm-bar-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .cm-bar-name .star{color:#d97706;} .cm-bar-name.win{font-weight:700;}
-  .cm-bar { height:16px; border-radius:4px; background:#eef2f6; overflow:hidden; position:relative; } .cm-bar>i{ display:block; height:100%; } .cm-bar>.proj{ position:absolute; top:0; height:100%; opacity:.25; }
-  .cm-bar-votes { text-align:right; font-variant-numeric:tabular-nums; min-width:130px; } .cm-bar-votes b{font-weight:800;} .cm-bar-votes .pj{color:#64748b;font-size:.8rem;}
-  .cm-tablewrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
-  table.cm-ptable { border-collapse:collapse; width:100%; font-size:.85rem; } .cm-ptable th,.cm-ptable td{ padding:.4rem .6rem; border-bottom:1px solid #f1f5f9; white-space:nowrap; text-align:right; } .cm-ptable th:first-child,.cm-ptable td:first-child{ text-align:left; position:sticky; left:0; background:#fff; font-weight:600; } .cm-ptable thead th{ background:#f8fafc; position:sticky; top:0; font-size:.74rem; text-transform:uppercase; color:#475569; } .cm-ptable td.in{color:#15803d;} .cm-ptable td.out{color:#cbd5e1;}
-  @media (max-width:820px){ .cm-mini{height:380px;} .cm-bar-row{grid-template-columns:120px 1fr auto;} }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=1">
 {% endblock %}
 
 {% block content %}
-<div class="cm-wrap">
-  <div class="cm-head">
-    <h1>2026 Primary — {% if live_mode %}Live Results{% else %}Contested Races{% endif %}</h1>
-    {% if live_mode %}
-    <p class="cm-sub">Contested NH primary races by office. Each race shows the <strong>percent of expected vote counted</strong>, current and projected totals, and whether it's called or too close. Hover a district for a summary; click for precinct detail.</p>
-    {% else %}
-    <p class="cm-sub">Where NH parties have a <strong>contested</strong> primary (more candidates than seats). Hover a district to see who's running; click for the candidates and precincts. <strong>Live results and projections begin on primary day, September 8.</strong></p>
-    {% endif %}
+<div class="pt-wrap">
+  <h1 class="pt-h1">2026 Primary — {% if live_mode %}Live Results{% else %}Contested Races{% endif %}</h1>
+  {% if live_mode %}
+  <p class="pt-sub">Contested NH primary races by office. Each race shows the <strong>percent of expected vote counted</strong>, current and projected totals, and the call. Hover a district for results; click for precinct detail.</p>
+  {% else %}
+  <p class="pt-sub">Where a party has a <strong>contested</strong> primary (more candidates than seats). Hover a district to see who's running; click for candidates and precincts. <strong>Live results & projections begin primary day, September 8.</strong></p>
+  {% endif %}
+
+  <div class="pt-score" id="pt-score"></div>
+  <div class="pt-tabs" id="pt-tabs"></div>
+  <div class="pt-controls">
+    <span class="pt-seg party" id="pt-party"></span>
+    <span class="pt-seg" id="pt-base"></span>
+    <span class="pt-seg" id="pt-view"><button data-view="map" class="on">Map</button><button data-view="list">List</button></span>
+    <span class="pt-updated" id="pt-updated"></span>
   </div>
 
-  <div class="cm-offices" id="cm-offices"></div>
-  <div class="cm-controls">
-    <span class="cm-seg party" id="cm-party"></span>
-    <span class="cm-seg" id="cm-view">
-      <button data-view="map" class="on">Maps</button>
-      <button data-view="results">List</button>
-    </span>
-    <span class="cm-updated" id="cm-updated"></span>
+  <div class="pt-legendwrap">
+    <div class="pt-mapwrap" id="pt-mapwrap"><div id="pt-map"></div><div class="pt-legend" id="pt-legend"></div></div>
   </div>
+  <div class="pt-board hide" id="pt-board"></div>
 
-  <div class="cm-stack" id="cm-stack"></div>
-  <div class="cm-board hide" id="cm-board"></div>
-
-  <div class="cm-drill" id="cm-drill">
-    <div class="cm-dhead">
-      <span class="cm-back" id="cm-back">← Back</span>
-      <h2 id="cm-dtitle"></h2><span class="sub" id="cm-dsub"></span>
-      <span class="cm-ptoggle" id="cm-ptoggle"></span>
+  <div class="pt-detail" id="pt-detail">
+    <div class="pt-dhead">
+      <span class="pt-back" id="pt-back">← Back</span>
+      <h2 id="pt-dtitle"></h2><span class="sub" id="pt-dsub"></span>
+      <span class="pt-ptoggle" id="pt-ptoggle"></span>
     </div>
-    <div class="cm-banner preview" id="cm-banner"></div>
-    <div id="cm-bigmap"></div>
-    <div class="cm-overall" id="cm-overall"></div>
-    <div class="cm-tablewrap"><table class="cm-ptable" id="cm-ptable"></table></div>
+    <div class="pt-banner preview" id="pt-banner"></div>
+    <div id="pt-bigmap"></div>
+    <div class="pt-overall" id="pt-overall"></div>
+    <div class="pt-tablewrap"><table class="pt-ptable" id="pt-ptable"></table></div>
   </div>
 </div>
 {% endblock %}
@@ -112,212 +49,280 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const LIVE = {{ 'true' if live_mode else 'false' }};
-const OFFICES = [
-  { key:'governor',label:'Governor',level:'statewide' },
-  { key:'us-senate',label:'U.S. Senate',level:'statewide' },
-  { key:'us-house',label:'U.S. House',level:'district',file:'nh-congress-districts.geojson',prop:'Cong2022' },
-  { key:'exec-council',label:'Exec Council',level:'district',file:'nh-exec-council-districts.geojson',prop:'ExecCo2022' },
-  { key:'state-senate',label:'State Senate',level:'district',file:'nh-senate-districts.geojson',prop:'Senate2022' },
-  { key:'state-house',label:'State Rep',level:'house' },
-  { key:'delegate',label:'Delegate',level:'house' },
+const OFFICES=[
+ {key:'governor',label:'Governor',level:'statewide'},
+ {key:'us-senate',label:'U.S. Senate',level:'statewide'},
+ {key:'us-house',label:'U.S. House',level:'district',file:'nh-congress-districts.geojson',prop:'Cong2022'},
+ {key:'exec-council',label:'Exec Council',level:'district',file:'nh-exec-council-districts.geojson',prop:'ExecCo2022'},
+ {key:'state-senate',label:'State Senate',level:'district',file:'nh-senate-districts.geojson',prop:'Senate2022'},
+ {key:'state-house',label:'State Rep',level:'house'},
+ {key:'delegate',label:'Delegate',level:'house'},
 ];
-const OFFICE_BY_KEY=Object.fromEntries(OFFICES.map(o=>[o.key,o]));
-const PARTY={ R:{name:'Republican',color:'#b91c1c'}, D:{name:'Democratic',color:'#1d4ed8'} };
-const STATUS={ clinched:'Called', too_close:'Too close', awaiting:'Awaiting', preview:'Contested' };
-const NH_BOUNDS=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
-const HOUSE_BASE={file:'nh-house-districts.geojson',prop:'basehse22'}, HOUSE_FLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
-const geoCache={}; let liveMaps=[], bigMap=null, curOffice=null, curParty='R', curView='map', curData=null, flotCodes=new Set(), boardByCode={}, refreshTimer=null;
+const OBYKEY=Object.fromEntries(OFFICES.map(o=>[o.key,o]));
+const PARTY={R:{name:'Republican',color:'#b91c1c'},D:{name:'Democratic',color:'#1d4ed8'}};
+const STATUS={called:{l:'Called',c:'#15803d'},likely:{l:'Likely',c:'#3b82f6'},leaning:{l:'Leaning',c:'#94a3b8'},
+  too_close:{l:'Too close',c:'#d97706'},awaiting:{l:'Awaiting',c:'#94a3b8'},preview:{l:'Contested',c:'#5b6b8c'}};
+const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
+const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'}, HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
+const geo={}, jc={}; let geoMap=null, houseByCode=null, townsByName=null;
+let mainMap=null, mainLayer=null, mainCfg=null, lastMapSig='', bigMap=null, bigLayer=null, bigSig='', detailCtx=null,
+    curO=null, curP='R', curBase='Base', curView='map', curData=null, board={}, timer=null;
+function mapSig(){return curO.key+'|'+curP+'|'+curBase+'|'+curView;}
 
-function jget(u){ return fetch(u).then(r=>r.json()); }
-function loadGeo(f){ return geoCache[f]?Promise.resolve(geoCache[f]):jget('/static/data/'+f).then(g=>geoCache[f]=g); }
-function isContested(rec,p){ return rec && (rec.parties[p]||0)>(rec.seats||1); }
-function destroyMaps(){ liveMaps.forEach(m=>{try{m.remove();}catch(e){}}); liveMaps=[]; }
-function pad(n){ return (n<10?'0':'')+n; }
+function J(u){return jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);}
+function G(f){return geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);}
+function contested(rec,p){return rec&&(rec.parties[p]||0)>(rec.seats||1);}
+function pad(n){return(n<10?'0':'')+n;}
+function statusColor(s){return (STATUS[s]||STATUS.awaiting).c;}
 
-const obar=document.getElementById('cm-offices');
-OFFICES.forEach(o=>{ const b=document.createElement('button'); b.className='cm-btn'; b.dataset.key=o.key; b.textContent=o.label; b.onclick=()=>selectOffice(o); obar.appendChild(b); });
-function setActive(k){ document.querySelectorAll('#cm-offices .cm-btn').forEach(b=>b.classList.toggle('active',b.dataset.key===k)); }
-document.querySelectorAll('#cm-view button').forEach(b=>b.onclick=()=>{ curView=b.dataset.view; document.querySelectorAll('#cm-view button').forEach(x=>x.classList.toggle('on',x===b)); renderView(); });
+// office tabs
+const tabsEl=document.getElementById('pt-tabs');
+OFFICES.forEach(o=>{const b=document.createElement('button');b.className='pt-tab';b.dataset.k=o.key;b.textContent=o.label;b.onclick=()=>selectOffice(o);tabsEl.appendChild(b);});
+function setTab(k){document.querySelectorAll('#pt-tabs .pt-tab').forEach(b=>b.classList.toggle('on',b.dataset.k===k));}
+document.querySelectorAll('#pt-view button').forEach(b=>b.onclick=()=>{curView=b.dataset.view;document.querySelectorAll('#pt-view button').forEach(x=>x.classList.toggle('on',x===b));renderView();});
 
 function districtName(o,rec){
-  if(o.level==='house') return (rec.county?rec.county+' ':'')+'District '+rec.district;
-  if(o.key==='us-house') return 'U.S. House District '+rec.district;
-  if(o.key==='exec-council') return 'Executive Council District '+rec.district;
-  if(o.key==='state-senate') return 'State Senate District '+rec.district;
+  if(o.level==='house')return (rec.county?rec.county+' ':'')+'District '+rec.district;
+  if(o.key==='us-house')return 'U.S. House District '+rec.district;
+  if(o.key==='exec-council')return 'Executive Council District '+rec.district;
+  if(o.key==='state-senate')return 'State Senate District '+rec.district;
   return o.label;
 }
 
 async function selectOffice(o){
-  curOffice=o; setActive(o.key);
-  document.getElementById('cm-drill').classList.remove('show');
-  const data=await jget('/api/contested/'+o.key); curData=data;
-  if(o.level==='house'){ const fg=await loadGeo(HOUSE_FLOT.file); flotCodes=new Set(fg.features.map(f=>String(f.properties.floathse22).trim()).filter(c=>c&&c!==' ')); }
-  const recs=Object.values(data.districts), parties=['R','D'].filter(p=>recs.some(r=>isContested(r,p)));
-  if(!parties.includes(curParty)) curParty=parties[0]||'R';
-  const pe=document.getElementById('cm-party'); pe.innerHTML='';
-  if(parties.length>1) parties.forEach(p=>{ const b=document.createElement('button'); b.className=(p===curParty?'on ':'')+p; b.textContent=PARTY[p].name;
-    b.onclick=()=>{ curParty=p; pe.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); renderView(); }; pe.appendChild(b); });
-  else if(parties.length===1){ pe.innerHTML=`<button class="on ${parties[0]}">${PARTY[parties[0]].name} only</button>`; }
+  curO=o; setTab(o.key); document.getElementById('pt-detail').classList.remove('show');
+  curData=await J('/api/contested/'+o.key);
+  if(o.level==='house' && !geoMap){ geoMap=await J('/api/precinct-geo-map'); }
+  // party seg
+  const recs=Object.values(curData.districts), parties=['R','D'].filter(p=>recs.some(r=>contested(r,p)));
+  if(!parties.includes(curP)) curP=parties[0]||'R';
+  const pe=document.getElementById('pt-party'); pe.innerHTML='';
+  if(parties.length>1) parties.forEach(p=>{const b=document.createElement('button');b.className=(p===curP?'on ':'')+p;b.textContent=PARTY[p].name;b.onclick=()=>{curP=p;pe.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.textContent===PARTY[p].name));renderView();};pe.appendChild(b);});
+  else if(parties.length===1) pe.innerHTML=`<button class="on ${parties[0]}">${PARTY[parties[0]].name} only</button>`;
+  // base/floterial seg (house only, and only if floterials are contested)
+  const be=document.getElementById('pt-base'); be.innerHTML='';
+  if(o.level==='house'){ be.style.display='';
+    ['Base','Floterial'].forEach(t=>{const b=document.createElement('button');b.className=(t===curBase?'on':'');b.textContent=t;b.onclick=()=>{curBase=t;be.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.textContent===t));renderMap();};be.appendChild(b);});
+  } else be.style.display='none';
   renderView();
 }
 
 function renderView(){
-  clearInterval(refreshTimer); refreshTimer=null;
-  // Statewide (Governor, U.S. Senate): one race — show its results directly, no drilling.
-  if(curOffice.level==='statewide'){
-    document.getElementById('cm-view').style.display='none';
-    document.getElementById('cm-board').classList.add('hide');
-    document.getElementById('cm-stack').classList.add('hide');
-    loadResults(curOffice,'STATE',curParty);
-    document.getElementById('cm-drill').classList.add('show');
-    if(LIVE){ document.getElementById('cm-updated').innerHTML='<span class="cm-live"></span>auto-refresh 30s';
-      refreshTimer=setInterval(()=>loadResults(curOffice,'STATE',curParty),30000); }
-    else document.getElementById('cm-updated').textContent='';
-    return;
-  }
-  document.getElementById('cm-view').style.display='';
-  document.getElementById('cm-drill').classList.remove('show');
-  const board=document.getElementById('cm-board'), stack=document.getElementById('cm-stack');
-  board.classList.toggle('hide', curView!=='results'); stack.classList.toggle('hide', curView!=='map');
-  if(LIVE){ refresh(); refreshTimer=setInterval(refresh,30000); }
-  else { document.getElementById('cm-updated').textContent=''; if(curView==='map') buildStack(); else renderBoard(); }
+  clearInterval(timer);timer=null;
+  detailCtx=null; lastMapSig='';
+  document.getElementById('pt-detail').classList.remove('show');
+  const showList=curView==='list'&&curO.level!=='statewide';
+  document.getElementById('pt-board').classList.toggle('hide', !showList);
+  document.getElementById('pt-mapwrap').classList.toggle('hide', showList||curO.level==='statewide');
+  document.getElementById('pt-view').style.visibility = curO.level==='statewide'?'hidden':'visible';
+  document.getElementById('pt-base').style.display = curO.level==='house'?'':'none';
+  if(LIVE){ refresh(); timer=setInterval(refresh,30000); } else { document.getElementById('pt-updated').textContent=''; paint(); }
 }
 
-function refresh(){  // LIVE only: pull board data, then render the active view
-  const o=curOffice, p=curParty;
-  jget('/api/contested/'+o.key+'/board?party='+p).then(b=>{
-    if(o!==curOffice||p!==curParty) return;
-    boardByCode={}; b.races.forEach(r=>boardByCode[r.code]=r);
-    const n=new Date(); document.getElementById('cm-updated').innerHTML=`<span class="cm-live"></span>Updated ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())} · auto-refresh 30s`;
-    if(curView==='map') buildStack(); else renderBoard(b.races);
+function refresh(){ const o=curO,p=curP;
+  fetch('/api/contested/'+o.key+'/board?party='+p).then(r=>r.json()).then(b=>{
+    if(o!==curO||p!==curP)return; board={}; b.races.forEach(r=>board[r.code]=r);
+    const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())} · 30s`;
+    renderScore();
+    // In-place update where possible so the user's zoom/pan is preserved.
+    if(detailCtx){ loadDetail(detailCtx.o,detailCtx.code,detailCtx.party); }
+    else if(curView==='map' && curO.level!=='statewide' && mainMap && mainLayer && lastMapSig===mapSig()){ restyleMain(); }
+    else paint();
   });
 }
 
-/* ---------- maps ---------- */
-function panelsToShow(o,data){ const recs=Object.values(data.districts), panels=[];
-  if(o.level==='statewide'){ if(isContested(data.districts['STATE'],curParty)) panels.push({party:curParty,statewide:true}); return panels; }
-  if(o.level==='house'){ if(recs.some(r=>!flotCodes.has(r.code)&&isContested(r,curParty))) panels.push({party:curParty,type:'Base',...HOUSE_BASE});
-    if(recs.some(r=>flotCodes.has(r.code)&&isContested(r,curParty))) panels.push({party:curParty,type:'Floterial',...HOUSE_FLOT}); return panels; }
-  if(recs.some(r=>isContested(r,curParty))) panels.push({party:curParty,file:o.file,prop:o.prop}); return panels; }
+function paint(){ renderScore(); if(curO.level==='statewide'){ showDetail(curO,'STATE',curP); return; }
+  if(curView==='list') renderBoard(); else renderMap(); }
 
-function buildStack(){ const o=curOffice,data=curData; destroyMaps(); const stack=document.getElementById('cm-stack'); stack.innerHTML='';
-  const panels=panelsToShow(o,data); if(!panels.length){ stack.innerHTML=`<div class="cm-note">No contested ${o.label} primaries for ${PARTY[curParty].name}.</div>`; return; }
-  panels.forEach((def,i)=>{ const panel=document.createElement('div'); panel.className='cm-panel '+def.party; const mapId='mini-'+i;
-    panel.innerHTML=`<div class="cm-phead">${PARTY[def.party].name}${def.type?' · '+def.type+' districts':''}</div><div class="cm-mini" id="${mapId}"></div>`;
-    stack.appendChild(panel); renderMini(mapId,o,def,data); }); }
-
-function ttHTML(o,rec,party){
-  const bd=boardByCode[rec.code]; const cands=(rec.candidates&&rec.candidates[party])||[];
-  let meta, rows;
-  if(LIVE && bd){ const w=new Set(bd.projection.winners||[]);
-    meta=`${PARTY[party].name} · ${rec.seats} seat${rec.seats!=1?'s':''} · ${bd.reporting.expected_in||0}% in`;
-    rows=bd.candidates.map(c=>`<div class="tt-row"><span class="nm">${w.has(c.name)?'<span class="star">★</span> ':''}${c.name}</span><b>${c.votes.toLocaleString()}</b></div>`).join('');
-  } else {
-    meta=`${PARTY[party].name} · ${rec.seats} seat${rec.seats!=1?'s':''} · ${cands.length} running`;
-    rows=cands.map(n=>`<div class="tt-row"><span class="nm">${n}</span></div>`).join('');
-  }
-  return `<div class="tt-name">${districtName(o,rec)}</div><div class="tt-meta">${meta}</div>${rows}`;
+/* ---------- scoreboard ---------- */
+function renderScore(){
+  const recs=Object.values(curData.districts).filter(r=>contested(r,curP));
+  const el=document.getElementById('pt-score');
+  if(!LIVE){ el.innerHTML=`<div class="pt-chip"><span class="n">${recs.length}</span><span class="l">Contested</span></div>`; return; }
+  let c={called:0,too_close:0,leaning:0,likely:0,awaiting:0};
+  recs.forEach(r=>{const b=board[r.code]; const s=b?b.projection.status:'awaiting'; c[s]=(c[s]||0)+1;});
+  el.innerHTML=
+    `<div class="pt-chip"><span class="n">${recs.length}</span><span class="l">Contested</span></div>`+
+    `<div class="pt-chip called"><span class="n">${c.called}</span><span class="l">Called</span></div>`+
+    `<div class="pt-chip close"><span class="n">${c.too_close+c.leaning}</span><span class="l">In play</span></div>`+
+    `<div class="pt-chip await"><span class="n">${c.awaiting}</span><span class="l">Awaiting</span></div>`;
 }
 
-function renderMini(mapId,o,def,data){
-  const m=L.map(mapId,{attributionControl:false,zoomControl:true,scrollWheelZoom:false,dragging:true}).fitBounds(NH_BOUNDS);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(m); liveMaps.push(m);
-  const p=def.party;
-  function fillFor(rec){ if(!LIVE) return {color:PARTY[p].color,op:.78};
-    const bd=boardByCode[rec.code], st=bd?bd.projection.status:'awaiting';
-    return {color:PARTY[p].color, op: st==='clinched'?.85: st==='too_close'?.62: .4}; }
-  if(def.statewide){ const rec=data.districts['STATE'];
-    loadGeo('nh-towns.geojson').then(geo=>{ const f=fillFor(rec); L.geoJSON(geo,{style:()=>({fillColor:f.color,fillOpacity:f.op,color:'#fff',weight:.5}),
-      onEachFeature:(l1,l)=>{ l.bindTooltip(ttHTML(o,rec,p),{className:'cm-tt '+p,sticky:true}); l.on('click',()=>drill(o,'STATE',p)); }}).addTo(m); }); return; }
-  loadGeo(def.file).then(geo=>{ const b=L.latLngBounds([]);
-    const layer=L.geoJSON(geo,{ style:f=>{ const c=String(f.properties[def.prop]).trim(); const rec=(c&&c!==' ')?data.districts[c]:null;
-        if(!isContested(rec,p)) return {fillColor:'#e7ecf2',fillOpacity:.4,color:'#fff',weight:.5,interactive:false};
-        const ff=fillFor(rec); return {fillColor:ff.color,fillOpacity:ff.op,color:'#fff',weight:1,interactive:true}; },
-      onEachFeature:(f,l)=>{ const c=String(f.properties[def.prop]).trim(); const rec=(c&&c!==' ')?data.districts[c]:null; if(!isContested(rec,p)) return; try{b.extend(l.getBounds());}catch(e){}
-        l.bindTooltip(ttHTML(o,rec,p),{className:'cm-tt '+p,sticky:true});
-        l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'})); l.on('mouseout',()=>layer.resetStyle(l)); l.on('click',()=>drill(o,c,p)); }
-    }).addTo(m); if(b.isValid()) m.fitBounds(b.pad(.25)); }); }
-
-/* ---------- list (board) ---------- */
-function renderBoard(racesLive){
-  const o=curOffice, p=curParty, board=document.getElementById('cm-board');
-  let races=racesLive;
-  if(!races){ // preview: build from contested data (candidates, no results)
-    races=Object.values(curData.districts).filter(r=>isContested(r,p)).map(r=>({code:r.code,county:r.county,district:r.district,seats:r.seats,
-      candidates:(r.candidates[p]||[]).map(n=>({name:n,votes:0,projected:null})), projection:{status:'preview',winners:[]}, reporting:{expected_in:0}}));
-    races.sort((a,b)=>a.county===b.county?(parseInt(a.district)-parseInt(b.district)):a.county.localeCompare(b.county));
-  }
-  if(!races.length){ board.innerHTML=`<div class="cm-note">No contested ${o.label} primaries for ${PARTY[p].name}.</div>`; return; }
-  board.innerHTML=races.map(r=>cardHTML(o,r)).join('');
-  board.querySelectorAll('[data-code]').forEach(el=>el.onclick=()=>drill(o,el.dataset.code,p));
-}
-function cardHTML(o,r){
-  const pj=r.projection, winners=new Set(pj.winners||[]);
-  const total=r.candidates.reduce((s,c)=>s+c.votes,0)||0, max=Math.max(1,...r.candidates.map(c=>c.votes));
-  const shown=r.candidates.slice(0,4);
-  const rows=shown.map(c=>{ const win=winners.has(c.name), pct=total?Math.round(100*c.votes/total):0;
-    return `<div class="cm-crow"><div class="cm-cname ${win?'win':''}">${win?'<span class="star">★</span> ':''}${c.name}</div>`+
-      `<div><span class="cm-cvotes">${LIVE?c.votes.toLocaleString():''}</span>${LIVE&&total?`<span class="cm-cpct">${pct}%</span>`:''}</div>`+
-      (LIVE?`<div class="cm-cbar"><i style="width:${100*c.votes/max}%;background:${PARTY[curParty].color}"></i></div>`:'')+`</div>`; }).join('');
-  const sub = LIVE ? `${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`
-                   : `${r.seats} seat${r.seats!=1?'s':''} · ${r.candidates.length} candidates`;
-  return `<div class="cm-card" data-code="${r.code}"><div class="cm-card-top"><div class="cm-card-name">${districtName(o,r)}</div>`+
-    `<span class="cm-status ${pj.status}">${STATUS[pj.status]}</span></div><div class="cm-card-sub">${sub}</div>`+
-    rows+(r.candidates.length>shown.length?`<div class="cm-more">+${r.candidates.length-shown.length} more</div>`:'')+`</div>`;
+/* ---------- hovercard ---------- */
+function hcard(o,title,party,cands,seats,meta,statusKey,footer){
+  let rows=cands.slice(0,6).map(c=>{
+    const pc=c.pct!=null?`<span class="pc">${c.pct}%</span>`:'';
+    const vt=LIVE&&c.votes!=null?`<span class="vt">${c.votes.toLocaleString()}${pc}</span>`:'<span class="vt"></span>';
+    const bar=LIVE&&c.pct!=null?`<div class="ttbar"><i style="width:${c.pct}%;background:${PARTY[party].color}"></i></div>`:'';
+    return `<div class="ttr"><span class="nm">${c.win?'<span class="star">★</span> ':''}${c.name}</span>${vt}</div>${bar}`;
+  }).join('');
+  const more=cands.length>6?`<div class="ttr"><span class="nm pc">+${cands.length-6} more</span></div>`:'';
+  const st=statusKey&&LIVE?`<span class="st st-${statusKey}">${STATUS[statusKey].l}</span>`:'';
+  return `<div class="ttn">${title}</div><div class="ttm"><span>${meta}</span>${st}</div>${rows}${more}${footer?`<div class="ttf">${footer}</div>`:''}`;
 }
 
-/* ---------- drill ---------- */
-function drill(o,code,party){ document.getElementById('cm-board').classList.add('hide'); document.getElementById('cm-stack').classList.add('hide');
-  document.getElementById('cm-drill').classList.add('show'); loadResults(o,code,party); window.scrollTo({top:0,behavior:'smooth'}); }
-function loadResults(o,code,party){
-  jget('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+party).then(r=>{
-    const rec=(curData&&curData.districts[code])||{county:r.county,district:r.district,seats:r.seats,parties:{}};
-    document.getElementById('cm-back').style.display = code==='STATE' ? 'none' : '';
-    document.getElementById('cm-dtitle').textContent=code==='STATE'?o.label:districtName(o,rec);
-    document.getElementById('cm-dsub').textContent= LIVE
-      ? `${o.label} · ${PARTY[party].name} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted (${r.reporting.reported}/${r.reporting.total} precincts)`
-      : `${o.label} · ${PARTY[party].name} primary · ${r.seats} seat${r.seats!=1?'s':''} · ${r.precincts.length} precincts`;
-    const tog=document.getElementById('cm-ptoggle'); tog.innerHTML='';
-    ['R','D'].forEach(pp=>{ if(rec.parties&&(rec.parties[pp]||0)>0){ const btn=document.createElement('button'); btn.className=(pp===party?'on ':'')+pp; btn.textContent=PARTY[pp].name; btn.onclick=()=>loadResults(o,code,pp); tog.appendChild(btn); } });
-    renderBanner(r); renderOverall(r); renderPrecinctTable(r);
-    document.getElementById('cm-bigmap').style.display = '';
-    renderPrecinctMap(o,r);
-  });
-}
-function renderBanner(r){ const el=document.getElementById('cm-banner'); if(!LIVE){ el.className='cm-banner preview'; el.textContent='Preview — results and projections appear here on primary day, September 8.'; return; }
-  const pj=r.projection||{status:'awaiting',winners:[]}; el.className='cm-banner '+pj.status;
-  if(pj.status==='clinched') el.textContent='✓ Projected winner'+(pj.winners.length>1?'s':'')+': '+pj.winners.join(', ');
-  else if(pj.status==='too_close') el.textContent='Too close to call — '+(pj.expected_in||0)+'% of expected vote in. Leading: '+pj.winners.join(', ');
-  else el.textContent='Awaiting results.'; }
-function renderOverall(r){ const pj=r.projection||{winners:[]}, winners=new Set(pj.winners||[]);
-  const max=Math.max(1,...r.candidates.map(c=>Math.max(c.votes,c.projected||0))); let h=`<h3>${LIVE?'Overall result':'Candidates'}</h3>`;
-  r.candidates.forEach(c=>{ const win=winners.has(c.name);
-    h+=`<div class="cm-bar-row"><div class="cm-bar-name ${win?'win':''}">${win?'<span class="star">★</span> ':''}${c.name}</div>`+
-       (LIVE?`<div class="cm-bar">`+(c.projected?`<i class="proj" style="width:${100*c.projected/max}%;background:${PARTY[r.party].color}"></i>`:'')+`<i style="width:${100*c.votes/max}%;background:${PARTY[r.party].color}"></i></div>`+
-       `<div class="cm-bar-votes"><b>${c.votes.toLocaleString()}</b>${c.projected?` <span class="pj">→ ${c.projected.toLocaleString()}</span>`:''}</div>`:`<div></div><div></div>`)+`</div>`; });
-  document.getElementById('cm-overall').innerHTML=h; }
-function renderPrecinctTable(r){ const cands=r.candidates.map(c=>c.name);
-  let h=`<thead><tr><th>Precinct</th>`+cands.map(n=>`<th>${n}</th>`).join('')+`<th>In?</th></tr></thead><tbody>`;
-  (r.precincts||[]).forEach(p=>{ h+=`<tr><td>${p.name}</td>`+cands.map(n=>`<td>${p.reported?(p.votes[n]||0).toLocaleString():'–'}</td>`).join('')+`<td class="${p.reported?'in':'out'}">${p.reported?'✓':'—'}</td></tr>`; });
-  document.getElementById('cm-ptable').innerHTML=h+`</tbody>`; }
-function renderPrecinctMap(o,r){ if(bigMap){try{bigMap.remove();}catch(e){} bigMap=null;}
-  bigMap=L.map('cm-bigmap',{scrollWheelZoom:true}).fitBounds(NH_BOUNDS);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(bigMap);
-  loadGeo('nh-towns.geojson').then(geo=>{ const want=new Set((r.towns||[]).map(t=>t.toLowerCase())); const wards={};
-    (r.precincts||[]).forEach(p=>{ const base=p.name.replace(/\s+Ward\s+\d+\*?$/i,'').trim().toLowerCase(); (wards[base]=wards[base]||[]).push(p); });
+/* ---------- overview map ---------- */
+function codeOf(f){return String(f.properties[mainCfg.prop]).trim();}
+function recOf(code){return (code&&code!==' ')?curData.districts[code]:null;}
+function styleFor(code){const rec=recOf(code);
+  if(!contested(rec,curP)) return {fillColor:'#e7ecf2',fillOpacity:.4,color:'#fff',weight:.5,interactive:false};
+  const st=LIVE&&board[code]?board[code].projection.status:'preview';
+  const inpct=LIVE&&board[code]?board[code].reporting.expected_in/100:1;
+  return {fillColor:statusColor(st),fillOpacity:.35+.5*(LIVE?inpct:1),color:'#fff',weight:1,interactive:true};}
+function renderMap(){
+  const o=curO; if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
+  mainMap=L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(mainMap);
+  renderLegend();
+  mainCfg = o.level==='house' ? (curBase==='Floterial'?HFLOT:HBASE) : {file:o.file,prop:o.prop};
+  G(mainCfg.file).then(g=>{
     const b=L.latLngBounds([]);
-    L.geoJSON(geo,{ filter:f=>want.has((f.properties.name||'').toLowerCase()),
-      style:f=>{ const ps=wards[(f.properties.name||'').toLowerCase()]||[], anyIn=ps.some(x=>x.reported); return {fillColor:anyIn?PARTY[r.party].color:'#94a3b8',fillOpacity:anyIn?.62:.4,color:'#fff',weight:1}; },
-      onEachFeature:(f,l)=>{ const nm=f.properties.name, ps=wards[(nm||'').toLowerCase()]||[]; l.bindTooltip(precinctTT(nm,ps),{className:'cm-tt',sticky:true});
-        l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'})); l.on('mouseout',()=>l.setStyle({weight:1,color:'#fff'})); b.extend(l.getBounds()); }
-    }).addTo(bigMap); if(b.isValid()) bigMap.fitBounds(b.pad(.04)); }); }
-function precinctTT(name,ps){ if(!LIVE) return `<div class="tt-name">${name}</div><div class="tt-meta">${ps.length>1?ps.length+' wards':'precinct'}</div>`;
-  const reported=ps.filter(p=>p.reported); if(!reported.length) return `<div class="tt-name">${name}</div><div class="tt-meta">not yet reported</div>`;
-  const totals={}; reported.forEach(p=>Object.entries(p.votes).forEach(([n,v])=>totals[n]=(totals[n]||0)+v));
-  return `<div class="tt-name">${name}</div>`+Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,v])=>`<div class="tt-row"><span class="nm">${n}</span><b>${v.toLocaleString()}</b></div>`).join(''); }
+    mainLayer=L.geoJSON(g,{
+      style:f=>styleFor(codeOf(f)),
+      onEachFeature:(f,l)=>{const code=codeOf(f);const rec=recOf(code);
+        if(!contested(rec,curP))return; try{b.extend(l.getBounds());}catch(e){}
+        l.bindTooltip(districtTip(o,code,rec),{className:'pt-tt '+curP,sticky:true});
+        l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'})); l.on('mouseout',()=>mainLayer.resetStyle(l));
+        l.on('click',()=>showDetail(o,code,curP));}
+    }).addTo(mainMap);
+    lastMapSig=mapSig();
+    if(b.isValid()) mainMap.fitBounds(b.pad(.12));
+  });
+}
+function restyleMain(){  // update colors + tooltips from new board, preserving zoom/pan
+  if(!mainLayer)return;
+  mainLayer.eachLayer(l=>{const code=codeOf(l.feature);const rec=recOf(code);if(!contested(rec,curP))return;
+    l.setStyle(styleFor(code)); l.setTooltipContent(districtTip(curO,code,rec));});
+}
+function districtTip(o,code,rec){
+  const b=board[code];
+  if(LIVE&&b){const winners=new Set(b.projection.winners||[]);const tot=b.candidates.reduce((s,c)=>s+c.votes,0)||0;
+    const cands=b.candidates.map(c=>({name:c.name,votes:c.votes,pct:tot?Math.round(100*c.votes/tot):0,win:winners.has(c.name)}));
+    const out=Math.max(0,(b.reporting.projected_total||0)-tot);
+    return hcard(o,districtName(o,rec),curP,cands,b.seats,`${PARTY[curP].name} · ${b.reporting.expected_in||0}% in`,b.projection.status, out?`▮ ${out.toLocaleString()} est. votes still out`:'');
+  }
+  const cands=(rec.candidates&&rec.candidates[curP]||[]).map(n=>({name:n}));
+  return hcard(o,districtName(o,rec),curP,cands,rec.seats,`${PARTY[curP].name} primary · ${cands.length} for ${rec.seats}`,null,'');
+}
+function renderLegend(){
+  const el=document.getElementById('pt-legend');
+  if(!LIVE){el.innerHTML=`<div class="row"><i style="background:${STATUS.preview.c}"></i>Contested primary</div><div class="row"><i style="background:#e7ecf2"></i>No contest</div>`;return;}
+  el.innerHTML=['called','likely','leaning','too_close','awaiting'].map(s=>`<div class="row"><i style="background:${STATUS[s].c}"></i>${STATUS[s].l}</div>`).join('')+`<div class="row"><i style="background:#e7ecf2"></i>No contest</div>`;
+}
 
-document.getElementById('cm-back').onclick=()=>{ document.getElementById('cm-drill').classList.remove('show'); if(bigMap){try{bigMap.remove();}catch(e){} bigMap=null;} renderView(); };
+/* ---------- list ---------- */
+function renderBoard(){
+  const o=curO,p=curP,el=document.getElementById('pt-board');
+  let races;
+  if(LIVE){ races=Object.values(board); }
+  else { races=Object.values(curData.districts).filter(r=>contested(r,p)).map(r=>({code:r.code,county:r.county,district:r.district,seats:r.seats,
+    candidates:(r.candidates[p]||[]).map(n=>({name:n,votes:0,projected:null})),projection:{status:'preview',winners:[]},reporting:{expected_in:0}}));
+    races.sort((a,b)=>a.county===b.county?(parseInt(a.district)-parseInt(b.district)):String(a.county).localeCompare(b.county)); }
+  if(!races.length){el.innerHTML=`<div class="pt-note">No contested ${o.label} primaries for ${PARTY[p].name}.</div>`;return;}
+  el.innerHTML=races.map(r=>card(o,r)).join('');
+  el.querySelectorAll('[data-code]').forEach(x=>x.onclick=()=>showDetail(o,x.dataset.code,p));
+}
+function card(o,r){
+  const winners=new Set(r.projection.winners||[]),tot=r.candidates.reduce((s,c)=>s+c.votes,0)||0,max=Math.max(1,...r.candidates.map(c=>c.votes));
+  const rows=r.candidates.slice(0,4).map(c=>{const win=winners.has(c.name),pc=tot?Math.round(100*c.votes/tot):0;
+    return `<div class="pt-crow"><div class="cn ${win?'win':''}">${win?'<span class="star">★</span> ':''}${c.name}</div>`+
+      `<div class="cv">${LIVE?c.votes.toLocaleString():''}${LIVE&&tot?`<span class="pc">${pc}%</span>`:''}</div>`+
+      (LIVE?`<div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[curP].color}"></i></div>`:'')+`</div>`;}).join('');
+  const sub=LIVE?`${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`:`${r.seats} seat${r.seats!=1?'s':''} · ${r.candidates.length} candidates`;
+  return `<div class="pt-card" data-code="${r.code}"><div class="top"><div class="nm">${districtName(o,r)}</div><span class="pt-badge ${r.projection.status}">${STATUS[r.projection.status].l}</span></div><div class="meta">${sub}</div>${rows}${r.candidates.length>4?`<div class="pt-more">+${r.candidates.length-4} more</div>`:''}</div>`;
+}
 
-selectOffice(OFFICE_BY_KEY['state-house']);
+/* ---------- detail ---------- */
+function showDetail(o,code,party){
+  detailCtx={o,code,party};
+  document.getElementById('pt-board').classList.add('hide');
+  document.getElementById('pt-mapwrap').classList.add('hide');
+  document.getElementById('pt-detail').classList.add('show');
+  loadDetail(o,code,party);
+  if(o.level!=='statewide') window.scrollTo({top:0,behavior:'smooth'});
+}
+function loadDetail(o,code,party){
+  detailCtx={o,code,party};
+  fetch('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+party).then(r=>r.json()).then(r=>{
+    const rec=(curData&&curData.districts[code])||{county:r.county,district:r.district,seats:r.seats,parties:{}};
+    document.getElementById('pt-back').style.display=(code==='STATE'||o.level==='statewide')?'none':'';
+    document.getElementById('pt-dtitle').textContent=code==='STATE'?o.label:districtName(o,rec);
+    document.getElementById('pt-dsub').textContent=LIVE
+      ?`${o.label} · ${PARTY[party].name} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted (${r.reporting.reported}/${r.reporting.total} precincts)`
+      :`${o.label} · ${PARTY[party].name} primary · ${r.seats} seat${r.seats!=1?'s':''} · ${(r.precincts||[]).length} precincts`;
+    const tg=document.getElementById('pt-ptoggle');tg.innerHTML='';
+    ['R','D'].forEach(pp=>{if(rec.parties&&(rec.parties[pp]||0)>0){const b=document.createElement('button');b.className=(pp===party?'on ':'')+pp;b.textContent=PARTY[pp].name;b.onclick=()=>loadDetail(o,code,pp);tg.appendChild(b);}});
+    banner(r);overall(r);ptable(r);pmap(o,r);
+  });
+}
+function banner(r){const el=document.getElementById('pt-banner');if(!LIVE){el.className='pt-banner preview';el.textContent='Preview — live results & projections begin primary day, September 8.';return;}
+  const pj=r.projection||{status:'awaiting',winners:[]};el.className='pt-banner '+pj.status;
+  const map={called:'✓ Projected winner'+((pj.winners||[]).length>1?'s':'')+': '+(pj.winners||[]).join(', '),
+    likely:'Likely: '+(pj.winners||[]).join(', ')+' — '+(pj.expected_in||0)+'% in',
+    leaning:'Leaning: '+(pj.winners||[]).join(', ')+' — '+(pj.expected_in||0)+'% in',
+    too_close:'Too close to call — '+(pj.expected_in||0)+'% of expected vote in',
+    awaiting:'Awaiting results.'};
+  el.textContent=map[pj.status]||map.awaiting;
+}
+function overall(r){const pj=r.projection||{winners:[]},win=new Set(pj.winners||[]);
+  const max=Math.max(1,...r.candidates.map(c=>Math.max(c.votes,c.projected||0)));let h=`<h3>${LIVE?'Overall result':'Candidates'}</h3>`;
+  r.candidates.forEach(c=>{const w=win.has(c.name);
+    h+=`<div class="pt-brow"><div class="bn ${w?'win':''}">${w?'<span class="star">★</span> ':''}${c.name}</div>`+
+      (LIVE?`<div class="pt-bar">`+(c.projected?`<i class="pj" style="width:${100*c.projected/max}%;background:${PARTY[r.party].color}"></i>`:'')+`<i style="width:${100*c.votes/max}%;background:${PARTY[r.party].color}"></i></div>`+
+      `<div class="pt-bv"><b>${c.votes.toLocaleString()}</b>${c.projected?` <span class="pj">→ ${c.projected.toLocaleString()}</span>`:''}</div>`:`<div></div><div></div>`)+`</div>`;});
+  document.getElementById('pt-overall').innerHTML=h;
+}
+function ptable(r){const cn=r.candidates.map(c=>c.name);
+  let h=`<thead><tr><th>Precinct</th>`+cn.map(n=>`<th>${n}</th>`).join('')+`<th>In?</th></tr></thead><tbody>`;
+  (r.precincts||[]).forEach(p=>{h+=`<tr><td>${p.name}</td>`+cn.map(n=>`<td>${p.reported?(p.votes[n]||0).toLocaleString():'–'}</td>`).join('')+`<td class="${p.reported?'in':'out'}">${p.reported?'✓':'—'}</td></tr>`;});
+  document.getElementById('pt-ptable').innerHTML=h+`</tbody>`;
+}
+// build ward-level precinct features: each precinct -> its base-district polygon (city wards) or town polygon (aggregate)
+function buildPrecinctFC(precincts){
+  const groups={};
+  precincts.forEach(p=>{
+    let key,feat;
+    const code=geoMap&&geoMap[p.name];
+    if(code&&houseByCode[code]){key='c:'+code;feat=houseByCode[code];}
+    else{const base=p.name.replace(/\s+Ward\s+\d+\*?$/i,'').trim();key='t:'+base.toLowerCase();feat=townsByName[base.toLowerCase()];}
+    if(!feat)return;
+    const g=groups[key]||(groups[key]={feat,members:[]});g.members.push(p);
+  });
+  return Object.values(groups).map(g=>({type:'Feature',geometry:g.feat.geometry,properties:{members:g.members,
+    name:g.members.length===1?g.members[0].name:g.members[0].name.replace(/\s+Ward.*/i,'')}}));
+}
+function pmap(o,r){
+  const sig=o.key+'|'+(detailCtx?detailCtx.code:'')+'|'+r.party;
+  const reuse = bigMap && bigSig===sig;   // same race: keep map + zoom, just refresh data
+  if(!reuse){ if(bigMap){try{bigMap.remove();}catch(e){}bigMap=null;}
+    bigMap=L.map('pt-bigmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(bigMap); }
+  Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
+               G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
+    if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>houseByCode[String(f.properties.basehse22).trim()]=f);}
+    if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>townsByName[String(f.properties.name||'').toLowerCase()]=f);}
+    if(bigLayer){bigMap.removeLayer(bigLayer);bigLayer=null;}
+    const fc={type:'FeatureCollection',features:buildPrecinctFC(r.precincts||[])};
+    const b=L.latLngBounds([]);
+    bigLayer=L.geoJSON(fc,{
+      style:f=>{const ms=f.properties.members,anyIn=ms.some(m=>m.reported);
+        return {fillColor:anyIn?PARTY[r.party].color:'#cbd5e1',fillOpacity:anyIn?.62:.32,color:'#fff',weight:1};},
+      onEachFeature:(f,l)=>{l.bindTooltip(precinctTip(f.properties,r),{className:'pt-tt '+r.party,sticky:true});
+        l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'}));l.on('mouseout',()=>l.setStyle({weight:1,color:'#fff'}));b.extend(l.getBounds());}
+    }).addTo(bigMap);
+    bigSig=sig;
+    if(!reuse && b.isValid()) bigMap.fitBounds(b.pad(.06));
+  });
+}
+function precinctTip(props,r){const ms=props.members,nm=props.name+(ms.length>1?` (${ms.length} wards)`:'');
+  if(!LIVE) return `<div class="ttn">${nm}</div><div class="ttm"><span>precinct</span></div>`;
+  const rep=ms.filter(m=>m.reported); if(!rep.length) return `<div class="ttn">${nm}</div><div class="ttm"><span>not yet reported</span></div>`;
+  const tot={};let sum=0; rep.forEach(m=>Object.entries(m.votes).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;sum+=v;}));
+  const cands=Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([n,v])=>({name:n,votes:v,pct:sum?Math.round(100*v/sum):0}));
+  return hcard(curO,nm,r.party,cands,r.seats,`${sum.toLocaleString()} votes`,null,'');
+}
+document.getElementById('pt-back').onclick=()=>{document.getElementById('pt-detail').classList.remove('show');if(bigMap){try{bigMap.remove();}catch(e){}bigMap=null;bigLayer=null;bigSig='';}renderView();};
+
+selectOffice(OBYKEY['state-house']);
 </script>
 {% endblock %}

@@ -845,47 +845,79 @@ def _precinct_weights(cur, party_full, names):
     return {n: raw[n] / total for n in names}
 
 
-# How big a swing the still-uncounted vote could plausibly produce when NONE is
-# in (as a share of the total). The tolerance shrinks linearly as vote comes in,
-# so a clear leader gets called early while close races wait. Tuned so a ~30-pt
-# lead is called around 5% in, a ~10-pt lead around ~65% in, a ~3-pt lead ~90% in.
-PROJECTION_SWING = 0.30
-PROJECTION_MIN_IN = 0.01  # don't call off a single fluke precinct
+# Uncertainty band for the call: outstanding expected-vote share ×
+# (BASE + VOL_FACTOR × observed precinct-to-precinct volatility of the boundary
+# margin). z = projected margin / band drives a 4-state call. Tuned so a ~30-pt
+# lead with consistent returns is CALLED near 5% in, a ~10-pt lead reads "likely"
+# mid-count, and a true squeaker stays "too close" until very late.
+PROJ_BASE = 0.15
+PROJ_VOL_FACTOR = 1.0
+PROJ_MIN_IN = 0.005
 
 
-def _project(cand_list, seats, reported_weight, current_total):
-    """Project the finish and make a decision-desk call.
+import math as _math
 
-    cand_list is sorted by projected finish (desc). Uniform extrapolation: each
-    candidate's projected total = current votes / share of expected vote in. A
-    race is CALLED when the projected margin between the last winning seat and the
-    first losing seat exceeds the plausible remaining swing (which scales with how
-    much vote is still out) — not only when it is mathematically impossible to lose."""
+PROJ_MIN_PRECINCTS = 3  # never CALL off fewer than this many reported precincts (unless math-clinched)
+PROJ_SAMPLE = 0.12      # sampling uncertainty term ~ PROJ_SAMPLE / sqrt(reported precincts)
+
+
+def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
+             n_reported=0, n_total=0):
+    """Decision-desk call from region-aware projected totals, with sampling guards
+    so a single unrepresentative precinct (e.g. a candidate's home stronghold) can't
+    trigger a call. Statuses: called / likely / leaning / too_close (+ awaiting)."""
     if reported_weight <= 0 or current_total <= 0:
         return {'status': 'awaiting', 'winners': [], 'expected_in': round(100 * reported_weight),
-                'projected_total': None}
+                'projected_total': None, 'margin': None}
     projected_total = current_total / reported_weight
     winners = [c['name'] for c in cand_list[:seats]]
-    status = 'too_close'
     if len(cand_list) <= seats:
-        status = 'clinched'  # at most as many candidates as seats — everyone wins
+        return {'status': 'called', 'winners': winners, 'expected_in': round(100 * reported_weight),
+                'projected_total': round(projected_total), 'margin': None}
+
+    lead = cand_list[seats - 1]['projected'] or 0
+    trail = cand_list[seats]['projected'] or 0
+    margin = (lead - trail) / projected_total if projected_total else 0
+    outstanding = max(0.0, 1.0 - reported_weight)
+    # Band combines: how much vote is out × (base + observed volatility) PLUS a
+    # sampling term that is large when few precincts have reported (so 1–2 precincts
+    # can't look "certain" just because they happen to agree).
+    sampling = PROJ_SAMPLE / _math.sqrt(max(1, n_reported))
+    band = outstanding * (PROJ_BASE + PROJ_VOL_FACTOR * volatility) + sampling + 0.005
+    gap_votes = cand_list[seats - 1]['votes'] - cand_list[seats]['votes']
+    out_votes = max(0, projected_total - current_total)
+    z = margin / band if band > 0 else 99
+    enough = n_reported >= PROJ_MIN_PRECINCTS
+
+    if gap_votes > out_votes:               # mathematically out of reach — always call
+        status = 'called'
+    elif outstanding < 0.01 and margin > 0:  # effectively all counted with a clear margin
+        status = 'called'
+    elif z >= 1.5 and enough:
+        status = 'called'
+    elif z >= 1.0:
+        status = 'likely'
+    elif z >= 0.5:
+        status = 'leaning'
     else:
-        lead = cand_list[seats - 1]['projected'] or 0
-        trail = cand_list[seats]['projected'] or 0
-        margin = (lead - trail) / projected_total if projected_total else 0   # projected pt margin
-        outstanding = max(0.0, 1.0 - reported_weight)
-        tolerance = PROJECTION_SWING * outstanding
-        # Also always call once it's mathematically out of reach.
-        gap_votes = cand_list[seats - 1]['votes'] - cand_list[seats]['votes']
-        out_votes = max(0, projected_total - current_total)
-        if reported_weight >= PROJECTION_MIN_IN and (margin > tolerance or gap_votes > out_votes):
-            status = 'clinched'
-    return {'status': status, 'winners': winners,
+        status = 'too_close'
+    if reported_weight < PROJ_MIN_IN and status != 'called':
+        status = 'too_close'
+    return {'status': status, 'winners': winners, 'margin': round(margin * 100, 1),
             'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total)}
 
 
+def _precinct_counties(cur, names):
+    """municipality -> county, for region-aware projection."""
+    if not names:
+        return {}
+    qm = ",".join("?" * len(names))
+    cur.execute(f"SELECT municipality, county FROM polling_places WHERE municipality IN ({qm})", names)
+    return {r['municipality']: (r['county'] or '') for r in cur.fetchall()}
+
+
 def _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=True):
-    """Full results + projection for one party's primary in a district."""
+    """Full results + region-aware projection for one party's primary in a district."""
     race = cur.execute("""
         SELECT r.id AS id, r.seats AS seats FROM races r
         JOIN elections e ON r.election_id = e.id
@@ -924,27 +956,100 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     reported_n = sum(1 for p in precincts if p['reported'])
     total = len(precincts)
 
-    weights = _precinct_weights(cur, party_full, [p['name'] for p in precincts])
-    reported_weight = sum(weights.get(p['name'], 0) for p in precincts if p['reported'])
+    weights = _precinct_weights(cur, party_full, precs)
+    pcounty = _precinct_counties(cur, precs)
+    reported = {p['name'] for p in precincts if p['reported']}
+    reported_weight = sum(weights.get(p, 0) for p in reported)
     current_total = sum(overall.values())
-    cand_list = []
-    for cid in name_by_id:
-        cur_v = overall[cid]
-        proj = round(cur_v / reported_weight) if reported_weight > 0 else None
-        cand_list.append({'name': name_by_id[cid], 'votes': cur_v, 'projected': proj})
+    projected_total = (current_total / reported_weight) if reported_weight > 0 else 0
+
+    # Reported candidate shares, overall and per region (county), for region-aware
+    # extrapolation of the outstanding vote.
+    def _shares(votes, tot):
+        return {cid: (votes.get(cid, 0) / tot if tot else 0) for cid in name_by_id}
+    dist_shares = _shares(overall, current_total)
+    region_votes, region_tot = {}, {}
+    for p in reported:
+        rg = pcounty.get(p, '')
+        rv = region_votes.setdefault(rg, {cid: 0 for cid in name_by_id})
+        for cid, val in by_prec.get(p, {}).items():
+            if cid in rv:
+                rv[cid] += val
+                region_tot[rg] = region_tot.get(rg, 0) + val
+    region_shares = {rg: _shares(rv, region_tot.get(rg, 0)) for rg, rv in region_votes.items()}
+
+    # Projected totals: counted + each outstanding precinct's expected vote spread
+    # by its region's reported shares (fallback district shares, then nothing).
+    projected = {cid: overall[cid] for cid in name_by_id}
+    for p in precincts:
+        ev = weights.get(p['name'], 0) * projected_total
+        p['expected'] = round(ev)
+        if p['name'] in reported:
+            continue
+        rg = pcounty.get(p['name'], '')
+        sh = region_shares.get(rg) if region_tot.get(rg, 0) > 0 else dist_shares
+        for cid in name_by_id:
+            projected[cid] += ev * sh[cid]
+
+    cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
+                  'projected': round(projected[cid]) if reported_weight > 0 else None}
+                 for cid in name_by_id]
     cand_list.sort(key=lambda x: (-(x['projected'] if x['projected'] is not None else x['votes']), -x['votes']))
-    projection = _project(cand_list, seats, reported_weight, current_total)
+
+    # Volatility: weighted stddev of the boundary (last-winner vs first-loser)
+    # margin share across reported precincts — consistent returns let us call early.
+    volatility = 0.0
+    if reported_weight > 0 and len(cand_list) > seats:
+        name_to_id = {n: cid for cid, n in name_by_id.items()}
+        bw_id = name_to_id.get(cand_list[seats - 1]['name'])
+        bl_id = name_to_id.get(cand_list[seats]['name'])
+        diffs = []
+        for p in reported:
+            pv = by_prec.get(p, {})
+            pt = sum(pv.get(cid, 0) for cid in name_by_id)
+            if pt > 0:
+                diffs.append((weights.get(p, 0), (pv.get(bw_id, 0) - pv.get(bl_id, 0)) / pt))
+        wsum = sum(w for w, _ in diffs)
+        if wsum > 0:
+            mean = sum(w * m for w, m in diffs) / wsum
+            volatility = (sum(w * (m - mean) ** 2 for w, m in diffs) / wsum) ** 0.5
+
+    projection = _project(cand_list, seats, reported_weight, current_total, volatility,
+                          n_reported=reported_n, n_total=total)
 
     out = {'exists': True, 'office': office_name, 'party': party, 'county': county,
            'district': district, 'seats': seats, 'candidates': cand_list,
            'reporting': {'reported': reported_n, 'total': total,
                          'pct': round(100 * reported_n / total) if total else 0,
-                         'expected_in': round(100 * reported_weight)},
+                         'expected_in': round(100 * reported_weight),
+                         'projected_total': round(projected_total)},
            'projection': projection}
     if with_precincts:
         out['precincts'] = precincts
         out['towns'] = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
     return out
+
+
+@app.route('/api/precinct-geo-map')
+def api_precinct_geo_map():
+    """municipality -> base house district code (e.g. 'HI21'), for single-municipality
+    districts only. Lets the client draw ward-level precinct polygons: each city ward
+    is its own single-municipality base house district, so its polygon is that
+    district's shape in nh-house-districts.geojson. Towns not here fall back to
+    nh-towns.geojson by name."""
+    conn = _contested_db()
+    cur = conn.cursor()
+    oid = cur.execute("SELECT id FROM offices WHERE name='State Representative'").fetchone()['id']
+    rows = cur.execute("""SELECT county, district, GROUP_CONCAT(municipality, '|') AS m
+                          FROM municipality_districts WHERE office_id = ? AND county != ''
+                          GROUP BY county, district""", (oid,)).fetchall()
+    out = {}
+    for r in rows:
+        muns = r['m'].split('|')
+        if len(muns) == 1:
+            out[muns[0]] = _district_code('house', r['county'], r['district'])
+    conn.close()
+    return jsonify(out)
 
 
 @app.route('/api/contested/<office_key>/results')
@@ -995,7 +1100,7 @@ def api_contested_board(office_key):
         board.append(r)
     conn.close()
     # Sort: in-progress/too-close first, then awaiting, then clinched; by expected_in desc.
-    order = {'too_close': 0, 'awaiting': 2, 'clinched': 1}
+    order = {'too_close': 0, 'leaning': 1, 'likely': 2, 'called': 3, 'awaiting': 4}
     board.sort(key=lambda x: (order.get(x['projection']['status'], 3),
                               -(x['reporting']['expected_in'])))
     return jsonify({'office': office_name, 'party': party, 'level': level, 'races': board})
