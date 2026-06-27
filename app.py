@@ -755,6 +755,20 @@ def api_contested(office_key):
     return jsonify({'office': office_name, 'level': level, 'districts': districts})
 
 
+def _precincts_for(cur, office_name, level, county, district):
+    """The municipalities (towns/wards) that vote in a district."""
+    if level == 'statewide':
+        cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
+    else:
+        oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
+        if not oid:
+            return []
+        cur.execute("""SELECT municipality FROM municipality_districts
+                       WHERE office_id = ? AND county = ? AND district = ?
+                       ORDER BY municipality""", (oid['id'], county, district))
+    return [r['municipality'] for r in cur.fetchall()]
+
+
 @app.route('/api/contested/<office_key>/precincts')
 def api_contested_precincts(office_key):
     """Candidates + precinct (town/ward) list for one district."""
@@ -766,8 +780,6 @@ def api_contested_precincts(office_key):
 
     conn = _contested_db()
     cur = conn.cursor()
-
-    # Candidates per party for this district's primary race(s).
     cur.execute("""
         SELECT e.party, r.seats AS seats, c.name AS name
         FROM races r
@@ -783,25 +795,79 @@ def api_contested_precincts(office_key):
     for row in cur.fetchall():
         seats = row['seats']
         parties.setdefault(row['party'], []).append(row['name'])
-
-    # Precincts (towns/wards) that vote in this district.
-    precincts = []
-    if level == 'statewide':
-        cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
-        precincts = [r['municipality'] for r in cur.fetchall()]
-    else:
-        oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
-        if oid:
-            cur.execute("""SELECT municipality FROM municipality_districts
-                           WHERE office_id = ? AND county = ? AND district = ?
-                           ORDER BY municipality""", (oid['id'], county, district))
-            precincts = [r['municipality'] for r in cur.fetchall()]
+    precincts = _precincts_for(cur, office_name, level, county, district)
     conn.close()
 
-    # Base town name (ward stripped) for matching town polygons.
     towns = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p).strip() for p in precincts})
     return jsonify({'office': office_name, 'code': code, 'county': county, 'district': district,
                     'seats': seats, 'parties': parties, 'precincts': precincts, 'towns': towns})
+
+
+@app.route('/api/contested/<office_key>/results')
+def api_contested_results(office_key):
+    """Overall + precinct-by-precinct results for one party's primary in a district.
+
+    Wired to the live `results` table, so it's election-night ready: before any
+    votes are entered it returns zeros / 0% reporting; as precincts are entered
+    it fills in. Projected winners = current top `seats` once anything reports
+    (the full vote-share projection model layers on top of this later)."""
+    if office_key not in CONTESTED_OFFICES:
+        return jsonify({'error': 'unknown office'}), 404
+    office_name, level = CONTESTED_OFFICES[office_key]
+    code = request.args.get('code', '')
+    party = request.args.get('party', 'R')
+    party_full = 'Republican' if party == 'R' else 'Democratic'
+    county, district = _decode_code(level, code)
+
+    conn = _contested_db()
+    cur = conn.cursor()
+    race = cur.execute("""
+        SELECT r.id AS id, r.seats AS seats FROM races r
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o   ON r.office_id = o.id
+        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ?
+          AND o.name = ? AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
+    """, (party_full, office_name, county, district)).fetchone()
+    if not race:
+        conn.close()
+        return jsonify({'exists': False, 'office': office_name, 'party': party,
+                        'candidates': [], 'precincts': [], 'towns': [], 'seats': 1,
+                        'reporting': {'reported': 0, 'total': 0, 'pct': 0}})
+
+    race_id, seats = race['id'], race['seats']
+    cands = cur.execute("""SELECT c.id AS cid, c.name AS name FROM race_candidates rc
+                           JOIN candidates c ON rc.candidate_id = c.id
+                           WHERE rc.race_id = ? AND rc.recruitment_filing_id > 0
+                           ORDER BY rc.ballot_order, c.name""", (race_id,)).fetchall()
+    name_by_id = {c['cid']: c['name'] for c in cands}
+
+    precs = _precincts_for(cur, office_name, level, county, district)
+    res = cur.execute("SELECT municipality, candidate_id, votes FROM results WHERE race_id = ?", (race_id,)).fetchall()
+    by_prec = {}
+    for r in res:
+        by_prec.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
+
+    overall = {cid: 0 for cid in name_by_id}
+    precincts = []
+    for p in precs:
+        v = by_prec.get(p, {})
+        for cid, val in v.items():
+            if cid in overall:
+                overall[cid] += val
+        precincts.append({'name': p, 'reported': p in by_prec,
+                          'votes': {name_by_id[cid]: val for cid, val in v.items() if cid in name_by_id}})
+    reported_n = sum(1 for p in precincts if p['reported'])
+    total = len(precincts)
+    cand_list = sorted([{'name': name_by_id[cid], 'votes': overall[cid]} for cid in name_by_id],
+                       key=lambda x: -x['votes'])
+    conn.close()
+
+    towns = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
+    return jsonify({'exists': True, 'office': office_name, 'party': party, 'county': county,
+                    'district': district, 'seats': seats, 'candidates': cand_list,
+                    'precincts': precincts, 'towns': towns,
+                    'reporting': {'reported': reported_n, 'total': total,
+                                  'pct': round(100 * reported_n / total) if total else 0}})
 
 
 @app.route('/api/export/<data_type>')
