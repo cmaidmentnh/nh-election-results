@@ -918,14 +918,18 @@ def _precinct_counties(cur, names):
 
 
 def _demo_results(precs, cand_ids, race_id):
-    """Deterministic simulated returns (~65% of precincts reporting) so the live
-    portal can be demoed before election night. Not stored; demo mode only."""
+    """Deterministic but ARBITRARY simulated returns (~65% of precincts reporting)
+    so the live portal can be demoed before election night. The lead candidate is
+    rotated by race so it's clearly not a forecast — these are not real votes and
+    not a prediction. Demo mode only; never stored."""
+    n = len(cand_ids)
+    base = [max(6, 100 - i * 20) for i in range(n)]            # descending strengths
+    off = race_id % n                                          # rotate the leader per race
+    strengths = {cid: base[(i + off) % n] for i, cid in enumerate(cand_ids)}
     by_prec = {}
-    n_rep = max(1, int(len(precs) * 0.65))
-    strengths = [max(6, 100 - i * 22 + ((race_id * 7 + i * 13) % 22)) for i in range(len(cand_ids))]
-    for pi, p in enumerate(precs[:n_rep]):
+    for pi, p in enumerate(precs[:max(1, int(len(precs) * 0.65))]):
         h = race_id * 31 + pi * 17
-        by_prec[p] = {cid: max(1, strengths[i] + ((h + i * 101) % 25) - 12 + (pi % 4))
+        by_prec[p] = {cid: max(1, strengths[cid] + ((h + i * 101) % 25) - 12 + (pi % 4))
                       for i, cid in enumerate(cand_ids)}
     return by_prec
 
