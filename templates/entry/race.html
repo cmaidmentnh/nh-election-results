@@ -21,7 +21,7 @@
         h2 { font-size: 1.1rem; }
     }
 </style>
-<p><a href="{{ url_for('entry.election_races', election_id=race.election_id) }}">&larr; Back to Races</a></p>
+<p><a href="{{ url_for('entry.index') }}">&larr; Back to Entry</a></p>
 
 <h2>{{ race.office_name }} - {% if race.county %}{{ race.county }} {% endif %}District {{ race.district }}</h2>
 <p class="text-muted">{{ race.year }} {{ race.election_type }}{% if race.election_party %} ({{ race.election_party }}){% endif %}</p>

@@ -4,34 +4,31 @@
 
 {% block content %}
 <h2>Enter Results</h2>
+<p class="text-muted" style="margin-bottom: 1rem;">Choose an election. Entry is organized by polling place &mdash; pick a town/ward and enter every race on its ballot at once.</p>
 
+{% if not events %}
+<div class="card"><p class="text-muted">No active elections found.</p></div>
+{% else %}
 <div class="card">
-    <h3>Select an Election</h3>
-    {% if elections %}
     <table>
         <thead>
-            <tr>
-                <th>Year</th>
-                <th>Type</th>
-                <th>Party</th>
-                <th>Races</th>
-                <th></th>
-            </tr>
+            <tr><th>Election</th><th>Ballots</th><th>Races</th><th></th></tr>
         </thead>
         <tbody>
-            {% for e in elections %}
+            {% for ev in events %}
             <tr>
-                <td>{{ e.year }}</td>
-                <td>{{ e.election_type }}</td>
-                <td>{{ e.party or '-' }}</td>
-                <td>{{ e.race_count }}</td>
-                <td><a href="{{ url_for('entry.election_races', election_id=e.id) }}" class="btn btn-small btn-primary">Enter Results</a></td>
+                <td><strong>{{ ev.year }} {{ ev.election_type|replace('_',' ')|title }}</strong></td>
+                <td class="text-small">{{ ev.parties|replace(',', ' / ') if ev.parties else 'General' }}</td>
+                <td>{{ ev.race_count }}</td>
+                <td style="text-align: right;">
+                    <a class="btn btn-primary btn-small"
+                       href="{{ url_for('entry.places', year=ev.year, election_type=ev.election_type) }}">
+                       Enter by Polling Place &rarr;</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <p class="text-muted">No active elections found. Contact an admin to set up an election.</p>
-    {% endif %}
 </div>
+{% endif %}
 {% endblock %}

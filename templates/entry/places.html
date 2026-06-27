@@ -1,0 +1,68 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Polling Places{% endblock %}
+
+{% block content %}
+<style>
+    .search-box { width: 100%; padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border);
+                  border-radius: 4px; margin-bottom: 1rem; }
+    .place-row { display: flex; align-items: center; justify-content: space-between;
+                 padding: 0.55rem 0.25rem; border-bottom: 1px solid var(--border); }
+    .place-row:hover { background: #f0f7ff; }
+    .place-name { font-weight: 600; }
+    .place-meta { font-size: 0.78rem; color: var(--text-muted); }
+    .progress { display: inline-block; min-width: 70px; text-align: right; font-size: 0.8rem; font-weight: 600; }
+    .progress.done { color: var(--success); }
+    .progress.partial { color: #b45309; }
+    .progress.none { color: var(--text-muted); }
+    .county-head { margin: 1.25rem 0 0.25rem; font-size: 0.8rem; text-transform: uppercase;
+                   letter-spacing: 0.04em; color: var(--text-muted); font-weight: 700; }
+    .hidden { display: none; }
+</style>
+
+<p><a href="{{ url_for('entry.index') }}">&larr; Elections</a></p>
+<h2>{{ year }} {{ election_type|replace('_',' ')|title }} &mdash; Polling Places</h2>
+<p class="text-muted text-small">{{ places|length }} polling places &middot;
+   {{ elections|map(attribute='party')|select|join(' / ') or 'General' }} ballot</p>
+
+<input type="text" id="search" class="search-box" placeholder="Search town or ward&hellip;" autofocus>
+
+<div class="card" id="place-list">
+    {% set ns = namespace(county='') %}
+    {% for p in places %}
+        {% if p.county != ns.county %}
+            {% set ns.county = p.county %}
+            <div class="county-head" data-county>{{ p.county or 'Other' }}</div>
+        {% endif %}
+        <div class="place-row" data-name="{{ p.municipality|lower }}">
+            <div>
+                <a class="place-name"
+                   href="{{ url_for('entry.place', year=year, election_type=election_type, municipality=p.municipality) }}">{{ p.municipality }}</a>
+                {% if p.polling_hours %}<div class="place-meta">{{ p.polling_hours }}</div>{% endif %}
+            </div>
+            <span class="progress {{ 'done' if p.entered >= p.total and p.total > 0 else ('partial' if p.entered > 0 else 'none') }}">
+                {{ p.entered }}/{{ p.total }}
+            </span>
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+const search = document.getElementById('search');
+search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    document.querySelectorAll('.place-row').forEach(row => {
+        row.classList.toggle('hidden', q && !row.dataset.name.includes(q));
+    });
+    // Hide county headers with no visible rows.
+    document.querySelectorAll('[data-county]').forEach(h => {
+        let n = h.nextElementSibling, any = false;
+        while (n && !n.hasAttribute('data-county')) {
+            if (n.classList.contains('place-row') && !n.classList.contains('hidden')) { any = true; break; }
+            n = n.nextElementSibling;
+        }
+        h.classList.toggle('hidden', !any);
+    });
+});
+</script>
+{% endblock %}
