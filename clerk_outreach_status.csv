@@ -1,0 +1,258 @@
+town,clerk_email,status,note
+Alexandria,clerktax@alexandrianh.gov,CONFIRMED,will add
+Alton,townclerk@alton.nh.gov,CONFIRMED,will add
+Atkinson,clerktax@atkinson-nh.gov,CONFIRMED,will add
+Auburn,townclerk@townofauburnnh.com,CONFIRMED,will add
+Barrington,kkerekes@barrington.nh.gov,CONFIRMED,will add
+Bow,mnaik@bownh.gov,CONFIRMED,will add
+Bradford,tc@bradfordnh.gov,CONFIRMED,will add
+Campton,tctx@camptonnh.gov,CONFIRMED,will add
+Claremont,cityclerk@claremontnh.com,CONFIRMED,will add
+Colebrook,jmartunas@colebrooknh.org,CONFIRMED,will add
+Croydon,townclerk@croydon-nh.com,CONFIRMED,will add
+Dalton,town.clerk@townofdalton.com,CONFIRMED,will add
+Danville,mhealy@townofdanville.org,CONFIRMED,will add
+Deering,townclerk@deeringnh.gov,CONFIRMED,will add
+Derry,townclerk@derrynh.gov,CONFIRMED,will add
+Dublin,townclerk@townofdublin.org,CONFIRMED,will add
+Durham,rdeane@ci.durham.nh.us,CONFIRMED,will add
+Franklin,mstanyan@franklinnh.gov,CONFIRMED,will add
+Gilford,dlafond@gilfordnh.gov,CONFIRMED,will add
+Goshen,townofgoshen@goshennh.org,CONFIRMED,will add
+Greenfield,townclerk@greenfield-nh.gov,CONFIRMED,will add
+Hampstead,townclerk@hampsteadnh.us,CONFIRMED,will add
+Hampton Falls,townclerkcollect@hamptonfalls.org,CONFIRMED,will add
+Henniker,deb.aucoin@hennikernh.gov,CONFIRMED,will add
+Kensington,townclerk@kensingtonnh.gov,CONFIRMED,will add
+Manchester,elections@manchesternh.gov,CONFIRMED,will add
+Moultonborough,townclerk@moultonboroughnh.gov,CONFIRMED,will add
+Nelson,townclerk@nelsonnh.us,CONFIRMED,will add
+New Boston,k.colbert@newbostonnh.gov,CONFIRMED,will add
+Newport,ldufort@newportnh.gov,CONFIRMED,will add
+Plymouth,townclerk@plymouthnh.gov,CONFIRMED,will add
+Randolph,townclerk@randolph.nh.gov,CONFIRMED,will add
+Rindge,townclerk@rindgenh.gov,CONFIRMED,will add
+Rochester,cityclerk@rochesternh.gov,CONFIRMED,will add
+Somersworth,klapanne@somersworthnh.gov,CONFIRMED,will add
+South Hampton,tctx@southhamptonnh.org,CONFIRMED,will add
+Strafford,townclerk@strafford.nh.gov,CONFIRMED,will add
+Whitefield,townclerk@whitefieldnh.gov,CONFIRMED,will add
+Wilmot,wilmot_tc@wilmotnh.org,CONFIRMED,will add
+Wolfeboro,townclerk@wolfeboronh.us,CONFIRMED,will add
+Amherst,lfucci@amherstnh.gov,FOLLOW-UP,auto-reply (OOO) -> ndemers@amherstnh.gov
+Ashland,townoffice@ashland.nh.gov,FOLLOW-UP,auto-reply only (back 6/30)
+Chatham,townclerk@chathamnh.org,FOLLOW-UP,asked to re-request closer to election day
+Gilmanton,tctx@gilmantonnh.gov,FOLLOW-UP,auto-reply only (tax season)
+Gorham,svalliere@gorhamnh.gov,FOLLOW-UP,Willhoite left -> svalliere@/ccole@gorhamnh.gov
+Hanover,townclerk@hanovernh.org,FOLLOW-UP,election -> bobbie.hitchcock@hanovernh.org
+Keene,keenevotes@keenenh.gov,FOLLOW-UP,"use thood@keenenh.gov (KeeneVotes, election periods)"
+Lyman,lymantc@myfairpoint.net,FOLLOW-UP,wants a reminder the week before the election
+Sunapee,joshua@sunapeenh.gov,FOLLOW-UP,auto-reply only (was OOO 6/25-26)
+Columbia,townclerk@columbianh.org,BAD ADDRESS,dead: towncolumbia@myfairpoint.net
+Lyme,townclerk@lymenh.gov,BAD ADDRESS,transient bounce (SES retrying)
+Salisbury,tclerksalisbury@gmail.com,BAD ADDRESS,transient bounce (office was closed)
+Acworth,atclerk@sover.net,OUTSTANDING,
+Albany,townclerk@albanynh.org,OUTSTANDING,
+Allenstown,jtate@allenstownnh.gov,OUTSTANDING,
+Alstead,jbacon@alsteadnh.gov,OUTSTANDING,
+Andover,tctc@andover-nh.gov,OUTSTANDING,
+Antrim,townclerk@antrimnh.gov,OUTSTANDING,
+Atkinson & Gilmanton Academy Grant,erroltownclerk@gmail.com,OUTSTANDING,
+Barnstead,jfifield@barnstead.org,OUTSTANDING,
+Bartlett,townclerk@townofbartlett.nh.gov,OUTSTANDING,
+Beans Grant,czornio@gorhamnh.org,OUTSTANDING,
+Beans Purchase,tctx@townofshelburnenh.gov,OUTSTANDING,
+Bedford,wcarter@bedfordnh.gov,OUTSTANDING,
+Belmont,tctc@belmontnh.gov,OUTSTANDING,
+Bennington,townclerk@townofbennington.com,OUTSTANDING,
+Benton,mstiebitz@att.net,OUTSTANDING,
+Berlin,sfortin@berlinnh.gov,OUTSTANDING,
+Bethlehem,townclerk@bethlehemnh.org,OUTSTANDING,
+Boscawen,nhoyt@boscawennh.gov,OUTSTANDING,
+Brentwood,townclerk@brentwoodnh.gov,OUTSTANDING,
+Bridgewater,bridgewatertownclerk1@gmail.com,OUTSTANDING,
+Bristol,cherbert@bristolnh.gov,OUTSTANDING,
+Brookfield,townclerk@brookfieldnh.org,OUTSTANDING,
+Brookline,patti@brooklinenh.gov,OUTSTANDING,
+Cambridge,erroltownclerk@gmail.com,OUTSTANDING,
+Canaan,alabrie@canaannh.org,OUTSTANDING,
+Candia,townclerk@townofcandia.org,OUTSTANDING,
+Canterbury,spapps@canterburynh.gov,OUTSTANDING,
+Carroll,townclerk@townofcarrollnh.gov,OUTSTANDING,
+Center Harbor,townclerk@centerharbornh.gov,OUTSTANDING,
+Chandlers Purchase,czornio@gorhamnh.org,OUTSTANDING,
+Charlestown,patricia@charlestown-nh.gov,OUTSTANDING,
+Chester,jcelentano@chesternh.org,OUTSTANDING,
+Chesterfield,townclerk@nhchesterfield.com,OUTSTANDING,
+Chichester,townclerk@chichesternh.org,OUTSTANDING,
+Clarksville,kim@clarksville.nh.gov,OUTSTANDING,
+Concord,cityclerk@concordnh.gov,OUTSTANDING,
+Conway,linkell@conwaynh.org,OUTSTANDING,
+Cornish,p.harthan.clerk@cornish.nh.gov,OUTSTANDING,
+Crawfords Purchase,czornio@gorhamnh.org,OUTSTANDING,
+Cutts Grant,czornio@gorhamnh.org,OUTSTANDING,
+Danbury,clerk@danburynh.gov,OUTSTANDING,
+Deerfield,twn@deerfieldnh.gov,OUTSTANDING,
+Dixs Grant,erroltownclerk@gmail.com,OUTSTANDING,
+Dixville,debtt@tango175.com,OUTSTANDING,
+Dorchester,tctc.dorchester@gmail.com,OUTSTANDING,
+Dover,j.bizier@dover.nh.gov,OUTSTANDING,
+Dummer,dummertownclerk@gmail.com,OUTSTANDING,
+Dunbarton,townclerk@dunbartonnh.org,OUTSTANDING,
+East Kingston,sbrinkerhoff@eastkingstonnh.gov,OUTSTANDING,
+Easton,townclerk@eastonnh.gov,OUTSTANDING,
+Eaton,eatonnhtc@gmail.com,OUTSTANDING,
+Effingham,townclerk@effingham.nh.gov,OUTSTANDING,
+Ellsworth,dobellsworth@gmail.com,OUTSTANDING,
+Enfield,whuntley@enfieldnh.gov,OUTSTANDING,
+Epping,clerkandtax@eppingnh.gov,OUTSTANDING,
+Epsom,townclerk@epsomnh.gov,OUTSTANDING,
+Errol,erroltownclerk@gmail.com,OUTSTANDING,
+Ervings Location,towncolumbia@myfairpoint.net,OUTSTANDING,
+Exeter,jlshupe@exeternh.gov,OUTSTANDING,
+Farmington,tctc@farmington.nh.us,OUTSTANDING,
+Fitzwilliam,fitzclerk@fitzwilliam-nh.gov,OUTSTANDING,
+Francestown,clerkandtax@francestownnh.org,OUTSTANDING,
+Franconia,townclerk@franconianh.gov,OUTSTANDING,
+Freedom,freedomtownclerk@townoffreedomnh.gov,OUTSTANDING,
+Fremont,clerkcollector@fremont.nh.gov,OUTSTANDING,
+Gilsum,townclerk@gilsum-nh.gov,OUTSTANDING,
+Goffstown,jsullivan@goffstownnh.gov,OUTSTANDING,
+Grafton,graftontc2008@hotmail.com,OUTSTANDING,
+Grantham,kstory@granthamnh.gov,OUTSTANDING,
+Greenland,abauer@greenland.nh.gov,OUTSTANDING,
+Greens Grant,kwillhoite@gorhamnh.gov,OUTSTANDING,
+Greenville,clerk-collector@comcast.net,OUTSTANDING,
+Groton,townclerk@grotonnh.org,OUTSTANDING,
+Hadleys Purchase,czornio@gorhamnh.org,OUTSTANDING,
+Hampton,townclerk@hamptonnh.gov,OUTSTANDING,
+Hancock,clerk@hancocknh.gov,OUTSTANDING,
+Harrisville,townclerk@harrisvillenh.org,OUTSTANDING,
+Harts Location,hartslocationtc@gmail.com,OUTSTANDING,
+Haverhill,townclerk@haverhill-nh.com,OUTSTANDING,
+Hebron,clerk@hebronnh.gov,OUTSTANDING,
+Hill,hilltwnclk@comcast.net,OUTSTANDING,
+Hillsborough,debbie@hillsboroughnh.net,OUTSTANDING,
+Hinsdale,jseymour@hinsdalenh.org,OUTSTANDING,
+Holderness,tctc@holderness-nh.gov,OUTSTANDING,
+Hollis,townclerk@hollisnh.org,OUTSTANDING,
+Hooksett,ktowne@hooksett.gov,OUTSTANDING,
+Hopkinton,tctc@hopkinton-nh.gov,OUTSTANDING,
+Hudson,eleclerc@hudsonnh.gov,OUTSTANDING,
+Jackson,jxntctc@jackson-nh.gov,OUTSTANDING,
+Jaffrey,krollins@townofjaffrey.com,OUTSTANDING,
+Jefferson,townclerk@jeffersonnh.org,OUTSTANDING,
+Kilkenny,townclerk@jeffersonnh.org,OUTSTANDING,
+Kingston,townclerk@kingstonnh.org,OUTSTANDING,
+Laconia,cityclerk@laconianh.gov,OUTSTANDING,
+Lancaster,townclerk@lancasternh.org,OUTSTANDING,
+Landaff,townclerk@landaffnh.org,OUTSTANDING,
+Langdon,langdontownclerk@gmail.com,OUTSTANDING,
+Lebanon,jaseya.ewing@lebanonnh.gov,OUTSTANDING,
+Lee,sjamesbrown@leenh.org,OUTSTANDING,
+Lempster,townclerk@lempsternh.org,OUTSTANDING,
+Lincoln,townclerk@lincolnnh.gov,OUTSTANDING,
+Lisbon,townclerk@lisbonnh.org,OUTSTANDING,
+Litchfield,tbriand@litchfieldnh.gov,OUTSTANDING,
+Littleton,abrousseau@littletonnh.gov,OUTSTANDING,
+Livermore,townclerk@lincolnnh.gov,OUTSTANDING,
+Londonderry,sfarrell@londonderrynh.org,OUTSTANDING,
+Loudon,townclerk@loudonnh.org,OUTSTANDING,
+Low and Burbanks Grant,czornio@gorhamnh.org,OUTSTANDING,
+Lyndeborough,tschultz@lyndeboroughnh.us,OUTSTANDING,
+Madbury,tcmadbury@comcast.net,OUTSTANDING,
+Madison,clerk@madison-nh.org,OUTSTANDING,
+Marlborough,townclerk@marlboroughnh.org,OUTSTANDING,
+Marlow,marlowclerk@marlownh.gov,OUTSTANDING,
+Martins Location,kwillhoite@gorhamnh.gov,OUTSTANDING,
+Mason,masontownclerk@gmail.com,OUTSTANDING,
+Meredith,kparker@meredithnh.gov,OUTSTANDING,
+Merrimack,bsdulong@merrimacknh.gov,OUTSTANDING,
+Middleton,tctx@middletonnh.gov,OUTSTANDING,
+Milan,milantownclerk@gmail.com,OUTSTANDING,
+Milford,joan.dargie@milford.nh.gov,OUTSTANDING,
+Millsfield,cviggy613@gmail.com,OUTSTANDING,
+Milton,townclerktaxcollector@miltonnh-us.com,OUTSTANDING,
+Monroe,monroetc@monroenh.org,OUTSTANDING,
+Mont Vernon,byeaton@montvernonnh.us,OUTSTANDING,
+Nashua,cityclerk@nashuanh.gov,OUTSTANDING,
+New Castle,townclerk@newcastle.nh.gov,OUTSTANDING,
+New Durham,ndclerk@newdurhamnh.us,OUTSTANDING,
+New Hampton,radams@new-hampton.nh.us,OUTSTANDING,
+New Ipswich,townclerktax@newipswichnh.gov,OUTSTANDING,
+New London,w.kidder@newlondon.nh.gov,OUTSTANDING,
+Newbury,linda@newburynh.org,OUTSTANDING,
+Newfields,suemckinnon@newfieldsnh.gov,OUTSTANDING,
+Newington,dcaradonna@newingtonnh.gov,OUTSTANDING,
+Newmarket,tlittlefield@newmarketnh.gov,OUTSTANDING,
+Newton,townclerktaxcollector@newtonnh.net,OUTSTANDING,
+North Hampton,sbuchanan@northhampton-nh.gov,OUTSTANDING,
+Northfield,tctc@northfieldnh.gov,OUTSTANDING,
+Northumberland,tctx@northumberlandnh.gov,OUTSTANDING,
+Northwood,mrusso@northwoodnh.org,OUTSTANDING,
+Nottingham,townclerk@nottingham-nh.gov,OUTSTANDING,
+Odell,erroltownclerk@gmail.com,OUTSTANDING,
+Orange,orangenhtownclerk@gmail.com,OUTSTANDING,
+Orford,townclerk@orfordnh.us,OUTSTANDING,
+Ossipee,kskehan@ossipee.org,OUTSTANDING,
+Pelham,townclerk@pelhamweb.com,OUTSTANDING,
+Pembroke,jgoff@pembroke-nh.com,OUTSTANDING,
+Peterborough,townclerk@peterboroughnh.gov,OUTSTANDING,
+Piermont,bernadette.ratel@townofpiermontnh.org,OUTSTANDING,
+Pinkhams Grant,kwillhoite@gorhamnh.gov,OUTSTANDING,
+Pittsburg,pittsburg1nh@gmail.com,OUTSTANDING,
+Pittsfield,eanthony@pittsfieldnh.gov,OUTSTANDING,
+Plainfield,sberman@plainfieldnh.org,OUTSTANDING,
+Plaistow,townclerk@plaistow.com,OUTSTANDING,
+Portsmouth,sakellar@portsmouthnh.gov,OUTSTANDING,
+Raymond,arichard@raymondnh.gov,OUTSTANDING,
+Richmond,obrienrichmondclerk@gmail.com,OUTSTANDING,
+Rollinsford,clerk@rollinsford.nh.us,OUTSTANDING,
+Roxbury,roxburytownclerk@yahoo.com,OUTSTANDING,
+Rumney,townclerk@rumneynh.org,OUTSTANDING,
+Rye,athibodeau@town.rye.nh.us,OUTSTANDING,
+Salem,nmorse@salemnh.gov,OUTSTANDING,
+Sanbornton,tctc@sanborntonnh.org,OUTSTANDING,
+Sandown,tgaynor@sandown.us,OUTSTANDING,
+Sandwich,tctc@sandwichnh.org,OUTSTANDING,
+Sargents Purchase,czornio@gorhamnh.org,OUTSTANDING,
+Seabrook,smerrill@seabrooknh.org,OUTSTANDING,
+Second College Grant,erroltownclerk@gmail.com,OUTSTANDING,
+Sharon,sharontownclerk@gmail.com,OUTSTANDING,
+Shelburne,tctx@townofshelburnenh.gov,OUTSTANDING,
+Springfield,townclerk@springfieldnh.org,OUTSTANDING,
+Stark,patty@townofstark.com,OUTSTANDING,
+Stewartstown,townofstewartstown@gmail.com,OUTSTANDING,
+Stoddard,clerktax@stoddardnh.org,OUTSTANDING,
+Stratford,tctx@stratfordnh.gov,OUTSTANDING,
+Stratham,dbakie@strathamnh.gov,OUTSTANDING,
+Success,tctx@townofshelburnenh.gov,OUTSTANDING,
+Sugar Hill,townclerk@sugarhillnh.org,OUTSTANDING,
+Sullivan,townclerk@townofsullivannh.com,OUTSTANDING,
+Surry,depclerk@surry.nh.gov,OUTSTANDING,
+Sutton,townclerk@sutton-nh.org,OUTSTANDING,
+Swanzey,townclerk@swanzeynh.gov,OUTSTANDING,
+Tamworth,tctx@tamworthnh.gov,OUTSTANDING,
+Temple,townclerk@templenh.gov,OUTSTANDING,
+Thompson and Meserves Purchase,czornio@gorhamnh.org,OUTSTANDING,
+Thornton,townclerk@thorntonnh.gov,OUTSTANDING,
+Tilton,ksowles@tiltonnh.org,OUTSTANDING,
+Troy,taxcollector@troy-nh.us,OUTSTANDING,
+Tuftonboro,townclerk@tuftonboronh.gov,OUTSTANDING,
+Unity,townclerk@townofunitynh.org,OUTSTANDING,
+Wakefield,townclerk@wakefieldnh.com,OUTSTANDING,
+Walpole,mhansson@walpolenh.us,OUTSTANDING,
+Warner,townclerk@warnernh.gov,OUTSTANDING,
+Warren,warrentownclerk@gmail.com,OUTSTANDING,
+Washington,sleischner@washingtonnh.org,OUTSTANDING,
+Waterville Valley,clerk@watervillevalleynh.gov,OUTSTANDING,
+Weare,pmoul@wearenh.gov,OUTSTANDING,
+Webster,townclerk@webster-nh.gov,OUTSTANDING,
+Wentworth,townclerk@wentworth-nh.org,OUTSTANDING,
+Wentworths Location,erroltownclerk@gmail.com,OUTSTANDING,
+Westmoreland,town.clerk@westmorelandnh.gov,OUTSTANDING,
+Wilton,tctc@wiltonnh.gov,OUTSTANDING,
+Winchester,jtetreault@winchester.nh.gov,OUTSTANDING,
+Windham,townclerk@windhamnh.gov,OUTSTANDING,
+Windsor,townclerk@windsornh.org,OUTSTANDING,
+Woodstock,townclerk@woodstocknh.gov,OUTSTANDING,
