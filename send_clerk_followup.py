@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Scheduled follow-up to the two clerks who asked to be re-contacted closer to the
+Scheduled follow-up to the clerks who asked to be re-contacted closer to the
 2026 State Primary (Sept 8):
-  * Lyman   — Bethany Carignan asked to be emailed "the week before the election".
-  * Chatham — Patricia Pitman asked to "request this information closer to election day".
+  * Lyman       — Bethany Carignan asked to be emailed "the week before the election".
+  * Chatham     — Patricia Pitman asked to "request this information closer to election day".
+  * Francestown — Pamela Finnell asked us to "reach out again at the end of August".
 
 Sent via AWS SES from the verified electhouserepublicans.com domain (same as the
-original outreach). Intended to run from cron on 2026-09-01. DRY RUN by default;
+original outreach). Intended to run from cron on 2026-08-31. DRY RUN by default;
 --send actually sends. A sentinel file prevents an accidental double-send.
 """
 
@@ -26,6 +27,8 @@ RECIPIENTS = [
      "When I first wrote in June you asked me to follow up the week before the election"),
     ("townclerk@chathamnh.org", "Patricia Pitman", "Chatham",
      "When I first wrote in June you asked me to reach out closer to election day"),
+    ("clerkandtax@francestownnh.org", "Pamela Finnell", "Francestown",
+     "When I first wrote in June you kindly said you would add me and asked me to follow up at the end of August"),
 ]
 
 
