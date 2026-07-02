@@ -4473,9 +4473,13 @@ def get_county_race_detail(office, county, year, district=''):
                         'margin_pct': round(100.0 * margin / tot, 1), 'contested': len(cands) > 1})
 
     conn.close()
+    town_list = [t['municipality'] for t in towns]
+    topline = topline_for_towns(town_list)
+    pvi = pvi_for_towns(town_list)
     return {'office': office, 'county': county, 'district': district, 'year': year,
             'seats': seats, 'candidates': candidates, 'names': names,
-            'towns': towns, 'history': history}
+            'towns': towns, 'history': history,
+            'topline': topline, 'topline_years': sorted(topline, reverse=True), 'pvi': pvi}
 
 
 # slug map for linking county-office races
@@ -4525,3 +4529,66 @@ def get_county_office_races(county, year=None):
     years = [r['year'] for r in cur.fetchall()]
     conn.close()
     return {'year': year, 'years': years, 'races': list(races.values())}
+
+
+def topline_for_towns(towns):
+    """President / Governor / U.S. Senate R-D margins aggregated across a set of towns,
+    by year — the 'top of the ticket' comparison for any race in those towns."""
+    if not towns:
+        return {}
+    conn = get_connection()
+    cur = conn.cursor()
+    ph = ','.join('?' * len(towns))
+    cur.execute(f"""
+        SELECT e.year, o.name office,
+               SUM(CASE WHEN c.party='Republican' THEN res.votes ELSE 0 END) r,
+               SUM(CASE WHEN c.party='Democratic' THEN res.votes ELSE 0 END) d
+        FROM results res JOIN candidates c ON c.id=res.candidate_id
+        JOIN races r ON r.id=res.race_id JOIN elections e ON e.id=r.election_id
+        JOIN offices o ON o.id=r.office_id
+        WHERE res.municipality IN ({ph}) AND e.election_type='general'
+          AND o.name IN ('President of the United States','Governor','United States Senator')
+          AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
+        GROUP BY e.year, o.name ORDER BY e.year DESC
+    """, towns)
+    out = {}
+    for year, off, r, d in cur.fetchall():
+        tot = (r or 0) + (d or 0)
+        if tot:
+            out.setdefault(year, {})[off] = {'r': r, 'd': d, 'margin': round((r - d) / tot * 100, 1)}
+    conn.close()
+    return out
+
+
+def pvi_for_towns(towns):
+    """PVI for a set of towns = (town R% across contested legislative/statewide races)
+    minus (statewide R% across the same), per year. Excludes county offices."""
+    empty = {'current_pvi': 0, 'by_year': {}, 'years': []}
+    if not towns:
+        return empty
+    conn = get_connection()
+    cur = conn.cursor()
+    base = ("""WITH rt AS (
+                 SELECT e.year yr, r.id rid,
+                        SUM(CASE WHEN c.party='Republican' THEN res.votes ELSE 0 END) rr,
+                        SUM(CASE WHEN c.party='Democratic' THEN res.votes ELSE 0 END) dd
+                 FROM results res JOIN candidates c ON c.id=res.candidate_id
+                 JOIN races r ON r.id=res.race_id JOIN elections e ON e.id=r.election_id
+                 %s
+                 WHERE %s e.election_type='general'
+                   AND r.office_id NOT IN (8,9,10,11,12,13)
+                   AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
+                 GROUP BY e.year, r.id HAVING rr>0 AND dd>0)
+               SELECT yr, SUM(rr), SUM(dd) FROM rt GROUP BY yr""")
+    cur.execute(base % ('', ''))
+    state = {y: rr / (rr + dd) * 100 for y, rr, dd in cur.fetchall() if (rr + dd)}
+    ph = ','.join('?' * len(towns))
+    cur.execute(base % ('', f'res.municipality IN ({ph}) AND'), towns)
+    by_year = {}
+    for y, rr, dd in cur.fetchall():
+        if (rr + dd) and y in state:
+            by_year[y] = round(rr / (rr + dd) * 100 - state[y], 1)
+    conn.close()
+    years = sorted(by_year)
+    return {'current_pvi': by_year.get(years[-1], 0) if years else 0,
+            'by_year': by_year, 'years': years}

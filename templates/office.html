@@ -56,10 +56,11 @@
                 <tbody>
                     {% for race in yr_data.races %}
                     {% set winner = race.candidates|selectattr('is_winner')|first %}
-                    <tr>
+                    {% if is_county %}{% set race_url = url_for('county_race_detail', office_name=office_name, year=year, county=race.county) + ('?district=' ~ race.district if race.district else '') %}{% endif %}
+                    <tr {% if is_county %}onclick="window.location.href='{{ race_url }}'" style="cursor:pointer"{% endif %}>
                         <td>
                             {% if is_county %}
-                            <a href="{{ url_for('county_race_detail', office_name=office_name, year=year, county=race.county) }}{% if race.district %}?district={{ race.district }}{% endif %}"><strong>{{ race.county }}</strong></a>
+                            <a href="{{ race_url }}"><strong>{{ race.county }}</strong></a>
                             {% else %}{{ race.county or '' }}{% endif %}
                         </td>
                         <td>
