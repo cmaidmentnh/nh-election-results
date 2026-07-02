@@ -42,7 +42,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for key, d in data.post_2022.items()|sort(key=lambda x: x[1].margin, reverse=true) %}
+                    {% for key, d in data.post_2022.items()|sort(attribute='1.margin', reverse=true) %}
                     <tr>
                         <td>{{ key }}</td>
                         <td class="text-right">
