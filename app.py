@@ -539,6 +539,7 @@ OFFICE_SLUGS = {
     'county-attorney': 'County Attorney',
     'county-sheriff': 'County Sheriff',
     'county-treasurer': 'County Treasurer',
+    'county-commissioner': 'County Commissioner',
     'register-of-deeds': 'Register of Deeds',
     'register-of-probate': 'Register of Probate',
 }

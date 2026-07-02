@@ -74,44 +74,74 @@ def meta_from_name(fn):
 
 
 def parse_file(path):
+    """Parse EVERY sheet of a county file. Offices are split across sheets in the newer
+    (2024) files (Sheriff-Attorney / Treasurer-Deeds / Probate / Commissioners) and bundled
+    in one sheet in older years."""
     import pandas as pd
     import warnings
     warnings.simplefilter("ignore")
-    try:
-        df = pd.read_excel(path, header=None)
-    except Exception as e:
-        print(f"  ! read fail {os.path.basename(path)}: {e}", file=sys.stderr); return []
     yr, typ, county, party_hint = meta_from_name(path)
     if not (yr and typ and county):
         return []
+    try:
+        xl = pd.ExcelFile(path)
+    except Exception as e:
+        print(f"  ! read fail {os.path.basename(path)}: {e}", file=sys.stderr); return []
+    recs = []
+    for sheet in xl.sheet_names:
+        try:
+            df = xl.parse(sheet, header=None)
+        except Exception:
+            continue
+        recs += parse_sheet(df, yr, typ, county, party_hint)
+    return recs
+
+
+def parse_sheet(df, yr, typ, county, party_hint):
     off_row = next((i for i in range(min(8, len(df)))
                     if any(isinstance(x, str) and OFFICE_RE.search(x) for x in df.iloc[i])), None)
     if off_row is None:
         return []
-    cand_row = off_row + 1
-    # column -> office (office header spans until the next header)
-    col_office, cur = {}, None
-    for c in range(df.shape[1]):
-        v = df.iat[off_row, c]
-        if isinstance(v, str) and OFFICE_RE.search(v):
-            cur = office_name(v)
-        col_office[c] = cur
-    # candidate columns
+    # County Commissioner sheets add a District row (District 1 / Dist. 3) between office & candidates
+    nxt = df.iloc[off_row + 1] if off_row + 1 < len(df) else []
+    is_dist = any(isinstance(x, str) and re.search(r"district|dist\.", x, re.I) for x in nxt)
+    if is_dist:
+        cand_row = off_row + 2
+        col_office = {c: "County Commissioner" for c in range(df.shape[1])}
+        col_dist, cur = {}, ""
+        for c in range(df.shape[1]):
+            v = df.iat[off_row + 1, c]
+            if isinstance(v, str):
+                m = re.search(r"(?:district|dist\.?)\s*(\d+)", v, re.I)
+                if m:
+                    cur = m.group(1)
+            col_dist[c] = cur
+    else:
+        cand_row = off_row + 1
+        col_dist = {c: "" for c in range(df.shape[1])}
+        col_office, cur = {}, None
+        for c in range(df.shape[1]):
+            v = df.iat[off_row, c]
+            if isinstance(v, str) and OFFICE_RE.search(v):
+                cur = office_name(v)
+            col_office[c] = cur
+    if cand_row >= len(df):
+        return []
     cands = []
     for c in range(df.shape[1]):
         v = df.iat[cand_row, c]
         if not isinstance(v, str):
             continue
         vs = v.strip()
-        if vs.lower() in NONCAND or not col_office.get(c):
+        if vs.lower() in NONCAND or vs.lower() == "no election" or not col_office.get(c):
             continue
         if re.fullmatch(r"write[- ]?ins?", vs, re.I):
-            cands.append((c, col_office[c], "Write-in", ""))
+            cands.append((c, col_office[c], col_dist.get(c, ""), "Write-in", ""))
         else:
             name, party = split_party(vs)
             if name:
-                cands.append((c, col_office[c], name, party or (party_hint[:1] if party_hint else "")))
-    # municipality rows
+                cands.append((c, col_office[c], col_dist.get(c, ""), name,
+                              party or (party_hint[:1] if party_hint else "")))
     recs = []
     for r in range(cand_row + 1, len(df)):
         muni = df.iat[r, 0]
@@ -120,14 +150,15 @@ def parse_file(path):
         m = normalize_muni(muni)
         if not m or m.lower() in ("total", "totals", "county total", "county totals", "totals:", "grand total"):
             continue
-        for (c, office, name, party) in cands:
+        for (c, office, dist, name, party) in cands:
             val = df.iat[r, c]
             try:
                 votes = int(float(val))
             except (ValueError, TypeError):
                 continue
             recs.append({"year": yr, "election_type": typ, "county": county, "office": office,
-                         "candidate": name, "party": party, "municipality": m, "votes": votes})
+                         "district": dist, "candidate": name, "party": party,
+                         "municipality": m, "votes": votes})
     return recs
 
 
@@ -140,7 +171,8 @@ def collect():
     # dedupe identical rows across duplicate downloads
     seen, uniq = set(), []
     for r in all_recs:
-        k = (r["year"], r["election_type"], r["county"], r["office"], r["candidate"], r["municipality"])
+        k = (r["year"], r["election_type"], r["county"], r["office"], r.get("district", ""),
+             r["candidate"], r["municipality"])
         if k in seen:
             continue
         seen.add(k); uniq.append(r)
@@ -167,7 +199,7 @@ ELECTION_MAP = {("2016", "general"): 1, ("2018", "general"): 4, ("2020", "genera
                 ("2022", "general"): 13, ("2024", "general"): 16}
 # county-wide offices we import (Commissioner is district-based w/ only 1 partial file -> skipped)
 OFFICE_ID = {"County Sheriff": 8, "County Attorney": 9, "County Treasurer": 10,
-             "Register of Deeds": 11, "Register of Probate": 12}
+             "Register of Deeds": 11, "Register of Probate": 12, "County Commissioner": 13}
 
 
 def norm_name(n):
@@ -221,12 +253,12 @@ def write_db(recs, conn):
         if et not in ELECTION_MAP or r["office"] not in OFFICE_ID:
             skipped += 1
             continue
-        races_map[(ELECTION_MAP[et], OFFICE_ID[r["office"]], r["county"])].append(r)
+        races_map[(ELECTION_MAP[et], OFFICE_ID[r["office"]], r["county"], r.get("district", ""))].append(r)
 
     inserted = 0
-    for (eid, oid, county), rs in races_map.items():
+    for (eid, oid, county, district), rs in races_map.items():
         cur.execute("INSERT INTO races(election_id,office_id,district,county,seats,is_official) "
-                    "VALUES(?,?,?,?,1,1)", (eid, oid, "", county))
+                    "VALUES(?,?,?,?,1,1)", (eid, oid, district, county))
         rid = cur.lastrowid
         for r in rs:
             party = "" if r["candidate"] == "Write-in" else party_full(r["party"])
