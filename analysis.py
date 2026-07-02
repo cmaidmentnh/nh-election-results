@@ -4349,3 +4349,76 @@ def get_trump_comparison():
         'outperformers': outperformers,
         'avg_gap': avg_gap
     }
+
+
+def get_county_race_detail(office, county, year, district=''):
+    """Detail for a single county-office race: candidate totals, town-by-town breakdown,
+    and the same office+county(+district) across years. Works for county-wide offices
+    (district='') and County Commissioner districts."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT r.id, r.seats FROM races r
+        JOIN elections e ON e.id = r.election_id
+        JOIN offices o ON o.id = r.office_id
+        WHERE o.name = ? AND e.year = ? AND e.election_type = 'general'
+          AND r.county = ? AND IFNULL(r.district,'') = ?
+    """, (office, year, county, district))
+    row = cur.fetchone()
+    if not row:
+        return None
+    race_id, seats = row['id'], row['seats']
+
+    cur.execute("""
+        SELECT c.name, c.party, SUM(res.votes) v
+        FROM results res JOIN candidates c ON c.id = res.candidate_id
+        WHERE res.race_id = ? AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
+        GROUP BY c.id ORDER BY v DESC
+    """, (race_id,))
+    candidates = [{'name': r['name'], 'party': r['party'], 'votes': r['v']} for r in cur.fetchall()]
+    total = sum(c['votes'] for c in candidates) or 1
+    for i, c in enumerate(candidates):
+        c['is_winner'] = i < seats
+        c['pct'] = round(100.0 * c['votes'] / total, 1)
+    names = [c['name'] for c in candidates]
+
+    cur.execute("""
+        SELECT res.municipality, c.name, res.votes
+        FROM results res JOIN candidates c ON c.id = res.candidate_id
+        WHERE res.race_id = ? AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
+    """, (race_id,))
+    town_map = {}
+    for r in cur.fetchall():
+        town_map.setdefault(r['municipality'], {})[r['name']] = r['votes']
+    towns = []
+    for muni in sorted(town_map):
+        row_votes = town_map[muni]
+        lead = max(row_votes, key=row_votes.get) if row_votes else None
+        towns.append({'municipality': muni, 'votes': [row_votes.get(n, 0) for n in names],
+                      'total': sum(row_votes.values()), 'leader': lead})
+
+    cur.execute("""
+        SELECT e.year yr, c.name, c.party, SUM(res.votes) v
+        FROM results res JOIN candidates c ON c.id = res.candidate_id
+        JOIN races r ON r.id = res.race_id JOIN elections e ON e.id = r.election_id
+        JOIN offices o ON o.id = r.office_id
+        WHERE o.name = ? AND r.county = ? AND IFNULL(r.district,'') = ?
+          AND e.election_type = 'general' AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
+        GROUP BY e.year, c.id ORDER BY e.year DESC, v DESC
+    """, (office, county, district))
+    hist = {}
+    for r in cur.fetchall():
+        hist.setdefault(r['yr'], []).append({'name': r['name'], 'party': r['party'], 'votes': r['v']})
+    history = []
+    for yr in sorted(hist, reverse=True):
+        cands = hist[yr]
+        win = cands[0]
+        margin = (cands[0]['votes'] - cands[1]['votes']) if len(cands) > 1 else cands[0]['votes']
+        tot = sum(c['votes'] for c in cands) or 1
+        history.append({'year': yr, 'winner': win['name'], 'party': win['party'],
+                        'margin_pct': round(100.0 * margin / tot, 1), 'contested': len(cands) > 1})
+
+    conn.close()
+    return {'office': office, 'county': county, 'district': district, 'year': year,
+            'seats': seats, 'candidates': candidates, 'names': names,
+            'towns': towns, 'history': history}

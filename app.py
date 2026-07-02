@@ -581,16 +581,32 @@ def office_year(office_name, year):
     total_r_votes = sum(c['votes'] for r in races for c in r['candidates'] if c['party'] == 'Republican')
     total_d_votes = sum(c['votes'] for r in races for c in r['candidates'] if c['party'] == 'Democratic')
 
+    is_county = office.startswith('County') or office.startswith('Register')
     return render_template('office_year.html',
                          office=office,
                          office_name=office_name,
                          year=year,
                          races=races,
                          by_county=by_county,
+                         is_county=is_county,
                          total_r_seats=total_r_seats,
                          total_d_seats=total_d_seats,
                          total_r_votes=total_r_votes,
                          total_d_votes=total_d_votes)
+
+
+@app.route('/office/<office_name>/<int:year>/<county>')
+def county_race_detail(office_name, year, county):
+    """Drill-down for a single county-office race (town-by-town + year-over-year).
+    Commissioner districts pass ?district=N."""
+    office = OFFICE_SLUGS.get(office_name)
+    if not office:
+        return f"Office '{office_name}' not found", 404
+    district = request.args.get('district', '')
+    data = analysis.get_county_race_detail(office, county, year, district)
+    if not data:
+        return f"No results for {office} in {county} {year}", 404
+    return render_template('county_race.html', office_name=office_name, data=data)
 
 
 @app.route('/incumbents')

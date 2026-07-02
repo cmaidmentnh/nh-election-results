@@ -140,7 +140,9 @@
             <div class="race-card">
                 <div class="race-header">
                     <h4>
-                        {% if race.county %}
+                        {% if is_county %}
+                        <a href="{{ url_for('county_race_detail', office_name=office_name, year=year, county=race.county) }}{% if race.district %}?district={{ race.district }}{% endif %}">{% if race.district %}District {{ race.district }}{% else %}{{ race.county }} — countywide{% endif %}</a>
+                        {% elif race.county %}
                         <a href="{{ url_for('district', county=race.county, district=race.district) }}">District {{ race.district }}</a>
                         {% elif race.district %}
                         <a href="{{ url_for('statewide_district', office=office, district=race.district) }}">District {{ race.district }}</a>

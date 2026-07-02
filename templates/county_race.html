@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ data.year }} {{ data.office }} — {{ data.county }} County{% endblock %}
+{% block meta_description %}{{ data.year }} {{ data.office }} results for {{ data.county }} County, New Hampshire — town-by-town votes and year-over-year comparison.{% endblock %}
+
+{% block head %}
+<style>
+.cr-wrap{max-width:1000px;margin:0 auto;padding:1rem}
+.cr-back{display:inline-block;margin-bottom:.5rem}
+.cr-title{margin:.2rem 0}
+.cr-sub{color:#666;margin-bottom:1rem}
+.cr-cands{margin:1rem 0 1.5rem}
+.cr-cand{margin:.4rem 0}
+.cr-cand .row{display:flex;justify-content:space-between;font-size:1rem}
+.cr-cand .bar{height:10px;border-radius:5px;background:#ccc;margin-top:3px}
+.cr-cand.r .bar{background:#c0392b}.cr-cand.d .bar{background:#2c5aa0}
+.cr-cand .nm{font-weight:600}.cr-cand .win{color:#1a7f37}
+table.cr{border-collapse:collapse;width:100%;font-size:.9rem}
+table.cr th,table.cr td{border-bottom:1px solid #eee;padding:.35rem .5rem;text-align:right}
+table.cr th:first-child,table.cr td:first-child{text-align:left}
+table.cr thead th{border-bottom:2px solid #333}
+td.lead{font-weight:700}
+.cr-hist a{display:inline-block}
+h3.cr-h{margin:1.5rem 0 .5rem;border-bottom:2px solid #333;padding-bottom:.25rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cr-wrap">
+  <a class="cr-back" href="{{ url_for('office_year', office_name=office_name, year=data.year) }}">&larr; All {{ data.year }} {{ data.office }} races</a>
+  <h2 class="cr-title">{{ data.office }} — {{ data.county }} County{% if data.district %}, District {{ data.district }}{% endif %}</h2>
+  <div class="cr-sub">{{ data.year }} General Election{% if data.seats > 1 %} · {{ data.seats }} seats{% endif %}</div>
+
+  {% set total = namespace(v=0) %}
+  {% for c in data.candidates %}{% set total.v = total.v + c.votes %}{% endfor %}
+  <div class="cr-cands">
+    {% for c in data.candidates %}
+    <div class="cr-cand {% if c.party=='Republican' %}r{% elif c.party=='Democratic' %}d{% endif %}">
+      <div class="row">
+        <span class="nm">{% if c.is_winner %}<span class="win">&#10003;</span> {% endif %}{{ c.name }}
+          <span style="color:#888;font-weight:400">{{ c.party or '—' }}</span></span>
+        <span>{{ "{:,}".format(c.votes) }} &nbsp; {{ c.pct }}%</span>
+      </div>
+      <div class="bar" style="width:{{ c.pct }}%"></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h3 class="cr-h">Town by town</h3>
+  <table class="cr">
+    <thead><tr><th>Municipality</th>{% for n in data.names %}<th>{{ n }}</th>{% endfor %}<th>Total</th></tr></thead>
+    <tbody>
+      {% for t in data.towns %}
+      <tr>
+        <td>{{ t.municipality }}</td>
+        {% for i in range(data.names|length) %}
+        <td class="{% if data.names[i] == t.leader %}lead{% endif %}">{{ "{:,}".format(t.votes[i]) }}</td>
+        {% endfor %}
+        <td>{{ "{:,}".format(t.total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if data.history|length > 1 %}
+  <h3 class="cr-h">{{ data.office }} in {{ data.county }}{% if data.district %} (Dist. {{ data.district }}){% endif %} — by year</h3>
+  <table class="cr cr-hist">
+    <thead><tr><th>Year</th><th>Winner</th><th>Party</th><th>Margin</th></tr></thead>
+    <tbody>
+      {% for h in data.history %}
+      <tr>
+        <td><a href="{{ url_for('county_race_detail', office_name=office_name, year=h.year, county=data.county) }}{% if data.district %}?district={{ data.district }}{% endif %}">{{ h.year }}</a></td>
+        <td>{{ h.winner }}</td>
+        <td>{{ h.party or '—' }}</td>
+        <td>{% if h.contested %}{{ h.margin_pct }}%{% else %}unopposed{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

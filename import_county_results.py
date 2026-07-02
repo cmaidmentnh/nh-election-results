@@ -97,68 +97,103 @@ def parse_file(path):
     return recs
 
 
+def _isnum(v):
+    try:
+        import math
+        return v is not None and not isinstance(v, bool) and not math.isnan(float(v))
+    except (ValueError, TypeError):
+        return False
+
+
+_DIST_RE = re.compile(r"(?:district|dist\.?)\s*(\d+)", re.I)
+
+
 def parse_sheet(df, yr, typ, county, party_hint):
-    off_row = next((i for i in range(min(8, len(df)))
-                    if any(isinstance(x, str) and OFFICE_RE.search(x) for x in df.iloc[i])), None)
-    if off_row is None:
-        return []
-    # County Commissioner sheets add a District row (District 1 / Dist. 3) between office & candidates
-    nxt = df.iloc[off_row + 1] if off_row + 1 < len(df) else []
-    is_dist = any(isinstance(x, str) and re.search(r"district|dist\.", x, re.I) for x in nxt)
-    if is_dist:
-        cand_row = off_row + 2
-        col_office = {c: "County Commissioner" for c in range(df.shape[1])}
-        col_dist, cur = {}, ""
-        for c in range(df.shape[1]):
-            v = df.iat[off_row + 1, c]
-            if isinstance(v, str):
-                m = re.search(r"(?:district|dist\.?)\s*(\d+)", v, re.I)
-                if m:
-                    cur = m.group(1)
-            col_dist[c] = cur
-    else:
-        cand_row = off_row + 1
-        col_dist = {c: "" for c in range(df.shape[1])}
-        col_office, cur = {}, None
-        for c in range(df.shape[1]):
-            v = df.iat[off_row, c]
-            if isinstance(v, str) and OFFICE_RE.search(v):
-                cur = office_name(v)
-            col_office[c] = cur
-    if cand_row >= len(df):
-        return []
-    cands = []
-    for c in range(df.shape[1]):
-        v = df.iat[cand_row, c]
-        if not isinstance(v, str):
-            continue
-        vs = v.strip()
-        if vs.lower() in NONCAND or vs.lower() == "no election" or not col_office.get(c):
-            continue
-        if re.fullmatch(r"write[- ]?ins?", vs, re.I):
-            cands.append((c, col_office[c], col_dist.get(c, ""), "Write-in", ""))
+    """Parse one sheet, which may stack SEVERAL office blocks vertically (Sheriff/Attorney/
+    Treasurer/Deeds up top; Probate + Commissioner-by-district below, with the town list
+    repeating). Detect each block by its run of town rows, then attribute every candidate
+    column to the office (and, for Commissioner, the district) whose header sits at/above
+    it in that block."""
+    nrows, ncols = df.shape
+
+    def townish(r):
+        v = df.iat[r, 0]
+        if not isinstance(v, str) or not v.strip():
+            return False
+        s = v.strip().lower()
+        if OFFICE_RE.search(s) or "district" in s or _DIST_RE.search(s) or s.startswith("total") or s.startswith("*"):
+            return False
+        return any(_isnum(df.iat[r, c]) for c in range(1, ncols))
+
+    def blank(r):
+        return all((not isinstance(x, str) or not x.strip()) and not _isnum(x) for x in df.iloc[r])
+
+    # contiguous runs of town rows = one office block each
+    runs, r = [], 0
+    while r < nrows:
+        if townish(r):
+            start = r
+            while r < nrows and townish(r):
+                r += 1
+            runs.append((start, r))
         else:
-            name, party = split_party(vs)
-            if name:
-                cands.append((c, col_office[c], col_dist.get(c, ""), name,
-                              party or (party_hint[:1] if party_hint else "")))
+            r += 1
+
+    def owner(col, items):
+        best = None
+        for cc, val in items:
+            if cc <= col:
+                best = val
+            else:
+                break
+        return best
+
     recs = []
-    for r in range(cand_row + 1, len(df)):
-        muni = df.iat[r, 0]
-        if not isinstance(muni, str):
+    for start, end in runs:
+        cand_row = start - 1
+        if cand_row < 0:
             continue
-        m = normalize_muni(muni)
-        if not m or m.lower() in ("total", "totals", "county total", "county totals", "totals:", "grand total"):
+        top = cand_row
+        while top - 1 >= 0 and not blank(top - 1) and not townish(top - 1):
+            top -= 1
+        offices, districts = [], []
+        for hr in range(top, cand_row):
+            for c in range(ncols):
+                v = df.iat[hr, c]
+                if isinstance(v, str):
+                    if OFFICE_RE.search(v):
+                        offices.append((c, office_name(v)))
+                    md = _DIST_RE.search(v)
+                    if md:
+                        districts.append((c, md.group(1)))
+        if not offices:
             continue
-        for (c, office, dist, name, party) in cands:
-            val = df.iat[r, c]
-            try:
-                votes = int(float(val))
-            except (ValueError, TypeError):
+        offices.sort(); districts.sort()
+        for c in range(ncols):
+            v = df.iat[cand_row, c]
+            if not isinstance(v, str):
                 continue
-            recs.append({"year": yr, "election_type": typ, "county": county, "office": office,
-                         "district": dist, "candidate": name, "party": party,
-                         "municipality": m, "votes": votes})
+            vs = v.strip()
+            if vs.lower() in NONCAND or vs.lower() == "no election":
+                continue
+            office = owner(c, offices)
+            if not office:
+                continue
+            dist = owner(c, districts) if office == "County Commissioner" else ""
+            if re.fullmatch(r"write[- ]?ins?", vs, re.I):
+                name, party = "Write-in", ""
+            else:
+                name, party = split_party(vs)
+                if not name:
+                    continue
+                party = party or (party_hint[:1] if party_hint else "")
+            for tr in range(start, end):
+                val = df.iat[tr, c]
+                if not _isnum(val):
+                    continue
+                recs.append({"year": yr, "election_type": typ, "county": county, "office": office,
+                             "district": dist, "candidate": name, "party": party,
+                             "municipality": normalize_muni(df.iat[tr, 0]), "votes": int(float(val))})
     return recs
 
 
