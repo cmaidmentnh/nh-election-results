@@ -59,7 +59,9 @@
                     <tr>
                         <td>{{ race.county or '' }}</td>
                         <td>
-                            {% if race.county and race.district %}
+                            {% if is_county %}
+                            <a href="{{ url_for('county_race_detail', office_name=office_name, year=year, county=race.county) }}{% if race.district %}?district={{ race.district }}{% endif %}">{% if race.district %}District {{ race.district }}{% else %}Countywide{% endif %}</a>
+                            {% elif race.county and race.district %}
                             <a href="{{ url_for('district', county=race.county, district=race.district) }}">{{ race.district }}</a>
                             {% elif race.district %}
                             <a href="{{ url_for('statewide_district', office=office, district=race.district) }}">{{ race.district }}</a>
@@ -80,7 +82,9 @@
                 </tbody>
             </table>
             {% else %}
-            <p class="text-muted">{{ yr_data.races|length }} races total. <a href="{{ url_for('districts_browser') }}?office={{ office }}&year={{ year }}">Browse all districts</a></p>
+            <p class="text-muted">{{ yr_data.races|length }} races total.
+            {% if is_county %}<a href="{{ url_for('office_year', office_name=office_name, year=year) }}">View all {{ year }} races by county &rarr;</a>
+            {% else %}<a href="{{ url_for('districts_browser') }}?office={{ office }}&year={{ year }}">Browse all districts</a>{% endif %}</p>
             {% endif %}
         </div>
         {% endfor %}

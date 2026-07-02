@@ -7,7 +7,7 @@ Insight-driven web app for exploring NH election data
 import os
 import re
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request, Response, make_response
+from flask import Flask, render_template, jsonify, request, Response, make_response, redirect, url_for
 import queries
 import analysis
 import census
@@ -325,7 +325,9 @@ def county(name):
     if not summary:
         return f"County '{name}' not found", 404
 
-    return render_template('county.html', summary=summary)
+    year = request.args.get('year', type=int)
+    county_offices = analysis.get_county_office_races(name, year)
+    return render_template('county.html', summary=summary, county_offices=county_offices)
 
 
 @app.route('/candidates')
@@ -437,6 +439,10 @@ def api_statewide_districts():
 def districts_browser():
     """Browse all districts for an office, sorted by PVI."""
     office = request.args.get('office', 'State Senator')
+    # County offices aren't legislative PVI districts — send them to their own office page.
+    _rev = {v: k for k, v in OFFICE_SLUGS.items()}
+    if office.startswith('County') or office.startswith('Register'):
+        return redirect(url_for('office_detail', office_name=_rev.get(office, 'county-sheriff')))
     districts = analysis.get_all_districts_with_pvi(office)
 
     return render_template('districts.html',
@@ -553,7 +559,9 @@ def office_detail(office_name):
         return f"Office '{office_name}' not found", 404
 
     office_data = analysis.get_office_results(office)
-    return render_template('office.html', office=office, office_name=office_name, data=office_data)
+    is_county = office.startswith('County') or office.startswith('Register')
+    return render_template('office.html', office=office, office_name=office_name,
+                           data=office_data, is_county=is_county)
 
 
 @app.route('/office/<office_name>/<int:year>')

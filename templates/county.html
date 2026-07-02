@@ -51,6 +51,33 @@
         </div>
         {% endif %}
 
+        <!-- County Offices (Sheriff, Attorney, Treasurer, Commissioner, Registers) -->
+        {% if county_offices and county_offices.races %}
+        <div class="section">
+            <div class="section-header">
+                <h2>County Offices &mdash; {{ county_offices.year }}</h2>
+            </div>
+            <table>
+                <thead><tr><th>Office</th><th>Winner</th><th class="text-right">Votes</th></tr></thead>
+                <tbody>
+                {% for race in county_offices.races %}
+                {% set w = race.candidates|selectattr('is_winner')|first %}
+                <tr>
+                    <td><a href="{{ url_for('county_race_detail', office_name=race.slug, year=county_offices.year, county=summary.name) }}{% if race.district %}?district={{ race.district }}{% endif %}">{{ race.office }}{% if race.district %} &mdash; Dist. {{ race.district }}{% endif %}</a></td>
+                    <td>{% if w %}<span class="{% if w.party=='Republican' %}r{% elif w.party=='Democratic' %}d{% endif %}">{{ w.name }}</span>{% else %}&mdash;{% endif %}</td>
+                    <td class="text-right">{% if w %}{{ "{:,}".format(w.votes) }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if county_offices.years|length > 1 %}
+            <p class="text-muted">Other years:
+              {% for y in county_offices.years %}{% if y != county_offices.year %}<a href="{{ url_for('county', name=summary.name) }}?year={{ y }}">{{ y }}</a>&nbsp;{% endif %}{% endfor %}
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Results by Year - Aggregated by Office -->
         {% for year in summary.years|reverse %}
         <div class="section">
