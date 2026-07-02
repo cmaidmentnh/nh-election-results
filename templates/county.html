@@ -78,6 +78,31 @@
         </div>
         {% endif %}
 
+        <!-- County top of the ticket (President/Governor/Senate) -->
+        {% if county_topline_years %}
+        {% macro mg(m) %}{% if m is not none %}<span class="{{ 'r' if m>0 else 'd' }}">{{ 'R+' if m>0 else 'D+' }}{{ '%.1f'|format(m|abs) }}%</span>{% else %}&mdash;{% endif %}{% endmacro %}
+        <div class="section">
+            <div class="section-header">
+                <h2>Top of the Ticket</h2>
+                {% if county_pvi and county_pvi.current_pvi %}<span><strong>PVI</strong> <span class="{{ 'r' if county_pvi.current_pvi>0 else 'd' }}">{{ 'R+' if county_pvi.current_pvi>0 else 'D+' }}{{ '%.1f'|format(county_pvi.current_pvi|abs) }}</span></span>{% endif %}
+            </div>
+            <table>
+                <thead><tr><th>Year</th><th class="text-right">President</th><th class="text-right">Governor</th><th class="text-right">U.S. Senate</th></tr></thead>
+                <tbody>
+                {% for y in county_topline_years %}
+                {% set tp = county_topline[y] %}
+                <tr>
+                    <td><strong>{{ y }}</strong></td>
+                    <td class="text-right">{{ mg(tp['President of the United States'].margin if 'President of the United States' in tp else None) }}</td>
+                    <td class="text-right">{{ mg(tp['Governor'].margin if 'Governor' in tp else None) }}</td>
+                    <td class="text-right">{{ mg(tp['United States Senator'].margin if 'United States Senator' in tp else None) }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <!-- Results by Year - Aggregated by Office -->
         {% for year in summary.years|reverse %}
         <div class="section">

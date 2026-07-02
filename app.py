@@ -327,7 +327,11 @@ def county(name):
 
     year = request.args.get('year', type=int)
     county_offices = analysis.get_county_office_races(name, year)
-    return render_template('county.html', summary=summary, county_offices=county_offices)
+    towns = summary.get('towns') or []
+    topline = analysis.topline_for_towns(towns)
+    return render_template('county.html', summary=summary, county_offices=county_offices,
+                           county_topline=topline, county_topline_years=sorted(topline, reverse=True),
+                           county_pvi=analysis.pvi_for_towns(towns))
 
 
 @app.route('/candidates')
