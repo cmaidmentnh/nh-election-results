@@ -527,20 +527,27 @@ def redistricting():
     return render_template('redistricting.html', data=impact_data)
 
 
+# slug -> official office name (statewide/legislative + county offices)
+OFFICE_SLUGS = {
+    'president': 'President of the United States',
+    'governor': 'Governor',
+    'us-senate': 'United States Senator',
+    'us-house': 'Representative in Congress',
+    'state-senate': 'State Senator',
+    'state-house': 'State Representative',
+    'exec-council': 'Executive Councilor',
+    'county-attorney': 'County Attorney',
+    'county-sheriff': 'County Sheriff',
+    'county-treasurer': 'County Treasurer',
+    'register-of-deeds': 'Register of Deeds',
+    'register-of-probate': 'Register of Probate',
+}
+
+
 @app.route('/office/<office_name>')
 def office_detail(office_name):
     """Office-level results page."""
-    # Decode URL-safe office name
-    office_map = {
-        'president': 'President of the United States',
-        'governor': 'Governor',
-        'us-senate': 'United States Senator',
-        'us-house': 'Representative in Congress',
-        'state-senate': 'State Senator',
-        'state-house': 'State Representative',
-        'exec-council': 'Executive Councilor'
-    }
-    office = office_map.get(office_name)
+    office = OFFICE_SLUGS.get(office_name)
     if not office:
         return f"Office '{office_name}' not found", 404
 
@@ -551,16 +558,7 @@ def office_detail(office_name):
 @app.route('/office/<office_name>/<int:year>')
 def office_year(office_name, year):
     """Office results for a specific year with all races."""
-    office_map = {
-        'president': 'President of the United States',
-        'governor': 'Governor',
-        'us-senate': 'United States Senator',
-        'us-house': 'Representative in Congress',
-        'state-senate': 'State Senator',
-        'state-house': 'State Representative',
-        'exec-council': 'Executive Councilor'
-    }
-    office = office_map.get(office_name)
+    office = OFFICE_SLUGS.get(office_name)
     if not office:
         return f"Office '{office_name}' not found", 404
 
