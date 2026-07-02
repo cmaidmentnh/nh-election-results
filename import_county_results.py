@@ -28,7 +28,8 @@ COUNTIES = ["belknap", "carroll", "cheshire", "coos", "grafton", "hillsborough",
             "merrimack", "rockingham", "strafford", "sullivan"]
 OFFICE_RE = re.compile(r"sheriff|attorney|treasurer|register of deeds|register of probate|"
                        r"reg\.?\s*of\s*deeds|reg\.?\s*of\s*probate|deeds|probate|commissioner", re.I)
-NONCAND = {"undervotes", "overvotes", "scatter", "scattering", "nan", "total votes", ""}
+NONCAND = {"undervotes", "overvotes", "scatter", "scattering", "nan", "total votes",
+           "recount", "no election", "", "totals"}
 
 
 _MUNI_ALIAS = {
@@ -105,7 +106,7 @@ def _isnum(v):
         return False
 
 
-_DIST_RE = re.compile(r"(?:district|dist\.?)\s*(\d+)", re.I)
+_DIST_RE = re.compile(r"(?:district|dist\.?)\s*(?:no\.?\s*)?(\d+)", re.I)  # handles "District No. 1"
 
 
 def parse_sheet(df, yr, typ, county, party_hint):
