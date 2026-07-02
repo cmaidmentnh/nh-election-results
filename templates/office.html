@@ -57,7 +57,11 @@
                     {% for race in yr_data.races %}
                     {% set winner = race.candidates|selectattr('is_winner')|first %}
                     <tr>
-                        <td>{{ race.county or '' }}</td>
+                        <td>
+                            {% if is_county %}
+                            <a href="{{ url_for('county_race_detail', office_name=office_name, year=year, county=race.county) }}{% if race.district %}?district={{ race.district }}{% endif %}"><strong>{{ race.county }}</strong></a>
+                            {% else %}{{ race.county or '' }}{% endif %}
+                        </td>
                         <td>
                             {% if is_county %}
                             <a href="{{ url_for('county_race_detail', office_name=office_name, year=year, county=race.county) }}{% if race.district %}?district={{ race.district }}{% endif %}">{% if race.district %}District {{ race.district }}{% else %}Countywide{% endif %}</a>
