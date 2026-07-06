@@ -1,0 +1,144 @@
+[
+{
+"office_id": 7,
+"year": 2016,
+"election_id": 1,
+"county": "Rockingham",
+"district": "31",
+"seats": 1,
+"candidates": [
+{
+"name": "Robertson",
+"party": "Republican"
+},
+{
+"name": "Le",
+"party": "Democratic"
+}
+],
+"results": [
+{
+"muni": "Greenland",
+"name": "Robertson",
+"party": "Republican",
+"votes": 1288
+},
+{
+"muni": "Greenland",
+"name": "Le",
+"party": "Democratic",
+"votes": 1127
+},
+{
+"muni": "Newington",
+"name": "Robertson",
+"party": "Republican",
+"votes": 321
+},
+{
+"muni": "Newington",
+"name": "Le",
+"party": "Democratic",
+"votes": 244
+},
+{
+"muni": "North Hampton",
+"name": "Robertson",
+"party": "Republican",
+"votes": 1503
+},
+{
+"muni": "North Hampton",
+"name": "Le",
+"party": "Democratic",
+"votes": 1397
+},
+{
+"muni": "Portsmouth Ward 3",
+"name": "Robertson",
+"party": "Republican",
+"votes": 813
+},
+{
+"muni": "Portsmouth Ward 3",
+"name": "Le",
+"party": "Democratic",
+"votes": 1322
+}
+],
+"R": 3925,
+"D": 4090,
+"trusted": true
+},
+{
+"office_id": 7,
+"year": 2018,
+"election_id": 4,
+"county": "Rockingham",
+"district": "31",
+"seats": 1,
+"candidates": [
+{
+"name": "DiRienco",
+"party": "Republican"
+},
+{
+"name": "Le",
+"party": "Democratic"
+}
+],
+"results": [
+{
+"muni": "Greenland",
+"name": "DiRienco",
+"party": "Republican",
+"votes": 982
+},
+{
+"muni": "Greenland",
+"name": "Le",
+"party": "Democratic",
+"votes": 1277
+},
+{
+"muni": "Newington",
+"name": "DiRienco",
+"party": "Republican",
+"votes": 266
+},
+{
+"muni": "Newington",
+"name": "Le",
+"party": "Democratic",
+"votes": 235
+},
+{
+"muni": "North Hampton",
+"name": "DiRienco",
+"party": "Republican",
+"votes": 1118
+},
+{
+"muni": "North Hampton",
+"name": "Le",
+"party": "Democratic",
+"votes": 1449
+},
+{
+"muni": "Portsmouth Ward 3",
+"name": "DiRienco",
+"party": "Republican",
+"votes": 649
+},
+{
+"muni": "Portsmouth Ward 3",
+"name": "Le",
+"party": "Democratic",
+"votes": 1324
+}
+],
+"R": 3015,
+"D": 4285,
+"trusted": true
+}
+]
