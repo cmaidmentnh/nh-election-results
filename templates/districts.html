@@ -60,9 +60,9 @@
                     </td>
                     <td data-value="{{ d.trend }}">
                         {% if d.trend >= 0 %}
-                        <span class="trend-indicator r">&#9650; +{{ "%.1f"|format(d.trend) }}</span>
+                        <span class="trend-indicator r">&#9650; {{ "%+.1f"|format(d.trend) }}</span>
                         {% else %}
-                        <span class="trend-indicator d">&#9660; {{ "%.1f"|format(d.trend) }}</span>
+                        <span class="trend-indicator d">&#9660; {{ "%+.1f"|format(d.trend) }}</span>
                         {% endif %}
                     </td>
                     <td class="towns-cell">{% if d.towns %}{{ d.towns|join(', ') }}{% else %}&mdash;{% endif %}</td>

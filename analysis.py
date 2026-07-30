@@ -3302,14 +3302,66 @@ def get_all_districts_with_pvi(office):
         return sorted(districts, key=lambda x: -x['pvi'])
 
     else:
-        # Statewide districts (Senate, EC, Congress) - single seat, sum is OK
+        # Statewide districts (Senate, Exec Council, Congress).
+        #
+        # PVI must NOT be taken from the district's own race: when that race is
+        # uncontested the two-party share is 100%/0%, which produced PVIs of
+        # +/-50 and nonsense trends (Senate 19 showed -41.0, Senate 21 +31.2).
+        # Compute it the same way the State Rep branch does instead - from every
+        # CONTESTED race held in the district's towns - so a single uncontested
+        # contest can no longer distort the index.
         cursor.execute("""
-            SELECT
-                e.year,
-                r.district,
-                r.seats,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
+            SELECT DISTINCT r.district, r.seats, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = ?
+            AND e.year = 2024
+            AND e.election_type = 'general'
+            AND res.municipality NOT GLOB '[0-9]*'
+            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins',
+                                         'TOTALS', 'Court ordered recount')
+        """, (office,))
+        sw_towns = defaultdict(set)
+        district_seats = {}
+        for district, seats, municipality in cursor.fetchall():
+            sw_towns[district].add(municipality)
+            district_seats[district] = seats
+
+        # Contested-only town totals across all offices, same basis as the
+        # statewide baseline above.
+        cursor.execute("""
+            WITH race_totals AS (
+                SELECT e.year, r.id as race_id, res.municipality,
+                       SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r,
+                       SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d
+                FROM results res
+                JOIN candidates c ON res.candidate_id = c.id
+                JOIN races r ON res.race_id = r.id
+                JOIN elections e ON r.election_id = e.id
+                WHERE e.year IN (2022, 2024)
+                AND e.election_type = 'general'
+                AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)
+                AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+                GROUP BY e.year, r.id, res.municipality
+            ),
+            contested AS (
+                SELECT year, municipality, r, d FROM race_totals
+                WHERE r > 0 AND d > 0
+            )
+            SELECT year, municipality, SUM(r) as r, SUM(d) as d
+            FROM contested GROUP BY year, municipality
+        """)
+        sw_town_votes = defaultdict(lambda: defaultdict(lambda: {'r': 0, 'd': 0}))
+        for year, municipality, r, d in cursor.fetchall():
+            sw_town_votes[year][municipality] = {'r': r, 'd': d}
+
+        # The district's own race, kept only for the vote/contested columns.
+        cursor.execute("""
+            SELECT e.year, r.district,
+                   SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
+                   SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
             FROM results res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
@@ -3318,18 +3370,20 @@ def get_all_districts_with_pvi(office):
             WHERE o.name = ?
             AND e.year IN (2022, 2024)
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.district
-            ORDER BY r.district, e.year
         """, (office,))
+        own_race = defaultdict(dict)
+        for year, district, r_votes, d_votes in cursor.fetchall():
+            own_race[district][year] = {'r': r_votes or 0, 'd': d_votes or 0}
 
         district_data = defaultdict(dict)
-        district_seats = {}
-        for row in cursor.fetchall():
-            year, district, seats, r_votes, d_votes = row
-            district_data[district][year] = {'r': r_votes, 'd': d_votes}
-            district_seats[district] = seats
+        for district, towns in sw_towns.items():
+            for yr in (2022, 2024):
+                r = sum(sw_town_votes[yr].get(t, {}).get('r', 0) for t in towns)
+                d = sum(sw_town_votes[yr].get(t, {}).get('d', 0) for t in towns)
+                if r + d > 0:
+                    district_data[district][yr] = {'r': r, 'd': d}
 
         districts = []
         for district, years_data in district_data.items():
@@ -3368,9 +3422,10 @@ def get_all_districts_with_pvi(office):
                 'seats': district_seats.get(district, 1),
                 'pvi': round(pvi_2024, 1),
                 'trend': round(trend, 1),
-                'r_votes': r,
-                'd_votes': d,
-                'contested': r > 0 and d > 0
+                'r_votes': own_race.get(district, {}).get(2024, {}).get('r', 0),
+                'd_votes': own_race.get(district, {}).get(2024, {}).get('d', 0),
+                'contested': (own_race.get(district, {}).get(2024, {}).get('r', 0) > 0
+                              and own_race.get(district, {}).get(2024, {}).get('d', 0) > 0)
             })
 
     conn.close()
