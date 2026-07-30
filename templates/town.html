@@ -223,10 +223,14 @@
         </div>
         {% endif %}
 
+        {# Nine unincorporated Coos places have no county in the data. Calling
+           url_for with name=None raises a BuildError and 500s the whole page. #}
+        {% if summary.county %}
         <div class="sidebar-section">
             <h3>County</h3>
             <a href="{{ url_for('county', name=summary.county) }}">{{ summary.county }} County</a>
         </div>
+        {% endif %}
     </aside>
 </div>
 {% endblock %}

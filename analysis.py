@@ -3632,6 +3632,9 @@ def get_turnout_patterns():
     return results
 
 
+MIN_SPLIT_VOTES = 50   # ignore townships too small to measure
+
+
 def get_ticket_splitting_analysis():
     """
     Analyze ticket splitting - where voters vote for different parties
@@ -3699,7 +3702,17 @@ def get_ticket_splitting_analysis():
                     total1 = o1['R'] + o1['D']
                     total2 = o2['R'] + o2['D']
 
-                    if total1 > 0 and total2 > 0:
+                    # Both contests must be genuinely contested. An uncontested
+                    # race has a margin of +/-100, which is a fact about candidate
+                    # recruitment rather than ticket splitting, and differencing
+                    # two of them produced impossible figures such as "R+200.0%".
+                    # A minimum electorate also keeps near-empty unincorporated
+                    # townships from dominating the rankings on a handful of votes.
+                    contested1 = o1['R'] > 0 and o1['D'] > 0
+                    contested2 = o2['R'] > 0 and o2['D'] > 0
+
+                    if (contested1 and contested2
+                            and total1 >= MIN_SPLIT_VOTES and total2 >= MIN_SPLIT_VOTES):
                         margin1 = ((o1['R'] - o1['D']) / total1) * 100
                         margin2 = ((o2['R'] - o2['D']) / total2) * 100
                         split = margin2 - margin1  # Positive = more R downballot
