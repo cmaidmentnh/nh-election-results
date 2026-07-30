@@ -265,7 +265,10 @@ def district(county, district):
 
     # Get PVI data for competitiveness
     pvi = analysis.get_district_pvi(office, district, county)
-    lean = analysis.classify_lean(pvi['current_pvi'])
+    # the modelled rating is on the NH-relative basis (predicted State House
+    # margin at an even statewide House vote); fall back to the margin
+    # classifier for offices the model does not cover
+    lean = pvi.get('rating') or analysis.classify_lean(pvi['current_pvi'])
 
     # Get POTUS and Governor results for this district
     topline = analysis.get_district_topline_races(office, district, county)

@@ -1108,6 +1108,43 @@ def get_towns_in_district(office, district, county=None):
     return towns
 
 
+_MODELED_PVI_CACHE = None
+
+
+def get_modeled_district_pvi(office, district, county=None):
+    """
+    Look up the modelled 2026 PVI for a State Representative district.
+
+    These come from the validated model (national-referenced presidential lean
+    in log-odds, pooled D-ward trend projected to 2026, plus a shrunk
+    ticket-splitting term), backtested at ~1.3 points of error on held-out
+    cycles.  Loaded from the district_pvi_model table, which is populated by
+    load_district_pvi_model.py.
+
+    Returns None for offices other than State Representative, or when the
+    district is not in the table -- callers fall back to the descriptive
+    year-by-year calculation.
+    """
+    global _MODELED_PVI_CACHE
+    if office != 'State Representative':
+        return None
+    if _MODELED_PVI_CACHE is None:
+        _MODELED_PVI_CACHE = {}
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT district_code, pvi_national, nh_margin, rating, "
+                        "pred_house_pct FROM district_pvi_model")
+            for code, nat, nhm, rating, pct in cur.fetchall():
+                _MODELED_PVI_CACHE[code] = {
+                    'pvi_national': nat, 'nh_margin': nhm,
+                    'rating': rating, 'pred_house_pct': pct}
+        except Exception:
+            _MODELED_PVI_CACHE = {}
+    key = f"{county} {district}" if county else str(district)
+    return _MODELED_PVI_CACHE.get(key)
+
+
 def get_district_pvi(office, district, county=None):
     """
     Calculate PVI for a district based on CURRENT district composition.
@@ -1212,10 +1249,19 @@ def get_district_pvi(office, district, county=None):
     else:
         trend = 0
 
-    current_pvi = pvi_by_year.get(2024, {}).get('pvi', 0)
+    observed_2024_pvi = pvi_by_year.get(2024, {}).get('pvi', 0)
+
+    # Prefer the modelled 2026 PVI as the headline number when we have one.
+    # The year-by-year series stays exactly as computed, so the historical
+    # chart is unaffected; only the headline and the rating change.
+    modeled = get_modeled_district_pvi(office, district, county)
+    current_pvi = modeled['pvi_national'] if modeled else observed_2024_pvi
 
     return {
-        'current_pvi': current_pvi,
+        'current_pvi': round(current_pvi, 1),
+        'observed_2024_pvi': observed_2024_pvi,
+        'modeled': modeled,
+        'rating': modeled['rating'] if modeled else None,
         'pvi_by_year': pvi_by_year,
         'years': years,
         'trend': round(trend, 1),
