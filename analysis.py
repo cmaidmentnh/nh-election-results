@@ -3447,12 +3447,17 @@ def get_undervote_analysis():
     cursor = conn.cursor()
 
     # Get total votes by office and year for each municipality
+    # Votes are summed PER RACE and divided by that race's seat count. New
+    # Hampshire's multi-seat State Rep districts give each voter up to eight
+    # votes, so a raw sum of votes is several times the number of ballots and
+    # made the undervote rate come out as large negative numbers (-138.4%).
+    # Dividing by seats converts votes back to a ballots-cast equivalent.
     cursor.execute("""
         SELECT
             e.year,
             o.name as office,
             res.municipality,
-            SUM(res.votes) as total_votes
+            SUM(res.votes) * 1.0 / MAX(COALESCE(r.seats, 1)) as total_votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
@@ -3464,20 +3469,30 @@ def get_undervote_analysis():
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
         AND res.municipality NOT GLOB '[0-9]*'
-        GROUP BY e.year, o.name, res.municipality
+        GROUP BY e.year, o.name, res.municipality, r.id
     """)
 
-    # Organize data by year and municipality
-    data = defaultdict(lambda: defaultdict(dict))
+    # Two different aggregations are needed and they must not be mixed:
+    #
+    #   across RACES within one ward -> MAX. A town sits in both a base and a
+    #     floterial State Rep district and every voter votes in both, so the two
+    #     races represent the SAME ballots. Summing them double-counted and left
+    #     the undervote rate negative even after the seat-count fix.
+    #   across WARDS within one town -> SUM. Those are genuinely different
+    #     ballots.
+    ward_level = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
     for year, office, muni, votes in cursor.fetchall():
-        # Normalize ward names
-        if ' Ward ' in muni:
-            muni = muni[:muni.index(' Ward ')]
-        if muni not in data[year]:
-            data[year][muni] = {}
-        if office not in data[year][muni]:
-            data[year][muni][office] = 0
-        data[year][muni][office] += votes
+        cur = ward_level[year][muni].get(office, 0.0)
+        ward_level[year][muni][office] = max(cur, votes)
+
+    data = defaultdict(lambda: defaultdict(dict))
+    for year, munis in ward_level.items():
+        for muni, offices in munis.items():
+            town = muni[:muni.index(' Ward ')] if ' Ward ' in muni else muni
+            if town not in data[year]:
+                data[year][town] = {}
+            for office, votes in offices.items():
+                data[year][town][office] = data[year][town].get(office, 0.0) + votes
 
     # Calculate undervote rates by comparing to top-of-ticket
     results = {'by_year': {}, 'by_town': {}, 'worst_undervote': []}
