@@ -20,7 +20,7 @@
 <div class="page-header">
     <h1>
         {% if info.office == 'State Senator' %}State Senate{% elif info.office == 'Executive Councilor' %}Executive Council{% elif info.office == 'Representative in Congress' %}US Congress{% else %}{{ info.office }}{% endif %} District {{ info.district }}
-        <span class="lean {% if 'R' in lean %}r{% else %}d{% endif %}">{{ lean }}</span>
+        <span class="lean {% if 'GOP' in lean or 'R' in lean %}r{% else %}d{% endif %}">{{ lean }}</span>
     </h1>
     <p class="subtitle">{{ info.towns|length }} towns</p>
 </div>
