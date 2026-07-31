@@ -725,14 +725,22 @@ def get_county_summary(county):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get all towns in this county (from races that have this county)
+    # Get all towns in this county (from races that have this county).
+    #
+    # HAVING SUM(votes) > 0 matters: Coos contains uninhabited White Mountain
+    # grants and purchases (Beans Grant, Cutts Grant, Dixs Grant and others)
+    # that appear in the results table with a full set of zero-vote rows. The
+    # town page correctly 404s for them because there is nothing to show, so
+    # listing them here produced links that were guaranteed to break.
     cursor.execute("""
-        SELECT DISTINCT res.municipality
+        SELECT res.municipality
         FROM results res
         JOIN races r ON res.race_id = r.id
         WHERE r.county = ?
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
+        GROUP BY res.municipality
+        HAVING SUM(res.votes) > 0
         ORDER BY res.municipality
     """, (county,))
     towns = [row[0] for row in cursor.fetchall()]
@@ -1672,6 +1680,24 @@ def get_office_results(office):
         'by_year': dict(by_year),
         'years': sorted(by_year.keys(), reverse=True)
     }
+
+
+def get_years_for_office(office):
+    """General-election years in which this office actually appeared on a ballot."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT e.year
+        FROM races r
+        JOIN elections e ON e.id = r.election_id
+        JOIN offices o ON o.id = r.office_id
+        JOIN results res ON res.race_id = r.id
+        WHERE o.name = ? AND e.election_type = 'general'
+        ORDER BY e.year DESC
+    """, (office,))
+    years = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return years
 
 
 def get_office_year_results(office, year):

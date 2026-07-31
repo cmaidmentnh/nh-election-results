@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ office }} — {{ year }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ office }}</h1>
+    <p class="subtitle">{{ year }}</p>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <h3 style="margin-top: 0;">No {{ office }} election in {{ year }}</h3>
+    <p style="color: #6c757d;">
+        {% if reason %}{{ reason }}{% else %}
+        This office was not on the New Hampshire ballot that year.
+        {% endif %}
+    </p>
+
+    {% if years %}
+    <p style="margin-bottom: 6px; font-weight: 600;">Years with results for this office</p>
+    <p>
+        {% for y in years %}
+        <a href="{{ url_for('office_year', office_name=office_name, year=y) }}"
+           style="display: inline-block; margin: 0 10px 8px 0;">{{ y }}</a>
+        {% endfor %}
+    </p>
+    {% endif %}
+
+    <p style="margin-top: 18px;">
+        <a href="{{ url_for('office_detail', office_name=office_name) }}">All {{ office }} results</a>
+    </p>
+</div>
+{% endblock %}

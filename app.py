@@ -580,7 +580,23 @@ def office_year(office_name, year):
 
     races = analysis.get_office_year_results(office, year)
     if not races:
-        return f"No results for {office} in {year}", 404
+        # An office simply not being on the ballot that cycle is a normal
+        # absence, not an error: the President is not elected in a midterm and
+        # a given Senate seat comes up once every six years. Returning 404 made
+        # the year selector generate dead links. Show the years that do exist
+        # instead.
+        years = analysis.get_years_for_office(office)
+        reason = None
+        if office == 'President of the United States':
+            reason = ('The President is elected every four years, so there is '
+                      'no presidential race in a midterm year.')
+        elif office == 'United States Senator':
+            reason = ('New Hampshire\'s two Senate seats are contested on a '
+                      'six-year cycle, so neither was on the ballot in '
+                      f'{year}.')
+        return render_template('no_race.html', office=office,
+                               office_name=office_name, year=year,
+                               years=years, reason=reason), 200
 
     # Group by county for State Rep
     by_county = {}
