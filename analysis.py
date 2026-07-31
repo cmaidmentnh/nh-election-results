@@ -104,10 +104,10 @@ def get_town_summary(town):
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN canonical_races cr ON res.race_id = cr.race_id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY cr.year, c.party
-    """, (town,))
+    """, (town, town))
 
     # Store State Rep totals by year
     state_rep_by_year = defaultdict(lambda: {'R': 0, 'D': 0})
@@ -130,13 +130,13 @@ def get_town_summary(town):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND o.name != 'State Representative'
         ORDER BY e.year, o.name, res.votes DESC
-    """, (town,))
+    """, (town, town))
 
     results = cursor.fetchall()
     if not results and not state_rep_by_year:
@@ -257,9 +257,9 @@ def get_town_summary(town):
         SELECT DISTINCT r.county
         FROM results res
         JOIN races r ON res.race_id = r.id
-        WHERE res.municipality = ? AND r.county IS NOT NULL
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %') AND r.county IS NOT NULL
         LIMIT 1
-    """, (town,))
+    """, (town, town))
     row = cursor.fetchone()
     county = row[0] if row else None
 
@@ -321,13 +321,13 @@ def get_town_race_details(town, year):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.year = ?
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         ORDER BY o.name, r.district, res.votes DESC
-    """, (town, year))
+    """, (town, town, year))
 
     results = cursor.fetchall()
 
@@ -1010,12 +1010,12 @@ def get_town_pvi(town):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, r.id
-    """, (town,))
+    """, (town, town))
 
     # Aggregate only competitive races
     town_by_year = defaultdict(lambda: {'r_votes': 0, 'd_votes': 0, 'total': 0, 'races': 0})
@@ -1351,14 +1351,14 @@ def get_town_key_races(town):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY e.year, o.name, c.name, c.party
         ORDER BY e.year, o.name, votes DESC
-    """, (town,))
+    """, (town, town))
 
     # Group by year/office and find top vote-getter per party
     race_candidates = defaultdict(list)
@@ -1428,11 +1428,11 @@ def get_town_representation(town):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE res.municipality = ?
+        WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.year = (SELECT MAX(e2.year) FROM elections e2 WHERE e2.election_type = 'general')
         AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress')
         ORDER BY o.name
-    """, (town,))
+    """, (town, town))
 
     districts = []
     for row in cursor.fetchall():
