@@ -164,10 +164,13 @@ const R=seatBy['Safe R']+seatBy['Likely R']+seatBy['Lean R'];
 const T=seatBy['Tossup'];
 const Dm=seatBy['Safe D']+seatBy['Likely D']+seatBy['Lean D'];
 document.getElementById('hero').innerHTML=`${D.headline}<small>projected Republican seats of 400</small>`;
-document.getElementById('chamber').innerHTML=
- `<span style="flex:${R};background:var(--safeR)">${R}</span>`+
- (T?`<span style="flex:${T};background:var(--toss);color:#2b2418">${T}</span>`:'')+
- `<span style="flex:${Dm};background:var(--safeD)">${Dm}</span>`;
+// all seven bands, Republican side to the left so the 200 line marks where
+// Republicans cross the majority
+document.getElementById('chamber').innerHTML=ORDER.map(k=>{
+ const n=seatBy[k]; if(!n) return '';
+ const pct=100*n/(R+T+Dm);
+ return `<span style="flex:${n};background:${COL[k]};color:${DARKTEXT.has(k)?'#2b2418':'#fff'}"
+   title="${k}: ${n} seats">${pct>3.2?n:''}</span>`;}).join('');
 document.getElementById('majL').textContent=`${R} lean Republican or better`;
 document.getElementById('majR').textContent=`${T} tossup · ${Dm} lean Democratic or better`;
 document.getElementById('range').textContent=
@@ -193,11 +196,11 @@ function bar(el,cap,set){
  const c={};ORDER.forEach(k=>c[k]=0);
  set.forEach(f=>{c[f.properties.band]+=f.properties.seats;});
  const tot=ORDER.reduce((a,k)=>a+c[k],0);
- el.innerHTML=ORDER.slice().reverse().map(k=>{const n=c[k];if(!n)return'';
+ el.innerHTML=ORDER.map(k=>{const n=c[k];if(!n)return'';
   return `<span style="flex:${n};background:${COL[k]};color:${DARKTEXT.has(k)?'#2b2418':'#fff'}"
    title="${k}: ${n} seats">${100*n/tot>4.2?n:''}</span>`;}).join('');
  const r=c['Safe R']+c['Likely R']+c['Lean R'], d=c['Safe D']+c['Likely D']+c['Lean D'];
- cap.innerHTML=`<span>${d} D</span><span>${c['Tossup']} tossup</span><span>${r} R</span>`;
+ cap.innerHTML=`<span>${r} R</span><span>${c['Tossup']} tossup</span><span>${d} D</span>`;
  return tot;}
 const t1=bar(document.getElementById('b1'),document.getElementById('c1'),D.base);
 const t2=bar(document.getElementById('b2'),document.getElementById('c2'),D.flot);
