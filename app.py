@@ -13,6 +13,19 @@ import analysis
 import census
 
 app = Flask(__name__)
+
+# Session cookie hardening.
+#   SECURE   - never send the session cookie over an unencrypted connection.
+#              Flask's default is False, which means one plain http:// request,
+#              made before the redirect to https, leaks the cookie to anyone on
+#              the network path. Whoever copies it is logged in as that user.
+#   HTTPONLY - JavaScript cannot read it, so injected script cannot steal it.
+#   SAMESITE - not sent when another site triggers a request here, which stops a
+#              malicious page acting as a logged-in user.
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 1 day cache for static files
 
 @app.context_processor
