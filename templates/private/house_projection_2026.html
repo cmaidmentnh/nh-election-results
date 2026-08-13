@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>New Hampshire House, 2026 projection</title>
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="description" content="Every seat in the New Hampshire House scored for 2026: base and floterial district maps, with a chamber summary against the 201 needed for a majority.">
@@ -21,18 +22,13 @@
 </head>
 <body>
 <style>
-:root{--safeR:#9E2B25;--likelyR:#C0574F;--leanR:#DFA09A;--toss:#E3D5B8;
+:root{color-scheme:light}
+:root,:root[data-theme="dark"],:root[data-theme="light"]{--safeR:#9E2B25;--likelyR:#C0574F;--leanR:#DFA09A;--toss:#E3D5B8;
  --leanD:#9DB6D4;--likelyD:#4B79AC;--safeD:#234E79;
  --ground:#FAF8F5;--panel:#FFFFFF;--ink:#191C21;--muted:#6E6A63;--line:#E2DDD4;
  --accent:#9E2B25;--empty:#EFEBE4;
  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
-@media (prefers-color-scheme:dark){:root{--ground:#12151A;--panel:#181C22;--ink:#ECE7DF;
- --muted:#948D82;--line:#2A2F37;--toss:#B9A681;--empty:#20242B;}}
-:root[data-theme="dark"]{--ground:#12151A;--panel:#181C22;--ink:#ECE7DF;--muted:#948D82;
- --line:#2A2F37;--toss:#B9A681;--empty:#20242B;}
-:root[data-theme="light"]{--ground:#FAF8F5;--panel:#FFFFFF;--ink:#191C21;--muted:#6E6A63;
- --line:#E2DDD4;--toss:#E3D5B8;--empty:#EFEBE4;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;
  line-height:1.55;-webkit-font-smoothing:antialiased}
