@@ -28,6 +28,25 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 1 day cache for static files
 
+
+# ── Unlisted 2026 projection maps ─────────────────────────────────────────────
+# Reachable only by the full path below: nothing links to it, it is kept out of
+# the sitemap, and the noindex header stops it being picked up if the URL is
+# ever pasted somewhere public. This is obscurity, not access control - anyone
+# holding the link can open it, so do not put anything here that would matter
+# if it were forwarded.
+PROJECTION_SLUG = "jjTpQ24JOZNVLl"
+
+
+@app.route(f"/x/{PROJECTION_SLUG}")
+def house_projection_2026():
+    html = render_template("private/house_projection_2026.html")
+    resp = make_response(html)
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    resp.headers["Cache-Control"] = "private, max-age=0, no-store"
+    return resp
+
+
 @app.context_processor
 def inject_datetime():
     return {'now': datetime.now, 'datetime': datetime, 'ga_id': os.environ.get('GA_MEASUREMENT_ID', '')}
