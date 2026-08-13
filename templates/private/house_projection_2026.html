@@ -77,6 +77,7 @@ table.rt td:not(:first-child),table.rt th:not(:first-child){text-align:right}
 .card .note{font-size:12.5px;color:var(--muted);margin:0 0 12px}
 svg{width:100%;height:auto;display:block}
 path.bg{fill:var(--empty);stroke:var(--panel);stroke-width:.3}
+path.mix{fill:url(#hatch);pointer-events:none}
 path.dist{stroke:var(--panel);stroke-width:.35;cursor:pointer;transition:opacity .12s}
 path.dist.dim{opacity:.14}
 path.dist.hot{stroke:var(--ink);stroke-width:1.5}
@@ -110,7 +111,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-si
   <div class="chamberwrap"><div class="chamber" id="chamber"></div><div class="majline" aria-hidden="true"></div></div>
   <div class="maj"><span id="majL"></span><span id="majR"></span></div>
   <p class="range" id="range"></p>
-  <table class="rt"><thead><tr><th>Rating</th><th>Districts</th><th>Seats</th></tr></thead>
+  <table class="rt"><thead><tr><th>Rating</th><th>Districts<br><span style='font-weight:400;text-transform:none;letter-spacing:0'>by typical seat</span></th><th>Seats<br><span style='font-weight:400;text-transform:none;letter-spacing:0'>counted individually</span></th></tr></thead>
    <tbody id="rt"></tbody></table>
  </div>
 </div>
@@ -146,9 +147,16 @@ const px=x=>ox+(x-mnx)*kx*s, py=y=>oy+(mxy-y)*s;
 function pathOf(g){let o='';each(g,r=>{r.forEach(([x,y],i)=>{
  o+=(i?'L':'M')+px(x).toFixed(1)+' '+py(y).toFixed(1);});o+='Z';});return o;}
 const BG=D.base.map(f=>`<path class="bg" d="${pathOf(f.geometry)}"/>`).join('');
-function draw(svg,set,layer,bg){svg.innerHTML=(bg?BG:'')+set.map((f,i)=>
- `<path class="dist" data-l="${layer}" data-i="${i}" d="${pathOf(f.geometry)}"
-   fill="${COL[f.properties.band]}"><title>${f.properties.d}</title></path>`).join('');}
+const DEFS='<defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="none"/><line x1="0" y1="0" x2="0" y2="5" stroke="#ffffff" stroke-width="1.6" stroke-opacity=".85"/></pattern></defs>';
+function draw(svg,set,layer,bg){
+ const base=set.map((f,i)=>
+  `<path class="dist" data-l="${layer}" data-i="${i}" d="${pathOf(f.geometry)}"
+    fill="${COL[f.properties.band]}"><title>${f.properties.d}</title></path>`).join('');
+ // districts whose seats sit in more than one band get a hatch, so a single
+ // colour is never read as "all these seats are the same"
+ const mix=set.map(f=>new Set(f.properties.seatbands).size>1
+   ? `<path class="mix" d="${pathOf(f.geometry)}"/>` : '').join('');
+ svg.innerHTML=DEFS+(bg?BG:'')+base+mix;}
 draw(document.getElementById('m1'),D.base,'base',false);
 draw(document.getElementById('m2'),D.flot,'flot',true);
 
@@ -179,8 +187,12 @@ document.getElementById('rt').innerHTML=ORDER.map(k=>
    <td>${distBy[k]}</td><td>${seatBy[k]}</td></tr>`).join('')+
  `<tr><td><b>Total</b></td><td><b>${all.length}</b></td><td><b>${R+T+Dm}</b></td></tr>`;
 
+const nMix=all.filter(f=>new Set(f.properties.seatbands).size>1).length;
 document.getElementById('legend').innerHTML=ORDER.map(k=>
- `<button data-r="${k}"><i class="sw" style="background:${COL[k]}"></i>${k}</button>`).join('');
+ `<button data-r="${k}"><i class="sw" style="background:${COL[k]}"></i>${k}</button>`).join('')
+ +`<span style="font-size:12px;color:var(--muted);margin-left:10px;display:flex;align-items:center;gap:7px">
+    <i class="sw" style="background:repeating-linear-gradient(45deg,#B9B2A6 0 2px,#fff 2px 4px)"></i>
+    hatched: ${nMix} districts hold seats in more than one band</span>`;
 document.getElementById('legend').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;const r=b.dataset.r;
  off.has(r)?(off.delete(r),b.classList.remove('off')):(off.add(r),b.classList.add('off'));
