@@ -151,7 +151,7 @@ const DEFS='<defs><pattern id="hatch" width="5" height="5" patternUnits="userSpa
 function draw(svg,set,layer,bg){
  const base=set.map((f,i)=>
   `<path class="dist" data-l="${layer}" data-i="${i}" d="${pathOf(f.geometry)}"
-    fill="${COL[f.properties.band]}"><title>${f.properties.d}</title></path>`).join('');
+    fill="${COL[f.properties.band]}" aria-label="${f.properties.d}"></path>`).join('');
  // districts whose seats sit in more than one band get a hatch, so a single
  // colour is never read as "all these seats are the same"
  const mix=set.map(f=>new Set(f.properties.seatbands).size>1
@@ -174,7 +174,7 @@ document.getElementById('chamber').innerHTML=ORDER.map(k=>{
  const n=seatBy[k]; if(!n) return '';
  const pct=100*n/(R+T+Dm);
  return `<span style="flex:${n};background:${COL[k]};color:${DARKTEXT.has(k)?'#2b2418':'#fff'}"
-   title="${k}: ${n} seats">${pct>3.2?n:''}</span>`;}).join('');
+   aria-label="${k}: ${n} seats">${pct>3.2?n:''}</span>`;}).join('');
 document.getElementById('majL').textContent=`${R} lean Republican or better`;
 document.getElementById('majR').textContent=`${T} tossup · ${Dm} lean Democratic or better`;
 document.getElementById('range').textContent=
@@ -206,7 +206,7 @@ function bar(el,cap,set){
  const tot=ORDER.reduce((a,k)=>a+c[k],0);
  el.innerHTML=ORDER.map(k=>{const n=c[k];if(!n)return'';
   return `<span style="flex:${n};background:${COL[k]};color:${DARKTEXT.has(k)?'#2b2418':'#fff'}"
-   title="${k}: ${n} seats">${100*n/tot>4.2?n:''}</span>`;}).join('');
+   aria-label="${k}: ${n} seats">${100*n/tot>4.2?n:''}</span>`;}).join('');
  const r=c['Safe R']+c['Likely R']+c['Lean R'], d=c['Safe D']+c['Likely D']+c['Lean D'];
  cap.innerHTML=`<span>${r} R</span><span>${c['Tossup']} tossup</span><span>${d} D</span>`;
  return tot;}
