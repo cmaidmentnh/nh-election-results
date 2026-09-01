@@ -3302,7 +3302,11 @@ def get_all_districts_with_pvi(office):
             })
 
         conn.close()
-        return sorted(districts, key=lambda x: -x['pvi'])
+        # County then district number. The table header is click sortable, so
+        # anyone who wants it by PVI is one click away; the default should be
+        # the order people look districts up in.
+        return sorted(districts, key=lambda x: (x['county'] or '', int(x['district'])
+                                                if str(x['district']).isdigit() else 0))
 
     else:
         # Statewide districts (Senate, Exec Council, Congress).
@@ -3437,8 +3441,8 @@ def get_all_districts_with_pvi(office):
 
     conn.close()
 
-    # Sort by PVI (most R first)
-    districts.sort(key=lambda x: -x['pvi'])
+    # District number order, same reasoning as the county based branch
+    districts.sort(key=lambda x: int(x['district']) if str(x['district']).isdigit() else 0)
 
     return districts
 
