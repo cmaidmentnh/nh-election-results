@@ -366,7 +366,7 @@ def county(name):
     topline = analysis.topline_for_towns(towns)
     return render_template('county.html', summary=summary, county_offices=county_offices,
                            county_topline=topline, county_topline_years=sorted(topline, reverse=True),
-                           county_pvi=analysis.pvi_for_towns(towns))
+                           county_pvi=analysis.pvi_for_towns(towns, county=name))
 
 
 @app.route('/candidates')

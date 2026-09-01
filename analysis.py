@@ -4,6 +4,7 @@ Analysis functions for NH Election Results Explorer
 Generates meaningful insights from election data
 """
 
+import re
 import sqlite3
 from pathlib import Path
 from collections import defaultdict
@@ -1085,6 +1086,29 @@ def _cycle_leans(cursor, munis, years):
 OFFICE_LABEL = {4: 'Governor', 5: 'Executive Council', 6: 'State Senate', 7: 'State House'}
 
 
+_STATE_PVI_TABLE_CACHE = {}
+
+
+def state_pvi_lookup(kind, key):
+    """Read a precomputed index value. Populated by build_state_pvi.py, which is
+    the only thing that runs the full computation. Pages read, never compute."""
+    if kind not in _STATE_PVI_TABLE_CACHE:
+        rows = {}
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT key, pvi, rating, trend, n_components FROM state_pvi "
+                        "WHERE kind = ?", (kind,))
+            for k, pvi, rating, trend, n in cur.fetchall():
+                rows[k] = {'pvi': pvi, 'rating': rating, 'trend': trend,
+                           'n_components': n, 'components': {}, 'prior_pvi': None}
+            conn.close()
+        except Exception:
+            rows = {}
+        _STATE_PVI_TABLE_CACHE[kind] = rows
+    return _STATE_PVI_TABLE_CACHE[kind].get(key)
+
+
 def state_pvi_for_municipalities(munis):
     """The index for any set of municipalities: a town, a district, a county."""
     munis = [m for m in munis if m]
@@ -1195,7 +1219,7 @@ def get_town_pvi(town):
                  "OR municipality LIKE ? || ' Ward %'", (town, town))
     munis = [r[0] for r in cur2.fetchall()]
     conn2.close()
-    state = state_pvi_for_municipalities(munis)
+    state = state_pvi_lookup('town', town) or state_pvi_for_municipalities(munis)
 
     current_pvi = state['pvi'] if state else (
         pvi_by_year.get(years[-1], {}).get('pvi', 0) if years else 0)
@@ -1408,7 +1432,10 @@ def get_district_pvi(office, district, county=None):
     # put Bedford at D+2.1 on a page about state races, when Bedford voted
     # Republican in all four of its 2024 state races.
     modeled = get_modeled_district_pvi(office, district, county)
-    state = state_pvi_for_municipalities(towns)
+    kind = {'State Representative': 'district', 'State Senator': 'senate',
+            'Executive Councilor': 'exec', 'Representative in Congress': 'congress'}.get(office)
+    key = ('%s %s' % (county, district)) if kind == 'district' else str(district)
+    state = (state_pvi_lookup(kind, key) if kind else None) or state_pvi_for_municipalities(towns)
     current_pvi = state['pvi'] if state else observed_2024_pvi
     if state:
         trend = state['trend']
@@ -2852,203 +2879,28 @@ def get_districts_map_data(year=None, metric='margin'):
                 'num_races': len(races)
             }
 
-    # If PVI metric requested, calculate proper PVI for each district type
+    # One formula for every layer on this map: the NH State PVI, read from the
+    # precomputed table. Nothing here recomputes a lean of its own.
     if metric == 'pvi':
-        # Step 1: Get statewide baseline from competitive races
-        # A competitive race has both R and D candidates with votes
-        cursor.execute("""
-            SELECT
-                r.id as race_id,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-            FROM results res
-            JOIN candidates c ON res.candidate_id = c.id
-            JOIN races r ON res.race_id = r.id
-            JOIN elections e ON r.election_id = e.id
-            WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
-            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            GROUP BY r.id
-            HAVING r_votes > 0 AND d_votes > 0
-        """)
-
-        competitive_races = set()
-        statewide_r = 0
-        statewide_total = 0
-        for row in cursor.fetchall():
-            race_id, r_votes, d_votes = row
-            competitive_races.add(race_id)
-            statewide_r += r_votes
-            statewide_total += r_votes + d_votes
-
-        statewide_r_pct = (statewide_r / statewide_total * 100) if statewide_total > 0 else 50
-
-        # Step 2: Get municipality-level competitive votes
-        # This will be used to calculate PVI for each district
-        cursor.execute("""
-            SELECT
-                res.municipality,
-                r.id as race_id,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-            FROM results res
-            JOIN candidates c ON res.candidate_id = c.id
-            JOIN races r ON res.race_id = r.id
-            JOIN elections e ON r.election_id = e.id
-            WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
-            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            AND res.municipality IS NOT NULL
-            AND res.municipality != ''
-            AND res.municipality NOT GLOB '[0-9]*'
-            GROUP BY res.municipality, r.id
-        """)
-
-        # Build municipality -> competitive votes mapping
-        # IMPORTANT: Keep ward-level granularity (Manchester Ward 8, etc.)
-        # This ensures PVI is calculated only for the specific wards in a district
-        muni_votes = defaultdict(lambda: {'r': 0, 'total': 0})
-        for row in cursor.fetchall():
-            muni, race_id, r_votes, d_votes = row
-            if race_id in competitive_races:
-                muni_votes[muni]['r'] += r_votes
-                muni_votes[muni]['total'] += r_votes + d_votes
-
-        # Step 3: For each House district, find its municipalities and calculate PVI
-        cursor.execute("""
-            SELECT DISTINCT
-                r.county,
-                r.district,
-                res.municipality
-            FROM results res
-            JOIN races r ON res.race_id = r.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE o.name = 'State Representative'
-            AND res.municipality IS NOT NULL
-            AND res.municipality NOT GLOB '[0-9]*'
-        """)
-
-        district_munis = defaultdict(set)
-        for row in cursor.fetchall():
-            county, district, muni = row
-            if county in county_codes:
-                code = county_codes[county] + str(district)
-                # Keep full municipality name (including ward info) for accurate PVI
-                district_munis[code].add(muni)
-
-        # Calculate PVI for each House district
-        for code, munis in district_munis.items():
-            district_r = sum(muni_votes[m]['r'] for m in munis)
-            district_total = sum(muni_votes[m]['total'] for m in munis)
-            if district_total > 0:
-                district_r_pct = district_r / district_total * 100
-                pvi = district_r_pct - statewide_r_pct
-                if code in data:
-                    data[code]['pvi'] = round(pvi, 1)
-
-        # Step 4: For Senate districts, find municipalities and calculate PVI
-        cursor.execute("""
-            SELECT DISTINCT
-                r.district,
-                res.municipality
-            FROM results res
-            JOIN races r ON res.race_id = r.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE o.name = 'State Senator'
-            AND res.municipality IS NOT NULL
-            AND res.municipality NOT GLOB '[0-9]*'
-        """)
-
-        senate_munis = defaultdict(set)
-        for row in cursor.fetchall():
-            district, muni = row
-            # Keep full municipality name (including ward info) for accurate PVI
-            senate_munis[f'sen_{district}'].add(muni)
-
-        for code, munis in senate_munis.items():
-            district_r = sum(muni_votes[m]['r'] for m in munis)
-            district_total = sum(muni_votes[m]['total'] for m in munis)
-            if district_total > 0:
-                district_r_pct = district_r / district_total * 100
-                pvi = district_r_pct - statewide_r_pct
-                if code in data:
-                    data[code]['pvi'] = round(pvi, 1)
-
-        # Step 5: For Exec Council districts
-        cursor.execute("""
-            SELECT DISTINCT
-                r.district,
-                res.municipality
-            FROM results res
-            JOIN races r ON res.race_id = r.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE o.name = 'Executive Councilor'
-            AND res.municipality IS NOT NULL
-            AND res.municipality NOT GLOB '[0-9]*'
-        """)
-
-        ec_munis = defaultdict(set)
-        for row in cursor.fetchall():
-            district, muni = row
-            # Keep full municipality name (including ward info) for accurate PVI
-            ec_munis[f'ec_{district}'].add(muni)
-
-        for code, munis in ec_munis.items():
-            district_r = sum(muni_votes[m]['r'] for m in munis)
-            district_total = sum(muni_votes[m]['total'] for m in munis)
-            if district_total > 0:
-                district_r_pct = district_r / district_total * 100
-                pvi = district_r_pct - statewide_r_pct
-                if code in data:
-                    data[code]['pvi'] = round(pvi, 1)
-
-        # Step 6: For Congressional districts
-        cursor.execute("""
-            SELECT DISTINCT
-                r.district,
-                res.municipality
-            FROM results res
-            JOIN races r ON res.race_id = r.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE o.name = 'Representative in Congress'
-            AND res.municipality IS NOT NULL
-            AND res.municipality NOT GLOB '[0-9]*'
-        """)
-
-        cong_munis = defaultdict(set)
-        for row in cursor.fetchall():
-            district, muni = row
-            # Keep full municipality name (including ward info) for accurate PVI
-            cong_munis[f'cong_{district}'].add(muni)
-
-        for code, munis in cong_munis.items():
-            district_r = sum(muni_votes[m]['r'] for m in munis)
-            district_total = sum(muni_votes[m]['total'] for m in munis)
-            if district_total > 0:
-                district_r_pct = district_r / district_total * 100
-                pvi = district_r_pct - statewide_r_pct
-                if code in data:
-                    data[code]['pvi'] = round(pvi, 1)
-
-        # Step 7: For towns, aggregate ward data into cities for PVI
-        # Since the towns data (in 'data' dict) is already aggregated,
-        # we need to aggregate ward-level votes for city PVI calculation
-        town_aggregated = defaultdict(lambda: {'r': 0, 'total': 0})
-        for muni, votes in muni_votes.items():
-            # Normalize ward names to city names for the towns layer
-            if ' Ward ' in muni:
-                base_town = muni[:muni.index(' Ward ')]
+        code_to_county = {v: k for k, v in county_codes.items()}
+        for key in list(data.keys()):
+            val = None
+            if key.startswith('sen_'):
+                val = state_pvi_lookup('senate', key[4:])
+            elif key.startswith('ec_'):
+                val = state_pvi_lookup('exec', key[3:])
+            elif key.startswith('cong_'):
+                val = state_pvi_lookup('congress', key[5:])
             else:
-                base_town = muni
-            town_aggregated[base_town]['r'] += votes['r']
-            town_aggregated[base_town]['total'] += votes['total']
-
-        for town, votes in town_aggregated.items():
-            if votes['total'] > 0:
-                town_r_pct = votes['r'] / votes['total'] * 100
-                pvi = town_r_pct - statewide_r_pct
-                if town in data:
-                    data[town]['pvi'] = round(pvi, 1)
+                m = re.match(r'^([A-Z]{2})(\d+)$', key)
+                if m and m.group(1) in code_to_county:
+                    val = state_pvi_lookup('district', '%s %s' % (code_to_county[m.group(1)],
+                                                                  m.group(2)))
+                else:
+                    val = state_pvi_lookup('town', key)
+            if val:
+                data[key]['pvi'] = val['pvi']
+                data[key]['pvi_rating'] = val['rating']
 
     conn.close()
     return data
@@ -3063,37 +2915,10 @@ def get_map_data(year, metric='pvi'):
     cursor = conn.cursor()
 
     if metric == 'pvi':
-        # Get PVI for each town
-        cursor.execute("""
-            SELECT
-                res.municipality as town,
-                SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes,
-                SUM(res.votes) as total_votes
-            FROM results res
-            JOIN candidates c ON res.candidate_id = c.id
-            JOIN races r ON res.race_id = r.id
-            JOIN elections e ON r.election_id = e.id
-            WHERE e.year = ?
-            AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
-            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            AND res.municipality NOT GLOB '[0-9]*'
-            AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
-            GROUP BY res.municipality
-        """, (year,))
-
-        # Get statewide baseline
-        statewide = get_statewide_baseline(year)
-        state_r_pct = statewide.get(year, {}).get('r_pct', 50)
-
-        data = {}
-        for row in cursor.fetchall():
-            town, r_votes, d_votes, total = row
-            if total > 0:
-                town_r_pct = (r_votes / total) * 100
-                pvi = town_r_pct - state_r_pct
-                data[town] = round(pvi, 1)
+        # The NH State PVI for each town, read from the precomputed table so the
+        # map, the town page and the district page cannot disagree.
+        cursor.execute("SELECT key, pvi FROM state_pvi WHERE kind = 'town'")
+        data = {town: pvi for town, pvi in cursor.fetchall()}
 
     elif metric == 'margin':
         cursor.execute("""
@@ -3462,12 +3287,15 @@ def get_all_districts_with_pvi(office):
             top_d = res_2024['top_d']
             contested = top_r > 0 and top_d > 0
 
+            # one index for the whole site, from the precomputed table
+            idx = state_pvi_lookup('district', '%s %s' % (county, district))
             districts.append({
                 'district': district,
                 'county': county,
                 'seats': district_seats.get((county, district), 1),
-                'pvi': round(pvi_2024, 1),
-                'trend': round(trend, 1),
+                'pvi': idx['pvi'] if idx else round(pvi_2024, 1),
+                'rating': idx['rating'] if idx else None,
+                'trend': idx['trend'] if idx else round(trend, 1),
                 'r_votes': top_r,
                 'd_votes': top_d,
                 'contested': contested
@@ -3591,12 +3419,16 @@ def get_all_districts_with_pvi(office):
 
             trend = pvi_2024 - pvi_2022
 
+            kind = {'State Senator': 'senate', 'Executive Councilor': 'exec',
+                    'Representative in Congress': 'congress'}.get(office)
+            idx = state_pvi_lookup(kind, str(district)) if kind else None
             districts.append({
                 'district': district,
                 'county': None,
                 'seats': district_seats.get(district, 1),
-                'pvi': round(pvi_2024, 1),
-                'trend': round(trend, 1),
+                'pvi': idx['pvi'] if idx else round(pvi_2024, 1),
+                'rating': idx['rating'] if idx else None,
+                'trend': idx['trend'] if idx else round(trend, 1),
                 'r_votes': own_race.get(district, {}).get(2024, {}).get('r', 0),
                 'd_votes': own_race.get(district, {}).get(2024, {}).get('d', 0),
                 'contested': (own_race.get(district, {}).get(2024, {}).get('r', 0) > 0
@@ -4864,10 +4696,12 @@ def topline_for_towns(towns):
     return out
 
 
-def pvi_for_towns(towns):
-    """PVI for a set of towns = (town R% across contested legislative/statewide races)
-    minus (statewide R% across the same), per year. Excludes county offices."""
-    empty = {'current_pvi': 0, 'by_year': {}, 'years': []}
+def pvi_for_towns(towns, county=None):
+    """Year by year series for the chart, plus the NH State PVI as the headline.
+
+    The headline number comes from the same precomputed index every other page
+    reads. The by_year series is descriptive history and is left as it was."""
+    empty = {'current_pvi': 0, 'by_year': {}, 'years': [], 'rating': None}
     if not towns:
         return empty
     conn = get_connection()
@@ -4894,5 +4728,9 @@ def pvi_for_towns(towns):
             by_year[y] = round(rr / (rr + dd) * 100 - state[y], 1)
     conn.close()
     years = sorted(by_year)
-    return {'current_pvi': by_year.get(years[-1], 0) if years else 0,
+    idx = state_pvi_lookup('county', county) if county else None
+    if idx is None:
+        idx = state_pvi_for_municipalities(towns)
+    return {'current_pvi': idx['pvi'] if idx else (by_year.get(years[-1], 0) if years else 0),
+            'rating': idx['rating'] if idx else None,
             'by_year': by_year, 'years': years}
