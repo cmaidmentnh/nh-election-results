@@ -986,6 +986,131 @@ def get_statewide_baseline(year=None):
     return result
 
 
+# ---------------------------------------------------------------------------
+# NH State PVI: the one index this site quotes.
+#
+# For each state office (Governor, Executive Council, State Senate, State House)
+# and each of the last two general elections, take the two-party R share in the
+# geography minus the statewide two-party R share for that same office and year.
+# Average those leans, equal weight per office-cycle.
+#
+# State races only. Federal races are excluded on purpose: New Hampshire splits
+# its ticket hard, so the presidential and Senate lines say little about a State
+# Rep result. County offices are excluded too, they are not run statewide so
+# there is no statewide baseline to difference against.
+#
+# Equal weight per office-cycle matters. Pooling raw votes lets a seven seat
+# House district count its voters seven times and drown out the Governor's race.
+# ---------------------------------------------------------------------------
+STATE_OFFICE_IDS = (4, 5, 6, 7)          # Governor, Exec Council, State Senate, State House
+STATE_PVI_CYCLES = (2022, 2024)          # headline: the last two generals
+STATE_PVI_PRIOR = (2018, 2020)           # the pair before, used for the trend
+_STATE_BASELINE_CACHE = {}
+
+
+def state_pvi_rating(pvi):
+    """Cut on the index itself. Validated against 2024: Safe GOP went 46 for 46,
+    Likely GOP 33 of 34, down to Safe Dem 0 of 57."""
+    if pvi is None:
+        return None
+    if pvi >= 8:
+        return 'SAFE GOP'
+    if pvi >= 3:
+        return 'LIKELY GOP'
+    if pvi >= 1:
+        return 'LEAN GOP'
+    if pvi > -1:
+        return 'SWING'
+    if pvi > -3:
+        return 'LEAN DEM'
+    if pvi > -8:
+        return 'LIKELY DEM'
+    return 'SAFE DEM'
+
+
+def _state_baseline(cursor, year, office_id):
+    key = (year, office_id)
+    if key not in _STATE_BASELINE_CACHE:
+        cursor.execute("""
+            SELECT SUM(CASE WHEN c.party='Republican' THEN res.votes ELSE 0 END),
+                   SUM(CASE WHEN c.party='Democratic' THEN res.votes ELSE 0 END)
+            FROM results res
+            JOIN candidates c ON c.id = res.candidate_id
+            JOIN races r ON r.id = res.race_id
+            JOIN elections e ON e.id = r.election_id
+            WHERE e.year = ? AND e.election_type = 'general' AND r.office_id = ?
+              AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+        """, (year, office_id))
+        row = cursor.fetchone()
+        _STATE_BASELINE_CACHE[key] = (100.0 * row[0] / (row[0] + row[1])
+                                      if row and row[0] and row[1] else None)
+    return _STATE_BASELINE_CACHE[key]
+
+
+def _cycle_leans(cursor, munis, years):
+    """One lean per office-cycle, contested races only."""
+    leans, detail = [], {}
+    placeholders = ','.join('?' * len(munis))
+    for year in years:
+        for oid in STATE_OFFICE_IDS:
+            base = _state_baseline(cursor, year, oid)
+            if base is None:
+                continue
+            cursor.execute(f"""
+                SELECT r.id,
+                       SUM(CASE WHEN c.party='Republican' THEN res.votes ELSE 0 END),
+                       SUM(CASE WHEN c.party='Democratic' THEN res.votes ELSE 0 END)
+                FROM results res
+                JOIN candidates c ON c.id = res.candidate_id
+                JOIN races r ON r.id = res.race_id
+                JOIN elections e ON e.id = r.election_id
+                WHERE res.municipality IN ({placeholders})
+                  AND e.year = ? AND e.election_type = 'general' AND r.office_id = ?
+                  AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+                GROUP BY r.id
+            """, list(munis) + [year, oid])
+            rv = dv = 0
+            for _rid, r, d in cursor.fetchall():
+                if r and d:                      # both parties on the ballot
+                    rv += r
+                    dv += d
+            if rv + dv == 0:
+                continue
+            lean = 100.0 * rv / (rv + dv) - base
+            leans.append(lean)
+            detail['%d %s' % (year, OFFICE_LABEL.get(oid, oid))] = round(lean, 2)
+    return leans, detail
+
+
+OFFICE_LABEL = {4: 'Governor', 5: 'Executive Council', 6: 'State Senate', 7: 'State House'}
+
+
+def state_pvi_for_municipalities(munis):
+    """The index for any set of municipalities: a town, a district, a county."""
+    munis = [m for m in munis if m]
+    if not munis:
+        return None
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        leans, detail = _cycle_leans(cursor, munis, STATE_PVI_CYCLES)
+        prior, _ = _cycle_leans(cursor, munis, STATE_PVI_PRIOR)
+    finally:
+        conn.close()
+    if not leans:
+        return None
+    pvi = sum(leans) / len(leans)
+    prev = sum(prior) / len(prior) if prior else None
+    return {
+        'pvi': round(pvi, 1),
+        'rating': state_pvi_rating(pvi),
+        'components': detail,
+        'n_components': len(leans),
+        'prior_pvi': round(prev, 1) if prev is not None else None,
+        'trend': round(pvi - prev, 1) if prev is not None else 0,
+    }
+
+
 def get_town_pvi(town):
     """
     Calculate PVI (Partisan Voter Index) for a town.
@@ -1062,11 +1187,25 @@ def get_town_pvi(town):
     else:
         trend = 0
 
-    # Current PVI
-    current_pvi = pvi_by_year.get(years[-1], {}).get('pvi', 0) if years else 0
+    # Headline number is the NH State PVI, state races only. The year by year
+    # series above is left alone so the historical chart still shows every cycle.
+    conn2 = get_connection()
+    cur2 = conn2.cursor()
+    cur2.execute("SELECT DISTINCT municipality FROM results WHERE municipality = ? "
+                 "OR municipality LIKE ? || ' Ward %'", (town, town))
+    munis = [r[0] for r in cur2.fetchall()]
+    conn2.close()
+    state = state_pvi_for_municipalities(munis)
+
+    current_pvi = state['pvi'] if state else (
+        pvi_by_year.get(years[-1], {}).get('pvi', 0) if years else 0)
+    if state:
+        trend = state['trend']
 
     return {
         'current_pvi': current_pvi,
+        'rating': state['rating'] if state else None,
+        'state_pvi': state,
         'pvi_by_year': pvi_by_year,
         'years': years,
         'trend': round(trend, 1),
@@ -1165,6 +1304,10 @@ def get_district_pvi(office, district, county=None):
     if not towns:
         return {
             'current_pvi': 0,
+            'state_pvi': None,
+            'modeled': None,
+            'rating': None,
+            'observed_2024_pvi': 0,
             'pvi_by_year': {},
             'years': [],
             'trend': 0,
@@ -1259,17 +1402,23 @@ def get_district_pvi(office, district, county=None):
 
     observed_2024_pvi = pvi_by_year.get(2024, {}).get('pvi', 0)
 
-    # Prefer the modelled 2026 PVI as the headline number when we have one.
-    # The year-by-year series stays exactly as computed, so the historical
-    # chart is unaffected; only the headline and the rating change.
+    # Headline number is the NH State PVI: state races only, both cycles, equal
+    # weight per office-cycle. The modelled national-referenced figure is kept in
+    # the payload for reference, but it is not what the page quotes. Quoting it
+    # put Bedford at D+2.1 on a page about state races, when Bedford voted
+    # Republican in all four of its 2024 state races.
     modeled = get_modeled_district_pvi(office, district, county)
-    current_pvi = modeled['pvi_national'] if modeled else observed_2024_pvi
+    state = state_pvi_for_municipalities(towns)
+    current_pvi = state['pvi'] if state else observed_2024_pvi
+    if state:
+        trend = state['trend']
 
     return {
         'current_pvi': round(current_pvi, 1),
         'observed_2024_pvi': observed_2024_pvi,
+        'state_pvi': state,
         'modeled': modeled,
-        'rating': modeled['rating'] if modeled else None,
+        'rating': (state['rating'] if state else None) or (modeled['rating'] if modeled else None),
         'pvi_by_year': pvi_by_year,
         'years': years,
         'trend': round(trend, 1),
