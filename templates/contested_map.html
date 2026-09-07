@@ -6,31 +6,41 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=6">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=7">
 {% endblock %}
 
 {% block content %}
 <div class="pt-wrap">
-  <h1 class="pt-h1">2026 Primary — {% if live_mode %}Live Results{% else %}Contested Races{% endif %}</h1>
-  {% if live_mode %}
-  <p class="pt-sub">Contested NH primary races by office. Each race shows the <strong>percent of expected vote counted</strong>, current and projected totals, and the call. Hover a district for results; click for precinct detail.</p>
-  {% else %}
-  <p class="pt-sub">Where a party has a <strong>contested</strong> primary (more candidates than seats). Hover a district to see who's running; click for candidates and precincts. <strong>Live results & projections begin primary day, September 8.</strong></p>
-  {% endif %}
 
-  <div class="pt-score" id="pt-score"></div>
-  <div class="pt-tabs" id="pt-tabs"></div>
+  <div class="pt-topbar">
+    <div>
+      <h1 class="pt-h1">Every race, town by town</h1>
+      <p class="pt-sub">Republican and Democratic primaries for every contested office.
+        Each race shows the percent of expected vote counted, the projected total and
+        how likely the current order is to hold.</p>
+    </div>
+    <div class="pt-score" id="pt-score"></div>
+  </div>
+
   <div class="pt-controls">
+    <div class="pt-tabs" id="pt-tabs"></div>
     <span class="pt-seg party" id="pt-party"></span>
     <span class="pt-seg" id="pt-base"></span>
-    <span class="pt-seg" id="pt-view"><button data-view="map" class="on">Map</button><button data-view="list">List</button></span>
     <span class="pt-updated" id="pt-updated"></span>
   </div>
 
-  <div class="pt-legendwrap">
-    <div class="pt-mapwrap" id="pt-mapwrap"><div id="pt-map"></div><div class="pt-legend" id="pt-legend"></div></div>
+  <!-- Results lead. The map sits beside the list on a wide screen rather than
+       above it: New Hampshire is a tall narrow shape, so a full-width map panel
+       is mostly empty, and hiding the races behind a toggle wasted the width. -->
+  <div class="pt-split" id="pt-split">
+    <aside class="pt-mapcol">
+      <div class="pt-mapwrap" id="pt-mapwrap">
+        <div id="pt-map"></div>
+        <div class="pt-legend" id="pt-legend"></div>
+      </div>
+    </aside>
+    <div class="pt-board" id="pt-board"></div>
   </div>
-  <div class="pt-board hide" id="pt-board"></div>
 
   <div class="pt-detail" id="pt-detail">
     <div class="pt-dhead">
@@ -69,8 +79,8 @@ const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
 const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'}, HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
 const geo={}, jc={}; let geoMap=null, houseByCode=null, townsByName=null;
 let mainMap=null, mainLayer=null, mainCfg=null, lastMapSig='', bigMap=null, bigLayer=null, bigSig='', detailCtx=null,
-    curO=null, curP='R', curBase='Base', curView='map', curData=null, board={}, timer=null;
-function mapSig(){return curO.key+'|'+curP+'|'+curBase+'|'+curView;}
+    curO=null, curP='R', curBase='Base', curData=null, board={}, timer=null;
+function mapSig(){return curO.key+'|'+curP+'|'+curBase;}
 
 function J(u){return jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);}
 function G(f){return geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);}
@@ -95,7 +105,6 @@ function statusColor(s){return (STATUS[s]||STATUS.awaiting).c;}
 const tabsEl=document.getElementById('pt-tabs');
 OFFICES.forEach(o=>{const b=document.createElement('button');b.className='pt-tab';b.dataset.k=o.key;b.textContent=o.label;b.onclick=()=>selectOffice(o);tabsEl.appendChild(b);});
 function setTab(k){document.querySelectorAll('#pt-tabs .pt-tab').forEach(b=>b.classList.toggle('on',b.dataset.k===k));}
-document.querySelectorAll('#pt-view button').forEach(b=>b.onclick=()=>{curView=b.dataset.view;document.querySelectorAll('#pt-view button').forEach(x=>x.classList.toggle('on',x===b));renderView();});
 
 function districtName(o,rec){
   if(o.level==='house')return (rec.county?rec.county+' ':'')+'District '+rec.district;
@@ -127,10 +136,12 @@ function renderView(){
   clearInterval(timer);timer=null;
   detailCtx=null; lastMapSig='';
   document.getElementById('pt-detail').classList.remove('show');
-  const showList=curView==='list'&&curO.level!=='statewide';
-  document.getElementById('pt-board').classList.toggle('hide', !showList);
-  document.getElementById('pt-mapwrap').classList.toggle('hide', showList||curO.level==='statewide');
-  document.getElementById('pt-view').style.visibility = curO.level==='statewide'?'hidden':'visible';
+  // Map and list are shown together; a statewide race has no districts to map,
+  // so it collapses to a single column and opens its detail directly.
+  const statewide = curO.level==='statewide';
+  document.getElementById('pt-split').classList.toggle('nomap', statewide);
+  document.getElementById('pt-board').classList.remove('hide');
+  document.getElementById('pt-mapwrap').classList.toggle('hide', statewide);
   document.getElementById('pt-base').style.display = curO.level==='house'?'':'none';
   if(LIVE){ refresh(); timer=setInterval(refresh,30000); } else { document.getElementById('pt-updated').textContent=''; paint(); }
 }
@@ -145,13 +156,13 @@ function refresh(){ const o=curO,p=curP;
     renderScore();
     // In-place update where possible so the user's zoom/pan is preserved.
     if(detailCtx){ loadDetail(detailCtx.o,detailCtx.code,detailCtx.party); }
-    else if(curView==='map' && curO.level!=='statewide' && mainMap && mainLayer && lastMapSig===mapSig()){ restyleMain(); }
+    else if(curO.level!=='statewide' && mainMap && mainLayer && lastMapSig===mapSig()){ restyleMain(); renderBoard(); }
     else paint();
   });
 }
 
 function paint(){ renderScore(); if(curO.level==='statewide'){ showDetail(curO,'STATE',curP); return; }
-  if(curView==='list') renderBoard(); else renderMap(); }
+  renderMap(); renderBoard(); }
 
 /* ---------- scoreboard ---------- */
 function renderScore(){
