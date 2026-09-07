@@ -1026,11 +1026,21 @@ def _demo_results(precs, cand_ids, race_id):
     base = [max(6, 100 - i * 20) for i in range(n)]            # descending strengths
     off = race_id % n                                          # rotate the leader per race
     strengths = {cid: base[(i + off) % n] for i, cid in enumerate(cand_ids)}
+    # Give each candidate a regional bias so different candidates carry
+    # different parts of the state. Without this every precinct returned the
+    # same order and a leader map rendered as one solid colour, which tells you
+    # nothing about whether the map works.
     by_prec = {}
     for pi, p in enumerate(precs[:max(1, int(len(precs) * 0.65))]):
         h = race_id * 31 + pi * 17
-        by_prec[p] = {cid: max(1, strengths[cid] + ((h + i * 101) % 25) - 12 + (pi % 4))
-                      for i, cid in enumerate(cand_ids)}
+        row = {}
+        for i, cid in enumerate(cand_ids):
+            jitter = ((h + i * 101) % 25) - 12
+            # A slow wave per candidate, offset from the others, so strength
+            # rises and falls across the precinct list in bands.
+            swing = int(38 * _math.sin((pi / 6.0) + (i * 2.1) + (race_id % 7)))
+            row[cid] = max(1, strengths[cid] + jitter + swing)
+        by_prec[p] = row
     return by_prec
 
 
