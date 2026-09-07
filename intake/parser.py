@@ -390,7 +390,8 @@ def identify_town(town_list, body, subject="", sender="", attachments=None):
     return resp.parsed_output
 
 
-def extract(municipality, roster_text, body, subject="", sender="", attachments=None):
+def extract(municipality, roster_text, body, subject="", sender="", attachments=None,
+            max_tokens=None, _retry=True):
     content = _attachment_blocks(attachments)
     content.append({
         "type": "text",
@@ -404,15 +405,27 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
     sheets = spreadsheet_texts(attachments)
     if sheets:
         content.append({"type": "text", "text": f"\n--- ATTACHED SPREADSHEET ---\n{sheets}"})
-    resp = client().messages.parse(
-        model=config.MODEL,
-        max_tokens=16000,
-        system=EXTRACT_SYSTEM,
-        thinking={"type": "adaptive"},
-        messages=[{"role": "user", "content": content}],
-        output_format=Extraction,
-    )
-    return resp.parsed_output
+    try:
+        resp = client().messages.parse(
+            model=config.MODEL,
+            max_tokens=max_tokens or config.MAX_OUTPUT_TOKENS,
+            system=EXTRACT_SYSTEM,
+            thinking={"type": "adaptive"},
+            messages=[{"role": "user", "content": content}],
+            output_format=Extraction,
+        )
+        return resp.parsed_output
+    except Exception as exc:
+        # A big return-of-votes sheet can run past the output ceiling and come
+        # back as truncated JSON. Losing the whole report over that is the worst
+        # outcome, so retry once with more room before giving up.
+        if _retry and "json" in str(exc).lower():
+            log.warning("%s: reply did not parse (%s); retrying with more room",
+                        municipality, str(exc)[:120])
+            return extract(municipality, roster_text, body, subject, sender, attachments,
+                           max_tokens=min((max_tokens or config.MAX_OUTPUT_TOKENS) * 2, 64000),
+                           _retry=False)
+        raise
 
 
 def line_key(line):

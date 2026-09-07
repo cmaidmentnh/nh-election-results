@@ -21,6 +21,9 @@ ATTACH_DIR = Path(os.environ.get("INTAKE_ATTACH_DIR", str(BASE_DIR / "data" / "i
 # --- Anthropic ------------------------------------------------------------
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("INTAKE_MODEL", "claude-opus-5")
+# A town's full return of votes is a lot of structured output, and adaptive
+# thinking is billed against the same ceiling.
+MAX_OUTPUT_TOKENS = int(os.environ.get("INTAKE_MAX_TOKENS", "32000"))
 
 # --- Email (IMAP) ---------------------------------------------------------
 # Mail to results@electhouserepublicans.com is a Google Group; the mailbox
