@@ -56,6 +56,11 @@ MIN_CONFIDENCE = float(os.environ.get("INTAKE_MIN_CONFIDENCE", "0.85"))
 # Username the service writes audit rows as. Created on first run.
 BOT_USERNAME = os.environ.get("INTAKE_BOT_USER", "intake-bot")
 
-# Don't start ingesting before this (ISO local time). Polls close at 7pm;
-# anything that arrives earlier is stored but not applied. Empty = no gate.
+# Don't publish before this. Polls close at 7pm; anything that arrives earlier
+# is stored but not applied. Empty = no gate.
+#
+# Read in ELECTION_TZ, never in the server's timezone: this box runs UTC, so a
+# naive "19:00" would open the gate at 3pm Eastern, while people are still
+# voting.
 OPEN_AFTER = os.environ.get("INTAKE_OPEN_AFTER", "")
+ELECTION_TZ = os.environ.get("INTAKE_TZ", "America/New_York")

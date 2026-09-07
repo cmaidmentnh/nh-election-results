@@ -15,9 +15,14 @@ bot's user id, so the existing audit trail and undo path still apply.
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import logging
 
 from entry import log_audit
 from intake import config, store
+
+log = logging.getLogger("intake.apply")
 
 MAX_PLAUSIBLE_VOTES = 60000  # comfortably above the largest NH ward
 
@@ -41,11 +46,22 @@ def _existing_votes(cursor, race_id, candidate_id, municipality):
 
 
 def _gate_open():
+    """Whether results may publish yet.
+
+    Compared in the election's own timezone. The server runs UTC, so treating
+    the configured time as server-local would open the gate four hours early -
+    publishing results while the polls are still open.
+    """
     if not config.OPEN_AFTER:
         return True
     try:
-        return datetime.now() >= datetime.fromisoformat(config.OPEN_AFTER)
-    except ValueError:
+        tz = ZoneInfo(config.ELECTION_TZ)
+        opens = datetime.fromisoformat(config.OPEN_AFTER)
+        if opens.tzinfo is None:
+            opens = opens.replace(tzinfo=tz)
+        return datetime.now(tz) >= opens
+    except (ValueError, KeyError):
+        log.warning("Bad INTAKE_OPEN_AFTER %r; not gating", config.OPEN_AFTER)
         return True
 
 
