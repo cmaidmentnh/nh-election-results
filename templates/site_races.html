@@ -123,7 +123,7 @@ const contested=(rec,p)=>rec&&rec.parties&&rec.parties[p]>rec.seats;
 function fitState(m, lyr){
   try{
     const b=lyr.getBounds();
-    if(b.isValid()){ m.fitBounds(b,{padding:[2,2]}); m.setMinZoom(m.getZoom()-1); }
+    if(b.isValid()){ m.fitBounds(b,{padding:[1,1]}); m.setMinZoom(m.getZoom()-1.5); }
   }catch(e){}
 }
 
@@ -287,7 +287,7 @@ function tipFor(code){
 }
 function renderMap(){
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
-  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
+  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
   G('nh-towns.geojson').then(g=>{
     const base=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
       .addTo(map);
@@ -323,7 +323,7 @@ function paint(){
 function stateMap(){
   document.getElementById('split').classList.remove('solo');
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
-  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
+  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
   document.getElementById('legend').innerHTML='';
   Promise.all([
     fetch('/api/contested/'+O.key+'/results?code=STATE&party='+P+Q).then(r=>r.json()),
@@ -413,7 +413,7 @@ function fcFor(precincts){
 }
 function detailMap(r,p){
   if(dmap){try{dmap.remove();}catch(e){}dmap=null;}
-  dmap=L.map('detmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH);
+  dmap=L.map('detmap',{attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
     if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>
