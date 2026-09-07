@@ -70,6 +70,30 @@ const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
 const ST={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
           leaning:{l:'Leaning',c:'#6b7280'},too_close:{l:'Too close',c:'#b26a00'},
           awaiting:{l:'Awaiting',c:'#c9ccd1'}};
+const CAND_COLORS=['#d9601f','#1b8f6b','#7a52c9'];
+const OTHER_COLOR='#8a8f96', NOTIN_COLOR='#e4e6e9';
+
+/* Rank candidates by their statewide total; the top three get a colour and
+   everyone else folds into "Other" - past three, a categorical ramp stops
+   being separable on a map. */
+function leaderScale(r){
+  const tot={};
+  (r.precincts||[]).forEach(p=>{ if(!p.reported) return;
+    Object.entries(p.votes||{}).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;}); });
+  const ranked=Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([n])=>n);
+  const color={};
+  ranked.forEach((n,i)=>{ color[n]= i<CAND_COLORS.length ? CAND_COLORS[i] : OTHER_COLOR; });
+  return {color, ranked};
+}
+function leaderOf(members){
+  const tot={}; let any=false;
+  members.forEach(m=>{ if(!m.reported) return; any=true;
+    Object.entries(m.votes||{}).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;}); });
+  if(!any) return null;
+  const e=Object.entries(tot).sort((a,b)=>b[1]-a[1]);
+  return e.length ? e[0][0] : null;
+}
+
 const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
 const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'},
       HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
@@ -289,9 +313,7 @@ function stateMap(){
   document.getElementById('split').classList.remove('solo');
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
   map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
-  document.getElementById('legend').innerHTML=
-    `<div class="r"><i style="background:${PARTY[P].c}"></i>Reported</div>`+
-    `<div class="r"><i style="background:#dfe2e6"></i>Not yet in</div>`;
+  document.getElementById('legend').innerHTML='';
   Promise.all([
     fetch('/api/contested/'+O.key+'/results?code=STATE&party='+P+Q).then(r=>r.json()),
     geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
@@ -303,9 +325,16 @@ function stateMap(){
       townsByName[String(f.properties.name||'').toLowerCase()]=f);}
     L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
       color:'#fff',weight:.5,interactive:false}}).addTo(map).bringToBack();
+    const sc=leaderScale(r);
+    document.getElementById('legend').innerHTML=
+      sc.ranked.slice(0,CAND_COLORS.length).map((n,i)=>
+        `<div class="r"><i style="background:${CAND_COLORS[i]}"></i>${esc(n)}</div>`).join('')+
+      (sc.ranked.length>CAND_COLORS.length?`<div class="r"><i style="background:${OTHER_COLOR}"></i>Other</div>`:'')+
+      `<div class="r"><i style="background:${NOTIN_COLOR}"></i>Not yet in</div>`;
     layer=L.geoJSON({type:'FeatureCollection',features:fcFor(r.precincts||[])},{
-      style:f=>{const any=f.properties.members.some(m=>m.reported);
-        return {fillColor:any?PARTY[P].c:'#dfe2e6',fillOpacity:any?.85:.6,color:'#fff',weight:.7};},
+      style:f=>{const lead=leaderOf(f.properties.members);
+        return {fillColor: lead ? (sc.color[lead]||OTHER_COLOR) : NOTIN_COLOR,
+                fillOpacity: lead?.9:.7, color:'#fff', weight:.7};},
       onEachFeature:(f,l)=>{
         const ms=f.properties.members, rep=ms.filter(m=>m.reported);
         let h=`<div class="tn">${esc(f.properties.name)}</div>`;
@@ -313,7 +342,8 @@ function stateMap(){
         else{
           const t={}; let sum=0;
           rep.forEach(m=>Object.entries(m.votes).forEach(([n,v])=>{t[n]=(t[n]||0)+v;sum+=v;}));
-          h+=`<div class="tm"><span>${nf.format(sum)} votes</span></div>`+
+          const ld=Object.entries(t).sort((a,b)=>b[1]-a[1])[0];
+          h+=`<div class="tm"><span>${esc(ld?ld[0]:'')} leads</span><span>${nf.format(sum)} votes</span></div>`+
              Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([n,v])=>
                `<div class="tr"><span>${esc(n)}</span><span class="v">${nf.format(v)} ${sum?Math.round(100*v/sum):0}%</span></div>`).join('');
         }
@@ -383,9 +413,11 @@ function detailMap(r,p){
       color:'#fff',weight:.5,interactive:false}}).addTo(dmap).bringToBack();
     const fc={type:'FeatureCollection',features:fcFor(r.precincts||[])};
     const b=L.latLngBounds([]);
+    const sc=leaderScale(r);
     dlayer=L.geoJSON(fc,{
-      style:f=>{const any=f.properties.members.some(m=>m.reported);
-        return {fillColor:any?PARTY[p].c:'#dfe2e6',fillOpacity:any?.85:.6,color:'#fff',weight:.8};},
+      style:f=>{const lead=leaderOf(f.properties.members);
+        return {fillColor: lead ? (sc.color[lead]||OTHER_COLOR) : NOTIN_COLOR,
+                fillOpacity: lead?.9:.7, color:'#fff', weight:.8};},
       onEachFeature:(f,l)=>{
         const ms=f.properties.members, rep=ms.filter(m=>m.reported);
         let html=`<div class="tn">${esc(f.properties.name)}</div>`;
