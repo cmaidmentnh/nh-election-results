@@ -263,3 +263,8 @@ table.pt td:first-child{font-family:var(--sans)}
 .leaflet-tooltip.tip{width:auto;max-width:min(240px,calc(100vw - 48px));
   box-shadow:0 6px 22px rgba(16,17,18,.16);z-index:650}
 @media(min-width:981px){.leaflet-tooltip.tip{max-width:230px}}
+
+/* Grid items stretch by default; pin the name to the start of its column so a
+   short name sits against the left edge rather than floating in the track. */
+.dist .cr .n2{justify-self:start}
+.dist .cr .v2{justify-self:end}
