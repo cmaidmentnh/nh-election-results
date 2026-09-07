@@ -13,6 +13,7 @@ sees it rather than the parser guessing.
 """
 
 import base64
+import logging
 import mimetypes
 from pathlib import Path
 
@@ -20,6 +21,8 @@ import anthropic
 from pydantic import BaseModel, Field
 
 from intake import config
+
+log = logging.getLogger("intake.parser")
 
 _client = None
 
@@ -120,35 +123,144 @@ election_id.
 is ambiguous, or when the name match was a stretch.
 - If the message contains no vote totals at all (a question, a greeting, "on my way"), \
 set contains_results=false and return no lines.
-- Photographs of tally tapes: read only what is printed. If a number is cut off or \
-illegible, omit that line and say so in notes rather than guessing."""
+PHOTOGRAPHS AND SCANNED TALLY SHEETS ARE THE NORMAL CASE.
+Most reports are a phone photo of the machine tape or the hand-tally sheet, or a
+scanned PDF of it, with little or no typed text. Read them carefully:
+- Work down the sheet race by race. A New Hampshire tally sheet lists the office, \
+then each candidate with a vote total beside or beneath the name.
+- The sheet usually says which ballot it is - "REPUBLICAN", "DEMOCRATIC", "REP", \
+"DEM", often in the header or as a column heading. Use it. If one sheet has \
+separate Republican and Democratic columns, read each into its own ballot's \
+race_id.
+- These lines are NOT candidates and must never be returned as candidate votes: \
+TOTAL, TOTAL VOTES CAST, BLANKS, BLANK, UNDERVOTES, OVERVOTES, SCATTERING, \
+SCATTERED, VOID, SPOILED, ABSENTEE (as a column heading), REGISTERED VOTERS. \
+A "TOTAL BALLOTS CAST" or "BALLOTS CAST" figure goes in ballots, not lines.
+- "SCATTERING" or a plain "WRITE-IN" total is the aggregate write-in line - use \
+the "Write-in (aggregate line)" candidate_id for that race.
+- Multi-seat State Representative races list many candidates at once; report every \
+one you can read.
+- Numbers are often handwritten. Distinguish carefully between 1/7, 3/8, 5/6, and \
+0/6/8. If a digit is genuinely ambiguous, lower the confidence for that line - do \
+not silently pick one.
+- Read only what is printed. If a number is cut off, smudged, obscured by glare, or \
+outside the frame, omit that line and say so in notes rather than guessing.
+- If the photograph is too blurry or too dark to read at all, set \
+contains_results=false and say so in notes."""
 
 
-def _image_blocks(paths, limit=8):
-    """Attachment files as image content blocks. Non-images are skipped."""
+# Claude Opus 5 reads up to 2576px on the long edge. Tally tapes are dense
+# columns of small digits, so send at that ceiling rather than downscaling
+# further - and no larger, which would only cost tokens.
+MAX_EDGE = 2576
+MAX_ATTACHMENTS = 12
+MAX_PDF_BYTES = 20 * 1024 * 1024
+
+
+def _sniff(data):
+    """Content type from magic bytes.
+
+    Filenames cannot be trusted here: signal-cli stores attachments under a
+    bare id with no extension, so guessing by suffix skips every photo posted
+    to the Signal group.
+    """
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:5] == b"%PDF-":
+        return "application/pdf"
+    if data[4:8] == b"ftyp" and data[8:12] in (b"heic", b"heix", b"hevc", b"mif1", b"msf1"):
+        return "image/heic"
+    return None
+
+
+def _prepare_image(data, media_type):
+    """Re-encode to JPEG within the model's resolution ceiling.
+
+    Phone photos arrive at 12MP and, from iPhones, often as HEIC, which the API
+    does not accept. Both are handled here so the caller does not care.
+    """
+    try:
+        import io
+
+        from PIL import Image
+        try:  # iPhone photos
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            if media_type == "image/heic":
+                return None, None
+
+        img = Image.open(io.BytesIO(data))
+        img.load()
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        if max(img.size) > MAX_EDGE:
+            ratio = MAX_EDGE / max(img.size)
+            img = img.resize((max(1, int(img.width * ratio)),
+                              max(1, int(img.height * ratio))), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=88, optimize=True)
+        return buf.getvalue(), "image/jpeg"
+    except Exception:
+        log.exception("Could not re-encode an attachment")
+        # A format the API already accepts can still go through untouched.
+        if media_type in ("image/jpeg", "image/png", "image/gif", "image/webp"):
+            return data, media_type
+        return None, None
+
+
+def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
+    """Photos and PDFs of tally sheets as content blocks.
+
+    Most reports on election night are a picture of the tape or a scanned
+    printout rather than typed numbers, so this is the main input path.
+    """
     blocks = []
     for p in (paths or [])[:limit]:
         path = Path(p)
-        if not path.exists():
+        try:
+            if not path.exists() or path.stat().st_size == 0:
+                continue
+            data = path.read_bytes()
+        except OSError:
+            log.exception("Could not read attachment %s", p)
             continue
-        media_type, _ = mimetypes.guess_type(str(path))
+
+        media_type = _sniff(data) or mimetypes.guess_type(str(path))[0]
+
+        if media_type == "application/pdf":
+            if len(data) > MAX_PDF_BYTES:
+                log.warning("Skipping oversized PDF %s (%.1f MB)", p, len(data) / 1e6)
+                continue
+            blocks.append({
+                "type": "document",
+                "source": {"type": "base64", "media_type": "application/pdf",
+                           "data": base64.standard_b64encode(data).decode()},
+            })
+            continue
+
         if not media_type or not media_type.startswith("image/"):
             continue
-        if path.stat().st_size > 5 * 1024 * 1024:
+
+        prepared, out_type = _prepare_image(data, media_type)
+        if not prepared:
             continue
         blocks.append({
             "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": media_type,
-                "data": base64.standard_b64encode(path.read_bytes()).decode(),
-            },
+            "source": {"type": "base64", "media_type": out_type,
+                       "data": base64.standard_b64encode(prepared).decode()},
         })
     return blocks
 
 
 def identify_town(town_list, body, subject="", sender="", attachments=None):
-    content = _image_blocks(attachments)
+    content = _attachment_blocks(attachments)
     content.append({
         "type": "text",
         "text": (
@@ -167,7 +279,7 @@ def identify_town(town_list, body, subject="", sender="", attachments=None):
 
 
 def extract(municipality, roster_text, body, subject="", sender="", attachments=None):
-    content = _image_blocks(attachments)
+    content = _attachment_blocks(attachments)
     content.append({
         "type": "text",
         "text": (

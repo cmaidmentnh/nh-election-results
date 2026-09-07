@@ -4,3 +4,7 @@ anthropic>=1.4.0
 pydantic>=2.0
 Flask>=3.0
 Flask-Login>=0.6
+# Phone photos: 12MP downscaling to the model's 2576px ceiling, and HEIC from
+# iPhones, which the API does not accept directly.
+Pillow>=10.0
+pillow-heif>=0.16

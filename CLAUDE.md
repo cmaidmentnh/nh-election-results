@@ -64,6 +64,27 @@ git add -A && git commit -m "message" && git push
 ssh root@138.197.20.97 "cd /opt/nh-election-results && git pull && systemctl restart nh-election-results"
 ```
 
+## Results Intake (email + Signal)
+
+Separate service, same repo and database:
+
+| | |
+|---|---|
+| Service | `nh-results-intake.service` |
+| Venv | `/opt/nh-results-intake-venv` (its own - do not use the app's) |
+| Config | `/opt/nh-election-results/intake.env` (chmod 600, gitignored) |
+| Review queue | https://elections.nhhouse.gop/entry/intake |
+| Docs | `intake/README.md` |
+
+Reads results@electhouserepublicans.com (IMAP) and one Signal group, parses
+with Claude against each town's real ballot, publishes clean lines and queues
+the rest. Writes go through `result_audit` as the `intake-bot` user.
+
+```bash
+journalctl -u nh-results-intake -f
+systemctl stop nh-results-intake          # hand entry is unaffected
+```
+
 ## Admin Portal
 
 - Login: https://elections.nhhouse.gop/login

@@ -7,6 +7,7 @@
 
 import argparse
 import json
+import re
 import logging
 import threading
 import time
@@ -62,6 +63,14 @@ def process(conn, msg):
 
     cursor = conn.cursor()
     try:
+        # Chatter with no town and no numbers is not a results report. Queueing
+        # it would bury the real reports on a busy night.
+        body_text = msg.get("body") or ""
+        if not msg.get("attachments") and not re.search(r"\d", body_text):
+            store.set_message_status(conn, message_id, "ignored")
+            log.info("msg %s: no numbers and no image, ignoring", message_id)
+            return {"applied": 0, "queued": 0, "town": None}
+
         town, town_conf, how = _guess_town(cursor, msg)
         if not town:
             store.set_message_status(conn, message_id, "queued")
