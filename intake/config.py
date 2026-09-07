@@ -25,6 +25,10 @@ MODEL = os.environ.get("INTAKE_MODEL", "claude-opus-5")
 # --- Email (IMAP) ---------------------------------------------------------
 # Mail to results@electhouserepublicans.com is a Google Group; the mailbox
 # below is a member of that group, so every clerk report lands in it.
+# Gmail API (preferred): a self-contained OAuth token file, so no app
+# password has to be minted. IMAP below is only used if this is unset.
+GMAIL_TOKEN_PATH = os.environ.get("INTAKE_GMAIL_TOKEN", "")
+
 IMAP_HOST = os.environ.get("INTAKE_IMAP_HOST", "imap.gmail.com")
 IMAP_USER = os.environ.get("INTAKE_IMAP_USER", "")
 IMAP_PASSWORD = os.environ.get("INTAKE_IMAP_PASSWORD", "")   # Google app password

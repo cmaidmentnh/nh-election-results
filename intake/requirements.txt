@@ -8,3 +8,6 @@ Flask-Login>=0.6
 # iPhones, which the API does not accept directly.
 Pillow>=10.0
 pillow-heif>=0.16
+# Gmail API: uses the mailbox's existing OAuth token instead of an app password.
+google-api-python-client>=2.0
+google-auth>=2.0

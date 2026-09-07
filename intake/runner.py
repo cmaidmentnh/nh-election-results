@@ -14,7 +14,7 @@ import time
 
 from intake import apply as apply_mod
 from intake import config, parser, roster, store
-from intake.sources import email_source, signal_source
+from intake.sources import email_source, gmail_source, signal_source
 
 logging.basicConfig(
     level=logging.INFO,
@@ -129,18 +129,22 @@ def _notify(text):
 def email_loop(stop):
     while not stop.is_set():
         try:
-            if config.IMAP_USER and config.IMAP_PASSWORD:
-                for msg in email_source.fetch_new():
-                    with _db_lock:
-                        conn = store.connect()
-                        try:
-                            process(conn, msg)
-                        finally:
-                            conn.close()
+            # Gmail API when the mailbox is already authorised; IMAP otherwise.
+            if gmail_source.available():
+                source = gmail_source
+            elif config.IMAP_USER and config.IMAP_PASSWORD:
+                source = email_source
             else:
-                log.warning("Email feed idle: INTAKE_IMAP_USER/PASSWORD not set")
+                log.warning("Email feed idle: set INTAKE_GMAIL_TOKEN or IMAP credentials")
                 stop.wait(300)
                 continue
+            for msg in source.fetch_new():
+                with _db_lock:
+                    conn = store.connect()
+                    try:
+                        process(conn, msg)
+                    finally:
+                        conn.close()
         except Exception:
             log.exception("email poll failed")
         stop.wait(config.EMAIL_POLL_SECONDS)
@@ -201,7 +205,8 @@ def main():
         return
 
     if args.once:
-        for msg in email_source.fetch_new():
+        source = gmail_source if gmail_source.available() else email_source
+        for msg in source.fetch_new():
             conn = store.connect()
             try:
                 process(conn, msg)
