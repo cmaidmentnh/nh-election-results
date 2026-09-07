@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from intake import parser, store
+from intake.apply import reconcile
 
 YEAR, ETYPE = 2024, "general"
 
@@ -93,11 +94,13 @@ def main():
         wrong = [(k, got[k], truth[k]) for k in got if truth[k] != got[k]]
         missed = len(truth) - len(got)
 
-        # Would the two-read gate have stopped the wrong ones publishing?
-        caught = [w for w in wrong if w[0] not in agreed]
-        slipped = [w for w in wrong if w[0] in agreed]
+        # Would either gate have stopped the wrong ones publishing?
+        held_races = reconcile(ex, index)
+        caught = [w for w in wrong if w[0] not in agreed or w[0][0] in held_races]
+        slipped = [w for w in wrong if w[0] in agreed and w[0][0] not in held_races]
         # ...and what does it cost in correct values held back?
-        held_ok = sum(1 for k, v in got.items() if truth[k] == v and k not in agreed)
+        held_ok = sum(1 for k, v in got.items()
+                      if truth[k] == v and (k not in agreed or k[0] in held_races))
 
         totals["exact"] += exact
         totals["wrong"] += len(wrong)
@@ -110,7 +113,7 @@ def main():
         pct = 100 * exact / len(truth) if truth else 0
         print(f"{town:14s} {exact:4d}/{len(truth):4d} exact ({pct:5.1f}%)  "
               f"wrong={len(wrong):<3} caught={len(caught):<3} SLIPPED={len(slipped):<3} "
-              f"good_held={held_ok:<3} missed={max(0,missed):<4}")
+              f"good_held={held_ok:<3} missed={max(0,missed):<4} unreconciled_races={len(held_races)}")
         for (rid, cid), g, t in slipped[:4]:
             print(f"                 SLIPPED {index[rid]['label']} / "
                   f"{index[rid]['names'][cid]}: read {g}, actual {t}")

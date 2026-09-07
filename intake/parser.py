@@ -56,12 +56,21 @@ class BallotsLine(BaseModel):
     confidence: float
 
 
+class RaceCheck(BaseModel):
+    race_id: int = Field(description="race_id this checksum belongs to")
+    stated_total: int = Field(description="The TOTAL VOTES CAST printed for this race, or 0 if the sheet does not print one")
+    blanks: int = Field(description="BLANKS or UNDERVOTES printed for this race, or 0")
+    overvotes: int = Field(description="OVERVOTES printed for this race, or 0")
+
+
 class Extraction(BaseModel):
     municipality_text: str = Field(description="The place name as the reporter wrote it")
     contains_results: bool = Field(description="False for chatter, questions, acknowledgements")
     notes: str = Field(description="Anything a human reviewer should know; empty if nothing")
     lines: list[VoteLine]
     ballots: list[BallotsLine]
+    checks: list[RaceCheck] = Field(
+        description="One entry per race whose sheet prints a total, for arithmetic verification")
 
 
 TOWN_SYSTEM = """You identify which New Hampshire polling place an election-night \
@@ -120,6 +129,12 @@ vote count from a percentage.
 using the election_id shown in that ballot's header above. A primary reports \
 ballots cast per party, so "1,420 Republican ballots" uses the Republican \
 election_id.
+- For every race where the sheet prints a TOTAL VOTES CAST (and/or BLANKS,
+UNDERVOTES, OVERVOTES), copy those figures into checks for that race_id. Copy
+them exactly as printed; do not compute them yourself and do not infer a total
+that is not on the page. They are used to verify the candidate numbers add up,
+so a guessed total defeats the check. Leave a figure as 0 when the sheet does
+not print it.
 - Set confidence per line. Use a low value when handwriting is unclear, when a digit \
 is ambiguous, or when the name match was a stretch.
 - If the message contains no vote totals at all (a question, a greeting, "on my way"), \

@@ -102,6 +102,37 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
     return True, None, race, old
 
 
+def reconcile(extraction, index):
+    """Races whose numbers do not add up to the total printed on their own sheet.
+
+    Back-testing showed the model misreading a value and reporting high
+    confidence on it, and reading it the same wrong way every pass - so neither
+    confidence nor repetition catches it. The sheet, though, states its own
+    totals: Hollis printed 5,870 votes cast for a sheriff's race read as 2,571
+    plus 47 write-ins and 486 undervotes. That is arithmetic, not another
+    opinion from the same model, and it fails loudly when a number is wrong.
+
+    Returns {race_id: explanation} for races to hold.
+    """
+    bad = {}
+    for check in getattr(extraction, "checks", None) or []:
+        if not check.race_id or not check.stated_total:
+            continue                      # no printed total: nothing to check
+        counted = sum(l.votes or 0 for l in extraction.lines
+                      if l.race_id == check.race_id)
+        accounted = counted + (check.blanks or 0) + (check.overvotes or 0)
+        if accounted != check.stated_total:
+            label = (index.get(check.race_id) or {}).get("label", check.race_id)
+            bad[check.race_id] = (
+                f"Does not reconcile: {accounted:,} accounted for "
+                f"({counted:,} votes + {check.blanks or 0:,} blanks) "
+                f"against {check.stated_total:,} printed on the sheet"
+            )
+            log.warning("%s: race %s does not reconcile - %s", label, check.race_id,
+                        bad[check.race_id])
+    return bad
+
+
 def apply_extraction(conn, message_id, municipality, extraction, index, elections,
                      agreed=None, disagreements=None):
     """Validate every line, write the clean ones, queue the rest.
@@ -116,10 +147,13 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     queued_reasons = []
     details = []
     gate_open = _gate_open()
+    unreconciled = reconcile(extraction, index)
 
     for line in extraction.lines:
         ok, reason, race, old = validate_line(cursor, line, municipality, index,
                                               agreed, disagreements)
+        if ok and line.race_id in unreconciled:
+            ok, reason = False, unreconciled[line.race_id]
         if ok and not gate_open:
             ok, reason = False, f"Held until polls close ({config.OPEN_AFTER})"
         if ok and not config.AUTO_APPLY:
