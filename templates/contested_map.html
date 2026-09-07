@@ -138,7 +138,7 @@ function renderView(){
 function refresh(){ const o=curO,p=curP;
   fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
     if(o!==curO||p!==curP)return; board={}; b.races.forEach(r=>board[r.code]=r);
-    const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())} · 30s`;
+    const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     renderScore();
     // In-place update where possible so the user's zoom/pan is preserved.
     if(detailCtx){ loadDetail(detailCtx.o,detailCtx.code,detailCtx.party); }
