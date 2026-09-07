@@ -1195,11 +1195,17 @@ def _topline_payload(demo=False):
                 r = _compute_results(cur, office_name, level, "", district,
                                      party_full, party, with_precincts=False, demo=demo)
                 if r.get("exists"):
+                    # _compute_results returns votes and a projected total, not a
+                    # share, so work the percentage out here.
+                    cands = r["candidates"]
+                    cast = sum(c.get("votes") or 0 for c in cands)
                     sides[party] = {
                         "candidates": [
-                            {"name": c["name"], "votes": c["votes"],
-                             "pct": c.get("pct", 0)}
-                            for c in r["candidates"]
+                            {"name": c["name"],
+                             "votes": c.get("votes") or 0,
+                             "projected": c.get("projected"),
+                             "pct": round(100 * (c.get("votes") or 0) / cast, 1) if cast else 0.0}
+                            for c in cands
                         ],
                         "projection": r["projection"],
                         "reporting": r["reporting"],
@@ -1208,16 +1214,27 @@ def _topline_payload(demo=False):
                 blocks.append({"key": key, "label": label,
                                "district": district, "sides": sides})
 
-        # How much of the state has reported at all.
-        cur.execute("""SELECT COUNT(DISTINCT res.municipality) AS n
-                         FROM results res
-                         JOIN races r ON res.race_id = r.id
-                         JOIN elections e ON r.election_id = e.id
-                        WHERE e.year = 2026 AND e.election_type = 'state_primary'
-                          AND res.votes > 0""")
-        reported = cur.fetchone()["n"] or 0
-        cur.execute("SELECT COUNT(*) AS n FROM polling_places")
-        places = cur.fetchone()["n"] or 0
+        # How much of the state has reported. Prefer the statewide races' own
+        # reporting figures, which are already computed per race and work in
+        # demo mode too; fall back to counting municipalities with results.
+        reported = places = 0
+        for b in blocks:
+            for s_ in b["sides"].values():
+                rep = s_.get("reporting") or {}
+                if (rep.get("total") or 0) > places:
+                    places = rep["total"]
+                if (rep.get("reported") or 0) > reported:
+                    reported = rep["reported"]
+        if not places:
+            cur.execute("""SELECT COUNT(DISTINCT res.municipality) AS n
+                             FROM results res
+                             JOIN races r ON res.race_id = r.id
+                             JOIN elections e ON r.election_id = e.id
+                            WHERE e.year = 2026 AND e.election_type = 'state_primary'
+                              AND res.votes > 0""")
+            reported = cur.fetchone()["n"] or 0
+            cur.execute("SELECT COUNT(*) AS n FROM polling_places")
+            places = cur.fetchone()["n"] or 0
 
         chambers = []
         for office, name in (("State Senator", "State Senate"),
