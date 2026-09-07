@@ -74,6 +74,14 @@ const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'},
       HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
 
 const geo={}, jc={};
+let floSet=null;   // codes that live in the floterial layer
+function floCodes(){
+  if(floSet) return Promise.resolve(floSet);
+  return G(HFLOT.file).then(g=>{
+    floSet=new Set(g.features.map(f=>String(f.properties[HFLOT.prop]??'').trim()).filter(Boolean));
+    return floSet;
+  });
+}
 let geoMap=null, houseByCode=null, townsByName=null;
 let map=null, layer=null, cfg=null, dmap=null, dlayer=null;
 let O=null, P='R', BASEV='Base', data=null, board={}, timer=null, ctx=null;
@@ -153,7 +161,7 @@ function tick(){
 }
 
 function counts(){
-  const rs=Object.values(board);
+  const rs=Object.values(board).filter(r=>inView(r.code));
   const c={called:0,close:0,await:0};
   rs.forEach(r=>{const s=r.projection.status;
     if(s==='called')c.called++;
@@ -190,11 +198,17 @@ function card(r){
     ${rows}${r.candidates.length>4?`<div class="dm" style="margin:6px 0 0">+${r.candidates.length-4} more</div>`:''}
     ${odds(r.projection)}</button>`;
 }
+function inView(code){
+  if(O.level!=='house'||!floSet) return true;
+  const isFlo=floSet.has(code);
+  return BASEV==='Floterial' ? isFlo : !isFlo;
+}
 function renderList(){
-  const rs=Object.values(board);
+  const rs=Object.values(board).filter(r=>inView(r.code));
   document.getElementById('grid').innerHTML = rs.length
     ? rs.map(card).join('')
-    : `<div class="dm" style="padding:26px 0">No contested ${PARTY[P].n} races for this office.</div>`;
+    : `<div class="dm" style="padding:26px 0">No contested ${PARTY[P].n} races in the
+        ${O.level==='house'?BASEV.toLowerCase()+' districts':'this office'}.</div>`;
   document.querySelectorAll('.dist').forEach(b=>
     b.onclick=()=>openDetail(O,b.dataset.code,P));
 }
@@ -251,7 +265,10 @@ function renderMap(){
     map.fitBounds(NH,{padding:[8,8]});
   });
 }
-function paint(){ renderList(); if(O.level!=='statewide') renderMap(); }
+function paint(){
+  if(O.level==='house'&&!floSet){ floCodes().then(()=>{counts();renderList();renderMap();}); return; }
+  renderList(); if(O.level!=='statewide') renderMap();
+}
 
 /* ---- detail ------------------------------------------------------------- */
 function openDetail(o,code,p){
