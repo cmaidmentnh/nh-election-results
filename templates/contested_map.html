@@ -6,7 +6,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=5">
 {% endblock %}
 
 {% block content %}
@@ -34,7 +34,7 @@
 
   <div class="pt-detail" id="pt-detail">
     <div class="pt-dhead">
-      <span class="pt-back" id="pt-back">← Back</span>
+      <button type="button" class="pt-back" id="pt-back">← Back</button>
       <h2 id="pt-dtitle"></h2><span class="sub" id="pt-dsub"></span>
       <span class="pt-ptoggle" id="pt-ptoggle"></span>
     </div>
@@ -63,8 +63,8 @@ const OFFICES=[
 ];
 const OBYKEY=Object.fromEntries(OFFICES.map(o=>[o.key,o]));
 const PARTY={R:{name:'Republican',color:'#b91c1c'},D:{name:'Democratic',color:'#1d4ed8'}};
-const STATUS={called:{l:'Called',c:'#15803d'},likely:{l:'Likely',c:'#3b82f6'},leaning:{l:'Leaning',c:'#94a3b8'},
-  too_close:{l:'Too close',c:'#d97706'},awaiting:{l:'Awaiting',c:'#94a3b8'},preview:{l:'Contested',c:'#5b6b8c'}};
+const STATUS={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#12304f'},leaning:{l:'Leaning',c:'#64748b'},
+  too_close:{l:'Too close',c:'#d98c00'},awaiting:{l:'Awaiting',c:'#b6c0cd'},preview:{l:'Contested',c:'#64748b'}};
 const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
 const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'}, HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
 const geo={}, jc={}; let geoMap=null, houseByCode=null, townsByName=null;
@@ -238,6 +238,16 @@ function renderBoard(){
   el.innerHTML=races.map(r=>card(o,r)).join('');
   el.querySelectorAll('[data-code]').forEach(x=>x.onclick=()=>showDetail(o,x.dataset.code,p));
 }
+/* One place that turns a projection into the probability sentence. Suppressed
+   below the same threshold that already blocks an early call, because the
+   number is an extrapolation from the vote counted, not a forecast. */
+function probText(pj){
+  if(!LIVE||!pj) return '';
+  if(pj.status==='called') return '';
+  if(pj.win_prob==null) return '';
+  const who=pj.leader||(pj.winners||[])[0]||'';
+  return `<div class="pt-prob"><b>${Math.round(pj.win_prob*100)}%</b> chance ${who} holds on</div>`;
+}
 function card(o,r){
   const winners=new Set(r.projection.winners||[]),tot=r.candidates.reduce((s,c)=>s+c.votes,0)||0,max=Math.max(1,...r.candidates.map(c=>c.votes));
   const rows=r.candidates.slice(0,4).map(c=>{const win=winners.has(c.name),pc=tot?Math.round(100*c.votes/tot):0;
@@ -245,7 +255,11 @@ function card(o,r){
       `<div class="cv">${LIVE?c.votes.toLocaleString():''}${LIVE&&tot?`<span class="pc">${pc}%</span>`:''}</div>`+
       (LIVE?`<div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[curP].color}"></i></div>`:'')+`</div>`;}).join('');
   const sub=LIVE?`${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`:`${r.seats} seat${r.seats!=1?'s':''} · ${r.candidates.length} candidates`;
-  return `<div class="pt-card" data-code="${r.code}"><div class="top"><div class="nm">${districtName(o,r)}</div><span class="pt-badge ${r.projection.status}">${STATUS[r.projection.status].l}</span></div><div class="meta">${sub}</div>${rows}${r.candidates.length>4?`<div class="pt-more">+${r.candidates.length-4} more</div>`:''}</div>`;
+  const stk=STATUS[r.projection.status]?r.projection.status:'awaiting';
+  // The win probability already exists on every race and used to be shown
+  // nowhere on this page.
+  const prob=probText(r.projection);
+  return `<button type="button" class="pt-card" data-code="${r.code}"><div class="top"><div class="nm">${districtName(o,r)}</div><span class="pt-badge ${stk}">${STATUS[stk].l}</span></div><div class="meta">${sub}</div>${rows}${r.candidates.length>4?`<div class="pt-more">+${r.candidates.length-4} more</div>`:''}${prob}</button>`;
 }
 
 /* ---------- detail ---------- */
@@ -279,6 +293,12 @@ function banner(r){const el=document.getElementById('pt-banner');if(!LIVE){el.cl
     too_close:'Too close to call — '+(pj.expected_in||0)+'% of expected vote in',
     awaiting:'Awaiting results.'};
   el.textContent=map[pj.status]||map.awaiting;
+  if(LIVE&&pj.win_prob!=null&&pj.status!=='called'){
+    const p=document.createElement('span');
+    p.className='pt-bprob';
+    p.textContent=`${Math.round(pj.win_prob*100)}% chance it holds`;
+    el.appendChild(p);
+  }
 }
 function overall(r){const pj=r.projection||{winners:[]},win=new Set(pj.winners||[]);
   const max=Math.max(1,...r.candidates.map(c=>Math.max(c.votes,c.projected||0)));let h=`<h3>${LIVE?'Overall result':'Candidates'}</h3>`;

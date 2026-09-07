@@ -10,7 +10,7 @@
 <meta property="og:description" content="{{ self.meta_description() }}">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}?v=3">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}?v=5">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -31,6 +31,16 @@
     </nav>
   </div>
 </header>
+
+<div class="livestrip" id="livestrip">
+  <div class="wrap row">
+    <span><span class="pulse" aria-hidden="true"></span><b id="ls-count">—</b> polling places reporting</span>
+    <span class="sep">|</span>
+    <span id="ls-when">Polls close 7:00 p.m.</span>
+    <span class="sep">|</span>
+    <span>State Primary &middot; September 8, 2026</span>
+  </div>
+</div>
 
 {% if demo %}
 <div class="wrap"><div class="demo-banner">
