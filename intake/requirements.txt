@@ -11,3 +11,5 @@ pillow-heif>=0.16
 # Gmail API: uses the mailbox's existing OAuth token instead of an app password.
 google-api-python-client>=2.0
 google-auth>=2.0
+# At least one city sent its 2024 return as .xlsx rather than a PDF.
+openpyxl>=3.1

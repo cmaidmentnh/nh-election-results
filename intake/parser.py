@@ -176,6 +176,10 @@ def _sniff(data):
         return "application/pdf"
     if data[4:8] == b"ftyp" and data[8:12] in (b"heic", b"heix", b"hevc", b"mif1", b"msf1"):
         return "image/heic"
+    if data[:4] == b"PK\x03\x04":
+        # A zip container. .xlsx is the one that matters: at least one town sent
+        # its results as a spreadsheet in 2024.
+        return "application/zip"
     return None
 
 
@@ -213,6 +217,56 @@ def _prepare_image(data, media_type):
         if media_type in ("image/jpeg", "image/png", "image/gif", "image/webp"):
             return data, media_type
         return None, None
+
+
+def _spreadsheet_text(path):
+    """An .xlsx of results rendered as plain rows the model can read.
+
+    At least one city sent its 2024 return as a spreadsheet, and a picture of a
+    spreadsheet is not what arrives - the file itself does.
+    """
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        log.warning("openpyxl not installed; cannot read %s", path)
+        return ""
+    try:
+        wb = load_workbook(path, read_only=True, data_only=True)
+    except Exception:
+        log.exception("Could not open spreadsheet %s", path)
+        return ""
+
+    out = []
+    for ws in wb.worksheets:
+        out.append(f"--- sheet: {ws.title} ---")
+        for row in ws.iter_rows(values_only=True):
+            cells = ["" if c is None else str(c).strip() for c in row]
+            if any(cells):
+                out.append(" | ".join(cells).rstrip(" |"))
+            if len(out) > 4000:
+                out.append("(truncated)")
+                break
+    wb.close()
+    return "\n".join(out)
+
+
+def spreadsheet_texts(paths):
+    """Text extracted from any spreadsheet attachments, for the prompt body."""
+    chunks = []
+    for p in (paths or []):
+        path = Path(p)
+        try:
+            if not path.exists():
+                continue
+            head = path.open("rb").read(8)
+        except OSError:
+            continue
+        if head[:4] != b"PK\x03\x04" and path.suffix.lower() not in (".xlsx", ".xlsm"):
+            continue
+        text = _spreadsheet_text(path)
+        if text:
+            chunks.append(f"[spreadsheet attachment: {path.name}]\n{text}")
+    return "\n\n".join(chunks)
 
 
 def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
@@ -286,9 +340,12 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
             f"POLLING PLACE: {municipality}\n"
             f"BALLOT FOR THIS POLLING PLACE:\n{roster_text}\n\n"
             f"--- REPORT ---\nFrom: {sender}\nSubject: {subject}\n\n"
-            f"{body or '(no text; results are in the attached image)'}"
+            f"{body or '(no text; results are in the attached file)'}"
         ),
     })
+    sheets = spreadsheet_texts(attachments)
+    if sheets:
+        content.append({"type": "text", "text": f"\n--- ATTACHED SPREADSHEET ---\n{sheets}"})
     resp = client().messages.parse(
         model=config.MODEL,
         max_tokens=16000,
