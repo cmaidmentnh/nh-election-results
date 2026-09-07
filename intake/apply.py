@@ -82,6 +82,8 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
 
     Returns a summary dict for logging and for the operator ping.
     """
+    if not municipality:
+        raise ValueError("apply_extraction requires a resolved municipality")
     cursor = conn.cursor()
     user_id = store.bot_user_id(conn)
     applied, queued = 0, 0

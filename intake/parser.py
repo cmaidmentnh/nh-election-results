@@ -81,7 +81,27 @@ You are given the EXACT ballot for one polling place: every race with its race_i
 and every candidate with its candidate_id. Your only job is to attach the reported \
 numbers to those ids.
 
-Rules:
+THIS IS A PRIMARY. THERE ARE TWO SEPARATE BALLOTS.
+The Republican ballot and the Democratic ballot are different elections held the \
+same day. The same office appears on BOTH, with a DIFFERENT race_id and a \
+different set of candidates. Governor on the Republican ballot and Governor on the \
+Democratic ballot are not the same race. Choosing the wrong one files a \
+candidate's votes under the wrong party, which is worse than not filing them at \
+all. So:
+- A report usually states its party once, at the top ("Republican primary", "GOP", \
+  "R side", "Dem results"). That party applies to every line in the report until \
+  the report says otherwise.
+- If the party is never stated, use the ballot the reported candidates actually \
+  appear on - the two candidate lists do not overlap.
+- If a line could sit on either ballot and nothing resolves it, return race_id=0 \
+  and let a human decide. Never guess between the two.
+
+Every race listed in the ballot above IS on this town's ballot. If the report names \
+an office you can see above - including abbreviations like "Exec Council D4", "EC4", \
+"CD1", "Sheriff", "Reg of Deeds" - use that race_id. Do not claim a race is absent \
+when it is listed.
+
+Other rules:
 - Only ever use a race_id and candidate_id that appear in the ballot above. Never \
 invent one.
 - If a reported name does not match any candidate on that ballot, still return the \
@@ -90,12 +110,12 @@ Do NOT force it onto the nearest name.
 - Match on surname where the ballot is unambiguous; if two candidates in the same \
 race share a surname, only match when the report distinguishes them, otherwise \
 return candidate_id=0.
-- This is a primary with a Republican ballot and a Democratic ballot. The same \
-office appears on both. Use the party stated or implied by the report; if a race \
-appears on both ballots and the report does not say which, return race_id=0.
 - Votes written as "412" and "412 votes" and "412 (52%)" are all 412. Never derive a \
 vote count from a percentage.
-- A total ballots cast / turnout figure is NOT a candidate vote - put it in ballots.
+- A total ballots cast / turnout figure is NOT a candidate vote. Put it in ballots, \
+using the election_id shown in that ballot's header above. A primary reports \
+ballots cast per party, so "1,420 Republican ballots" uses the Republican \
+election_id.
 - Set confidence per line. Use a low value when handwriting is unclear, when a digit \
 is ambiguous, or when the name match was a stretch.
 - If the message contains no vote totals at all (a question, a greeting, "on my way"), \

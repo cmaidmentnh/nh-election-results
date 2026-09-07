@@ -87,6 +87,21 @@ def resolve_municipality(cursor, text):
             return places[key], 1.0 if i == 0 else 0.95
         if key in ALIASES and normkey(ALIASES[key]) in places:
             return places[normkey(ALIASES[key])], 0.95
+
+    # Real subject lines read "Bedford - R primary", not "Bedford". Look for a
+    # place name inside the text, longest first so "Manchester Ward 3" wins over
+    # any shorter name it contains. Only unambiguous hits count.
+    hay = " " + re.sub(r"[^A-Z0-9]+", " ", (text or "").upper()) + " "
+    hits = set()
+    for k, name in places.items():
+        pattern = " " + re.sub(r"[^A-Z0-9]+", " ", name.upper()).strip() + " "
+        if pattern in hay:
+            hits.add(name)
+    if hits:
+        # Drop names wholly contained in a longer hit ("Salem" inside "Salem Depot").
+        best = {h for h in hits if not any(h != o and h in o for o in hits)}
+        if len(best) == 1:
+            return best.pop(), 0.9
     return None, 0.0
 
 
@@ -132,8 +147,13 @@ def roster_for(cursor, municipality):
     for race in races:
         by_party.setdefault(party_of.get(race["election_id"], ""), []).append(race)
 
+    eid_of_party = {}
+    for e in elections:
+        eid_of_party[e["party"] or ""] = e["id"]
+
     for party in sorted(by_party, key=lambda p: (p != "Republican", p)):
-        lines.append(f"\n=== {party.upper() or 'GENERAL'} BALLOT ===")
+        lines.append(f"\n=== {party.upper() or 'GENERAL'} BALLOT "
+                     f"(election_id={eid_of_party.get(party, 0)}) ===")
         for race in by_party[party]:
             seats = race["seats"] or 1
             label = race["label"] or race["office"]
