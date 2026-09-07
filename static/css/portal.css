@@ -235,3 +235,6 @@ table.pt-ptable { border-collapse: collapse; width: 100%; font-size: var(--rs-t-
 @media (min-width: 1100px) {
   #pt-map { height: clamp(420px, 62vh, 680px); }
 }
+
+/* Same for the district/precinct map in the detail panel. */
+#pt-bigmap { max-width: 820px; margin-left: auto; margin-right: auto; }
