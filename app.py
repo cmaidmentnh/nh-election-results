@@ -1049,10 +1049,24 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                 'projection': {'status': 'awaiting', 'winners': [], 'expected_in': 0}}
 
     race_id, seats = race['id'], race['seats']
-    cands = cur.execute("""SELECT c.id AS cid, c.name AS name FROM race_candidates rc
-                           JOIN candidates c ON rc.candidate_id = c.id
-                           WHERE rc.race_id = ? AND rc.recruitment_filing_id > 0
-                           ORDER BY rc.ballot_order, c.name""", (race_id,)).fetchall()
+    # Filed candidates, named write-ins (recruitment_filing_id = -1, added by the
+    # entry screen) and the aggregate write-in line, which lives only in results
+    # and never on the roster. Filtering to filing_id > 0 hid every write-in vote
+    # - including whole races where nobody filed and a write-in decides the
+    # nomination, which is 30 State House seats and 2 State Senate seats this year.
+    cands = cur.execute("""SELECT cid, name, MIN(ord) AS ord FROM (
+                             SELECT c.id AS cid, c.name AS name,
+                                    COALESCE(rc.ballot_order, 900) AS ord
+                               FROM race_candidates rc
+                               JOIN candidates c ON rc.candidate_id = c.id
+                              WHERE rc.race_id = ?
+                             UNION
+                             SELECT c.id, c.name, 950
+                               FROM results res
+                               JOIN candidates c ON res.candidate_id = c.id
+                              WHERE res.race_id = ?
+                           ) GROUP BY cid, name
+                           ORDER BY ord, name""", (race_id, race_id)).fetchall()
     name_by_id = {c['cid']: c['name'] for c in cands}
 
     precs = _precincts_for(cur, office_name, level, county, district)
