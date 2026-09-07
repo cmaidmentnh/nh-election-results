@@ -251,3 +251,15 @@ table.pt td:first-child{font-family:var(--sans)}
 .tip .tr{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 .tip .tr + .tr{border-top:1px solid var(--hair)}
 .tip .tr .v{font-family:var(--mono);font-weight:600;white-space:nowrap}
+
+/* Button children were inheriting the UA's centred alignment. */
+.dist .cr .n2{text-align:left}
+.dist .t,.dist .dm{text-align:left}
+
+/* Keep the hovercard inside the map panel. In a narrow sticky column a
+   cursor-anchored tooltip runs off the edge and over the race list; clamp its
+   width and let Leaflet flip it to whichever side has room. */
+.mapbox{isolation:isolate}
+.leaflet-tooltip.tip{width:auto;max-width:min(240px,calc(100vw - 48px));
+  box-shadow:0 6px 22px rgba(16,17,18,.16);z-index:650}
+@media(min-width:981px){.leaflet-tooltip.tip{max-width:230px}}

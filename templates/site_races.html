@@ -240,7 +240,7 @@ function renderMap(){
       onEachFeature:(f,l)=>{
         const code=String(f.properties[cfg.prop]).trim();
         if(!contested(data.districts[code],P))return;
-        l.bindTooltip(tipFor(code),{className:'tip',sticky:true});
+        l.bindTooltip(tipFor(code),{className:'tip',sticky:true,direction:'auto',opacity:1});
         l.on('mouseover',()=>l.setStyle({weight:2,color:'#111214'}));
         l.on('mouseout',()=>layer.resetStyle(l));
         l.on('click',()=>openDetail(O,code,P));
@@ -326,7 +326,7 @@ function detailMap(r,p){
             Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([n,v])=>
               `<div class="tr"><span>${esc(n)}</span><span class="v">${nf.format(v)} ${sum?Math.round(100*v/sum):0}%</span></div>`).join('');
         }
-        l.bindTooltip(html,{className:'tip',sticky:true});
+        l.bindTooltip(html,{className:'tip',sticky:true,direction:'auto',opacity:1});
         try{b.extend(l.getBounds());}catch(e){}
       }}).addTo(dmap);
     dmap.fitBounds(b.isValid()?b.pad(.08):NH);
