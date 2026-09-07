@@ -134,7 +134,8 @@ def reconcile(extraction, index):
                       if l.race_id == check.race_id)
         accounted = counted + (check.blanks or 0) + (check.overvotes or 0)
         if accounted != check.stated_total:
-            label = (index.get(check.race_id) or {}).get("label", check.race_id)
+            meta = index.get(check.race_id) or {}
+            label = meta.get("display") or meta.get("label") or check.race_id
             bad[check.race_id] = (
                 f"Does not reconcile: {accounted:,} accounted for "
                 f"({counted:,} votes + {check.blanks or 0:,} blanks) "
@@ -186,7 +187,7 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             confidence=line.confidence,
         )
 
-        label = race["label"] if race else (line.race_text or "?")
+        label = (race.get("display") or race["label"]) if race else (line.race_text or "?")
         party = race["party"][:1] if race else "?"
         name = (race["names"].get(line.candidate_id) if race else None) or line.candidate_text
 

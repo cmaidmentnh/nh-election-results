@@ -190,11 +190,19 @@ def roster_for(cursor, municipality):
                 cand_ids.add(c["candidate_id"])
             lines.append(f"    candidate_id={race['writein_id']}  Write-in (aggregate line)")
             cand_ids.add(race["writein_id"])
+            # race_label() gives only the district or county, so several
+            # different offices share one label - every county-wide office in a
+            # county is just "Hillsborough", and State Representative and
+            # Delegate to the State Convention are both "Hillsborough District 2".
+            # Anything shown to a human needs the office named.
+            display = label if label == race["office"] else f"{race['office']} - {label}"
+
             index[race["id"]] = {
                 "election_id": race["election_id"],
                 "party": party,
                 "office": race["office"],
                 "label": label,
+                "display": display,
                 "seats": seats,
                 "candidate_ids": cand_ids,
                 "writein_id": race["writein_id"],
