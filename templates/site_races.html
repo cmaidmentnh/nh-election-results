@@ -25,6 +25,7 @@
     <div class="grp" id="offices"></div>
     <div class="seg" id="party"></div>
     <div class="seg" id="base"></div>
+    <div class="seg" id="scope"></div>
   </div>
 
   <div class="split" id="split">
@@ -84,7 +85,7 @@ function floCodes(){
 }
 let geoMap=null, houseByCode=null, townsByName=null;
 let map=null, layer=null, cfg=null, dmap=null, dlayer=null;
-let O=null, P='R', BASEV='Base', data=null, board={}, timer=null, ctx=null;
+let O=null, P='R', BASEV='Base', SCOPE='contested', data=null, board={}, timer=null, ctx=null;
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);
@@ -116,6 +117,13 @@ function buildParty(){
     b.textContent=PARTY[p].n; b.className=(p===P?'on '+p:'');
     b.onclick=()=>{P=p;buildParty();load();}; el.appendChild(b);});
 }
+function buildScope(){
+  const el=document.getElementById('scope'); el.innerHTML='';
+  [['contested','Contested'],['all','All races']].forEach(([v,l])=>{
+    const b=document.createElement('button');
+    b.textContent=l; b.className=(v===SCOPE?'on':'');
+    b.onclick=()=>{SCOPE=v;buildScope();load();}; el.appendChild(b);});
+}
 function buildBase(){
   const el=document.getElementById('base');
   el.style.display = O.level==='house' ? '' : 'none';
@@ -129,7 +137,7 @@ function selectOffice(o){
   O=o; ctx=null; document.getElementById('detail').classList.remove('show');
   buildOffices();
   J('/api/contested/'+o.key).then(d=>{
-    if(o!==O)return; data=d; buildParty(); buildBase();
+    if(o!==O)return; data=d; buildParty(); buildBase(); buildScope();
     if(o.level==='house'&&!geoMap) J('/api/precinct-geo-map').then(m=>geoMap=m);
     load();
   });
@@ -140,7 +148,7 @@ function load(){
 }
 function refresh(){
   const o=O,p=P;
-  fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
+  fetch('/api/contested/'+o.key+'/board?party='+p+(SCOPE==='all'?'&scope=all':'')+Q).then(r=>r.json()).then(b=>{
     if(o!==O||p!==P)return;
     board={}; b.races.forEach(r=>board[r.code]=r);
     counts();
@@ -189,7 +197,9 @@ function card(r){
         <span class="v2">${nf.format(c.votes)} <span>${pc}%</span></span></div>
       <div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[P].c}"></i></div></div>`;
   }).join('');
-  const s=ST[r.projection.status]||ST.awaiting;
+  let s=ST[r.projection.status]||ST.awaiting;
+  const filed=r.candidates.filter(c=>c.name!=='Write-in').length;
+  if(filed<=r.seats) s={l: filed===0 ? 'Write-in only' : 'Unopposed', c:'#6b7280'};
   return `<button type="button" class="dist" data-code="${r.code}">
     <div class="t"><span class="dn">${esc(distName(O,r))}</span>
       <span class="tag" style="color:${s.c}">${s.l}</span></div>
@@ -220,8 +230,11 @@ function legend(){
 }
 function styleOf(code){
   const rec=data.districts[code];
-  if(!contested(rec,P)) return {fillColor:'#eef0f2',fillOpacity:.85,color:'#fff',weight:.6,interactive:false};
   const b=board[code];
+  // In "all races" mode every race on the ballot is live, so only districts
+  // with no race at all stay blank.
+  if(!b && !contested(rec,P))
+    return {fillColor:'#eef0f2',fillOpacity:.85,color:'#fff',weight:.6,interactive:false};
   const s=b?(ST[b.projection.status]||ST.awaiting):ST.awaiting;
   return {fillColor:s.c,fillOpacity:.88,color:'#fff',weight:.8,interactive:true};
 }
@@ -253,7 +266,7 @@ function renderMap(){
       style:f=>styleOf(String(f.properties[cfg.prop]).trim()),
       onEachFeature:(f,l)=>{
         const code=String(f.properties[cfg.prop]).trim();
-        if(!contested(data.districts[code],P))return;
+        if(!board[code] && !contested(data.districts[code],P))return;
         l.bindTooltip(tipFor(code),{className:'tip',sticky:true,direction:'auto',opacity:1});
         l.on('mouseover',()=>l.setStyle({weight:2,color:'#111214'}));
         l.on('mouseout',()=>layer.resetStyle(l));

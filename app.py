@@ -1328,19 +1328,22 @@ def api_contested_board(office_key):
     party = request.args.get('party', 'R')
     party_full = 'Republican' if party == 'R' else 'Democratic'
     demo = request.args.get('demo') == '1'
+    # ?scope=all returns every race on the ballot, not only the contested ones.
+    # Uncontested and write-in-only races still take votes and still need to be
+    # visible on election night - an uncontested seat is a result too.
+    scope_all = request.args.get('scope') == 'all'
 
     conn = _contested_db()
     cur = conn.cursor()
-    # Contested races for this party+office.
-    rows = cur.execute("""
+    rows = cur.execute(f"""
         SELECT r.county AS county, r.district AS district, r.seats AS seats,
-               COUNT(rc.candidate_id) AS ncand
+               COUNT(CASE WHEN rc.recruitment_filing_id > 0 THEN 1 END) AS ncand
         FROM races r
         JOIN elections e ON r.election_id = e.id
         JOIN offices o   ON r.office_id = o.id
-        JOIN race_candidates rc ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        LEFT JOIN race_candidates rc ON rc.race_id = r.id
         WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ? AND o.name = ?
-        GROUP BY r.id HAVING ncand > r.seats
+        GROUP BY r.id {'' if scope_all else 'HAVING ncand > r.seats'}
     """, (party_full, office_name)).fetchall()
 
     board = []
