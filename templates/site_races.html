@@ -117,6 +117,30 @@ const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]
 const G=f=>geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);
 const contested=(rec,p)=>rec&&rec.parties&&rec.parties[p]>rec.seats;
 
+/* Nudge an open tooltip back inside the map panel. Leaflet positions
+   cursor-anchored tooltips without regard to the container, so near an edge
+   they hang over the race list beside them. */
+function clampTip(m){
+  m.on('tooltipopen', e=>{
+    const el=e.tooltip.getElement(); if(!el) return;
+    el.style.maxWidth='';
+    requestAnimationFrame(()=>{
+      const mb=m.getContainer().getBoundingClientRect();
+      const tb=el.getBoundingClientRect();
+      let dx=0;
+      if(tb.right > mb.right-4)  dx -= (tb.right - (mb.right-4));
+      if(tb.left + dx < mb.left+4) dx += ((mb.left+4) - (tb.left+dx));
+      let dy=0;
+      if(tb.bottom > mb.bottom-4) dy -= (tb.bottom - (mb.bottom-4));
+      if(tb.top + dy < mb.top+4)  dy += ((mb.top+4) - (tb.top+dy));
+      if(dx||dy){
+        const cur=el.style.transform||'';
+        el.style.transform = cur + ` translate(${Math.round(dx)}px, ${Math.round(dy)}px)`;
+      }
+    });
+  });
+}
+
 /* Fit to the state's real outline, not its bounding box - the box takes in a
    lot of ocean, Vermont and Maine, which left New Hampshire small in the
    panel. A tiny padding keeps the border off the edge. */
@@ -288,6 +312,7 @@ function tipFor(code){
 function renderMap(){
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
   map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
+  clampTip(map);
   G('nh-towns.geojson').then(g=>{
     const base=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
       .addTo(map);
@@ -324,6 +349,7 @@ function stateMap(){
   document.getElementById('split').classList.remove('solo');
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
   map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
+  clampTip(map);
   document.getElementById('legend').innerHTML='';
   Promise.all([
     fetch('/api/contested/'+O.key+'/results?code=STATE&party='+P+Q).then(r=>r.json()),
@@ -414,6 +440,7 @@ function fcFor(precincts){
 function detailMap(r,p){
   if(dmap){try{dmap.remove();}catch(e){}dmap=null;}
   dmap=L.map('detmap',{attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
+  clampTip(dmap);
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
     if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>
@@ -458,6 +485,6 @@ document.getElementById('back').onclick=()=>{
   paint();
 };
 
-selectOffice(BY['state-house']);
+selectOffice(BY['us-senate']);
 </script>
 {% endblock %}
