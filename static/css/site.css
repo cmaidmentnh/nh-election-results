@@ -268,3 +268,20 @@ table.pt td:first-child{font-family:var(--sans)}
    short name sits against the left edge rather than floating in the track. */
 .dist .cr .n2{justify-self:start}
 .dist .cr .v2{justify-self:end}
+
+/* Deterministic row: name left, figure right, bar beneath. Grid alignment was
+   leaving short names floating in their track. */
+.dist .cr{display:block;margin-bottom:8px}
+.dist .crtop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.dist .crtop .n2{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+                 white-space:nowrap;text-align:left}
+.dist .crtop .v2{flex:0 0 auto;text-align:right}
+.dist .cb{display:block;margin-top:3px}
+
+/* The hovercard was clamped so tight that names and the status line wrapped. */
+.leaflet-tooltip.tip{width:max-content;min-width:200px;
+  max-width:min(280px,calc(100vw - 40px))}
+.tip .tn{white-space:normal;line-height:1.25}
+.tip .tm{white-space:nowrap;gap:14px}
+.tip .tr span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  max-width:150px}

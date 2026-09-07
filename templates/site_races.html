@@ -177,8 +177,9 @@ function card(r){
   const max=Math.max(1,...r.candidates.map(c=>c.votes));
   const rows=r.candidates.slice(0,4).map(c=>{
     const w=win.has(c.name), pc=tot?Math.round(100*c.votes/tot):0;
-    return `<div class="cr"><div class="n2 ${w?'w':''}">${esc(c.name)}</div>
-      <div class="v2">${nf.format(c.votes)} <span>${pc}%</span></div>
+    return `<div class="cr">
+      <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}</span>
+        <span class="v2">${nf.format(c.votes)} <span>${pc}%</span></span></div>
       <div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[P].c}"></i></div></div>`;
   }).join('');
   const s=ST[r.projection.status]||ST.awaiting;
