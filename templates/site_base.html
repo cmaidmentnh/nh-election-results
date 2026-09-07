@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{% block title %}New Hampshire Election Results{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}Live New Hampshire election results, town by town.{% endblock %}">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.meta_description() }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="{{ url_for('static', filename='vendor/plex/plex-sans-700.woff2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=1">
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="ticker">
+  <div class="w">
+    <span><span class="live-dot"></span><b id="tk-count">—</b> <span class="dim">of</span> <b id="tk-total">320</b> <span class="dim">polling places reporting</span></span>
+    <span class="dim" id="tk-when">Polls close 7:00 p.m.</span>
+  </div>
+</div>
+
+<header class="plate">
+  <div class="w">
+    <a class="wordmark" href="/results{{ '?demo=1' if demo else '' }}">
+      New Hampshire <span>Election Results</span>
+    </a>
+    <div class="meta">
+      State Primary<br>September 8, 2026
+    </div>
+  </div>
+</header>
+
+<nav class="sections">
+  <div class="w">
+    <a href="/results{{ '?demo=1' if demo else '' }}" class="{{ 'on' if active == 'topline' }}">Topline</a>
+    <a href="/contested{{ '?demo=1' if demo else '' }}" class="{{ 'on' if active == 'races' }}">All races &amp; maps</a>
+  </div>
+</nav>
+
+{% if demo %}
+<div class="w"><div class="notice">Demo mode — simulated numbers so the live experience can be previewed. These are not real votes.</div></div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer class="f">
+  <div class="w">
+    <p><strong>Unofficial results.</strong> Compiled from town clerks and reported by local
+      volunteers as they come in. Projections are statistical estimates from the vote
+      counted so far — not official calls.</p>
+    <p>Official certified results come from the
+      <a href="https://www.sos.nh.gov/" rel="noopener">New Hampshire Secretary of State</a>.</p>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

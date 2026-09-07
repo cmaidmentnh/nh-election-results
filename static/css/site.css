@@ -1,0 +1,163 @@
+/* ============================================================================
+   nhelectionresults.org — built from scratch.
+
+   Direction: an election broadsheet. White paper, black ink, hairline rules
+   instead of cards and shadows. Density comes from typography and rules, not
+   from boxes floating on grey. Figures are monospaced so columns of votes hold
+   still as they update.
+
+   Party colours validated against white (dataviz six checks):
+     #c81e1e / #1e4fc4 — CVD dE 26.0 protan, normal-vision 35.3, both >= 3:1.
+   Status green #146c43 vs amber #b26a00 always carries its text label.
+   ========================================================================= */
+
+@font-face { font-family:"PS"; src:url("/static/vendor/plex/plex-sans-400.woff2") format("woff2");
+             font-weight:400; font-display:swap; }
+@font-face { font-family:"PS"; src:url("/static/vendor/plex/plex-sans-500.woff2") format("woff2");
+             font-weight:500; font-display:swap; }
+@font-face { font-family:"PS"; src:url("/static/vendor/plex/plex-sans-600.woff2") format("woff2");
+             font-weight:600; font-display:swap; }
+@font-face { font-family:"PS"; src:url("/static/vendor/plex/plex-sans-700.woff2") format("woff2");
+             font-weight:700; font-display:swap; }
+@font-face { font-family:"PM"; src:url("/static/vendor/plex/plex-mono-500.woff2") format("woff2");
+             font-weight:500; font-display:swap; }
+@font-face { font-family:"PM"; src:url("/static/vendor/plex/plex-mono-600.woff2") format("woff2");
+             font-weight:600; font-display:swap; }
+
+:root {
+  --paper:#ffffff; --ink:#101112; --ink2:#54585e; --ink3:#8a8f96;
+  --rule:#111214; --hair:#d8dade; --tint:#f6f6f4;
+  --R:#c81e1e; --D:#1e4fc4; --Rt:#c81e1e1f; --Dt:#1e4fc41f;
+  --good:#146c43; --warn:#b26a00;
+  --sans:"PS",ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"PM",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.45 var(--sans);
+     -webkit-font-smoothing:antialiased}
+a{color:inherit}
+.w{max-width:1300px;margin:0 auto;padding:0 24px}
+@media(max-width:640px){.w{padding:0 16px}}
+
+/* ---- masthead: a nameplate, not a nav bar ------------------------------- */
+.plate{border-bottom:3px solid var(--rule)}
+.plate .w{display:flex;align-items:flex-end;justify-content:space-between;
+          gap:24px;padding-top:18px;padding-bottom:10px;flex-wrap:wrap}
+.wordmark{font-weight:700;font-size:clamp(22px,3.4vw,34px);line-height:1;
+          letter-spacing:-.03em;text-decoration:none;display:block}
+.wordmark span{color:var(--ink3);font-weight:400}
+.plate .meta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+             text-transform:uppercase;color:var(--ink2);text-align:right;line-height:1.7}
+
+nav.sections{border-bottom:1px solid var(--hair)}
+nav.sections .w{display:flex;gap:0;flex-wrap:wrap}
+nav.sections a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+               text-transform:uppercase;text-decoration:none;color:var(--ink2);
+               padding:11px 0;margin-right:26px;border-bottom:2px solid transparent}
+nav.sections a:hover{color:var(--ink)}
+nav.sections a.on{color:var(--ink);border-bottom-color:var(--rule)}
+
+/* ---- ticker ------------------------------------------------------------- */
+.ticker{background:var(--ink);color:#fff;font-family:var(--mono);font-size:11px;
+        letter-spacing:.1em}
+.ticker .w{display:flex;gap:22px;padding:7px 24px;flex-wrap:wrap;align-items:center}
+.ticker b{font-weight:600}
+.ticker .dim{color:#9aa0a8}
+.live-dot{width:6px;height:6px;background:#3ddc84;display:inline-block;margin-right:7px;
+          animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+.notice{border-left:3px solid var(--warn);background:#fdf7ec;color:#7a4a00;
+        padding:9px 14px;margin:16px 0;font-size:13px;font-weight:500}
+
+/* ---- section heads ------------------------------------------------------ */
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+      border-bottom:2px solid var(--rule);padding-bottom:6px;margin:34px 0 0;flex-wrap:wrap}
+.head h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
+.head .note{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+            text-transform:uppercase;color:var(--ink3)}
+
+/* ---- the lead figure ---------------------------------------------------- */
+.lead{display:grid;grid-template-columns:1fr auto;gap:36px;align-items:end;
+      padding:26px 0 20px}
+@media(max-width:820px){.lead{grid-template-columns:1fr;gap:18px}}
+.lead h1{margin:0;font-size:clamp(30px,5vw,52px);line-height:1.02;
+         letter-spacing:-.035em;font-weight:700;max-width:16ch}
+.lead p{margin:10px 0 0;color:var(--ink2);max-width:52ch;font-size:15px}
+.tally{text-align:right;font-family:var(--mono)}
+@media(max-width:820px){.tally{text-align:left}}
+.tally .n{font-size:clamp(38px,7vw,60px);font-weight:600;line-height:.95;
+          letter-spacing:-.03em;display:block}
+.tally .n small{font-size:.42em;color:var(--ink3);font-weight:500}
+.tally .cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+            color:var(--ink3);margin-top:6px}
+.rulebar{height:3px;background:var(--hair);margin-top:10px;min-width:220px}
+.rulebar i{display:block;height:100%;background:var(--rule);
+           transition:width .8s cubic-bezier(.2,.6,.3,1)}
+
+/* ---- race block: a table, not a card ------------------------------------ */
+.race{border-bottom:1px solid var(--hair);padding:20px 0}
+.race:last-child{border-bottom:0}
+.race > h3{font-size:17px;font-weight:700;letter-spacing:-.02em;margin:0 0 2px}
+.race .sub{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+@media(max-width:860px){.cols{grid-template-columns:1fr;gap:22px}}
+.col{min-width:0}
+.col + .col{border-left:1px solid var(--hair);padding-left:40px}
+@media(max-width:860px){.col + .col{border-left:0;padding-left:0;
+  border-top:1px solid var(--hair);padding-top:18px}}
+
+.colhead{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pty{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;
+     text-transform:uppercase}
+.col.R .pty{color:var(--R)} .col.D .pty{color:var(--D)}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+     border:1px solid currentColor;padding:2px 6px;color:var(--ink2)}
+.tag.called{color:var(--good)} .tag.close{color:var(--warn)}
+
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 14px;margin-bottom:11px}
+.row .nm{font-size:15px;font-weight:500;min-width:0;overflow:hidden;
+         text-overflow:ellipsis;white-space:nowrap}
+.row .nm .w-{color:var(--good);font-weight:600}
+.row.win .nm{font-weight:700}
+.row .vt{font-family:var(--mono);font-size:13px;text-align:right;white-space:nowrap}
+.row .vt b{font-weight:600;font-size:14px}
+.row .vt span{color:var(--ink3)}
+.bar{grid-column:1/3;height:6px;background:#eceef0;position:relative;margin-top:3px}
+.bar i{position:absolute;left:0;top:0;bottom:0;transition:width .8s cubic-bezier(.2,.6,.3,1)}
+.col.R .bar .v{background:var(--R)} .col.D .bar .v{background:var(--D)}
+.col.R .bar .p{background:var(--Rt)} .col.D .bar .p{background:var(--Dt)}
+
+.odds{border-top:1px solid var(--hair);margin-top:14px;padding-top:10px;
+      font-size:13px;color:var(--ink2);display:flex;gap:8px;align-items:baseline}
+.odds b{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink)}
+.odds .who{font-weight:600;color:var(--ink)}
+.foot{margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink3);
+      display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---- chamber strip ------------------------------------------------------ */
+.chambers{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;padding:18px 0 4px}
+@media(max-width:860px){.chambers{grid-template-columns:1fr;gap:18px}}
+.chambers > div + div{border-left:1px solid var(--hair);padding-left:40px}
+@media(max-width:860px){.chambers > div + div{border-left:0;padding-left:0}}
+.ch h4{margin:0 0 10px;font-size:14px;font-weight:700}
+.ch .line{display:grid;grid-template-columns:88px 1fr auto;gap:12px;align-items:center;
+          font-size:13px;margin-bottom:7px}
+.ch .line .n{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+
+.more{display:flex;justify-content:space-between;align-items:center;gap:16px;
+      border-top:2px solid var(--rule);border-bottom:2px solid var(--rule);
+      padding:16px 0;margin:34px 0;text-decoration:none;font-weight:600}
+.more:hover{background:var(--tint)}
+.more .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+         text-transform:uppercase;color:var(--ink3);font-weight:500;display:block;margin-top:3px}
+
+footer.f{border-top:1px solid var(--hair);margin-top:40px;padding:22px 0 50px;
+         color:var(--ink3);font-size:12px}
+footer.f p{margin:4px 0;max-width:80ch}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;
+  transition-duration:.001ms!important}}

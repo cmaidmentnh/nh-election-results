@@ -1313,7 +1313,7 @@ def api_primary_topline():
 def primary_night():
     """Election-night front page: both primaries, topline first."""
     demo = request.args.get('demo') == '1'
-    return render_template('primary_night.html', demo=demo,
+    return render_template('site_topline.html', demo=demo,
                            initial=_topline_payload(demo=demo))
 
 

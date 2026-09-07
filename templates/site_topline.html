@@ -1,0 +1,134 @@
+{% extends "site_base.html" %}
+{% set active = 'topline' %}
+{% block title %}New Hampshire Primary Results — September 8, 2026{% endblock %}
+{% block meta_description %}Live results for the New Hampshire state primary: Governor, U.S. Senate and both U.S. House districts, Republican and Democratic, with win probabilities and town-by-town maps.{% endblock %}
+
+{% block content %}
+<main class="w">
+
+  <section class="lead">
+    <div>
+      <h1>New Hampshire Primary Results</h1>
+      <p>Republican and Democratic ballots side by side. Each race shows the vote
+         counted so far, the projected total, and how likely the current order is to hold.</p>
+    </div>
+    <div class="tally">
+      <span class="n" id="lead-n">{{ initial.places.reported }}<small>/{{ initial.places.total }}</small></span>
+      <div class="cap">Polling places reporting</div>
+      <div class="rulebar"><i id="lead-bar" style="width:{{ initial.places.pct }}%"></i></div>
+    </div>
+  </section>
+
+  <div class="head"><h2>Statewide &amp; federal</h2>
+    <span class="note" id="upd">&nbsp;</span></div>
+  <div id="races"></div>
+
+  <div class="head"><h2>The chambers</h2>
+    <span class="note">Races with results in</span></div>
+  <div class="chambers" id="chambers"></div>
+
+  <a class="more" href="/contested{{ '?demo=1' if demo else '' }}">
+    <span>Every race, town by town
+      <span class="k">State Senate · all 203 House districts · Executive Council · county offices</span></span>
+    <span>→</span>
+  </a>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DEMO = {{ 'true' if demo else 'false' }};
+const nf = new Intl.NumberFormat('en-US');
+const LABEL = {called:'Called', likely:'Likely', leaning:'Leaning',
+               too_close:'Too close', awaiting:'Awaiting'};
+const esc = t => String(t ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function tag(st){
+  const cls = st === 'called' ? ' called' : (st === 'too_close' ? ' close' : '');
+  return `<span class="tag${cls}">${LABEL[st] || st}</span>`;
+}
+
+function odds(pj){
+  if (!pj) return '';
+  if (pj.status === 'called' && (pj.winners||[]).length)
+    return `<div class="odds"><b>✓</b><span>Projected winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
+  if (pj.win_prob == null)
+    return `<div class="odds"><span>Too early to estimate</span></div>`;
+  return `<div class="odds"><b>${Math.round(pj.win_prob*100)}%</b>
+    <span>chance <span class="who">${esc(pj.leader || (pj.winners||[])[0] || '')}</span> holds on</span></div>`;
+}
+
+function col(party, s){
+  if (!s) return `<div class="col ${party}"><div class="colhead">
+      <span class="pty">${party === 'R' ? 'Republican' : 'Democratic'}</span></div>
+      <div class="foot">No race on this ballot</div></div>`;
+  const cands = s.candidates || [];
+  const top = Math.max(1, ...cands.map(c => Math.max(c.votes||0, c.projected||0)));
+  const pj = s.projection || {}, win = new Set(pj.winners || []);
+  const rows = cands.map(c => {
+    const v = Math.round(100*(c.votes||0)/top), p = Math.round(100*(c.projected||0)/top);
+    const w = pj.status === 'called' && win.has(c.name);
+    return `<div class="row ${w?'win':''}">
+      <div class="nm">${esc(c.name)}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="vt"><b>${nf.format(c.votes||0)}</b> <span>${(c.pct ?? 0).toFixed(1)}%</span></div>
+      <div class="bar">${p>v?`<i class="p" style="width:${p}%"></i>`:''}<i class="v" style="width:${v}%"></i></div>
+    </div>`;
+  }).join('') || '<div class="foot">No candidates filed — decided by write-in</div>';
+  const rep = s.reporting || {};
+  return `<div class="col ${party}">
+    <div class="colhead"><span class="pty">${party==='R'?'Republican':'Democratic'}</span>${tag(pj.status||'awaiting')}</div>
+    ${rows}${odds(pj)}
+    <div class="foot"><span>${rep.expected_in ?? 0}% of expected vote counted</span>
+      ${rep.projected_total?`<span>~${nf.format(rep.projected_total)} total</span>`:''}</div>
+  </div>`;
+}
+
+function render(d){
+  document.getElementById('races').innerHTML = (d.blocks||[]).map(b => `
+    <section class="race">
+      <h3>${esc(b.label)}</h3>
+      <div class="cols">${col('R', b.sides.R)}${col('D', b.sides.D)}</div>
+    </section>`).join('');
+
+  document.getElementById('chambers').innerHTML = (d.chambers||[]).map(c => `
+    <div class="ch"><h4>${esc(c.office)}</h4>
+      ${Object.entries(c.parties).map(([p,v]) => {
+        const pct = v.total ? Math.round(100*v.done/v.total) : 0;
+        return `<div class="line"><span>${p==='R'?'Republican':'Democratic'}</span>
+          <span class="bar" style="position:relative;height:6px;background:#eceef0">
+            <i style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${p==='R'?'var(--R)':'var(--D)'}"></i></span>
+          <span class="n">${v.done}/${v.total}</span></div>`;}).join('')}
+    </div>`).join('');
+
+  document.getElementById('lead-n').innerHTML =
+    `${nf.format(d.places.reported)}<small>/${nf.format(d.places.total)}</small>`;
+  document.getElementById('lead-bar').style.width = d.places.pct + '%';
+  document.getElementById('tk-count').textContent = nf.format(d.places.reported);
+  document.getElementById('tk-total').textContent = nf.format(d.places.total);
+  const when = d.places.reported
+    ? 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    : 'Polls close 7:00 p.m.';
+  document.getElementById('tk-when').textContent = when;
+  document.getElementById('upd').textContent = when;
+}
+
+render({{ initial | tojson }});
+
+let bad = 0;
+async function refresh(){
+  try {
+    const r = await fetch('/api/primary-topline' + (DEMO?'?demo=1':''), {cache:'no-store'});
+    if (!r.ok) throw 0;
+    render(await r.json()); bad = 0;
+  } catch(e) {
+    // Never blank the page on a failed poll — stale numbers beat no numbers.
+    if (++bad >= 2) document.getElementById('tk-when').textContent = 'Reconnecting…';
+  }
+}
+setInterval(refresh, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refresh();
+});
+</script>
+{% endblock %}
