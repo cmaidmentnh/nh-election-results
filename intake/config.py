@@ -23,7 +23,9 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("INTAKE_MODEL", "claude-opus-5")
 # A town's full return of votes is a lot of structured output, and adaptive
 # thinking is billed against the same ceiling.
-MAX_OUTPUT_TOKENS = int(os.environ.get("INTAKE_MAX_TOKENS", "32000"))
+# Kept under the SDK's non-streaming ceiling; the oversize retry streams.
+MAX_OUTPUT_TOKENS = int(os.environ.get("INTAKE_MAX_TOKENS", "16000"))
+MAX_OUTPUT_TOKENS_RETRY = int(os.environ.get("INTAKE_MAX_TOKENS_RETRY", "48000"))
 
 # --- Email (IMAP) ---------------------------------------------------------
 # Mail to results@electhouserepublicans.com is a Google Group; the mailbox

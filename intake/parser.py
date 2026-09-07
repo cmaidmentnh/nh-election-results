@@ -417,15 +417,30 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
         return resp.parsed_output
     except Exception as exc:
         # A big return-of-votes sheet can run past the output ceiling and come
-        # back as truncated JSON. Losing the whole report over that is the worst
-        # outcome, so retry once with more room before giving up.
+        # back as truncated JSON. Losing the whole town over that is the worst
+        # outcome, so retry once with far more room - which the SDK only allows
+        # when streaming.
         if _retry and "json" in str(exc).lower():
-            log.warning("%s: reply did not parse (%s); retrying with more room",
+            log.warning("%s: reply did not parse (%s); retrying streamed",
                         municipality, str(exc)[:120])
-            return extract(municipality, roster_text, body, subject, sender, attachments,
-                           max_tokens=min((max_tokens or config.MAX_OUTPUT_TOKENS) * 2, 64000),
-                           _retry=False)
+            return _extract_streamed(content)
         raise
+
+
+def _extract_streamed(content):
+    """One extraction with a large output ceiling, which requires streaming."""
+    with client().messages.stream(
+        model=config.MODEL,
+        max_tokens=config.MAX_OUTPUT_TOKENS_RETRY,
+        system=EXTRACT_SYSTEM,
+        thinking={"type": "adaptive"},
+        messages=[{"role": "user", "content": content}],
+        output_config={"format": {"type": "json_schema",
+                                  "schema": Extraction.model_json_schema()}},
+    ) as stream:
+        message = stream.get_final_message()
+    text = next(b.text for b in message.content if b.type == "text")
+    return Extraction.model_validate_json(text)
 
 
 def line_key(line):
