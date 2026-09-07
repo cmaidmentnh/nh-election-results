@@ -26,7 +26,7 @@
 .pt-chip { display: flex; flex-direction: column; padding: .65rem 1.1rem;
            min-width: 96px; flex: 1 1 auto; }
 .pt-chip + .pt-chip { border-left: 1px solid var(--rs-line); }
-.pt-chip .n { font-size: 1.5rem; font-weight: 800; line-height: 1;
+.pt-chip .n { font-family: var(--rs-mono); font-size: 1.45rem; font-weight: 600; line-height: 1;
               letter-spacing: -.03em; color: var(--rs-ink); }
 .pt-chip .l { font-size: var(--rs-t-xs); text-transform: uppercase;
               letter-spacing: .07em; color: var(--rs-ink-3);
@@ -37,20 +37,21 @@
 
 /* ---- controls: one wrapping row ----------------------------------------- */
 .pt-tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: var(--rs-s2); }
-.pt-tab { padding: .45rem .9rem; border: 1px solid var(--rs-line-2);
-          background: var(--rs-card); border-radius: var(--rs-r-pill);
-          cursor: pointer; font: 600 var(--rs-t-md) var(--rs-sans);
-          color: var(--rs-ink-2); }
-.pt-tab:hover { border-color: var(--rs-chrome); color: var(--rs-ink); }
-.pt-tab.on { background: var(--rs-chrome); color: #fff; border-color: var(--rs-chrome); }
+.pt-tab { padding: .5rem .7rem; border: 0; border-bottom: 2px solid transparent;
+          background: none; cursor: pointer; color: var(--rs-ink-3);
+          font-family: var(--rs-mono); font-size: var(--rs-t-xs); font-weight: 500;
+          text-transform: uppercase; letter-spacing: .11em; }
+.pt-tab:hover { color: var(--rs-ink); }
+.pt-tab.on { color: var(--rs-ink); border-bottom-color: var(--rs-ink); }
 .pt-controls { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
                margin-bottom: var(--rs-s4); }
-.pt-seg { display: inline-flex; border: 1px solid var(--rs-line-2);
-          border-radius: var(--rs-r-pill); overflow: hidden; }
-.pt-seg button { border: 0; background: var(--rs-card); padding: .4rem .9rem;
-                 font: 700 var(--rs-t-sm) var(--rs-sans); cursor: pointer;
-                 color: var(--rs-ink-2); }
-.pt-seg button.on { background: var(--rs-chrome); color: #fff; }
+.pt-seg { display: inline-flex; border: 1px solid var(--rs-line-2); }
+.pt-seg button { border: 0; background: var(--rs-card); padding: .4rem .85rem;
+                 font-family: var(--rs-mono); font-size: var(--rs-t-xs);
+                 font-weight: 500; text-transform: uppercase; letter-spacing: .1em;
+                 cursor: pointer; color: var(--rs-ink-2); }
+.pt-seg button + button { border-left: 1px solid var(--rs-line-2); }
+.pt-seg button.on { background: var(--rs-ink); color: #fff; }
 .pt-seg.party button.on.R { background: var(--rs-r); color: #fff; }
 .pt-seg.party button.on.D { background: var(--rs-d); color: #fff; }
 .pt-updated { margin-left: auto; color: var(--rs-ink-3); font-size: var(--rs-t-sm);
@@ -64,7 +65,7 @@
               border-radius: var(--rs-r-lg); overflow: hidden;
               background: var(--rs-card); box-shadow: var(--rs-shadow); }
 #pt-map { height: clamp(340px, 58vh, 620px); }
-.pt-legend { position: absolute; left: 12px; bottom: 12px; z-index: 600;
+.pt-legend { font-family: var(--rs-mono); position: absolute; left: 12px; bottom: 12px; z-index: 600;
              background: rgba(255,255,255,.96); border: 1px solid var(--rs-line);
              border-radius: var(--rs-r-md); padding: .5rem .65rem;
              font-size: var(--rs-t-xs); box-shadow: var(--rs-shadow); }
@@ -103,7 +104,7 @@
 
 /* ---- status: one definition, each always paired with its label ---------- */
 .st-called    { color: var(--rs-good-ink); }
-.st-likely    { color: var(--rs-chrome); }
+.st-likely    { color: var(--rs-ink); }
 .st-leaning   { color: var(--rs-ink-2); }   /* was #94a3b8 — 2.3:1, failed AA */
 .st-too_close { color: var(--rs-warn-ink); }
 .st-awaiting  { color: var(--rs-ink-3); }
@@ -122,11 +123,12 @@
 .pt-card .nm { font-weight: 800; font-size: var(--rs-t-base); letter-spacing: -.02em; }
 .pt-card .meta { color: var(--rs-ink-3); font-size: var(--rs-t-xs);
                  margin-bottom: .6rem; }
-.pt-badge { font-size: var(--rs-t-xs); font-weight: 800; padding: .18rem .5rem;
-            border-radius: var(--rs-r-pill); text-transform: uppercase;
-            white-space: nowrap; letter-spacing: .04em; }
+.pt-badge { font-family: var(--rs-mono); font-size: var(--rs-t-xs); font-weight: 500;
+            padding: .18rem .45rem; text-transform: uppercase;
+            white-space: nowrap; letter-spacing: .1em;
+            border: 1px solid currentColor; }
 .pt-badge.called    { background: var(--rs-good-bg); color: var(--rs-good-ink); }
-.pt-badge.likely    { background: #eef2f9; color: var(--rs-chrome); }
+.pt-badge.likely    { background: #eef2f9; color: var(--rs-ink); }
 .pt-badge.leaning   { background: var(--rs-card-2); color: var(--rs-ink-2); }
 .pt-badge.too_close { background: var(--rs-warn-bg); color: var(--rs-warn-ink); }
 .pt-badge.awaiting  { background: var(--rs-card-2); color: var(--rs-ink-3); }
@@ -136,7 +138,7 @@
                text-overflow: ellipsis; }
 .pt-crow .cn.win { font-weight: 750; }
 .pt-crow .cn .star { color: var(--rs-warn); }
-.pt-crow .cv { font-weight: 750; font-size: var(--rs-t-md); }
+.pt-crow .cv { font-family: var(--rs-mono); font-weight: 600; font-size: var(--rs-t-sm); }
 .pt-crow .cv .pc { color: var(--rs-ink-3); font-weight: 500;
                    font-size: var(--rs-t-sm); margin-left: .25rem; }
 .pt-crow .cb { grid-column: 1/3; height: 7px; border-radius: 3px;
@@ -152,7 +154,7 @@
 .pt-board.hide, .pt-mapwrap.hide, .pt-legendwrap.hide { display: none; }
 .pt-dhead { display: flex; align-items: center; gap: var(--rs-s4);
             flex-wrap: wrap; margin-bottom: var(--rs-s3); }
-.pt-back { cursor: pointer; color: var(--rs-chrome); font-weight: 750;
+.pt-back { cursor: pointer; color: var(--rs-ink); font-weight: 750;
            font-size: var(--rs-t-md); background: none; border: 0;
            padding: .3rem .1rem; font-family: var(--rs-sans); }
 .pt-back:hover { text-decoration: underline; }
@@ -161,9 +163,10 @@
 .pt-dhead .sub { color: var(--rs-ink-3); font-size: var(--rs-t-sm); }
 .pt-ptoggle { margin-left: auto; display: flex; gap: .3rem; }
 .pt-ptoggle button { border: 1px solid var(--rs-line-2); background: var(--rs-card);
-                     border-radius: var(--rs-r-pill); padding: .3rem .85rem;
-                     font: 700 var(--rs-t-sm) var(--rs-sans); cursor: pointer;
-                     color: var(--rs-ink-2); }
+                     padding: .3rem .8rem; font-family: var(--rs-mono);
+                     font-size: var(--rs-t-xs); font-weight: 500;
+                     text-transform: uppercase; letter-spacing: .1em;
+                     cursor: pointer; color: var(--rs-ink-2); }
 .pt-ptoggle button.on.R { background: var(--rs-r); color: #fff; border-color: var(--rs-r); }
 .pt-ptoggle button.on.D { background: var(--rs-d); color: #fff; border-color: var(--rs-d); }
 
@@ -171,7 +174,7 @@
              margin-bottom: var(--rs-s4); font-size: var(--rs-t-base);
              display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 .pt-banner.called    { background: var(--rs-good-bg); color: var(--rs-good-ink); border: 1px solid #bfe3ce; }
-.pt-banner.likely    { background: #eef2f9; color: var(--rs-chrome); border: 1px solid #dde5f0; }
+.pt-banner.likely    { background: #eef2f9; color: var(--rs-ink); border: 1px solid #dde5f0; }
 .pt-banner.leaning   { background: var(--rs-card-2); color: var(--rs-ink-2); border: 1px solid var(--rs-line); }
 .pt-banner.too_close { background: var(--rs-warn-bg); color: var(--rs-warn-ink); border: 1px solid #f5d9a0; }
 .pt-banner.awaiting  { background: var(--rs-card-2); color: var(--rs-ink-3); border: 1px solid var(--rs-line); }
@@ -194,7 +197,7 @@
 .pt-bar > i { display: block; height: 100%; border-radius: 4px;
               transition: width .7s cubic-bezier(.22,.61,.36,1); }
 .pt-bar > .pj { position: absolute; top: 0; height: 100%; opacity: .22; }
-.pt-bv { text-align: right; min-width: clamp(96px, 18vw, 150px); }
+.pt-bv { text-align: right; font-family: var(--rs-mono); min-width: clamp(96px, 18vw, 150px); }
 .pt-bv b { font-weight: 800; }
 .pt-bv .pj { color: var(--rs-ink-3); font-size: var(--rs-t-sm); }
 
