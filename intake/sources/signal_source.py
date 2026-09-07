@@ -8,6 +8,7 @@ other group are ignored.
 
 import json
 import logging
+import re
 import socket
 import time
 from pathlib import Path
@@ -150,8 +151,11 @@ def send(text, target=None):
     if not target or not config.SIGNAL_ACCOUNT:
         return
     params = {"account": config.SIGNAL_ACCOUNT, "message": text}
-    # Group ids are long base64; phone numbers start with '+'.
-    if target.startswith("+"):
+    # A person is a phone number (+1...) or an account UUID; a group is a long
+    # base64 id. Getting this wrong sends a private review ping to the whole
+    # group, so match the UUID shape explicitly rather than assuming.
+    is_uuid = bool(re.fullmatch(r"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", target))
+    if target.startswith("+") or is_uuid:
         params["recipient"] = [target]
     else:
         params["groupId"] = target
