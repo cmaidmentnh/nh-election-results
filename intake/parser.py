@@ -357,30 +357,107 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
     return resp.parsed_output
 
 
-def extract_consensus(municipality, roster_text, body, subject="", sender="", attachments=None):
-    """Read the report twice and report where the two reads agree.
+def _tally(reads):
+    """Per (race, candidate), what each read said. Missing counts against it."""
+    keys = set()
+    for r in reads:
+        keys |= {(l.race_id, l.candidate_id) for l in r.lines}
+    votes = {}
+    for key in keys:
+        votes[key] = []
+        for r in reads:
+            match = next((l.votes for l in r.lines
+                          if (l.race_id, l.candidate_id) == key), None)
+            votes[key].append(match)
+    return votes
+
+
+def _verdict(values):
+    """(winning_value, agreed?) for one line's readings across every pass.
+
+    A supermajority is required, never a bare majority. Repeated reading fixes
+    RANDOM misreads - a smudged digit read differently each time - but it does
+    not fix SYSTEMATIC ones. If the model consistently reads the wrong column of
+    a layout it will do so every pass, and a bare 3-2 majority would then
+    manufacture false confidence in a wrong number. So a close split is treated
+    as unresolved and sent to a human, which is the honest answer.
+    """
+    present = [v for v in values if v is not None]
+    if not present:
+        return None, False
+    counts = {}
+    for v in present:
+        counts[v] = counts.get(v, 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])
+    top_value, top_count = ranked[0]
+    runner_up = ranked[1][1] if len(ranked) > 1 else 0
+    n = len(values)
+
+    if n <= 2:
+        return top_value, top_count == n            # both reads, same answer
+    if top_count >= 4:
+        return top_value, True                      # 4+ of 5 agree
+    if top_count >= 3 and runner_up <= 1:
+        return top_value, True                      # 3-1-1, one clear answer
+    return top_value, False                         # 3-2 or 2-2-1: genuinely split
+
+
+def extract_consensus(municipality, roster_text, body, subject="", sender="",
+                      attachments=None, max_reads=5):
+    """Read the report until the readings settle, then report what is solid.
 
     Back-testing against real 2024 clerk PDFs showed the model reporting high
     confidence on numbers that were badly wrong - Hollis County Sheriff read as
     2,571 against an actual 5,337. Self-reported confidence therefore cannot be
-    the only gate. Two independent reads of the same page rarely invent the
-    same wrong digits, so agreement between them is a far stronger signal, and
-    disagreement is exactly the set a human should look at.
+    the only gate.
 
-    Returns (extraction, agreed_keys, disagreements).
+    Two reads are taken first. If every line agrees, that is the answer. If any
+    line disagrees the whole report is read again, up to max_reads, and each
+    line is decided by supermajority - see _verdict for why a bare majority is
+    not enough. The winning value replaces whatever the first read said, so a
+    line that lost 1-4 publishes the number the other four saw.
+
+    Returns (extraction, agreed_keys, disagreements) where disagreements maps a
+    key to the full list of readings, for the review queue to show.
     """
     first = extract(municipality, roster_text, body, subject, sender, attachments)
     if not first.contains_results or not first.lines:
         return first, set(), {}
 
-    second = extract(municipality, roster_text, body, subject, sender, attachments)
-    other = {(l.race_id, l.candidate_id): l.votes for l in second.lines}
+    reads = [first, extract(municipality, roster_text, body, subject, sender, attachments)]
 
+    def unsettled(rs):
+        return any(not _verdict(v)[1] for v in _tally(rs).values())
+
+    while len(reads) < max_reads and unsettled(reads):
+        reads.append(extract(municipality, roster_text, body, subject, sender, attachments))
+
+    tally = _tally(reads)
     agreed, disagreements = set(), {}
-    for line in first.lines:
-        key = (line.race_id, line.candidate_id)
-        if key in other and other[key] == line.votes:
+    for key, values in tally.items():
+        winner, ok = _verdict(values)
+        if ok:
             agreed.add(key)
         else:
-            disagreements[key] = (line.votes, other.get(key))
+            disagreements[key] = values
+
+        # Publish what the reads actually settled on, not the first attempt.
+        for line in first.lines:
+            if (line.race_id, line.candidate_id) == key and winner is not None:
+                line.votes = winner
+
+    # A line only later reads saw at all still belongs in the report.
+    seen = {(l.race_id, l.candidate_id) for l in first.lines}
+    for r in reads[1:]:
+        for l in r.lines:
+            key = (l.race_id, l.candidate_id)
+            if key not in seen and key in tally:
+                winner, ok = _verdict(tally[key])
+                if winner is not None:
+                    l.votes = winner
+                    first.lines.append(l)
+                    seen.add(key)
+
+    log.info("%s: %d reads, %d settled, %d split",
+             municipality, len(reads), len(agreed), len(disagreements))
     return first, agreed, disagreements

@@ -74,6 +74,11 @@ def set_message_status(conn, message_id, status, parse_json=None, error=None):
 
 
 def add_item(conn, message_id, **kw):
+    # A column DEFAULT only applies when the column is omitted; passing an
+    # explicit None still violates NOT NULL. Fill the defaults here so callers
+    # that only care about, say, the reason cannot trip over it.
+    kw.setdefault("kind", "result")
+    kw.setdefault("status", "pending")
     cols = ("kind", "municipality", "municipality_text", "election_id", "race_id",
             "race_text", "candidate_id", "candidate_text", "votes", "old_votes",
             "confidence", "status", "reason")
