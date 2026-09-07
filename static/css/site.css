@@ -301,3 +301,21 @@ table.pt td:first-child{font-family:var(--sans)}
   .mapbox{max-width:100%}
   #nhmap{height:300px}
 }
+
+/* Hover detail, pinned inside the map. Cursor-anchored tooltips get
+   repositioned by Leaflet on every mousemove, so no clamp survives; a panel
+   inside the container cannot escape it by construction. */
+.mapinfo{position:absolute;top:10px;right:10px;z-index:600;
+  background:#fff;border:1px solid var(--rule);padding:9px 11px;
+  font:400 13px/1.35 var(--sans);color:var(--ink);
+  width:min(230px,calc(100% - 20px));max-height:calc(100% - 20px);overflow:auto;
+  box-shadow:0 6px 22px rgba(16,17,18,.14);pointer-events:none}
+.mapinfo .tn{font-weight:700;font-size:14px;margin-bottom:2px}
+.mapinfo .tm{font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:7px;
+  display:flex;justify-content:space-between;gap:8px}
+.mapinfo .tr{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.mapinfo .tr + .tr{border-top:1px solid var(--hair)}
+.mapinfo .tr .v{font-family:var(--mono);font-weight:600;white-space:nowrap}
+@media(max-width:520px){.mapinfo{position:static;width:100%;margin-top:8px;
+  max-height:none;box-shadow:none}}
