@@ -33,10 +33,35 @@
                 {% if m.received_at %} · {{ m.received_at }}{% endif %}
             </div>
         </div>
-        <button class="i-toggle" type="button">Show original</button>
+        <button class="i-toggle" type="button">
+            {% if g.attachments %}Hide original{% else %}Show original{% endif %}</button>
     </header>
 
-    <pre class="i-original hidden">{{ m.body or '(no text — the report was an image)' }}</pre>
+    <div class="i-original{% if not g.attachments %} hidden{% endif %}">
+        <pre class="i-body">{{ m.body or '(no text — the report was an image)' }}</pre>
+        {% if g.attachments %}
+        <div class="i-atts">
+            {% for a in g.attachments %}
+                {% set src = url_for('intake.attachment', message_id=m.message_id, index=a.index) %}
+                {% if a.is_pdf %}
+                    <div class="i-att">
+                        <div class="i-att-name">{{ a.name }}</div>
+                        <iframe class="i-pdf" src="{{ src }}"></iframe>
+                        <a href="{{ src }}" target="_blank" rel="noopener">Open full size ↗</a>
+                    </div>
+                {% else %}
+                    <div class="i-att">
+                        <div class="i-att-name">{{ a.name }}</div>
+                        <a href="{{ src }}" target="_blank" rel="noopener">
+                            <img class="i-img" src="{{ src }}" alt="{{ a.name }}" loading="lazy">
+                        </a>
+                        <a href="{{ src }}" target="_blank" rel="noopener">Open full size ↗</a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
 
     <table class="i-table">
         <thead>
@@ -66,7 +91,12 @@
                 </td>
                 <td class="i-actions">
                     {% if it.race_id and it.candidate_id or it.kind == 'ballots' %}
-                        <button class="i-btn i-accept" type="button">Accept</button>
+                        <button class="i-btn i-accept" type="button">Replace</button>
+                        {% if it.old_votes is not none %}
+                            <button class="i-btn i-add" type="button"
+                                title="Second machine: add this to the {{ '{:,}'.format(it.old_votes) }} already recorded">
+                                Add (= {{ '{:,}'.format(it.old_votes + (it.votes or 0)) }})</button>
+                        {% endif %}
                     {% else %}
                         <button class="i-btn" type="button" disabled title="Match it by hand in the entry screen">Needs entry</button>
                     {% endif %}
@@ -115,8 +145,7 @@
 .i-meta{font-size:.78rem;color:#6b7280;margin-top:.15rem;word-break:break-word}
 .i-toggle{background:none;border:1px solid #cbd2d9;border-radius:6px;padding:.3rem .6rem;
           font-size:.78rem;cursor:pointer;white-space:nowrap}
-.i-original{margin:0;padding:.9rem 1rem;background:#fffdf5;border-bottom:1px solid #e6e9ed;
-            white-space:pre-wrap;font-size:.82rem;max-height:22rem;overflow:auto}
+.i-original{background:#fffdf5;border-bottom:1px solid #e6e9ed}
 .i-table{width:100%;border-collapse:collapse;font-size:.88rem}
 .i-table th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;
             color:#6b7280;padding:.5rem 1rem;border-bottom:1px solid #eceff2}
@@ -131,6 +160,16 @@
 .i-btn{border:1px solid #cbd2d9;background:#fff;border-radius:6px;padding:.3rem .7rem;
        font-size:.8rem;cursor:pointer;margin-left:.3rem}
 .i-accept{border-color:#15803d;color:#15803d}
+.i-add{border-color:#1d4ed8;color:#1d4ed8}
+.i-atts{display:flex;flex-wrap:wrap;gap:1rem;padding:.9rem 1rem;background:#fbfbfd;
+        border-top:1px solid #eceff2}
+.i-att{max-width:min(560px,100%)}
+.i-att-name{font-size:.72rem;color:#6b7280;margin-bottom:.3rem;word-break:break-all}
+.i-img{max-width:100%;max-height:640px;border:1px solid #dfe3e8;border-radius:6px;
+       display:block;background:#fff}
+.i-pdf{width:min(560px,100%);height:640px;border:1px solid #dfe3e8;border-radius:6px;background:#fff}
+.i-body{margin:0;padding:.9rem 1rem;white-space:pre-wrap;font-size:.82rem;
+        max-height:16rem;overflow:auto}
 .i-reject{border-color:#b91c1c;color:#b91c1c}
 .i-btn[disabled]{opacity:.45;cursor:not-allowed}
 .i-foot{padding:.6rem 1rem;background:#fafbfc;font-size:.82rem}
@@ -167,10 +206,12 @@ async function resolve(row, action) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'failed');
         row.querySelector('.i-reason').textContent =
-            action === 'accept' ? 'Published' : 'Rejected';
+            action === 'reject' ? 'Rejected'
+            : (action === 'add' ? 'Added to existing — now ' + data.votes.toLocaleString()
+                                : 'Published');
         row.querySelector('.i-actions').textContent = '';
         row.style.opacity = 1;
-        row.style.background = action === 'accept' ? '#f0fdf4' : '#fef2f2';
+        row.style.background = action === 'reject' ? '#fef2f2' : '#f0fdf4';
     } catch (err) {
         row.style.opacity = 1;
         alert('Could not save: ' + err.message);
@@ -179,6 +220,8 @@ async function resolve(row, action) {
 
 document.querySelectorAll('.i-accept').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'accept')));
+document.querySelectorAll('.i-add').forEach(b =>
+    b.addEventListener('click', () => resolve(b.closest('tr'), 'add')));
 document.querySelectorAll('.i-reject').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'reject')));
 </script>

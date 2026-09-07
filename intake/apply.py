@@ -82,7 +82,12 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
 
     old = _existing_votes(cursor, line.race_id, line.candidate_id, municipality)
     if old is not None and old != line.votes:
-        return False, f"Conflicts with {old:,} already on file", race, old
+        # Towns with several machines send several tapes, so a second, different
+        # number is usually another machine rather than a contradiction - but it
+        # can also be a correction or a resend. Only a human can tell, so hold it
+        # and let the review page offer both Add and Replace.
+        return False, (f"{old:,} already recorded - another machine's tape "
+                       f"(add = {old + line.votes:,}), or a correction?"), race, old
 
     cast = _ballots_cast(cursor, race["election_id"], municipality)
     if cast and line.votes > cast:

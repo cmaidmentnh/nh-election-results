@@ -6,14 +6,48 @@ wrote before accepting a number.
 """
 
 import json
+import mimetypes
+from pathlib import Path
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, abort, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 
 from auth import get_db
 from entry import log_audit
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/entry/intake")
+
+
+def _attachments_for(cursor, message_id):
+    cursor.execute("SELECT attachments FROM intake_messages WHERE id = ?", (message_id,))
+    row = cursor.fetchone()
+    if not row:
+        return []
+    try:
+        return json.loads(row["attachments"] or "[]")
+    except (TypeError, ValueError):
+        return []
+
+
+def _sniff(path):
+    """Content type from magic bytes - signal-cli stores files with no suffix."""
+    try:
+        head = Path(path).open("rb").read(12)
+    except OSError:
+        return None
+    if head[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if head[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if head[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    if head[:5] == b"%PDF-":
+        return "application/pdf"
+    if head[4:8] == b"ftyp":
+        return "image/heic"
+    return mimetypes.guess_type(str(path))[0]
 
 
 def _pending(cursor, limit=500):
@@ -62,7 +96,19 @@ def index():
     # at a time, not a line at a time.
     groups = {}
     for it in items:
-        groups.setdefault(it["message_id"], {"message": it, "items": []})["items"].append(it)
+        g = groups.setdefault(it["message_id"],
+                              {"message": it, "items": [], "attachments": []})
+        g["items"].append(it)
+    for mid, g in groups.items():
+        try:
+            paths = json.loads(g["message"].get("attachments") or "[]")
+        except (TypeError, ValueError):
+            paths = []
+        g["attachments"] = [
+            {"index": i, "name": Path(p).name,
+             "is_pdf": (_sniff(p) == "application/pdf") if Path(p).exists() else False}
+            for i, p in enumerate(paths)
+        ]
 
     return render_template("entry/intake.html", groups=list(groups.values()),
                            counts=counts, recent=recent)
@@ -72,7 +118,7 @@ def index():
 @login_required
 def resolve(item_id, action):
     """Accept (optionally with an edited count) or reject one queued line."""
-    if action not in ("accept", "reject"):
+    if action not in ("accept", "reject", "add"):
         return jsonify({"error": "unknown action"}), 400
 
     data = request.get_json(silent=True) or {}
@@ -96,6 +142,11 @@ def resolve(item_id, action):
         race_id = data.get("race_id", item["race_id"])
         candidate_id = data.get("candidate_id", item["candidate_id"])
         votes = int(votes) if votes is not None else None
+
+        # A town with several machines sends several tapes. "add" sums this
+        # reading with what is already recorded instead of replacing it.
+        if action == "add" and votes is not None:
+            votes += (item["old_votes"] or 0)
 
         if item["kind"] == "ballots":
             if not item["election_id"] or votes is None:
@@ -152,6 +203,49 @@ def resolve(item_id, action):
         return jsonify({"success": True, "status": "applied", "votes": votes})
     finally:
         conn.close()
+
+
+@intake_bp.route("/attachment/<int:message_id>/<int:index>")
+@login_required
+def attachment(message_id, index):
+    """Serve one stored attachment so a reviewer can read the original.
+
+    Only paths this message actually recorded are served, so the index cannot
+    be used to reach anything else on disk. HEIC is converted on the way out,
+    since browsers will not render it.
+    """
+    conn = get_db()
+    try:
+        paths = _attachments_for(conn.cursor(), message_id)
+    finally:
+        conn.close()
+    if index < 0 or index >= len(paths):
+        abort(404)
+
+    path = Path(paths[index])
+    if not path.exists():
+        abort(404)
+
+    media_type = _sniff(path) or "application/octet-stream"
+    if media_type == "image/heic":
+        try:
+            import io
+
+            import pillow_heif
+            from PIL import Image
+            pillow_heif.register_heif_opener()
+            img = Image.open(path)
+            img.load()
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=90)
+            buf.seek(0)
+            return send_file(buf, mimetype="image/jpeg")
+        except Exception:
+            abort(415)
+
+    return send_file(str(path), mimetype=media_type)
 
 
 @intake_bp.route("/message/<int:message_id>")

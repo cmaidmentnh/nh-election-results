@@ -67,6 +67,10 @@ class Extraction(BaseModel):
     municipality_text: str = Field(description="The place name as the reporter wrote it")
     contains_results: bool = Field(description="False for chatter, questions, acknowledgements")
     notes: str = Field(description="Anything a human reviewer should know; empty if nothing")
+    device_label: str = Field(
+        description="Any machine/device/tape identifier printed on the report "
+                    "(e.g. 'Machine 1 of 2', 'AccuVote #3', 'District 2 tape'), "
+                    "empty string if none. Never invent one.")
     lines: list[VoteLine]
     ballots: list[BallotsLine]
     checks: list[RaceCheck] = Field(
@@ -139,6 +143,12 @@ not print it.
 is ambiguous, or when the name match was a stretch.
 - If the message contains no vote totals at all (a question, a greeting, "on my way"), \
 set contains_results=false and return no lines.
+MANY TOWNS COUNT ON SEVERAL MACHINES AND SEND ONE TAPE PER MACHINE.
+A tape may therefore hold only part of a town's vote. If the report names a
+machine, device, or tape number, put it in device_label exactly as printed.
+Never add tapes together yourself and never scale a number up to what you think
+the town total should be - report only what this sheet shows.
+
 PHOTOGRAPHS AND SCANNED TALLY SHEETS ARE THE NORMAL CASE.
 Most reports are a phone photo of the machine tape or the hand-tally sheet, or a
 scanned PDF of it, with little or no typed text. Read them carefully:
