@@ -139,12 +139,9 @@ function refresh(){ const o=curO,p=curP;
   fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
     if(o!==curO||p!==curP)return; board={}; b.races.forEach(r=>board[r.code]=r);
     const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
-    // Shared masthead strip: report the best reporting figure we have.
-    const rp=Object.values(board).map(r=>r.reporting||{});
-    const rep=Math.max(0,...rp.map(x=>x.reported||0)), tot=Math.max(0,...rp.map(x=>x.total||0));
-    const lsc=document.getElementById('ls-count'), lsw=document.getElementById('ls-when');
-    if(lsc&&tot) lsc.textContent=`${rep.toLocaleString()} of ${tot.toLocaleString()}`;
+    const lsw=document.getElementById('ls-when');
     if(lsw) lsw.textContent='Updated '+n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    statewideStrip();
     renderScore();
     // In-place update where possible so the user's zoom/pan is preserved.
     if(detailCtx){ loadDetail(detailCtx.o,detailCtx.code,detailCtx.party); }
@@ -247,6 +244,19 @@ function renderBoard(){
 /* One place that turns a projection into the probability sentence. Suppressed
    below the same threshold that already blocks an early call, because the
    number is an extrapolation from the vote counted, not a forecast. */
+/* The masthead strip is a STATEWIDE figure. Taking the max across the board's
+   races would report one district's precinct count - "7 of 11" - which reads
+   like the whole state has 11 polling places. Ask the topline endpoint, which
+   is small and edge-cached. */
+let stripDone=false;
+function statewideStrip(){
+  if(stripDone) return; stripDone=true;
+  fetch('/api/primary-topline'+(DEMO?'?demo=1':''),{cache:'no-store'})
+    .then(r=>r.json())
+    .then(d=>{const el=document.getElementById('ls-count');
+      if(el&&d.places) el.textContent=`${d.places.reported.toLocaleString()} of ${d.places.total.toLocaleString()}`;})
+    .catch(()=>{});
+}
 function probText(pj){
   if(!LIVE||!pj) return '';
   if(pj.status==='called') return '';
