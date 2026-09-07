@@ -161,7 +161,12 @@ function refresh(){ const o=curO,p=curP;
   });
 }
 
-function paint(){ renderScore(); if(curO.level==='statewide'){ showDetail(curO,'STATE',curP); return; }
+function paint(){ renderScore();
+  // Statewide races have no districts to map, so they showed the old full-width
+  // detail panel and skipped the new layout entirely - Governor and U.S. Senate
+  // looked like a different site. They now render as a card in the same list,
+  // in the same single-column split; clicking it opens the town detail.
+  if(curO.level==='statewide'){ renderBoard(); return; }
   renderMap(); renderBoard(); }
 
 /* ---------- scoreboard ---------- */
