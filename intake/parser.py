@@ -355,3 +355,32 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
         output_format=Extraction,
     )
     return resp.parsed_output
+
+
+def extract_consensus(municipality, roster_text, body, subject="", sender="", attachments=None):
+    """Read the report twice and report where the two reads agree.
+
+    Back-testing against real 2024 clerk PDFs showed the model reporting high
+    confidence on numbers that were badly wrong - Hollis County Sheriff read as
+    2,571 against an actual 5,337. Self-reported confidence therefore cannot be
+    the only gate. Two independent reads of the same page rarely invent the
+    same wrong digits, so agreement between them is a far stronger signal, and
+    disagreement is exactly the set a human should look at.
+
+    Returns (extraction, agreed_keys, disagreements).
+    """
+    first = extract(municipality, roster_text, body, subject, sender, attachments)
+    if not first.contains_results or not first.lines:
+        return first, set(), {}
+
+    second = extract(municipality, roster_text, body, subject, sender, attachments)
+    other = {(l.race_id, l.candidate_id): l.votes for l in second.lines}
+
+    agreed, disagreements = set(), {}
+    for line in first.lines:
+        key = (line.race_id, line.candidate_id)
+        if key in other and other[key] == line.votes:
+            agreed.add(key)
+        else:
+            disagreements[key] = (line.votes, other.get(key))
+    return first, agreed, disagreements

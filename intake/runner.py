@@ -83,7 +83,7 @@ def process(conn, msg):
             return {"applied": 0, "queued": 1, "town": None}
 
         roster_text, index, elections = roster.roster_for(cursor, town)
-        extraction = parser.extract(
+        extraction, agreed, disagreements = parser.extract_consensus(
             town, roster_text, msg.get("body"), msg.get("subject", ""),
             msg.get("sender", ""), msg.get("attachments"),
         )
@@ -94,17 +94,15 @@ def process(conn, msg):
             log.info("msg %s: no results in it (%s)", message_id, town)
             return {"applied": 0, "queued": 0, "town": town}
 
-        summary = apply_mod.apply_extraction(conn, message_id, town, extraction, index, elections)
+        summary = apply_mod.apply_extraction(conn, message_id, town, extraction, index,
+                                             elections, agreed, disagreements)
         status = ("applied" if summary["queued"] == 0
                   else "partial" if summary["applied"] else "queued")
         store.set_message_status(conn, message_id, status, parse_json=parse_json)
 
         log.info("msg %s: %s via %s - %d applied, %d queued",
                  message_id, town, how, summary["applied"], summary["queued"])
-        if summary["queued"]:
-            head = "; ".join(summary["reasons"][:3])
-            _notify(f"{town}: {summary['applied']} applied, {summary['queued']} need review. "
-                    f"{head}. {_review_url()}")
+        _notify(_format_parse(town, msg, summary, extraction))
         summary["town"] = town
         return summary
 
@@ -113,6 +111,58 @@ def process(conn, msg):
         store.set_message_status(conn, message_id, "error", error=str(exc))
         _notify(f"Intake error on a report from {msg.get('sender')}: {exc}. {_review_url()}")
         return None
+
+
+MAX_NOTIFY_CHARS = 3500
+
+
+def _format_parse(town, msg, summary, extraction):
+    """Everything read out of one report, as a message to read on a phone."""
+    src = msg.get("source", "?")
+    sender = (msg.get("sender") or "").strip()
+    head = f"{town} - {src}"
+    if sender:
+        head += f" from {sender}"
+
+    counts = f"{summary['applied']} published"
+    if summary["queued"]:
+        counts += f" | {summary['queued']} need review"
+    lines = [head, counts, ""]
+
+    published = [d for d in summary.get("details", []) if d["ok"]]
+    held = [d for d in summary.get("details", []) if not d["ok"]]
+
+    current = None
+    for d in published:
+        label = f"{d['party']} {d['label']}"
+        if label != current:
+            lines.append(label)
+            current = label
+        lines.append(f"   {d['name']} {d['votes']:,}")
+
+    if held:
+        lines.append("")
+        lines.append("NEEDS REVIEW")
+        for d in held:
+            lines.append(f"   {d['party']} {d['label']} - {d['name']} "
+                         f"{d['votes']:,} ({d['reason']})")
+
+    for b in extraction.ballots:
+        if b.ballots_cast:
+            lines.append("")
+            lines.append(f"Ballots cast: {b.ballots_cast:,}")
+            break
+
+    if extraction.notes:
+        lines.append("")
+        lines.append(f"Note: {extraction.notes[:300]}")
+
+    text = "\n".join(lines)
+    if len(text) > MAX_NOTIFY_CHARS:
+        text = text[:MAX_NOTIFY_CHARS] + "\n... (truncated)"
+    if summary["queued"]:
+        text += f"\n{_review_url()}"
+    return text
 
 
 def _review_url():

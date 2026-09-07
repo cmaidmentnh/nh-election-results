@@ -65,7 +65,7 @@ def _gate_open():
         return True
 
 
-def validate_line(cursor, line, municipality, index):
+def validate_line(cursor, line, municipality, index, agreed=None, disagreements=None):
     """Return (ok, reason, race_meta, old_votes). ok=False means queue it."""
     race = index.get(line.race_id)
     old = None
@@ -90,10 +90,19 @@ def validate_line(cursor, line, municipality, index):
     if (line.confidence or 0) < config.MIN_CONFIDENCE:
         return False, f"Low parser confidence ({line.confidence:.0%})", race, old
 
+    # Two independent reads must agree. Confidence alone missed real errors.
+    if agreed is not None:
+        key = (line.race_id, line.candidate_id)
+        if key not in agreed:
+            a, b = (disagreements or {}).get(key, (line.votes, None))
+            other = f"{b:,}" if b is not None else "nothing"
+            return False, f"Two reads disagreed ({a:,} vs {other})", race, old
+
     return True, None, race, old
 
 
-def apply_extraction(conn, message_id, municipality, extraction, index, elections):
+def apply_extraction(conn, message_id, municipality, extraction, index, elections,
+                     agreed=None, disagreements=None):
     """Validate every line, write the clean ones, queue the rest.
 
     Returns a summary dict for logging and for the operator ping.
@@ -104,10 +113,12 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     user_id = store.bot_user_id(conn)
     applied, queued = 0, 0
     queued_reasons = []
+    details = []
     gate_open = _gate_open()
 
     for line in extraction.lines:
-        ok, reason, race, old = validate_line(cursor, line, municipality, index)
+        ok, reason, race, old = validate_line(cursor, line, municipality, index,
+                                              agreed, disagreements)
         if ok and not gate_open:
             ok, reason = False, f"Held until polls close ({config.OPEN_AFTER})"
         if ok and not config.AUTO_APPLY:
@@ -127,10 +138,16 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             confidence=line.confidence,
         )
 
+        label = race["label"] if race else (line.race_text or "?")
+        party = race["party"][:1] if race else "?"
+        name = (race["names"].get(line.candidate_id) if race else None) or line.candidate_text
+
         if not ok:
             store.add_item(conn, message_id, status="pending", reason=reason, **common)
             queued += 1
-            queued_reasons.append(f"{race['label'] if race else '?'}: {reason}")
+            queued_reasons.append(f"{label}: {reason}")
+            details.append({"ok": False, "party": party, "label": label,
+                            "name": name, "votes": line.votes, "reason": reason})
             continue
 
         if old is None:
@@ -146,6 +163,8 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             "UPDATE intake_items SET applied_at = CURRENT_TIMESTAMP WHERE id = ?", (item_id,)
         )
         applied += 1
+        details.append({"ok": True, "party": party, "label": label,
+                        "name": name, "votes": line.votes, "reason": None})
 
     for b in extraction.ballots:
         valid_ids = {e["id"] for e in elections}
@@ -178,4 +197,5 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             queued += 1
 
     conn.commit()
-    return {"applied": applied, "queued": queued, "reasons": queued_reasons}
+    return {"applied": applied, "queued": queued, "reasons": queued_reasons,
+            "details": details}

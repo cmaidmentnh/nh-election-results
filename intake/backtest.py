@@ -64,7 +64,8 @@ def main():
     conn = store.connect()
     cur = conn.cursor()
 
-    totals = {"exact": 0, "wrong": 0, "missed": 0, "spurious": 0}
+    totals = {"exact": 0, "wrong": 0, "missed": 0, "spurious": 0,
+              "caught": 0, "slipped": 0, "held_ok": 0}
     for town_dir in sorted(p for p in root.iterdir() if p.is_dir()):
         town = town_dir.name
         atts = sorted(str(p) for p in town_dir.iterdir() if p.is_file())
@@ -74,7 +75,8 @@ def main():
             continue
 
         try:
-            ex = parser.extract(town, roster_text, "", f"{town} results", "clerk@town.nh.gov", atts)
+            ex, agreed, disagreements = parser.extract_consensus(
+                town, roster_text, "", f"{town} results", "clerk@town.nh.gov", atts)
         except Exception as exc:
             print(f"{town:14s} ERROR {exc}")
             continue
@@ -91,16 +93,26 @@ def main():
         wrong = [(k, got[k], truth[k]) for k in got if truth[k] != got[k]]
         missed = len(truth) - len(got)
 
+        # Would the two-read gate have stopped the wrong ones publishing?
+        caught = [w for w in wrong if w[0] not in agreed]
+        slipped = [w for w in wrong if w[0] in agreed]
+        # ...and what does it cost in correct values held back?
+        held_ok = sum(1 for k, v in got.items() if truth[k] == v and k not in agreed)
+
         totals["exact"] += exact
         totals["wrong"] += len(wrong)
         totals["missed"] += max(0, missed)
         totals["spurious"] += spurious
+        totals["caught"] += len(caught)
+        totals["slipped"] += len(slipped)
+        totals["held_ok"] += held_ok
 
         pct = 100 * exact / len(truth) if truth else 0
         print(f"{town:14s} {exact:4d}/{len(truth):4d} exact ({pct:5.1f}%)  "
-              f"wrong={len(wrong):<3} missed={max(0,missed):<4} unmatched_lines={spurious}")
-        for (rid, cid), g, t in wrong[:4]:
-            print(f"                 MISMATCH {index[rid]['label']} / "
+              f"wrong={len(wrong):<3} caught={len(caught):<3} SLIPPED={len(slipped):<3} "
+              f"good_held={held_ok:<3} missed={max(0,missed):<4}")
+        for (rid, cid), g, t in slipped[:4]:
+            print(f"                 SLIPPED {index[rid]['label']} / "
                   f"{index[rid]['names'][cid]}: read {g}, actual {t}")
 
     print("\nTOTAL", totals)
