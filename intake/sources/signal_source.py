@@ -74,8 +74,12 @@ def _attachment_paths(data_msg):
     return paths
 
 
-def listen(on_message, stop=None):
-    """Block forever, calling on_message(dict) for each group message."""
+def listen(on_message, on_command=None, stop=None):
+    """Block forever.
+
+    Group messages go to on_message. A direct message from the operator goes to
+    on_command, so the queue can be worked from a phone instead of the website.
+    """
     group_id = resolve_group_id()
 
     while not (stop and stop.is_set()):
@@ -112,6 +116,20 @@ def listen(on_message, stop=None):
                     envelope = (msg.get("params") or {}).get("envelope") or {}
                     data_msg = envelope.get("dataMessage") or {}
                     ginfo = data_msg.get("groupInfo") or {}
+
+                    sender_uuid = envelope.get("sourceUuid") or ""
+                    sender_number = envelope.get("sourceNumber") or ""
+                    is_group = bool(ginfo.get("groupId"))
+
+                    # A DM from the operator is an instruction, not a report.
+                    if not is_group:
+                        target = (config.NOTIFY_TARGET or "").lower()
+                        if on_command and target and target in (sender_uuid.lower(),
+                                                                sender_number.lower()):
+                            body = (data_msg.get("message") or "").strip()
+                            if body:
+                                on_command(body)
+                        continue
 
                     if not group_id or ginfo.get("groupId") != group_id:
                         continue  # not the results group

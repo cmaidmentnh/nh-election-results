@@ -66,7 +66,8 @@ def _gate_open():
         return True
 
 
-def validate_line(cursor, line, municipality, index, agreed=None, disagreements=None):
+def validate_line(cursor, line, municipality, index, agreed=None, disagreements=None,
+                  extraction_scope=None):
     """Return (ok, reason, race_meta, old_votes). ok=False means queue it."""
     race = index.get(line.race_id)
     old = None
@@ -86,8 +87,14 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
         # number is usually another machine rather than a contradiction - but it
         # can also be a correction or a resend. Only a human can tell, so hold it
         # and let the review page offer both Add and Replace.
-        return False, (f"{old:,} already recorded - another machine's tape "
-                       f"(add = {old + line.votes:,}), or a correction?"), race, old
+        scope = getattr(extraction_scope, "value", extraction_scope) or "unknown"
+        if scope == "town_total":
+            hint = f"town total supersedes the {old:,} recorded - Replace"
+        elif scope == "machine_tape":
+            hint = f"another machine's tape - Add = {old + line.votes:,}"
+        else:
+            hint = f"add = {old + line.votes:,}, or a correction?"
+        return False, f"{old:,} already recorded; {hint}", race, old
 
     cast = _ballots_cast(cursor, race["election_id"], municipality)
     if cast and line.votes > cast:
@@ -156,7 +163,8 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
 
     for line in extraction.lines:
         ok, reason, race, old = validate_line(cursor, line, municipality, index,
-                                              agreed, disagreements)
+                                              agreed, disagreements,
+                                              getattr(extraction, "report_scope", None))
         if ok and line.race_id in unreconciled:
             ok, reason = False, unreconciled[line.race_id]
         if ok and not gate_open:

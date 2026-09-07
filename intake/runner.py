@@ -14,6 +14,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from intake import apply as apply_mod
+from intake import commands
 from intake import config, parser, roster, store
 from intake.sources import email_source, gmail_source, signal_source
 
@@ -213,13 +214,26 @@ def signal_loop(stop):
     def on_message(msg):
         _pool.submit(_handle, msg)
 
+    def on_command(text):
+        def run():
+            conn = store.connect()
+            try:
+                log.info("operator instruction: %s", text[:120])
+                _notify(commands.handle(conn, text))
+            except Exception:
+                log.exception("could not act on an instruction")
+                _notify("I could not act on that - see the review page.")
+            finally:
+                conn.close()
+        _pool.submit(run)
+
     if not config.SIGNAL_ACCOUNT:
         log.warning("Signal feed idle: SIGNAL_BOT_NUMBER not set")
         return
     if not (config.SIGNAL_GROUP_ID or config.SIGNAL_GROUP_NAME):
         log.warning("Signal feed idle: no group configured")
         return
-    signal_source.listen(on_message, stop)
+    signal_source.listen(on_message, on_command, stop)
 
 
 def replay(message_id):

@@ -97,6 +97,9 @@
                                 title="Second machine: add this to the {{ '{:,}'.format(it.old_votes) }} already recorded">
                                 Add (= {{ '{:,}'.format(it.old_votes + (it.votes or 0)) }})</button>
                         {% endif %}
+                    {% elif it.race_id and it.candidate_text %}
+                        <button class="i-btn i-writein" type="button"
+                            title="Not on the ballot: record as a named write-in">Write-in</button>
                     {% else %}
                         <button class="i-btn" type="button" disabled title="Match it by hand in the entry screen">Needs entry</button>
                     {% endif %}
@@ -161,6 +164,7 @@
        font-size:.8rem;cursor:pointer;margin-left:.3rem}
 .i-accept{border-color:#15803d;color:#15803d}
 .i-add{border-color:#1d4ed8;color:#1d4ed8}
+.i-writein{border-color:#7c3aed;color:#7c3aed}
 .i-atts{display:flex;flex-wrap:wrap;gap:1rem;padding:.9rem 1rem;background:#fbfbfd;
         border-top:1px solid #eceff2}
 .i-att{max-width:min(560px,100%)}
@@ -207,8 +211,9 @@ async function resolve(row, action) {
         if (!res.ok) throw new Error(data.error || 'failed');
         row.querySelector('.i-reason').textContent =
             action === 'reject' ? 'Rejected'
+            : (action === 'writein' ? 'Recorded as write-in'
             : (action === 'add' ? 'Added to existing — now ' + data.votes.toLocaleString()
-                                : 'Published');
+                                : 'Published'));
         row.querySelector('.i-actions').textContent = '';
         row.style.opacity = 1;
         row.style.background = action === 'reject' ? '#fef2f2' : '#f0fdf4';
@@ -222,6 +227,8 @@ document.querySelectorAll('.i-accept').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'accept')));
 document.querySelectorAll('.i-add').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'add')));
+document.querySelectorAll('.i-writein').forEach(b =>
+    b.addEventListener('click', () => resolve(b.closest('tr'), 'writein')));
 document.querySelectorAll('.i-reject').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'reject')));
 </script>

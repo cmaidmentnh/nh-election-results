@@ -13,7 +13,7 @@ from flask import Blueprint, abort, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 
 from auth import get_db
-from entry import log_audit
+from entry import log_audit, normalize_name
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/entry/intake")
 
@@ -118,7 +118,7 @@ def index():
 @login_required
 def resolve(item_id, action):
     """Accept (optionally with an edited count) or reject one queued line."""
-    if action not in ("accept", "reject", "add"):
+    if action not in ("accept", "reject", "add", "writein"):
         return jsonify({"error": "unknown action"}), 400
 
     data = request.get_json(silent=True) or {}
@@ -147,6 +147,37 @@ def resolve(item_id, action):
         # reading with what is already recorded instead of replacing it.
         if action == "add" and votes is not None:
             votes += (item["old_votes"] or 0)
+
+        # A name the ballot does not carry is a write-in. Record it the way the
+        # hand-entry screen does: a candidate plus a roster row flagged as a
+        # write-in (recruitment_filing_id = -1), so both paths agree.
+        if action == "writein":
+            name = (data.get("name") or item["candidate_text"] or "").strip()
+            if not (race_id and name):
+                return jsonify({"error": "needs a race and a name"}), 400
+            cursor.execute("""SELECT r.election_id, e.party FROM races r
+                              JOIN elections e ON r.election_id = e.id WHERE r.id = ?""",
+                           (race_id,))
+            rr = cursor.fetchone()
+            if not rr:
+                return jsonify({"error": "unknown race"}), 400
+            party = rr["party"]
+            norm = normalize_name(name)
+            cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                           (norm, party))
+            crow = cursor.fetchone()
+            if crow:
+                candidate_id = crow["id"]
+            else:
+                cursor.execute(
+                    "INSERT INTO candidates (name, name_normalized, party) VALUES (?,?,?)",
+                    (name, norm, party))
+                candidate_id = cursor.lastrowid
+            cursor.execute("""INSERT OR IGNORE INTO race_candidates
+                              (race_id, candidate_id, party, ballot_order, is_incumbent,
+                               recruitment_candidate_id, recruitment_filing_id)
+                              VALUES (?, ?, ?, 900, 0, NULL, -1)""",
+                           (race_id, candidate_id, party))
 
         if item["kind"] == "ballots":
             if not item["election_id"] or votes is None:
