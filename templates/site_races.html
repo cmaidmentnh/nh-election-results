@@ -136,7 +136,6 @@ function selectOffice(o){
 }
 function load(){
   clearInterval(timer);
-  document.getElementById('split').classList.toggle('solo', O.level==='statewide');
   refresh(); timer=setInterval(refresh,30000);
 }
 function refresh(){
@@ -267,7 +266,48 @@ function renderMap(){
 }
 function paint(){
   if(O.level==='house'&&!floSet){ floCodes().then(()=>{counts();renderList();renderMap();}); return; }
-  renderList(); if(O.level!=='statewide') renderMap();
+  renderList();
+  if(O.level==='statewide') stateMap(); else renderMap();
+}
+
+/* Governor and U.S. Senate have no districts to shade, but they do have all
+   319 towns. Draw those instead of leaving an empty column. */
+function stateMap(){
+  document.getElementById('split').classList.remove('solo');
+  if(map){try{map.remove();}catch(e){}map=null;layer=null;}
+  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
+  document.getElementById('legend').innerHTML=
+    `<div class="r"><i style="background:${PARTY[P].c}"></i>Reported</div>`+
+    `<div class="r"><i style="background:#dfe2e6"></i>Not yet in</div>`;
+  Promise.all([
+    fetch('/api/contested/'+O.key+'/results?code=STATE&party='+P+Q).then(r=>r.json()),
+    geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
+    G(HBASE.file), G('nh-towns.geojson')
+  ]).then(([r])=>{
+    if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>
+      houseByCode[String(f.properties.basehse22).trim()]=f);}
+    if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>
+      townsByName[String(f.properties.name||'').toLowerCase()]=f);}
+    L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
+      color:'#fff',weight:.5,interactive:false}}).addTo(map).bringToBack();
+    layer=L.geoJSON({type:'FeatureCollection',features:fcFor(r.precincts||[])},{
+      style:f=>{const any=f.properties.members.some(m=>m.reported);
+        return {fillColor:any?PARTY[P].c:'#dfe2e6',fillOpacity:any?.85:.6,color:'#fff',weight:.7};},
+      onEachFeature:(f,l)=>{
+        const ms=f.properties.members, rep=ms.filter(m=>m.reported);
+        let h=`<div class="tn">${esc(f.properties.name)}</div>`;
+        if(!rep.length) h+='<div class="tm"><span>Not yet reported</span></div>';
+        else{
+          const t={}; let sum=0;
+          rep.forEach(m=>Object.entries(m.votes).forEach(([n,v])=>{t[n]=(t[n]||0)+v;sum+=v;}));
+          h+=`<div class="tm"><span>${nf.format(sum)} votes</span></div>`+
+             Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([n,v])=>
+               `<div class="tr"><span>${esc(n)}</span><span class="v">${nf.format(v)} ${sum?Math.round(100*v/sum):0}%</span></div>`).join('');
+        }
+        l.bindTooltip(h,{className:'tip',sticky:true,direction:'auto',opacity:1});
+      }}).addTo(map);
+    map.fitBounds(NH,{padding:[8,8]});
+  }).catch(()=>{});
 }
 
 /* ---- detail ------------------------------------------------------------- */
