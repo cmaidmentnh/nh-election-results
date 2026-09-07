@@ -185,6 +185,9 @@ def _review_url():
 
 
 def _notify(text):
+    if not config.NOTIFY_ENABLED:
+        log.info("(notify suppressed) %s", text[:120])
+        return
     try:
         signal_source.send(text)
     except Exception:

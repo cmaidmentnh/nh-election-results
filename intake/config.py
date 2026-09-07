@@ -48,6 +48,10 @@ SIGNAL_GROUP_ID = os.environ.get("INTAKE_SIGNAL_GROUP_ID", "")
 SIGNAL_GROUP_NAME = os.environ.get("INTAKE_SIGNAL_GROUP_NAME", "")
 SIGNAL_ATTACH_DIR = os.environ.get("SIGNAL_ATTACH_DIR", "/opt/signal-cli-config/attachments")
 
+# Offline tests and back-tests run the same code path, so they must be able to
+# stay off the operator's phone.
+NOTIFY_ENABLED = os.environ.get("INTAKE_NOTIFY", "1") not in ("0", "false", "no")
+
 # Where to send "something needs review" pings. A Signal number or group id.
 NOTIFY_TARGET = os.environ.get("INTAKE_NOTIFY_TARGET", "")
 
