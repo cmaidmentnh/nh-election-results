@@ -1170,6 +1170,104 @@ def api_contested_results(office_key):
     return jsonify(out)
 
 
+# --- Election-night topline -------------------------------------------------
+# The races a normal visitor arrives wanting, both primaries side by side.
+# Everything here reuses _compute_results, so the projections shown are the same
+# decision-desk output as the district pages - there is no second model.
+
+TOPLINE_RACES = [
+    ("governor", "Governor", ""),
+    ("us-senate", "U.S. Senate", ""),
+    ("us-house", "U.S. House District 1", "1"),
+    ("us-house", "U.S. House District 2", "2"),
+]
+
+
+def _topline_payload(demo=False):
+    conn = _contested_db()
+    cur = conn.cursor()
+    try:
+        blocks = []
+        for key, label, district in TOPLINE_RACES:
+            office_name, level = CONTESTED_OFFICES[key]
+            sides = {}
+            for party, party_full in (("R", "Republican"), ("D", "Democratic")):
+                r = _compute_results(cur, office_name, level, "", district,
+                                     party_full, party, with_precincts=False, demo=demo)
+                if r.get("exists"):
+                    sides[party] = {
+                        "candidates": [
+                            {"name": c["name"], "votes": c["votes"],
+                             "pct": c.get("pct", 0)}
+                            for c in r["candidates"]
+                        ],
+                        "projection": r["projection"],
+                        "reporting": r["reporting"],
+                    }
+            if sides:
+                blocks.append({"key": key, "label": label,
+                               "district": district, "sides": sides})
+
+        # How much of the state has reported at all.
+        cur.execute("""SELECT COUNT(DISTINCT res.municipality) AS n
+                         FROM results res
+                         JOIN races r ON res.race_id = r.id
+                         JOIN elections e ON r.election_id = e.id
+                        WHERE e.year = 2026 AND e.election_type = 'state_primary'
+                          AND res.votes > 0""")
+        reported = cur.fetchone()["n"] or 0
+        cur.execute("SELECT COUNT(*) AS n FROM polling_places")
+        places = cur.fetchone()["n"] or 0
+
+        chambers = []
+        for office, name in (("State Senator", "State Senate"),
+                             ("State Representative", "State House")):
+            row = {"office": name, "parties": {}}
+            for party in ("Republican", "Democratic"):
+                cur.execute("""SELECT COUNT(*) AS n FROM races r
+                                 JOIN offices o ON r.office_id = o.id
+                                 JOIN elections e ON r.election_id = e.id
+                                WHERE e.year=2026 AND e.election_type='state_primary'
+                                  AND e.party=? AND o.name=?""", (party, office))
+                total = cur.fetchone()["n"]
+                cur.execute("""SELECT COUNT(DISTINCT r.id) AS n FROM races r
+                                 JOIN offices o ON r.office_id = o.id
+                                 JOIN elections e ON r.election_id = e.id
+                                 JOIN results res ON res.race_id = r.id AND res.votes > 0
+                                WHERE e.year=2026 AND e.election_type='state_primary'
+                                  AND e.party=? AND o.name=?""", (party, office))
+                row["parties"][party[0]] = {"done": cur.fetchone()["n"], "total": total}
+            chambers.append(row)
+    finally:
+        conn.close()
+
+    return {"blocks": blocks, "chambers": chambers,
+            "places": {"reported": reported, "total": places,
+                       "pct": round(100 * reported / places) if places else 0},
+            "demo": bool(demo)}
+
+
+@app.route('/api/primary-topline')
+def api_primary_topline():
+    """One small request for the whole topline, so the page can poll cheaply."""
+    demo = request.args.get('demo') == '1'
+    resp = jsonify(_topline_payload(demo=demo))
+    # Short edge cache: election night traffic is bursty and every viewer wants
+    # the same bytes. 30s is well inside how fast towns actually report.
+    resp.headers['Cache-Control'] = 'public, max-age=20, s-maxage=30'
+    return resp
+
+
+# Not '/' - that is the existing site homepage on elections.nhhouse.gop. The
+# results domain's nginx vhost maps its root here instead.
+@app.route('/results')
+def primary_night():
+    """Election-night front page: both primaries, topline first."""
+    demo = request.args.get('demo') == '1'
+    return render_template('primary_night.html', demo=demo,
+                           initial=_topline_payload(demo=demo))
+
+
 @app.route('/api/contested/<office_key>/board')
 def api_contested_board(office_key):
     """Results board: every contested district for a party, with current leader,

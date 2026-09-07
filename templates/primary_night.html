@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Hampshire Primary Results — September 8, 2026</title>
+<meta name="description" content="Live results for the New Hampshire state primary: Governor, U.S. Senate and U.S. House, Republican and Democratic, with town-by-town maps.">
+<style>
+:root{
+  --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  --r:#b91c1c; --r-soft:#fee2e2; --d:#1d4ed8; --d-soft:#dbeafe; --ok:#15803d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:var(--ink);
+     font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;padding:1.4rem 1rem 1.6rem}
+.wrap{max-width:1100px;margin:0 auto;padding:0 1rem}
+h1{margin:0;font-size:1.5rem;letter-spacing:-.01em}
+.sub{opacity:.75;font-size:.9rem;margin-top:.3rem}
+.live{display:inline-block;background:#dc2626;border-radius:20px;padding:3px 10px;
+      font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      vertical-align:middle;margin-left:.5rem;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.demo{background:#b45309}
+.reporting{margin-top:.9rem;background:rgba(255,255,255,.12);border-radius:8px;padding:.6rem .8rem;
+           font-size:.85rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.bar{height:6px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;margin-top:.45rem}
+.bar i{display:block;height:100%;background:#38bdf8}
+main{padding:1.4rem 0 3rem}
+.race{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+      margin-bottom:1.1rem;overflow:hidden}
+.race > h2{margin:0;padding:.85rem 1rem;font-size:1.05rem;border-bottom:1px solid var(--line);
+           background:#f8fafc}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media (max-width:720px){.sides{grid-template-columns:1fr}}
+.side{padding:.9rem 1rem}
+.side + .side{border-left:1px solid var(--line)}
+@media (max-width:720px){.side + .side{border-left:0;border-top:1px solid var(--line)}}
+.side h3{margin:0 0 .6rem;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em}
+.side.R h3{color:var(--r)} .side.D h3{color:var(--d)}
+.cand{margin-bottom:.55rem}
+.cand .row{display:flex;justify-content:space-between;gap:.6rem;font-size:.92rem}
+.cand .nm{font-weight:550}
+.cand .vt{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cbar{height:8px;background:#f1f5f9;border-radius:5px;overflow:hidden;margin-top:.25rem}
+.cbar i{display:block;height:100%}
+.R .cbar i{background:var(--r)} .D .cbar i{background:var(--d)}
+.lead .nm::after{content:"✓";color:var(--ok);margin-left:.35rem;font-weight:700}
+.status{display:inline-block;font-size:.66rem;font-weight:700;text-transform:uppercase;
+        letter-spacing:.05em;padding:2px 8px;border-radius:20px;margin-left:.4rem}
+.s-called{background:#dcfce7;color:#166534}
+.s-likely{background:#dbeafe;color:#1e40af}
+.s-leaning{background:#fef3c7;color:#92400e}
+.s-too_close{background:#fee2e2;color:#991b1b}
+.s-awaiting{background:#f1f5f9;color:#64748b}
+.chambers{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.1rem}
+@media (max-width:720px){.chambers{grid-template-columns:1fr}}
+.ch{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem}
+.ch h3{margin:0 0 .5rem;font-size:.95rem}
+.ch .line{display:flex;justify-content:space-between;font-size:.87rem;margin-bottom:.3rem}
+.more{display:block;text-align:center;background:var(--panel);border:1px solid var(--line);
+      border-radius:12px;padding:.95rem;text-decoration:none;color:var(--ink);font-weight:600}
+.more:hover{background:#f8fafc}
+footer{color:var(--muted);font-size:.78rem;text-align:center;padding:0 1rem 2.5rem}
+.stale{color:#b45309}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>New Hampshire Primary Results
+      <span class="live {% if demo %}demo{% endif %}" id="badge">{% if demo %}Demo{% else %}Live{% endif %}</span>
+    </h1>
+    <div class="sub">State Primary · September 8, 2026 · Republican and Democratic ballots</div>
+    <div class="reporting">
+      <span><b id="rep-n">{{ initial.places.reported }}</b> of <b>{{ initial.places.total }}</b> polling places reporting</span>
+      <span id="updated">—</span>
+      <div class="bar" style="flex-basis:100%"><i id="rep-bar" style="width:{{ initial.places.pct }}%"></i></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="races"></div>
+
+  <div class="chambers" id="chambers"></div>
+
+  <a class="more" href="/contested{% if demo %}?demo=1{% endif %}">
+    Town-by-town maps, State Senate and all 400 House races →
+  </a>
+</main>
+
+<footer class="wrap">
+  Unofficial results, compiled from town clerks and reported by local Republican volunteers.
+  Projections are estimates, not official calls. Official results come from the
+  <a href="https://www.sos.nh.gov/">NH Secretary of State</a>.
+</footer>
+
+<script>
+const DEMO = {{ 'true' if demo else 'false' }};
+const nf = new Intl.NumberFormat('en-US');
+const STATUS_TEXT = {called:'Called', likely:'Likely', leaning:'Leaning',
+                     too_close:'Too close', awaiting:'Awaiting'};
+
+function side(party, s) {
+  if (!s) return '';
+  const cands = s.candidates || [];
+  const top = Math.max(1, ...cands.map(c => c.votes || 0));
+  const proj = s.projection || {};
+  const st = proj.status || 'awaiting';
+  const rows = cands.map((c, i) => {
+    const w = Math.round(100 * (c.votes || 0) / top);
+    const leading = i === 0 && (c.votes || 0) > 0 && st === 'called';
+    return `<div class="cand ${leading ? 'lead' : ''}">
+      <div class="row"><span class="nm">${esc(c.name)}</span>
+        <span class="vt">${nf.format(c.votes || 0)} · ${(c.pct || 0).toFixed(1)}%</span></div>
+      <div class="cbar"><i style="width:${w}%"></i></div></div>`;
+  }).join('');
+  return `<div class="side ${party}">
+    <h3>${party === 'R' ? 'Republican' : 'Democratic'}
+      <span class="status s-${st}">${STATUS_TEXT[st] || st}</span></h3>
+    ${rows || '<div class="vt">No candidates filed</div>'}</div>`;
+}
+
+function esc(t) {
+  return String(t).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function render(d) {
+  document.getElementById('races').innerHTML = (d.blocks || []).map(b =>
+    `<section class="race"><h2>${esc(b.label)}</h2>
+       <div class="sides">${side('R', b.sides.R)}${side('D', b.sides.D)}</div>
+     </section>`).join('');
+
+  document.getElementById('chambers').innerHTML = (d.chambers || []).map(c =>
+    `<div class="ch"><h3>${esc(c.office)}</h3>
+      ${Object.entries(c.parties).map(([p, v]) =>
+        `<div class="line"><span>${p === 'R' ? 'Republican' : 'Democratic'}</span>
+         <span>${v.done} of ${v.total} races reporting</span></div>`).join('')}
+     </div>`).join('');
+
+  document.getElementById('rep-n').textContent = nf.format(d.places.reported);
+  document.getElementById('rep-bar').style.width = d.places.pct + '%';
+  document.getElementById('updated').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-US',
+      {hour:'numeric', minute:'2-digit'});
+  document.getElementById('updated').className = '';
+}
+
+render({{ initial | tojson }});
+
+let failures = 0;
+async function refresh() {
+  try {
+    const r = await fetch('/api/primary-topline' + (DEMO ? '?demo=1' : ''),
+                          {cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+    failures = 0;
+  } catch (e) {
+    // Never blank the page on a failed poll - stale numbers beat no numbers.
+    if (++failures >= 2) {
+      const u = document.getElementById('updated');
+      u.textContent = 'Reconnecting…';
+      u.className = 'stale';
+    }
+  }
+}
+setInterval(refresh, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refresh();
+});
+</script>
+</body>
+</html>
