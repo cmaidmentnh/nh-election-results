@@ -155,6 +155,9 @@ contains_results=false and say so in notes."""
 # further - and no larger, which would only cost tokens.
 MAX_EDGE = 2576
 MAX_ATTACHMENTS = 12
+# A long tape becomes several tiles; cap the total so one photo cannot
+# swamp a request.
+MAX_TILES = 6
 MAX_PDF_BYTES = 20 * 1024 * 1024
 
 
@@ -187,8 +190,13 @@ def _sniff(data):
 def _prepare_image(data, media_type):
     """Re-encode to JPEG within the model's resolution ceiling.
 
+    Returns a LIST of images: a long tally tape shrunk to fit 2576px on its
+    long edge would have its digits squashed into illegibility, so tall images
+    are cut into overlapping tiles at full readable width instead. The overlap
+    keeps a row that falls on a seam readable in one tile or the other.
+
     Phone photos arrive at 12MP and, from iPhones, often as HEIC, which the API
-    does not accept. Both are handled here so the caller does not care.
+    does not accept; both are handled here so the caller does not care.
     """
     try:
         import io
@@ -199,75 +207,43 @@ def _prepare_image(data, media_type):
             pillow_heif.register_heif_opener()
         except ImportError:
             if media_type == "image/heic":
-                return None, None
+                return []
 
         img = Image.open(io.BytesIO(data))
         img.load()
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
-        if max(img.size) > MAX_EDGE:
-            ratio = MAX_EDGE / max(img.size)
-            img = img.resize((max(1, int(img.width * ratio)),
-                              max(1, int(img.height * ratio))), Image.LANCZOS)
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=88, optimize=True)
-        return buf.getvalue(), "image/jpeg"
+
+        # Scale by WIDTH so text keeps its size, then tile down the length.
+        if img.width > MAX_EDGE:
+            ratio = MAX_EDGE / img.width
+            img = img.resize((MAX_EDGE, max(1, int(img.height * ratio))), Image.LANCZOS)
+
+        pieces = []
+        if img.height <= MAX_EDGE:
+            pieces.append(img)
+        else:
+            overlap = 220
+            step = MAX_EDGE - overlap
+            top = 0
+            while top < img.height and len(pieces) < MAX_TILES:
+                bottom = min(top + MAX_EDGE, img.height)
+                pieces.append(img.crop((0, top, img.width, bottom)))
+                if bottom >= img.height:
+                    break
+                top += step
+
+        out = []
+        for piece in pieces:
+            buf = io.BytesIO()
+            piece.save(buf, format="JPEG", quality=88, optimize=True)
+            out.append((buf.getvalue(), "image/jpeg"))
+        return out
     except Exception:
         log.exception("Could not re-encode an attachment")
-        # A format the API already accepts can still go through untouched.
         if media_type in ("image/jpeg", "image/png", "image/gif", "image/webp"):
-            return data, media_type
-        return None, None
-
-
-def _spreadsheet_text(path):
-    """An .xlsx of results rendered as plain rows the model can read.
-
-    At least one city sent its 2024 return as a spreadsheet, and a picture of a
-    spreadsheet is not what arrives - the file itself does.
-    """
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        log.warning("openpyxl not installed; cannot read %s", path)
-        return ""
-    try:
-        wb = load_workbook(path, read_only=True, data_only=True)
-    except Exception:
-        log.exception("Could not open spreadsheet %s", path)
-        return ""
-
-    out = []
-    for ws in wb.worksheets:
-        out.append(f"--- sheet: {ws.title} ---")
-        for row in ws.iter_rows(values_only=True):
-            cells = ["" if c is None else str(c).strip() for c in row]
-            if any(cells):
-                out.append(" | ".join(cells).rstrip(" |"))
-            if len(out) > 4000:
-                out.append("(truncated)")
-                break
-    wb.close()
-    return "\n".join(out)
-
-
-def spreadsheet_texts(paths):
-    """Text extracted from any spreadsheet attachments, for the prompt body."""
-    chunks = []
-    for p in (paths or []):
-        path = Path(p)
-        try:
-            if not path.exists():
-                continue
-            head = path.open("rb").read(8)
-        except OSError:
-            continue
-        if head[:4] != b"PK\x03\x04" and path.suffix.lower() not in (".xlsx", ".xlsm"):
-            continue
-        text = _spreadsheet_text(path)
-        if text:
-            chunks.append(f"[spreadsheet attachment: {path.name}]\n{text}")
-    return "\n\n".join(chunks)
+            return [(data, media_type)]
+        return []
 
 
 def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
@@ -303,14 +279,12 @@ def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
         if not media_type or not media_type.startswith("image/"):
             continue
 
-        prepared, out_type = _prepare_image(data, media_type)
-        if not prepared:
-            continue
-        blocks.append({
-            "type": "image",
-            "source": {"type": "base64", "media_type": out_type,
-                       "data": base64.standard_b64encode(prepared).decode()},
-        })
+        for prepared, out_type in _prepare_image(data, media_type):
+            blocks.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": out_type,
+                           "data": base64.standard_b64encode(prepared).decode()},
+            })
     return blocks
 
 
