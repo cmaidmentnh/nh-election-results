@@ -125,6 +125,15 @@ function render(d){
 
   document.getElementById('rep-n').textContent = nf.format(d.places.reported);
   document.getElementById('rep-bar').style.width = d.places.pct + '%';
+  // The masthead strip is shared by both pages; fill it from whatever this
+  // page already knows.
+  const lsc = document.getElementById('ls-count');
+  const lsw = document.getElementById('ls-when');
+  if (lsc) lsc.textContent = `${nf.format(d.places.reported)} of ${nf.format(d.places.total)}`;
+  if (lsw) lsw.textContent = d.places.reported
+    ? 'Updated ' + new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})
+    : 'Polls close 7:00 p.m.';
+
   const u = document.getElementById('updated');
   u.textContent = d.places.reported
     ? 'Updated ' + new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})
