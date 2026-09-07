@@ -11,6 +11,7 @@ import re
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from intake import apply as apply_mod
 from intake import config, parser, roster, store
@@ -22,7 +23,20 @@ logging.basicConfig(
 )
 log = logging.getLogger("intake")
 
-_db_lock = threading.Lock()
+# Reports are handled concurrently: the slow part is the model reads, and one
+# town's reads must not hold up another's. SQLite is in WAL mode with a busy
+# timeout, so the short writes at the end serialise themselves.
+_pool = ThreadPoolExecutor(max_workers=config.WORKERS, thread_name_prefix="intake")
+
+
+def _handle(msg):
+    conn = store.connect()
+    try:
+        process(conn, msg)
+    except Exception:
+        log.exception("unhandled error processing a report")
+    finally:
+        conn.close()
 
 
 def _guess_town(cursor, msg):
@@ -189,12 +203,7 @@ def email_loop(stop):
                 stop.wait(300)
                 continue
             for msg in source.fetch_new():
-                with _db_lock:
-                    conn = store.connect()
-                    try:
-                        process(conn, msg)
-                    finally:
-                        conn.close()
+                _pool.submit(_handle, msg)
         except Exception:
             log.exception("email poll failed")
         stop.wait(config.EMAIL_POLL_SECONDS)
@@ -202,12 +211,7 @@ def email_loop(stop):
 
 def signal_loop(stop):
     def on_message(msg):
-        with _db_lock:
-            conn = store.connect()
-            try:
-                process(conn, msg)
-            finally:
-                conn.close()
+        _pool.submit(_handle, msg)
 
     if not config.SIGNAL_ACCOUNT:
         log.warning("Signal feed idle: SIGNAL_BOT_NUMBER not set")

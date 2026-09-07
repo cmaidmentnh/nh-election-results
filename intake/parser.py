@@ -14,6 +14,7 @@ sees it rather than the parser guessing.
 
 import base64
 import logging
+import re
 import mimetypes
 from pathlib import Path
 
@@ -368,9 +369,13 @@ def line_key(line):
     """
     if line.race_id and line.candidate_id:
         return ("id", line.race_id, line.candidate_id)
-    return ("text",
-            (line.race_text or "").strip().lower(),
-            (line.candidate_text or "").strip().lower())
+    # Normalise hard: two reads of the same page often differ only in
+    # punctuation ("Donald J. Trump" vs "Donald J Trump"), and treating those
+    # as different lines would report a disagreement that is not one.
+    def norm(t):
+        return re.sub(r"[^a-z0-9]+", "", (t or "").lower())
+
+    return ("text", norm(line.race_text), norm(line.candidate_text))
 
 
 def _tally(reads):
@@ -437,11 +442,21 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     Returns (extraction, agreed_keys, disagreements) where disagreements maps a
     key to the full list of readings, for the review queue to show.
     """
-    first = extract(municipality, roster_text, body, subject, sender, attachments)
+    from concurrent.futures import ThreadPoolExecutor
+
+    def read_once():
+        return extract(municipality, roster_text, body, subject, sender, attachments)
+
+    # The two baseline reads are independent, so pay for one round trip, not
+    # two. On election night latency per report is what decides whether the
+    # board keeps up with the towns.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(read_once) for _ in range(2)]
+        reads = [f.result() for f in futures]
+
+    first = reads[0]
     if not first.contains_results or not first.lines:
         return first, set(), {}
-
-    reads = [first, extract(municipality, roster_text, body, subject, sender, attachments)]
 
     def unsettled(rs):
         return any(not _verdict(v)[1] for v in _tally(rs).values())

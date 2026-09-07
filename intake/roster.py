@@ -11,6 +11,7 @@ town's ballot.
 """
 
 import re
+import threading
 
 from entry import event_elections, place_races  # single source of truth
 from entry_sources import normkey
@@ -132,6 +133,13 @@ def town_list_text(cursor):
     return "\n".join(f"{p['municipality']} ({p['county']})" for p in polling_places(cursor))
 
 
+# Roster building creates the shared write-in pseudo-candidate on first use
+# with a read-then-insert that is not atomic. Reports are handled concurrently,
+# so serialise this short, DB-only step rather than risk two write-in rows that
+# would split a race's write-in votes across two candidate ids.
+_roster_lock = threading.Lock()
+
+
 def roster_for(cursor, municipality):
     """Every race the town votes on, with candidate ids, as model-readable text
     plus a lookup structure the validator uses to check the model's output."""
@@ -139,7 +147,8 @@ def roster_for(cursor, municipality):
     election_ids = [e["id"] for e in elections]
     party_of = {e["id"]: (e["party"] or "") for e in elections}
 
-    races = place_races(cursor, municipality, election_ids)
+    with _roster_lock:
+        races = place_races(cursor, municipality, election_ids)
 
     lines = []
     index = {}

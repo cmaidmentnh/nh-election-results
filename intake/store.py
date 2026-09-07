@@ -37,12 +37,15 @@ def bot_user_id(conn):
     row = cur.fetchone()
     if row:
         return row["id"]
+    # Several reports are handled at once, so two threads can reach this on a
+    # cold database together. INSERT OR IGNORE plus a re-read is safe either way.
     cur.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        "INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)",
         (config.BOT_USERNAME, "!", "bot"),
     )
     conn.commit()
-    return cur.lastrowid
+    cur.execute("SELECT id FROM users WHERE username = ?", (config.BOT_USERNAME,))
+    return cur.fetchone()["id"]
 
 
 def record_message(conn, source, external_id, sender, subject, body, attachments, received_at):

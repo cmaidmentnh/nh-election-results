@@ -58,6 +58,10 @@ AUTO_APPLY = os.environ.get("INTAKE_AUTO_APPLY", "1") not in ("0", "false", "no"
 MIN_CONFIDENCE = float(os.environ.get("INTAKE_MIN_CONFIDENCE", "0.85"))
 
 # Username the service writes audit rows as. Created on first run.
+# How many reports to work on at once. The bound that matters is the model
+# API, not the box.
+WORKERS = int(os.environ.get("INTAKE_WORKERS", "8"))
+
 BOT_USERNAME = os.environ.get("INTAKE_BOT_USER", "intake-bot")
 
 # Don't publish before this. Polls close at 7pm; anything that arrives earlier
