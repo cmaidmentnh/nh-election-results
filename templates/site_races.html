@@ -1,0 +1,344 @@
+{% extends "site_base.html" %}
+{% set active = 'races' %}
+{% block title %}Every race, town by town — NH Primary 2026{% endblock %}
+{% block meta_description %}Every contested New Hampshire primary race by office, with precinct-by-precinct results, projections and win probabilities.{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="w">
+
+  <section class="lead">
+    <div>
+      <h1>Every race, town by town</h1>
+      <p>Republican and Democratic primaries for every contested office. Each race shows
+         the share of expected vote counted, the projected total, and how likely the
+         current order is to hold.</p>
+    </div>
+  </section>
+
+  <div class="count" id="count"></div>
+
+  <div class="filters">
+    <div class="grp" id="offices"></div>
+    <div class="seg" id="party"></div>
+    <div class="seg" id="base"></div>
+  </div>
+
+  <div class="split" id="split">
+    <aside class="mapcol">
+      <div class="mapbox"><div id="nhmap"></div><div class="legend" id="legend"></div></div>
+    </aside>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <section class="detail" id="detail">
+    <div class="dhead">
+      <button type="button" class="back" id="back">← All races</button>
+      <h2 id="dtitle"></h2>
+      <span class="s" id="dsub"></span>
+      <span class="seg" id="dparty" style="margin-left:auto"></span>
+    </div>
+    <div class="callout" id="callout"></div>
+    <div id="detmap"></div>
+    <div class="tw"><table class="pt" id="ptable"></table></div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script>
+const DEMO = {{ 'true' if demo else 'false' }};
+const Q = DEMO ? '&demo=1' : '';
+const nf = new Intl.NumberFormat('en-US');
+
+const OFFICES=[
+ {key:'governor',label:'Governor',level:'statewide'},
+ {key:'us-senate',label:'U.S. Senate',level:'statewide'},
+ {key:'us-house',label:'U.S. House',level:'district',file:'nh-congress-districts.geojson',prop:'Cong2022'},
+ {key:'exec-council',label:'Exec Council',level:'district',file:'nh-exec-council-districts.geojson',prop:'ExecCo2022'},
+ {key:'state-senate',label:'State Senate',level:'district',file:'nh-senate-districts.geojson',prop:'Senate2022'},
+ {key:'state-house',label:'State House',level:'house'},
+ {key:'delegate',label:'Delegate',level:'house'},
+];
+const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
+const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
+const ST={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
+          leaning:{l:'Leaning',c:'#6b7280'},too_close:{l:'Too close',c:'#b26a00'},
+          awaiting:{l:'Awaiting',c:'#c9ccd1'}};
+const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
+const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'},
+      HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
+
+const geo={}, jc={};
+let geoMap=null, houseByCode=null, townsByName=null;
+let map=null, layer=null, cfg=null, dmap=null, dlayer=null;
+let O=null, P='R', BASEV='Base', data=null, board={}, timer=null, ctx=null;
+
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);
+const G=f=>geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);
+const contested=(rec,p)=>rec&&rec.parties&&rec.parties[p]>rec.seats;
+
+function distName(o,rec){
+  if(o.level==='house')return (rec.county?rec.county+' ':'')+'District '+rec.district;
+  if(o.key==='us-house')return 'U.S. House District '+rec.district;
+  if(o.key==='exec-council')return 'Executive Council District '+rec.district;
+  if(o.key==='state-senate')return 'State Senate District '+rec.district;
+  return o.label;
+}
+
+/* ---- chrome ------------------------------------------------------------- */
+function buildOffices(){
+  const el=document.getElementById('offices'); el.innerHTML='';
+  OFFICES.forEach(o=>{const b=document.createElement('button');
+    b.textContent=o.label; b.dataset.k=o.key;
+    b.className=(O&&o.key===O.key)?'on':'';
+    b.onclick=()=>selectOffice(o); el.appendChild(b);});
+}
+function buildParty(){
+  const el=document.getElementById('party'); el.innerHTML='';
+  const avail=['R','D'].filter(p=>Object.values(data.districts).some(r=>contested(r,p)));
+  const use=avail.length?avail:['R'];
+  if(!use.includes(P)) P=use[0];
+  use.forEach(p=>{const b=document.createElement('button');
+    b.textContent=PARTY[p].n; b.className=(p===P?'on '+p:'');
+    b.onclick=()=>{P=p;buildParty();load();}; el.appendChild(b);});
+}
+function buildBase(){
+  const el=document.getElementById('base');
+  el.style.display = O.level==='house' ? '' : 'none';
+  el.innerHTML='';
+  ['Base','Floterial'].forEach(v=>{const b=document.createElement('button');
+    b.textContent=v; b.className=(v===BASEV?'on':'');
+    b.onclick=()=>{BASEV=v;buildBase();paint();}; el.appendChild(b);});
+}
+
+function selectOffice(o){
+  O=o; ctx=null; document.getElementById('detail').classList.remove('show');
+  buildOffices();
+  J('/api/contested/'+o.key).then(d=>{
+    if(o!==O)return; data=d; buildParty(); buildBase();
+    if(o.level==='house'&&!geoMap) J('/api/precinct-geo-map').then(m=>geoMap=m);
+    load();
+  });
+}
+function load(){
+  clearInterval(timer);
+  document.getElementById('split').classList.toggle('solo', O.level==='statewide');
+  refresh(); timer=setInterval(refresh,30000);
+}
+function refresh(){
+  const o=O,p=P;
+  fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
+    if(o!==O||p!==P)return;
+    board={}; b.races.forEach(r=>board[r.code]=r);
+    counts();
+    if(ctx) openDetail(ctx.o,ctx.code,ctx.p); else paint();
+    tick();
+  }).catch(()=>{});
+}
+function tick(){
+  fetch('/api/primary-topline'+(DEMO?'?demo=1':''),{cache:'no-store'})
+    .then(r=>r.json()).then(d=>{
+      if(!d.places)return;
+      document.getElementById('tk-count').textContent=nf.format(d.places.reported);
+      document.getElementById('tk-total').textContent=nf.format(d.places.total);
+      document.getElementById('tk-when').textContent='Updated '+
+        new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    }).catch(()=>{});
+}
+
+function counts(){
+  const rs=Object.values(board);
+  const c={called:0,close:0,await:0};
+  rs.forEach(r=>{const s=r.projection.status;
+    if(s==='called')c.called++;
+    else if(s==='awaiting')c.await++;
+    else c.close++;});
+  document.getElementById('count').innerHTML=
+    `<div><span class="n">${rs.length}</span><span class="l">Contested</span></div>
+     <div class="called"><span class="n">${c.called}</span><span class="l">Called</span></div>
+     <div class="close"><span class="n">${c.close}</span><span class="l">In play</span></div>
+     <div><span class="n">${c.await}</span><span class="l">Awaiting</span></div>`;
+}
+
+/* ---- list --------------------------------------------------------------- */
+function odds(pj){
+  if(!pj||pj.status==='called'||pj.win_prob==null) return '';
+  return `<div class="od"><b>${Math.round(pj.win_prob*100)}%</b> chance ${esc(pj.leader||'')} holds on</div>`;
+}
+function card(r){
+  const win=new Set(r.projection.winners||[]);
+  const tot=r.candidates.reduce((s,c)=>s+c.votes,0)||0;
+  const max=Math.max(1,...r.candidates.map(c=>c.votes));
+  const rows=r.candidates.slice(0,4).map(c=>{
+    const w=win.has(c.name), pc=tot?Math.round(100*c.votes/tot):0;
+    return `<div class="cr"><div class="n2 ${w?'w':''}">${esc(c.name)}</div>
+      <div class="v2">${nf.format(c.votes)} <span>${pc}%</span></div>
+      <div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[P].c}"></i></div></div>`;
+  }).join('');
+  const s=ST[r.projection.status]||ST.awaiting;
+  return `<button type="button" class="dist" data-code="${r.code}">
+    <div class="t"><span class="dn">${esc(distName(O,r))}</span>
+      <span class="tag" style="color:${s.c}">${s.l}</span></div>
+    <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% counted</div>
+    ${rows}${r.candidates.length>4?`<div class="dm" style="margin:6px 0 0">+${r.candidates.length-4} more</div>`:''}
+    ${odds(r.projection)}</button>`;
+}
+function renderList(){
+  const rs=Object.values(board);
+  document.getElementById('grid').innerHTML = rs.length
+    ? rs.map(card).join('')
+    : `<div class="dm" style="padding:26px 0">No contested ${PARTY[P].n} races for this office.</div>`;
+  document.querySelectorAll('.dist').forEach(b=>
+    b.onclick=()=>openDetail(O,b.dataset.code,P));
+}
+
+/* ---- map ---------------------------------------------------------------- */
+function legend(){
+  document.getElementById('legend').innerHTML =
+    Object.entries(ST).map(([k,v])=>`<div class="r"><i style="background:${v.c}"></i>${v.l}</div>`).join('')
+    + `<div class="r"><i style="background:#eef0f2"></i>No contest</div>`;
+}
+function styleOf(code){
+  const rec=data.districts[code];
+  if(!contested(rec,P)) return {fillColor:'#eef0f2',fillOpacity:.85,color:'#fff',weight:.6,interactive:false};
+  const b=board[code];
+  const s=b?(ST[b.projection.status]||ST.awaiting):ST.awaiting;
+  return {fillColor:s.c,fillOpacity:.88,color:'#fff',weight:.8,interactive:true};
+}
+function tipFor(code){
+  const rec=data.districts[code], b=board[code];
+  if(!b) return `<div class="tn">${esc(distName(O,rec))}</div><div class="tm"><span>Awaiting results</span></div>`;
+  const tot=b.candidates.reduce((s,c)=>s+c.votes,0)||0;
+  const s=ST[b.projection.status]||ST.awaiting;
+  const rows=b.candidates.slice(0,5).map(c=>
+    `<div class="tr"><span>${esc(c.name)}</span><span class="v">${nf.format(c.votes)} ${tot?Math.round(100*c.votes/tot):0}%</span></div>`).join('');
+  const p=b.projection.win_prob!=null&&b.projection.status!=='called'
+    ? `<div class="tr"><span>${Math.round(b.projection.win_prob*100)}% chance it holds</span><span></span></div>` : '';
+  return `<div class="tn">${esc(distName(O,rec))}</div>
+    <div class="tm"><span>${s.l}</span><span>${b.reporting.expected_in||0}% in</span></div>${rows}${p}`;
+}
+function renderMap(){
+  if(map){try{map.remove();}catch(e){}map=null;layer=null;}
+  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
+  G('nh-towns.geojson').then(g=>{
+    L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
+      .addTo(map).bringToBack();
+  });
+  legend();
+  cfg = O.level==='house' ? (BASEV==='Floterial'?HFLOT:HBASE) : {file:O.file,prop:O.prop};
+  if(!cfg.file) return;
+  G(cfg.file).then(g=>{
+    if(layer){map.removeLayer(layer);}
+    layer=L.geoJSON(g,{
+      style:f=>styleOf(String(f.properties[cfg.prop]).trim()),
+      onEachFeature:(f,l)=>{
+        const code=String(f.properties[cfg.prop]).trim();
+        if(!contested(data.districts[code],P))return;
+        l.bindTooltip(tipFor(code),{className:'tip',sticky:true});
+        l.on('mouseover',()=>l.setStyle({weight:2,color:'#111214'}));
+        l.on('mouseout',()=>layer.resetStyle(l));
+        l.on('click',()=>openDetail(O,code,P));
+      }}).addTo(map);
+    // Always frame the whole state; fitting to contested districts alone
+    // cropped New Hampshire off the panel.
+    map.fitBounds(NH,{padding:[8,8]});
+  });
+}
+function paint(){ renderList(); if(O.level!=='statewide') renderMap(); }
+
+/* ---- detail ------------------------------------------------------------- */
+function openDetail(o,code,p){
+  ctx={o,code,p};
+  document.getElementById('split').style.display='none';
+  document.getElementById('detail').classList.add('show');
+  fetch('/api/contested/'+o.key+'/results?code='+encodeURIComponent(code)+'&party='+p+Q)
+    .then(r=>r.json()).then(r=>{
+      const rec=data.districts[code]||{};
+      document.getElementById('dtitle').textContent=distName(o,{...rec,district:r.district,county:r.county});
+      document.getElementById('dsub').textContent=
+        `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`;
+      const pj=r.projection, s=ST[pj.status]||ST.awaiting;
+      const co=document.getElementById('callout');
+      co.className='callout '+pj.status;
+      co.innerHTML=`<span>${s.l}${(pj.winners||[]).length?': '+esc(pj.winners.join(', ')):''}</span>`+
+        (pj.win_prob!=null&&pj.status!=='called'
+          ? `<span class="p">${Math.round(pj.win_prob*100)}% chance it holds</span>`:'');
+      ptable(r); detailMap(r,p);
+      document.getElementById('dparty').innerHTML='';
+      ['R','D'].forEach(x=>{const b=document.createElement('button');
+        b.textContent=PARTY[x].n; b.className=(x===p?'on '+x:'');
+        b.onclick=()=>openDetail(o,code,x); document.getElementById('dparty').appendChild(b);});
+    });
+}
+function ptable(r){
+  const cn=r.candidates.map(c=>c.name);
+  let h=`<thead><tr><th>Precinct</th>${cn.map(n=>`<th>${esc(n)}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
+  (r.precincts||[]).forEach(p=>{
+    h+=`<tr><td>${esc(p.name)}</td>${cn.map(n=>`<td>${p.reported?nf.format(p.votes[n]||0):'—'}</td>`).join('')}`+
+       `<td>${p.reported?'✓':'—'}</td></tr>`;});
+  document.getElementById('ptable').innerHTML=h+'</tbody>';
+}
+function fcFor(precincts){
+  const groups={};
+  precincts.forEach(p=>{
+    const code=geoMap&&geoMap[p.name];
+    let key,feat;
+    if(code&&houseByCode[code]){key='c:'+code;feat=houseByCode[code];}
+    else{const base=p.name.replace(/\s+Ward\s+\d+\*?$/i,'').trim();
+         key='t:'+base.toLowerCase(); feat=townsByName[base.toLowerCase()];}
+    if(!feat)return;
+    (groups[key]||(groups[key]={feat,members:[]})).members.push(p);
+  });
+  return Object.values(groups).map(g=>({type:'Feature',geometry:g.feat.geometry,
+    properties:{members:g.members,name:g.members.length===1?g.members[0].name
+      :g.members[0].name.replace(/\s+Ward.*/i,'')}}));
+}
+function detailMap(r,p){
+  if(dmap){try{dmap.remove();}catch(e){}dmap=null;}
+  dmap=L.map('detmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH);
+  Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
+               G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
+    if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>
+      houseByCode[String(f.properties.basehse22).trim()]=f);}
+    if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>
+      townsByName[String(f.properties.name||'').toLowerCase()]=f);}
+    L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
+      color:'#fff',weight:.5,interactive:false}}).addTo(dmap).bringToBack();
+    const fc={type:'FeatureCollection',features:fcFor(r.precincts||[])};
+    const b=L.latLngBounds([]);
+    dlayer=L.geoJSON(fc,{
+      style:f=>{const any=f.properties.members.some(m=>m.reported);
+        return {fillColor:any?PARTY[p].c:'#dfe2e6',fillOpacity:any?.85:.6,color:'#fff',weight:.8};},
+      onEachFeature:(f,l)=>{
+        const ms=f.properties.members, rep=ms.filter(m=>m.reported);
+        let html=`<div class="tn">${esc(f.properties.name)}</div>`;
+        if(!rep.length) html+='<div class="tm"><span>Not yet reported</span></div>';
+        else{
+          const tot={}; let sum=0;
+          rep.forEach(m=>Object.entries(m.votes).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;sum+=v;}));
+          html+=`<div class="tm"><span>${nf.format(sum)} votes</span></div>`+
+            Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([n,v])=>
+              `<div class="tr"><span>${esc(n)}</span><span class="v">${nf.format(v)} ${sum?Math.round(100*v/sum):0}%</span></div>`).join('');
+        }
+        l.bindTooltip(html,{className:'tip',sticky:true});
+        try{b.extend(l.getBounds());}catch(e){}
+      }}).addTo(dmap);
+    dmap.fitBounds(b.isValid()?b.pad(.08):NH);
+  });
+}
+document.getElementById('back').onclick=()=>{
+  ctx=null;
+  document.getElementById('detail').classList.remove('show');
+  document.getElementById('split').style.display='';
+  paint();
+};
+
+selectOffice(BY['state-house']);
+</script>
+{% endblock %}

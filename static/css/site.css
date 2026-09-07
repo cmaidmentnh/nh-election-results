@@ -161,3 +161,93 @@ footer.f p{margin:4px 0;max-width:80ch}
 
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;
   transition-duration:.001ms!important}}
+
+/* ---- races page --------------------------------------------------------- */
+.filters{display:flex;gap:0;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--hair);
+         padding-bottom:0;margin-top:6px;position:sticky;top:0;background:var(--paper);z-index:400}
+.filters .grp{display:flex;gap:0;flex-wrap:wrap}
+.filters button{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  background:none;border:0;border-bottom:2px solid transparent;color:var(--ink3);
+  padding:11px 0;margin-right:24px;cursor:pointer}
+.filters button:hover{color:var(--ink)}
+.filters button.on{color:var(--ink);border-bottom-color:var(--rule)}
+.filters .seg{margin-left:auto;display:flex;border:1px solid var(--hair);align-self:center}
+.filters .seg button{margin:0;padding:6px 12px;border-bottom:0}
+.filters .seg button.on{background:var(--ink);color:#fff}
+.filters .seg button.on.R{background:var(--R)} .filters .seg button.on.D{background:var(--D)}
+@media(max-width:700px){.filters .seg{margin-left:0;width:100%}}
+
+.count{display:flex;gap:0;border-bottom:2px solid var(--rule);margin-top:2px}
+.count div{flex:1 1 0;padding:12px 0}
+.count div + div{border-left:1px solid var(--hair);padding-left:16px}
+.count .n{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;display:block}
+.count .l{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+          color:var(--ink3);margin-top:5px}
+.count .called .n{color:var(--good)} .count .close .n{color:var(--warn)}
+
+.split{display:grid;grid-template-columns:minmax(280px,32%) 1fr;gap:34px;align-items:start;
+       padding-top:22px}
+.split.solo{grid-template-columns:1fr}
+.split.solo .mapcol{display:none}
+@media(max-width:980px){.split{grid-template-columns:1fr;gap:24px}
+  .mapcol{order:2} .grid{order:1}}
+.mapcol{position:sticky;top:52px}
+@media(max-width:980px){.mapcol{position:static}}
+.mapbox{border:1px solid var(--hair);position:relative;background:#fbfbfa}
+#nhmap{height:clamp(340px,60vh,660px)}
+.legend{position:absolute;left:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);
+        border:1px solid var(--hair);padding:8px 10px;font-family:var(--mono);font-size:10px;
+        letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.legend .r{display:flex;align-items:center;gap:7px;margin:3px 0}
+.legend i{width:12px;height:9px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 34px}
+.dist{border-top:1px solid var(--hair);padding:15px 0;text-align:left;background:none;
+      border-left:0;border-right:0;border-bottom:0;width:100%;cursor:pointer;font:inherit;color:inherit}
+.dist:hover{background:var(--tint)}
+.dist .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.dist .dn{font-size:15px;font-weight:700;letter-spacing:-.015em}
+.dist .dm{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+          color:var(--ink3);margin:2px 0 10px}
+.dist .cr{display:grid;grid-template-columns:1fr auto;gap:1px 10px;margin-bottom:7px}
+.dist .cr .n2{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dist .cr .n2.w{font-weight:700}
+.dist .cr .v2{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+.dist .cr .v2 span{color:var(--ink3)}
+.dist .cb{grid-column:1/3;height:5px;background:#eceef0;position:relative}
+.dist .cb i{position:absolute;left:0;top:0;bottom:0}
+.dist .od{font-family:var(--mono);font-size:11px;color:var(--ink2);margin-top:9px;
+          border-top:1px solid var(--hair);padding-top:7px}
+.dist .od b{font-size:13px;font-weight:600;color:var(--ink)}
+
+.detail{display:none} .detail.show{display:block}
+.dhead{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+       border-bottom:2px solid var(--rule);padding-bottom:8px;margin:26px 0 16px}
+.dhead h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.025em}
+.dhead .s{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.back{background:none;border:0;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+      text-transform:uppercase;cursor:pointer;color:var(--ink2);padding:0}
+.back:hover{color:var(--ink)}
+.callout{border-left:3px solid var(--ink);background:var(--tint);padding:11px 14px;
+         font-weight:600;margin-bottom:16px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.callout.called{border-color:var(--good)} .callout.too_close{border-color:var(--warn)}
+.callout .p{margin-left:auto;font-family:var(--mono);font-weight:600}
+#detmap{height:clamp(240px,38vh,420px);border:1px solid var(--hair);margin-bottom:18px;background:#fbfbfa}
+table.pt{border-collapse:collapse;width:100%;font-size:13px}
+table.pt th,table.pt td{padding:7px 10px;border-bottom:1px solid var(--hair);text-align:right;white-space:nowrap}
+table.pt th:first-child,table.pt td:first-child{text-align:left;position:sticky;left:0;background:var(--paper)}
+table.pt thead th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+                  color:var(--ink2);border-bottom:2px solid var(--rule);background:var(--paper)}
+table.pt td{font-family:var(--mono)}
+table.pt td:first-child{font-family:var(--sans)}
+.tw{overflow-x:auto;border:1px solid var(--hair)}
+.leaflet-container{background:#f0f0ee}
+.leaflet-tooltip.tip{background:#fff;border:1px solid var(--rule);border-radius:0;box-shadow:none;
+  padding:9px 11px;font:400 13px/1.35 var(--sans);color:var(--ink);width:min(260px,84vw);white-space:normal}
+.leaflet-tooltip.tip:before{display:none}
+.tip .tn{font-weight:700;font-size:14px;margin-bottom:2px}
+.tip .tm{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+         color:var(--ink3);margin-bottom:7px;display:flex;justify-content:space-between;gap:8px}
+.tip .tr{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.tip .tr + .tr{border-top:1px solid var(--hair)}
+.tip .tr .v{font-family:var(--mono);font-weight:600;white-space:nowrap}

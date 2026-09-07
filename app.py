@@ -804,7 +804,7 @@ def contested_map():
     conn.close()
     demo = request.args.get('demo') == '1'
     live = demo or datetime.now().date() >= PRIMARY_DAY or has_results
-    return render_template('contested_map.html', live_mode=live, demo=demo)
+    return render_template('site_races.html', live_mode=live, demo=demo)
 
 
 @app.route('/api/contested/<office_key>')
