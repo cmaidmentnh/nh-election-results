@@ -216,7 +216,10 @@ function renderMap(){
         l.on('click',()=>showDetail(o,code,curP));}
     }).addTo(mainMap);
     lastMapSig=mapSig();
-    if(b.isValid()) mainMap.fitBounds(b.pad(.12));
+    // Always frame the whole state. Fitting to the contested districts zoomed
+    // into whichever corner happened to be contested - for State Rep that is
+    // the south - and cropped New Hampshire off the panel.
+    mainMap.fitBounds(NH, {padding:[6,6]});
   });
 }
 function restyleMain(){  // update colors + tooltips from new board, preserving zoom/pan
