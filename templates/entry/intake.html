@@ -1,0 +1,185 @@
+{% extends "admin/base.html" %}
+{% block title %}Intake Review{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/entry.css') }}?v=1">{% endblock %}
+
+{% block content %}
+<a class="e-back" href="{{ url_for('entry.index') }}">← Elections</a>
+<h1 class="e-title">Intake Review</h1>
+<p class="e-subtitle">
+    Reports emailed to results@electhouserepublicans.com or posted in the Signal group.
+    Clean numbers publish automatically; anything below is waiting on a human.
+</p>
+
+<div class="i-counts">
+    {% for label, key in [('Published','applied'), ('Partly queued','partial'), ('Queued','queued'),
+                          ('No results in it','ignored'), ('Errored','error')] %}
+        <div class="i-count"><b>{{ counts.get(key, 0) }}</b><span>{{ label }}</span></div>
+    {% endfor %}
+</div>
+
+{% if not groups %}
+    <div class="e-empty">Nothing waiting for review.</div>
+{% endif %}
+
+{% for g in groups %}
+{% set m = g.message %}
+<section class="i-card" data-message="{{ m.message_id }}">
+    <header class="i-head">
+        <div>
+            <div class="i-town">{{ m.municipality or m.municipality_text or 'Town unknown' }}</div>
+            <div class="i-meta">
+                {{ m.source }} · {{ m.sender }}
+                {% if m.subject %} · {{ m.subject }}{% endif %}
+                {% if m.received_at %} · {{ m.received_at }}{% endif %}
+            </div>
+        </div>
+        <button class="i-toggle" type="button">Show original</button>
+    </header>
+
+    <pre class="i-original hidden">{{ m.body or '(no text — the report was an image)' }}</pre>
+
+    <table class="i-table">
+        <thead>
+            <tr><th>Race</th><th>Candidate</th><th class="i-num">Votes</th><th>Why it is here</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for it in g['items'] %}
+            <tr data-item="{{ it.id }}">
+                <td>
+                    {% if it.kind == 'ballots' %}<em>Ballots cast</em>
+                    {% elif it.office %}{{ it.ballot_party or '' }} {{ it.office }}
+                        {% if it.district %} — {{ it.county }} {{ it.district }}{% endif %}
+                    {% else %}<span class="i-unmatched">{{ it.race_text or 'unmatched race' }}</span>{% endif %}
+                </td>
+                <td>
+                    {% if it.candidate_name %}{{ it.candidate_name }}
+                    {% elif it.kind == 'ballots' %}—
+                    {% else %}<span class="i-unmatched">{{ it.candidate_text or '?' }}</span>{% endif %}
+                </td>
+                <td class="i-num">
+                    <input type="number" class="i-votes" value="{{ it.votes if it.votes is not none else '' }}" min="0">
+                    {% if it.old_votes is not none %}<div class="i-old">was {{ '{:,}'.format(it.old_votes) }}</div>{% endif %}
+                </td>
+                <td class="i-reason">
+                    {{ it.reason }}
+                    {% if it.confidence %}<span class="i-conf">{{ (it.confidence * 100)|round|int }}%</span>{% endif %}
+                </td>
+                <td class="i-actions">
+                    {% if it.race_id and it.candidate_id or it.kind == 'ballots' %}
+                        <button class="i-btn i-accept" type="button">Accept</button>
+                    {% else %}
+                        <button class="i-btn" type="button" disabled title="Match it by hand in the entry screen">Needs entry</button>
+                    {% endif %}
+                    <button class="i-btn i-reject" type="button">Reject</button>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if m.municipality %}
+    <div class="i-foot">
+        <a href="{{ url_for('entry.place', year=2026, election_type='state_primary', municipality=m.municipality) }}">
+            Open {{ m.municipality }} in the entry screen →
+        </a>
+    </div>
+    {% endif %}
+</section>
+{% endfor %}
+
+<h2 class="i-h2">Recent reports</h2>
+<table class="i-table i-recent">
+    <thead><tr><th>When</th><th>Source</th><th>From</th><th>Status</th><th class="i-num">Published</th></tr></thead>
+    <tbody>
+    {% for m in recent %}
+        <tr>
+            <td>{{ m.created_at }}</td>
+            <td>{{ m.source }}</td>
+            <td>{{ m.sender }}</td>
+            <td><span class="i-status i-status-{{ m.status }}">{{ m.status }}</span>
+                {% if m.error %}<div class="i-err">{{ m.error }}</div>{% endif %}</td>
+            <td class="i-num">{{ m.applied_count }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<style>
+.i-counts{display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0 1.5rem}
+.i-count{background:#f4f5f7;border-radius:8px;padding:.6rem .9rem;min-width:6rem}
+.i-count b{display:block;font-size:1.4rem;line-height:1.1}
+.i-count span{font-size:.75rem;color:#666}
+.i-card{border:1px solid #dfe3e8;border-radius:10px;margin-bottom:1.25rem;overflow:hidden}
+.i-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;
+        padding:.8rem 1rem;background:#fafbfc;border-bottom:1px solid #e6e9ed}
+.i-town{font-weight:650;font-size:1.05rem}
+.i-meta{font-size:.78rem;color:#6b7280;margin-top:.15rem;word-break:break-word}
+.i-toggle{background:none;border:1px solid #cbd2d9;border-radius:6px;padding:.3rem .6rem;
+          font-size:.78rem;cursor:pointer;white-space:nowrap}
+.i-original{margin:0;padding:.9rem 1rem;background:#fffdf5;border-bottom:1px solid #e6e9ed;
+            white-space:pre-wrap;font-size:.82rem;max-height:22rem;overflow:auto}
+.i-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.i-table th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;
+            color:#6b7280;padding:.5rem 1rem;border-bottom:1px solid #eceff2}
+.i-table td{padding:.5rem 1rem;border-bottom:1px solid #f2f4f6;vertical-align:top}
+.i-num{text-align:right}
+.i-votes{width:6rem;text-align:right;padding:.3rem .4rem;border:1px solid #cbd2d9;border-radius:5px}
+.i-old{font-size:.72rem;color:#b45309;margin-top:.2rem}
+.i-reason{color:#8a5a00;font-size:.82rem;max-width:22rem}
+.i-conf{display:inline-block;margin-left:.4rem;color:#6b7280;font-size:.75rem}
+.i-unmatched{color:#b91c1c}
+.i-actions{white-space:nowrap;text-align:right}
+.i-btn{border:1px solid #cbd2d9;background:#fff;border-radius:6px;padding:.3rem .7rem;
+       font-size:.8rem;cursor:pointer;margin-left:.3rem}
+.i-accept{border-color:#15803d;color:#15803d}
+.i-reject{border-color:#b91c1c;color:#b91c1c}
+.i-btn[disabled]{opacity:.45;cursor:not-allowed}
+.i-foot{padding:.6rem 1rem;background:#fafbfc;font-size:.82rem}
+.i-h2{margin-top:2.5rem;font-size:1.1rem}
+.i-recent{border:1px solid #dfe3e8;border-radius:10px}
+.i-status{font-size:.75rem;padding:.15rem .45rem;border-radius:4px;background:#eef1f4}
+.i-status-applied{background:#dcfce7;color:#166534}
+.i-status-queued,.i-status-partial{background:#fef3c7;color:#92400e}
+.i-status-error{background:#fee2e2;color:#991b1b}
+.i-err{font-size:.72rem;color:#991b1b;margin-top:.2rem}
+.hidden{display:none}
+</style>
+
+<script>
+document.querySelectorAll('.i-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const pre = btn.closest('.i-card').querySelector('.i-original');
+        pre.classList.toggle('hidden');
+        btn.textContent = pre.classList.contains('hidden') ? 'Show original' : 'Hide original';
+    });
+});
+
+async function resolve(row, action) {
+    const id = row.dataset.item;
+    const votesEl = row.querySelector('.i-votes');
+    const body = action === 'accept' && votesEl ? {votes: Number(votesEl.value)} : {};
+    row.style.opacity = .5;
+    try {
+        const res = await fetch(`/entry/intake/item/${id}/${action}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'failed');
+        row.querySelector('.i-reason').textContent =
+            action === 'accept' ? 'Published' : 'Rejected';
+        row.querySelector('.i-actions').textContent = '';
+        row.style.opacity = 1;
+        row.style.background = action === 'accept' ? '#f0fdf4' : '#fef2f2';
+    } catch (err) {
+        row.style.opacity = 1;
+        alert('Could not save: ' + err.message);
+    }
+}
+
+document.querySelectorAll('.i-accept').forEach(b =>
+    b.addEventListener('click', () => resolve(b.closest('tr'), 'accept')));
+document.querySelectorAll('.i-reject').forEach(b =>
+    b.addEventListener('click', () => resolve(b.closest('tr'), 'reject')));
+</script>
+{% endblock %}

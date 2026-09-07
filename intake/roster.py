@@ -1,0 +1,159 @@
+"""Town resolution and ballot-roster context for the parser.
+
+The roster is the whole trick: instead of asking the model to invent races and
+candidates, we hand it the exact ballot the town votes on - every race id and
+candidate id - and ask it only to attach numbers to those ids. A name that is
+not on the town's ballot cannot be matched to a candidate id by accident.
+
+Roster construction is imported from entry.py rather than reimplemented, so the
+automated path and the hand-entry path can never disagree about what is on a
+town's ballot.
+"""
+
+import re
+
+from entry import event_elections, place_races  # single source of truth
+from entry_sources import normkey
+from intake import config
+
+
+def elections_for_event(cursor):
+    rows = event_elections(cursor, config.EVENT_YEAR, config.EVENT_TYPE)
+    return [dict(r) for r in rows]
+
+
+def polling_places(cursor):
+    """Canonical polling-place names, as results must be filed against them."""
+    cursor.execute("SELECT municipality, county FROM polling_places ORDER BY municipality")
+    return [dict(r) for r in cursor.fetchall()]
+
+
+# Places whose state-list spelling cannot be derived from the results spelling.
+# Unincorporated grants and purchases, where the two sources disagree outright.
+ALIASES = {
+    "ATGILACGT": "Atkinson & Gilmanton Academy Grant",
+    "ATKINSONGILMANTONACADEMYGRANT": "Atkinson & Gilmanton Academy Grant",
+    "LOWBURBANKSGRANT": "Low and Burbanks Grant",
+    "THOMPSONMESERVESPURCHASE": "Thompson and Meserves Purchase",
+    # Hale's Location is deliberately NOT aliased. It is a separate place from
+    # Harts Location and has no row in polling_places, so a report from there
+    # must go to review rather than be filed under a different town.
+}
+
+
+def _key_variants(text):
+    """Every spelling of one place name we are willing to treat as the same.
+
+    Covers the two conventions that actually differ between the state clerk
+    list and the way results are reported: '&' vs 'and', and ward suffixes.
+    Salem votes at four ward polling places but reports one town total, so
+    'Salem Ward 2' has to collapse to 'Salem'.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return []
+    forms = {raw, raw.replace("&", " and "), raw.replace(" and ", " & ")}
+    # 'W3' / 'WD 3' / 'Ward 03' all mean Ward 3.
+    forms |= {re.sub(r"\bW(?:AR)?D?\.?\s*0*(\d+)\b", r"WARD \1", f, flags=re.I) for f in list(forms)}
+
+    keys = []
+    for f in forms:
+        k = normkey(f)
+        if k and k not in keys:
+            keys.append(k)
+    # Base town with any ward suffix removed, tried last.
+    for f in list(forms):
+        stripped = re.sub(r"\s*WARD\s*\d+\*?\s*$", "", f, flags=re.I).strip()
+        k = normkey(stripped)
+        if k and k not in keys:
+            keys.append(k)
+    return keys
+
+
+def resolve_municipality(cursor, text):
+    """Map free text ('Bedford Ward 1', 'SALEM WARD 02', 'Low & Burbanks Grant')
+    to a canonical polling place. Returns (name, confidence) or (None, 0.0).
+
+    Only deterministic spellings are accepted here. Anything genuinely
+    ambiguous is left to the model, which sees the whole report for context.
+    """
+    if not text:
+        return None, 0.0
+    places = {normkey(p["municipality"]): p["municipality"] for p in polling_places(cursor)}
+    variants = _key_variants(text)
+    for i, key in enumerate(variants):
+        if key in places:
+            # An exact hit is certain; a collapsed ward suffix is near-certain.
+            return places[key], 1.0 if i == 0 else 0.95
+        if key in ALIASES and normkey(ALIASES[key]) in places:
+            return places[normkey(ALIASES[key])], 0.95
+    return None, 0.0
+
+
+def resolve_by_sender(cursor, sender):
+    """A town clerk mailing from their listed address identifies their own town.
+
+    Only used as a fallback when the report text does not name a town, and
+    never for ward-split cities, where the ward still has to come from the
+    report itself.
+    """
+    if not sender:
+        return None, 0.0
+    m = re.search(r"[\w.+-]+@[\w.-]+", sender)
+    if not m:
+        return None, 0.0
+    addr = m.group(0).lower()
+    cursor.execute(
+        "SELECT municipality FROM polling_places WHERE LOWER(email) = ?", (addr,)
+    )
+    rows = [r["municipality"] for r in cursor.fetchall()]
+    if len(rows) == 1:
+        return rows[0], 0.9
+    return None, 0.0
+
+
+def town_list_text(cursor):
+    """Every polling place, for the town-identification call."""
+    return "\n".join(f"{p['municipality']} ({p['county']})" for p in polling_places(cursor))
+
+
+def roster_for(cursor, municipality):
+    """Every race the town votes on, with candidate ids, as model-readable text
+    plus a lookup structure the validator uses to check the model's output."""
+    elections = elections_for_event(cursor)
+    election_ids = [e["id"] for e in elections]
+    party_of = {e["id"]: (e["party"] or "") for e in elections}
+
+    races = place_races(cursor, municipality, election_ids)
+
+    lines = []
+    index = {}
+    by_party = {}
+    for race in races:
+        by_party.setdefault(party_of.get(race["election_id"], ""), []).append(race)
+
+    for party in sorted(by_party, key=lambda p: (p != "Republican", p)):
+        lines.append(f"\n=== {party.upper() or 'GENERAL'} BALLOT ===")
+        for race in by_party[party]:
+            seats = race["seats"] or 1
+            label = race["label"] or race["office"]
+            lines.append(f"[race_id={race['id']}] {race['office']} - {label} ({seats} seat{'s' if seats != 1 else ''})")
+            cand_ids = set()
+            for c in race["candidates"]:
+                tag = " (write-in)" if c["is_writein"] else ""
+                lines.append(f"    candidate_id={c['candidate_id']}  {c['name']}{tag}")
+                cand_ids.add(c["candidate_id"])
+            lines.append(f"    candidate_id={race['writein_id']}  Write-in (aggregate line)")
+            cand_ids.add(race["writein_id"])
+            index[race["id"]] = {
+                "election_id": race["election_id"],
+                "party": party,
+                "office": race["office"],
+                "label": label,
+                "seats": seats,
+                "candidate_ids": cand_ids,
+                "writein_id": race["writein_id"],
+                "names": {c["candidate_id"]: c["name"] for c in race["candidates"]},
+            }
+
+    return "\n".join(lines), index, elections

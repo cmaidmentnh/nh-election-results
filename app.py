@@ -56,6 +56,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-producti
 from auth import auth_bp, login_manager
 from admin import admin_bp
 from entry import entry_bp
+from intake.review import intake_bp
 
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
@@ -65,6 +66,7 @@ login_manager.login_message = 'Please log in to access this page.'
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(entry_bp)
+app.register_blueprint(intake_bp)
 
 
 @app.route('/google5dd33fe4f5c62882.html')

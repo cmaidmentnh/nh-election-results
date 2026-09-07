@@ -1,0 +1,17 @@
+[Unit]
+Description=NH Election Results intake (email + Signal -> results)
+After=network.target signal-cli.service
+Wants=signal-cli.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/nh-election-results
+EnvironmentFile=/opt/nh-election-results/intake.env
+ExecStart=/opt/nh-results-intake-venv/bin/python -m intake.runner
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

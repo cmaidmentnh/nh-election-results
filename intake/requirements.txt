@@ -1,0 +1,6 @@
+# The intake service runs in its own virtualenv so upgrading the Anthropic SDK
+# here can never disturb the Flask app or the Signal bots that share the box.
+anthropic>=1.4.0
+pydantic>=2.0
+Flask>=3.0
+Flask-Login>=0.6

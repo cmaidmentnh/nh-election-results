@@ -33,6 +33,21 @@ UNINCORPORATED_ALIASES = {
 }
 
 
+def _col(row, *names):
+    """First non-empty value among alternative column spellings.
+
+    The SoS has shipped this file with different headers over time: "Phone" vs
+    "Phone (Area Code 603)", and a single "Polling Hours" vs separate state and
+    local election windows. Accept either so a re-download does not silently
+    blank a column.
+    """
+    for n in names:
+        v = (row.get(n) or "").strip()
+        if v:
+            return v
+    return ""
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit('usage: import_polling_places.py "Clerks & PollingPlaces.csv" [nh_elections.db]')
@@ -41,7 +56,6 @@ def main():
 
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("DELETE FROM polling_places")  # full authoritative reload from the CSV
     canon = canonical_map(cur)
     town_county = town_county_map(cur)
 
@@ -81,14 +95,28 @@ def main():
                 groups[muni] = {
                     "county": town_county.get(normkey(muni))
                               or town_county.get(re.sub(r"\s+Ward\s+\d+$", "", muni).strip().upper()),
-                    "clerk": row.get("Clerk"), "clerk_address": row.get("Address"),
-                    "phone": row.get("Phone (Area Code 603)"), "fax": row.get("Fax"),
-                    "email": row.get("E-Mail"), "website": row.get("Town Website Address"),
-                    "polling_hours": row.get("Polling Hours"),
+                    "clerk": _col(row, "Clerk"), "clerk_address": _col(row, "Address"),
+                    "phone": _col(row, "Phone (Area Code 603)", "Phone"), "fax": _col(row, "Fax"),
+                    "email": _col(row, "E-Mail"), "website": _col(row, "Town Website Address"),
+                    "polling_hours": _col(row, "Polling Hours",
+                                          "State Election Start Time - End Time"),
                     "places": [place] if place else [], "raw": raw,
                 }
-            elif place and place not in g["places"]:
-                g["places"].append(place)  # extra polling location for an admin-ward town
+            else:
+                if place and place not in g["places"]:
+                    g["places"].append(place)  # extra polling location for an admin-ward town
+                # Some towns appear twice: once bare, once with the election
+                # attached. Let the row that actually has a value win.
+                for field, col in (("clerk", "Clerk"), ("clerk_address", "Address"),
+                                   ("fax", "Fax"), ("email", "E-Mail"),
+                                   ("website", "Town Website Address")):
+                    if not g[field]:
+                        g[field] = _col(row, col)
+                if not g["phone"]:
+                    g["phone"] = _col(row, "Phone (Area Code 603)", "Phone")
+                if not g["polling_hours"]:
+                    g["polling_hours"] = _col(row, "Polling Hours",
+                                              "State Election Start Time - End Time")
 
     for muni, g in groups.items():
         cur.execute(
@@ -97,11 +125,16 @@ def main():
                     website, polling_hours, polling_place, raw_name)
                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(municipality) DO UPDATE SET
-                   county=excluded.county, clerk=excluded.clerk,
-                   clerk_address=excluded.clerk_address, phone=excluded.phone,
-                   fax=excluded.fax, email=excluded.email, website=excluded.website,
-                   polling_hours=excluded.polling_hours,
-                   polling_place=excluded.polling_place, raw_name=excluded.raw_name""",
+                   county=COALESCE(NULLIF(excluded.county,''), county),
+                   clerk=COALESCE(NULLIF(excluded.clerk,''), clerk),
+                   clerk_address=COALESCE(NULLIF(excluded.clerk_address,''), clerk_address),
+                   phone=COALESCE(NULLIF(excluded.phone,''), phone),
+                   fax=COALESCE(NULLIF(excluded.fax,''), fax),
+                   email=COALESCE(NULLIF(excluded.email,''), email),
+                   website=COALESCE(NULLIF(excluded.website,''), website),
+                   polling_hours=COALESCE(NULLIF(excluded.polling_hours,''), polling_hours),
+                   polling_place=COALESCE(NULLIF(excluded.polling_place,''), polling_place),
+                   raw_name=excluded.raw_name""",
             (muni, g["county"], g["clerk"], g["clerk_address"], g["phone"], g["fax"],
              g["email"], g["website"], g["polling_hours"], " | ".join(g["places"]), g["raw"]),
         )

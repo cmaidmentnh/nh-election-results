@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 nh_elections.db
+
+# Intake service secrets and stored attachments
+intake.env
+data/intake_attachments/
