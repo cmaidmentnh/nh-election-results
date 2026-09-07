@@ -1021,6 +1021,8 @@ def _demo_results(precs, cand_ids, race_id):
     rotated by race so it's clearly not a forecast — these are not real votes and
     not a prediction. Demo mode only; never stored."""
     n = len(cand_ids)
+    if not n:
+        return {}                                              # write-in-only race
     base = [max(6, 100 - i * 20) for i in range(n)]            # descending strengths
     off = race_id % n                                          # rotate the leader per race
     strengths = {cid: base[(i + off) % n] for i, cid in enumerate(cand_ids)}
