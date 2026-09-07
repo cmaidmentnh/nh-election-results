@@ -113,3 +113,7 @@ table.pt-ptable{border-collapse:collapse;width:100%;font-size:.85rem;}
   .pt-h1{font-size:1.5rem;} #pt-map{height:420px;} #pt-bigmap{height:320px;}
   .pt-brow{grid-template-columns:120px 1fr auto;} .pt-bv{min-width:96px;}
 }
+
+/* No basemap tiles: the state is drawn from our own GeoJSON, so the map's
+   own background is the water/out-of-state area behind it. */
+.leaflet-container{background:#f6f8fb;}

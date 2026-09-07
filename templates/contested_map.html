@@ -74,6 +74,19 @@ function mapSig(){return curO.key+'|'+curP+'|'+curBase+'|'+curView;}
 
 function J(u){return jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);}
 function G(f){return geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);}
+
+// Draw New Hampshire itself instead of a tiled basemap. CARTO's tiles now
+// demand an API key and stamp "API KEY REQUIRED" across the state; an election
+// choropleth reads better without a basemap anyway, and this removes an
+// external dependency on the one night the map has to work.
+function addBasemap(map){
+  return G('nh-towns.geojson').then(g=>{
+    const base=L.geoJSON(g,{style:{fillColor:'#e8edf4',fillOpacity:1,
+      color:'#ffffff',weight:.7,interactive:false}}).addTo(map);
+    base.bringToBack();
+    return base;
+  }).catch(()=>null);
+}
 function contested(rec,p){return rec&&(rec.parties[p]||0)>(rec.seats||1);}
 function pad(n){return(n<10?'0':'')+n;}
 function statusColor(s){return (STATUS[s]||STATUS.awaiting).c;}
@@ -175,7 +188,7 @@ function styleFor(code){const rec=recOf(code);
 function renderMap(){
   const o=curO; if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
   mainMap=L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(mainMap);
+  addBasemap(mainMap);
   renderLegend();
   mainCfg = o.level==='house' ? (curBase==='Floterial'?HFLOT:HBASE) : {file:o.file,prop:o.prop};
   G(mainCfg.file).then(g=>{
@@ -299,7 +312,7 @@ function pmap(o,r){
   const reuse = bigMap && bigSig===sig;   // same race: keep map + zoom, just refresh data
   if(!reuse){ if(bigMap){try{bigMap.remove();}catch(e){}bigMap=null;}
     bigMap=L.map('pt-bigmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:16}).addTo(bigMap); }
+    addBasemap(bigMap); }
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
     if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>houseByCode[String(f.properties.basehse22).trim()]=f);}
