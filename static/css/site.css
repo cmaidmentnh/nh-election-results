@@ -195,11 +195,13 @@ footer.f p{margin:4px 0;max-width:80ch}
 @media(max-width:980px){.mapcol{position:static}}
 .mapbox{border:1px solid var(--hair);position:relative;background:#fbfbfa}
 #nhmap{height:clamp(340px,60vh,660px)}
-.legend{position:absolute;left:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);
-        border:1px solid var(--hair);padding:8px 10px;font-family:var(--mono);font-size:10px;
-        letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
-.legend .r{display:flex;align-items:center;gap:7px;margin:3px 0}
-.legend i{width:12px;height:9px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+/* Below the map, not floating on it - an overlaid legend and a cursor-anchored
+   hovercard will always collide eventually. */
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;padding:10px 2px 0;
+        font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+        text-transform:uppercase;color:var(--ink2)}
+.legend .r{display:flex;align-items:center;gap:6px}
+.legend i{width:12px;height:9px;display:inline-block;border:1px solid rgba(0,0,0,.15);flex:none}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 34px}
 .dist{border-top:1px solid var(--hair);padding:15px 0;text-align:left;background:none;
@@ -292,7 +294,7 @@ table.pt td:first-child{font-family:var(--sans)}
 @media(max-width:980px){
   .mapbox{max-width:420px;margin:0 auto}
   #nhmap{height:min(52vh,380px)}
-  .legend{left:8px;bottom:8px;font-size:9px;padding:6px 8px}
+  .legend{font-size:9px;gap:3px 12px}
   #detmap{height:min(42vh,300px)}
 }
 @media(max-width:520px){
