@@ -32,7 +32,7 @@
              font-weight:600; font-style:normal; font-display:swap; }
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 
   --rs-ink:       #14161a;   /* near-black chrome, not navy */
   --rs-ink-2:     #4a4f57;
@@ -232,4 +232,55 @@ main { padding: var(--rs-s5) 0 var(--rs-s4); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+
+/* ---- dark theme ---------------------------------------------------------
+   Declared so Chrome's Auto Dark Mode stops machine-inverting the page. A
+   browser that force-darkens a light-only site flattens every palette into the
+   same muddy greys, which is why colour changes were invisible to a viewer in
+   dark mode. These are chosen steps against a dark ground, not an inversion.
+   Safe to add now only because portal.css was rewritten to use --rs-* tokens;
+   an earlier attempt collided with its own --ink / --line and made half the
+   races page unreadable.                                                    */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rs-ink:      #f2efe9;
+    --rs-ink-2:    #b9b3a8;
+    --rs-ink-3:    #8b857a;
+    --rs-field:    #17181a;
+    --rs-card:     #1f2124;
+    --rs-card-2:   #26282c;
+    --rs-line:     #33363b;
+    --rs-line-2:   #474b52;
+    --rs-on-ink:   #f2efe9;
+    --rs-on-ink-2: #8b857a;
+
+    --rs-r:        #ff5c5c;
+    --rs-d:        #6d94ff;
+    --rs-r-ghost:  #ff5c5c33;
+    --rs-d-ghost:  #6d94ff33;
+
+    --rs-good:     #4cc38a;
+    --rs-good-ink: #7fdba9;
+    --rs-good-bg:  #16281f;
+    --rs-warn:     #e0a52e;
+    --rs-warn-ink: #f0c46a;
+    --rs-warn-bg:  #2b2416;
+
+    --rs-shadow-lift: 0 2px 0 var(--rs-line);
+  }
+  :root:not([data-theme="light"]) body { background: var(--rs-field); color: var(--rs-ink); }
+  :root:not([data-theme="light"]) .mast { background: #0f1012; }
+  :root:not([data-theme="light"]) .livestrip { background: #141518; }
+  :root:not([data-theme="light"]) .track { background: #2c2f34; }
+  :root:not([data-theme="light"]) .demo-banner { background: var(--rs-warn-bg);
+      border-color: #4a3c1c; color: var(--rs-warn-ink); }
+  :root:not([data-theme="light"]) .leaflet-container { background: #202226; }
+  :root:not([data-theme="light"]) .pt-legend { background: rgba(31,33,36,.96); }
+  :root:not([data-theme="light"]) .pt-tt.pt-tt { background: var(--rs-card); color: var(--rs-ink); }
+  :root:not([data-theme="light"]) .pt-crow .cb,
+  :root:not([data-theme="light"]) .pt-bar,
+  :root:not([data-theme="light"]) .pt-tt .ttbar { background: #2c2f34; }
+  :root:not([data-theme="light"]) .pt-ptable th:first-child,
+  :root:not([data-theme="light"]) .pt-ptable td:first-child { background: var(--rs-card); }
 }
