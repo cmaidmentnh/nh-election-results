@@ -21,6 +21,7 @@ import logging
 
 from entry import log_audit
 from intake import config, store
+from intake.parser import line_key
 
 log = logging.getLogger("intake.apply")
 
@@ -92,7 +93,7 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
 
     # Two independent reads must agree. Confidence alone missed real errors.
     if agreed is not None:
-        key = (line.race_id, line.candidate_id)
+        key = line_key(line)
         if key not in agreed:
             a, b = (disagreements or {}).get(key, (line.votes, None))
             other = f"{b:,}" if b is not None else "nothing"

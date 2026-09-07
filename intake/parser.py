@@ -357,17 +357,34 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
     return resp.parsed_output
 
 
+def line_key(line):
+    """Identity of one reported line across independent reads.
+
+    Matched lines are identified by the ids they resolved to. Unmatched lines
+    have race_id=0 and candidate_id=0, so keying on ids alone would collapse
+    every unmatched line in a report into a single bucket - and then a value
+    agreed for one of them would be written onto all of them. Fall back to the
+    text the reporter actually wrote, which is what distinguishes them.
+    """
+    if line.race_id and line.candidate_id:
+        return ("id", line.race_id, line.candidate_id)
+    return ("text",
+            (line.race_text or "").strip().lower(),
+            (line.candidate_text or "").strip().lower())
+
+
 def _tally(reads):
     """Per (race, candidate), what each read said. Missing counts against it."""
-    keys = set()
-    for r in reads:
-        keys |= {(l.race_id, l.candidate_id) for l in r.lines}
     votes = {}
-    for key in keys:
-        votes[key] = []
+    for r in reads:
+        seen_here = {}
+        for l in r.lines:
+            seen_here.setdefault(line_key(l), l.votes)
+        for key, v in seen_here.items():
+            votes.setdefault(key, [])
+    for key in votes:
         for r in reads:
-            match = next((l.votes for l in r.lines
-                          if (l.race_id, l.candidate_id) == key), None)
+            match = next((l.votes for l in r.lines if line_key(l) == key), None)
             votes[key].append(match)
     return votes
 
@@ -442,15 +459,16 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
             disagreements[key] = values
 
         # Publish what the reads actually settled on, not the first attempt.
-        for line in first.lines:
-            if (line.race_id, line.candidate_id) == key and winner is not None:
-                line.votes = winner
+        if winner is not None:
+            for line in first.lines:
+                if line_key(line) == key:
+                    line.votes = winner
 
     # A line only later reads saw at all still belongs in the report.
-    seen = {(l.race_id, l.candidate_id) for l in first.lines}
+    seen = {line_key(l) for l in first.lines}
     for r in reads[1:]:
         for l in r.lines:
-            key = (l.race_id, l.candidate_id)
+            key = line_key(l)
             if key not in seen and key in tally:
                 winner, ok = _verdict(tally[key])
                 if winner is not None:
