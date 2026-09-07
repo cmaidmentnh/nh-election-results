@@ -53,6 +53,10 @@ def _key_variants(text):
     raw = (text or "").strip()
     if not raw:
         return []
+    # The model is asked to copy a name from the polling-place list, which is
+    # rendered as "Bedford (Hillsborough)" - so drop a trailing parenthetical
+    # before matching, or the county it helpfully included defeats the lookup.
+    raw = re.sub(r"\s*\([^)]*\)\s*$", "", raw).strip()
     forms = {raw, raw.replace("&", " and "), raw.replace(" and ", " & ")}
     # 'W3' / 'WD 3' / 'Ward 03' all mean Ward 3.
     forms |= {re.sub(r"\bW(?:AR)?D?\.?\s*0*(\d+)\b", r"WARD \1", f, flags=re.I) for f in list(forms)}
@@ -103,6 +107,18 @@ def resolve_municipality(cursor, text):
         best = {h for h in hits if not any(h != o and h in o for o in hits)}
         if len(best) == 1:
             return best.pop(), 0.9
+
+    # Last resort: a near-miss spelling of the whole field ("bedfortd").
+    # Deliberately strict, and never applied to ward cities, where picking the
+    # wrong ward would be worse than asking a human.
+    import difflib
+    close = difflib.get_close_matches(normkey(text), list(places), n=2, cutoff=0.87)
+    if len(close) == 1 or (len(close) == 2 and close[0] != close[1]
+                           and difflib.SequenceMatcher(None, normkey(text), close[0]).ratio()
+                               - difflib.SequenceMatcher(None, normkey(text), close[1]).ratio() > 0.06):
+        name = places[close[0]]
+        if not re.search(r"\bWard\s*\d+", name, re.I):
+            return name, 0.85
     return None, 0.0
 
 

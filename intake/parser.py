@@ -246,6 +246,51 @@ def _prepare_image(data, media_type):
         return []
 
 
+def _spreadsheet_text(path):
+    """An .xlsx of results rendered as plain rows the model can read."""
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        log.warning("openpyxl not installed; cannot read %s", path)
+        return ""
+    try:
+        wb = load_workbook(path, read_only=True, data_only=True)
+    except Exception:
+        log.exception("Could not open spreadsheet %s", path)
+        return ""
+    out = []
+    for ws in wb.worksheets:
+        out.append(f"--- sheet: {ws.title} ---")
+        for row in ws.iter_rows(values_only=True):
+            cells = ["" if c is None else str(c).strip() for c in row]
+            if any(cells):
+                out.append(" | ".join(cells).rstrip(" |"))
+            if len(out) > 4000:
+                out.append("(truncated)")
+                break
+    wb.close()
+    return "\n".join(out)
+
+
+def spreadsheet_texts(paths):
+    """Text extracted from any spreadsheet attachments, for the prompt body."""
+    chunks = []
+    for p in (paths or []):
+        path = Path(p)
+        try:
+            if not path.exists():
+                continue
+            head = path.open("rb").read(8)
+        except OSError:
+            continue
+        if head[:4] != b"PK\x03\x04" and path.suffix.lower() not in (".xlsx", ".xlsm"):
+            continue
+        text = _spreadsheet_text(path)
+        if text:
+            chunks.append(f"[spreadsheet attachment: {path.name}]\n{text}")
+    return "\n\n".join(chunks)
+
+
 def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
     """Photos and PDFs of tally sheets as content blocks.
 
