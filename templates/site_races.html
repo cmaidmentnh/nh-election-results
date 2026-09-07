@@ -116,6 +116,16 @@ const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]
 const G=f=>geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);
 const contested=(rec,p)=>rec&&rec.parties&&rec.parties[p]>rec.seats;
 
+/* Fit to the state's real outline, not its bounding box - the box takes in a
+   lot of ocean, Vermont and Maine, which left New Hampshire small in the
+   panel. A tiny padding keeps the border off the edge. */
+function fitState(m, lyr){
+  try{
+    const b=lyr.getBounds();
+    if(b.isValid()){ m.fitBounds(b,{padding:[2,2]}); m.setMinZoom(m.getZoom()-1); }
+  }catch(e){}
+}
+
 function distName(o,rec){
   if(o.level==='house')return (rec.county?rec.county+' ':'')+'District '+rec.district;
   if(o.key==='us-house')return 'U.S. House District '+rec.district;
@@ -278,8 +288,10 @@ function renderMap(){
   if(map){try{map.remove();}catch(e){}map=null;layer=null;}
   map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
   G('nh-towns.geojson').then(g=>{
-    L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
-      .addTo(map).bringToBack();
+    const base=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
+      .addTo(map);
+    base.bringToBack();
+    fitState(map, base);
   });
   legend();
   cfg = O.level==='house' ? (BASEV==='Floterial'?HFLOT:HBASE) : {file:O.file,prop:O.prop};
@@ -296,9 +308,7 @@ function renderMap(){
         l.on('mouseout',()=>layer.resetStyle(l));
         l.on('click',()=>openDetail(O,code,P));
       }}).addTo(map);
-    // Always frame the whole state; fitting to contested districts alone
-    // cropped New Hampshire off the panel.
-    map.fitBounds(NH,{padding:[8,8]});
+    // Frame the whole state, tight to its actual outline.
   });
 }
 function paint(){
@@ -323,8 +333,9 @@ function stateMap(){
       houseByCode[String(f.properties.basehse22).trim()]=f);}
     if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>
       townsByName[String(f.properties.name||'').toLowerCase()]=f);}
-    L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
-      color:'#fff',weight:.5,interactive:false}}).addTo(map).bringToBack();
+    const base=L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
+      color:'#fff',weight:.5,interactive:false}}).addTo(map);
+    base.bringToBack(); fitState(map, base);
     const sc=leaderScale(r);
     document.getElementById('legend').innerHTML=
       sc.ranked.slice(0,CAND_COLORS.length).map((n,i)=>
@@ -349,7 +360,6 @@ function stateMap(){
         }
         l.bindTooltip(h,{className:'tip',sticky:true,direction:'auto',opacity:1});
       }}).addTo(map);
-    map.fitBounds(NH,{padding:[8,8]});
   }).catch(()=>{});
 }
 
@@ -432,7 +442,7 @@ function detailMap(r,p){
         l.bindTooltip(html,{className:'tip',sticky:true,direction:'auto',opacity:1});
         try{b.extend(l.getBounds());}catch(e){}
       }}).addTo(dmap);
-    dmap.fitBounds(b.isValid()?b.pad(.08):NH);
+    dmap.fitBounds(b.isValid()?b.pad(.02):NH,{padding:[2,2]});
   });
 }
 document.getElementById('back').onclick=()=>{
