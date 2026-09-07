@@ -443,7 +443,12 @@ function detailMap(r,p){
         l.bindTooltip(html,{className:'tip',sticky:true,direction:'auto',opacity:1});
         try{b.extend(l.getBounds());}catch(e){}
       }}).addTo(dmap);
-    dmap.fitBounds(b.isValid()?b.pad(.02):NH,{padding:[2,2]});
+    // Use the layer's own bounds once it is on the map; the accumulated
+    // bounds could be empty if a precinct had no matching polygon.
+    let fb=null;
+    try{ fb=dlayer.getBounds(); }catch(e){}
+    if(!fb||!fb.isValid()) fb = b.isValid()? b : NH;
+    dmap.fitBounds(fb,{padding:[4,4]});
   });
 }
 document.getElementById('back').onclick=()=>{
