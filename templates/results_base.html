@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}New Hampshire Election Results{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}Live New Hampshire election results: statewide, State Senate and all 400 State House races, town by town.{% endblock %}">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.meta_description() }}">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}?v=3">
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap mast-in">
+    <a class="brand" href="/results{{ '?demo=1' if demo else '' }}">
+      <svg class="granite" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 20 L9 5 L15 11 L18 7 L21 20 Z" fill="currentColor" opacity=".85"/>
+      </svg>
+      New Hampshire Election Results
+    </a>
+    <nav>
+      <a href="/results{{ '?demo=1' if demo else '' }}"
+         class="{{ 'on' if active == 'topline' }}">Topline</a>
+      <a href="/contested{{ '?demo=1' if demo else '' }}"
+         class="{{ 'on' if active == 'races' }}">Races &amp; Maps</a>
+      <a href="/turnout">Turnout</a>
+    </nav>
+  </div>
+</header>
+
+{% if demo %}
+<div class="wrap"><div class="demo-banner">
+  Demo mode — simulated numbers so the live experience can be previewed. These are not real votes.
+</div></div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer class="site">
+  <div class="wrap">
+    <p><strong>Unofficial results.</strong> Compiled from town clerks and reported by
+    local volunteers as they come in. Projections are statistical estimates from the
+    vote counted so far, not official calls.</p>
+    <p>Official certified results come from the
+      <a href="https://www.sos.nh.gov/" rel="noopener">New Hampshire Secretary of State</a>.</p>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

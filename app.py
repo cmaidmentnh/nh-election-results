@@ -984,8 +984,26 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
         status = 'too_close'
     if reported_weight < PROJ_MIN_IN and status != 'called':
         status = 'too_close'
+
+    # Win probability. `band` already behaves like a standard error - it carries
+    # the outstanding vote, the observed volatility between precincts, and a
+    # sampling term - so the same z that decides the call gives the probability
+    # that the current order holds: P = Phi(z).
+    #
+    # This is an extrapolation from the vote counted, not a forecast with a
+    # prior. It is honest at 60% in and overconfident at 5%, so it is withheld
+    # below the same threshold that already blocks an early call.
+    prob = None
+    if status == 'called':
+        prob = 0.99
+    elif reported_weight >= PROJ_MIN_IN and n_reported >= PROJ_MIN_PRECINCTS:
+        prob = 0.5 * (1 + _math.erf(z / _math.sqrt(2)))
+        prob = max(0.5, min(0.99, prob))
+
     return {'status': status, 'winners': winners, 'margin': round(margin * 100, 1),
-            'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total)}
+            'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total),
+            'win_prob': round(prob, 3) if prob is not None else None,
+            'leader': cand_list[seats - 1]['name'] if cand_list else None}
 
 
 def _precinct_counties(cur, names):
