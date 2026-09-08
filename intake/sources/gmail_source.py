@@ -52,9 +52,9 @@ def _headers(payload):
 
 
 def _addressed_to_group(hdrs):
-    group = config.GROUP_ADDRESS.lower()
     for key in ("to", "cc", "delivered-to", "x-original-to", "list-id", "list-post"):
-        if group in (hdrs.get(key) or "").lower():
+        value = (hdrs.get(key) or "").lower()
+        if any(address in value for address in config.ACCEPT_ADDRESSES):
             return True
     return False
 
@@ -88,8 +88,9 @@ def fetch_new():
     config.ATTACH_DIR.mkdir(parents=True, exist_ok=True)
     users = service().users()
 
-    query = (f"is:unread (to:{config.GROUP_ADDRESS} OR deliveredto:{config.GROUP_ADDRESS} "
-             f"OR list:{config.GROUP_ADDRESS})")
+    terms = " OR ".join(f"to:{a} OR deliveredto:{a} OR list:{a}"
+                        for a in config.ACCEPT_ADDRESSES)
+    query = f"is:unread in:inbox ({terms})"
     resp = users.messages().list(userId="me", q=query, maxResults=50).execute()
 
     for ref in resp.get("messages", []) or []:

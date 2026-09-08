@@ -41,6 +41,15 @@ IMAP_FOLDER = os.environ.get("INTAKE_IMAP_FOLDER", "INBOX")
 # Only messages addressed to this address are read. Everything else in the
 # mailbox is ignored outright - the service never parses unrelated mail.
 GROUP_ADDRESS = os.environ.get("INTAKE_GROUP_ADDRESS", "results@electhouserepublicans.com")
+
+# Clerks send results wherever they already have an address for us. Concord's
+# clerk mailed four wards' returns straight to chris@ on primary night and every
+# one of them was dropped, because the filter only accepted the group address.
+# Accept any address we publish; the parser's own chatter check throws out mail
+# that is not a set of results.
+ACCEPT_ADDRESSES = [a.strip().lower() for a in os.environ.get(
+    "INTAKE_ACCEPT_ADDRESSES",
+    f"{GROUP_ADDRESS},chris@electhouserepublicans.com").split(",") if a.strip()]
 EMAIL_POLL_SECONDS = int(os.environ.get("INTAKE_EMAIL_POLL", "20"))
 
 # --- Signal ---------------------------------------------------------------
