@@ -107,9 +107,12 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
     if agreed is not None:
         key = line_key(line)
         if key not in agreed:
-            a, b = (disagreements or {}).get(key, (line.votes, None))
-            other = f"{b:,}" if b is not None else "nothing"
-            return False, f"Two reads disagreed ({a:,} vs {other})", race, old
+            # Reads escalate from two to five when they cannot settle, so this
+            # holds however many values the reads produced - never assume a pair.
+            values = list((disagreements or {}).get(key) or [line.votes])
+            shown = " vs ".join(f"{v:,}" if isinstance(v, int) else str(v)
+                                for v in values)
+            return False, f"Reads disagreed ({shown})", race, old
 
     return True, None, race, old
 
