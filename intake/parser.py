@@ -510,7 +510,7 @@ def _verdict(values):
 
 
 def extract_consensus(municipality, roster_text, body, subject="", sender="",
-                      attachments=None, max_reads=5):
+                      attachments=None, max_reads=None):
     """Read the report until the readings settle, then report what is solid.
 
     Back-testing against real 2024 clerk PDFs showed the model reporting high
@@ -546,7 +546,7 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     def unsettled(rs):
         return any(not _verdict(v)[1] for v in _tally(rs).values())
 
-    while len(reads) < max_reads and unsettled(reads):
+    while len(reads) < (max_reads or config.MAX_READS) and unsettled(reads):
         reads.append(extract(municipality, roster_text, body, subject, sender, attachments))
 
     tally = _tally(reads)
