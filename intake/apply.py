@@ -132,13 +132,23 @@ def reconcile(extraction, index):
             continue                      # no printed total: nothing to check
         counted = sum(l.votes or 0 for l in extraction.lines
                       if l.race_id == check.race_id)
-        accounted = counted + (check.blanks or 0) + (check.overvotes or 0)
-        if accounted != check.stated_total:
+        blanks = (check.blanks or 0) + (check.overvotes or 0)
+
+        # NH sheets use "TOTAL VOTES CAST" both ways: some mean the sum of the
+        # candidate votes, others mean every ballot including blanks. Accept
+        # either, or this rejects a correct sheet by exactly its blank count -
+        # which is what it did on primary night, holding scores of good races.
+        # A small tolerance absorbs a scattering line the reader missed.
+        tol = max(3, int(0.01 * check.stated_total))
+        matches_votes_only = abs(counted - check.stated_total) <= tol
+        matches_with_blanks = abs(counted + blanks - check.stated_total) <= tol
+        if not (matches_votes_only or matches_with_blanks):
+            accounted = counted + blanks
             meta = index.get(check.race_id) or {}
             label = meta.get("display") or meta.get("label") or check.race_id
             bad[check.race_id] = (
-                f"Does not reconcile: {accounted:,} accounted for "
-                f"({counted:,} votes + {check.blanks or 0:,} blanks) "
+                f"Does not reconcile: {counted:,} votes"
+                f"{f' + {blanks:,} blanks' if blanks else ''} "
                 f"against {check.stated_total:,} printed on the sheet"
             )
             log.warning("%s: race %s does not reconcile - %s", label, check.race_id,
