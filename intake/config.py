@@ -86,6 +86,11 @@ WORKERS = int(os.environ.get("INTAKE_WORKERS", "16"))
 # supermajority verdict; the fourth and fifth almost never changed the answer.
 MAX_READS = int(os.environ.get("INTAKE_MAX_READS", "3"))
 
+# How often to look for messages stranded mid-parse, and how old one must be
+# before it counts as stranded rather than simply still being worked on.
+STRANDED_SWEEP_SECONDS = int(os.environ.get("INTAKE_STRANDED_SWEEP", "60"))
+STRANDED_AFTER_SECONDS = int(os.environ.get("INTAKE_STRANDED_AFTER", "300"))
+
 BOT_USERNAME = os.environ.get("INTAKE_BOT_USER", "intake-bot")
 
 # Don't publish before this. Polls close at 7pm; anything that arrives earlier

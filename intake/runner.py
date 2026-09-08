@@ -260,6 +260,40 @@ def replay(message_id):
     conn.close()
 
 
+def stranded_loop(stop):
+    """Re-parse messages left at 'new' or 'error'.
+
+    A message is marked seen in the mailbox (and consumed from Signal) before it
+    is parsed, so anything in flight when the process restarts is stranded at
+    'new' forever and no feed will ever offer it again. Primary night restarted
+    the service several times and left six real reports sitting there. Sweep
+    them back up.
+    """
+    while not stop.is_set():
+        stop.wait(config.STRANDED_SWEEP_SECONDS)
+        if stop.is_set():
+            return
+        try:
+            conn = store.connect()
+            try:
+                rows = conn.execute(
+                    """SELECT id FROM intake_messages
+                        WHERE status IN ('new','error')
+                          AND created_at < datetime('now', ?)
+                        ORDER BY id LIMIT 20""",
+                    (f"-{config.STRANDED_AFTER_SECONDS} seconds",)).fetchall()
+            finally:
+                conn.close()
+            for row in rows:
+                log.warning("msg %s was stranded; re-parsing", row["id"])
+                try:
+                    replay(row["id"])
+                except Exception:
+                    log.exception("could not re-parse stranded message %s", row["id"])
+        except Exception:
+            log.exception("stranded sweep failed")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true", help="drain the mailbox once and exit")
@@ -289,6 +323,7 @@ def main():
     threads = [
         threading.Thread(target=email_loop, args=(stop,), daemon=True, name="email"),
         threading.Thread(target=signal_loop, args=(stop,), daemon=True, name="signal"),
+        threading.Thread(target=stranded_loop, args=(stop,), daemon=True, name="stranded"),
     ]
     for t in threads:
         t.start()
