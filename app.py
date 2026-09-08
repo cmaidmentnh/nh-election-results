@@ -1140,7 +1140,13 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
                   'projected': round(projected[cid]) if reported_weight > 0 else None}
                  for cid in name_by_id]
-    cand_list.sort(key=lambda x: (-(x['projected'] if x['projected'] is not None else x['votes']), -x['votes']))
+    # Order by the votes actually counted, because that is the number next to
+    # the name. Sorting by the projection put Maura Sullivan above Stefany
+    # Shaheen while showing Sullivan the smaller percentage, which reads as a
+    # mistake in the count rather than as a forecast.
+    cand_list.sort(key=lambda x: (-x['votes'],
+                                  -(x['projected'] if x['projected'] is not None else 0),
+                                  x['name']))
 
     # Volatility: weighted stddev of the boundary (last-winner vs first-loser)
     # margin share across reported precincts — consistent returns let us call early.
