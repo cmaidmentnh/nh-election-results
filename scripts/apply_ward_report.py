@@ -211,13 +211,21 @@ def main():
             if norm(name) == "WRITE IN":
                 deferred.append(votes)
                 continue
-            hits = by_name.get(norm(name)) or by_surname.get(surname(name)) or set()
             # Carlos Gonzalez is on the ballot twice in ward 40 - once for the
-            # House and once as a convention delegate.  The heading says which.
+            # House and once as a convention delegate - so the clerk's heading
+            # decides.  Search inside that office FIRST: Amherst's delegate
+            # roster spells her "Diane H. Layton" while the House roster says
+            # "Diane Layton", so an exact match across all offices lands on the
+            # House and drags the whole delegate race onto the wrong ballot.
+            exact, sur = norm(name), surname(name)
+            hits = set()
             if want_office:
-                narrowed = {h for h in hits if h[2] == want_office}
-                if narrowed:
-                    hits = narrowed
+                for pool in (by_name.get(exact), by_surname.get(sur)):
+                    hits = {h for h in (pool or set()) if h[2] == want_office}
+                    if hits:
+                        break
+            if not hits:
+                hits = by_name.get(exact) or by_surname.get(sur) or set()
             if len(hits) != 1:
                 unmatched.append((municipality, party, office, name, votes,
                                   f"{len(hits)} matches"))
