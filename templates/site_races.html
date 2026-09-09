@@ -327,8 +327,20 @@ function odds(r){
 function card(r){
   const win=new Set(r.projection.winners||[]);
   const tot=r.candidates.reduce((s,c)=>s+c.votes,0)||0;
-  const max=Math.max(1,...r.candidates.map(c=>c.votes));
-  const rows=r.candidates.slice(0,4).map(c=>{
+  /* Show every name that was printed on the ballot. The card used to stop at
+     four and offer "+5 more", so the only way to see who else was running in a
+     nine-way State House primary was to click into the district - and the
+     names it dropped were the ones with the fewest votes, which is exactly the
+     tail a reader is scanning the card for. The collapsed "Write-in" line
+     stays off the card: it is a bucket, not somebody's candidacy. The
+     exception is a race nobody filed for, where the write-in is the whole
+     contest and dropping it would leave an empty card. */
+  const named=r.candidates.filter(c=>c.name!=='Write-in');
+  const show=named.length?named:r.candidates;
+  // Scale the bars to the names actually drawn; keeping a hidden write-in row
+  // as the maximum left every visible bar short with nothing to explain it.
+  const max=Math.max(1,...show.map(c=>c.votes));
+  const rows=show.map(c=>{
     const w=win.has(c.name);
     return `<div class="cr">
       <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}</span>
@@ -340,7 +352,7 @@ function card(r){
     <div class="t"><span class="dn">${esc(distName(O,r))}</span>
       <span class="tag" style="color:${s.c}">${s.l}</span></div>
     <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% counted</div>
-    ${rows}${r.candidates.length>4?`<div class="dm" style="margin:6px 0 0">+${r.candidates.length-4} more</div>`:''}
+    ${rows}
     ${odds(r)}</button>`;
 }
 function inView(code){
