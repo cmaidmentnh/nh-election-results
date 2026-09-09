@@ -259,6 +259,30 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             ok, reason = False, "Review-everything mode is on"
         verdicts[id(line)] = (ok, reason, race, old)
 
+    # Two lines that resolved to one candidate. A voter can write in somebody
+    # who is already printed on the same ballot - Carroll wrote in Kelly Ayotte
+    # on a sheet that also has her printed line - and once the write-in is
+    # matched to her, the sheet holds two different numbers for one person in
+    # one race. Whether they add or one supersedes the other is a judgement
+    # only the sheet's reader can make, so hold both and say so. Left
+    # unhandled, the second one hit results' UNIQUE constraint and took the
+    # whole report down with it, which is how Carroll's replay ended in error.
+    claimed = {}
+    for line in extraction.lines:
+        ok, _reason, _race, _old = verdicts[id(line)]
+        if ok:
+            claimed.setdefault((line.race_id, line.candidate_id), []).append(line)
+    for (_race_id, _cand_id), lines in claimed.items():
+        if len(lines) < 2:
+            continue
+        shown = " and ".join(f"{l.votes:,}" for l in lines)
+        for line in lines:
+            ok, reason, race, old = verdicts[id(line)]
+            verdicts[id(line)] = (
+                False,
+                f"Two lines in this report are for this candidate ({shown})",
+                race, old)
+
     held_race = {}
     for line in extraction.lines:
         ok, reason, _race, _old = verdicts[id(line)]
@@ -299,8 +323,13 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             continue
 
         if old is None:
+            # OR IGNORE, because `old` was read in the verdict pass and another
+            # report can land between then and here. A lost insert is a line
+            # somebody else already filed; a raised IntegrityError here would
+            # abandon every remaining line in the report, which is far worse.
             cursor.execute(
-                "INSERT INTO results (race_id, candidate_id, municipality, votes) VALUES (?,?,?,?)",
+                "INSERT OR IGNORE INTO results (race_id, candidate_id, municipality, votes)"
+                " VALUES (?,?,?,?)",
                 (line.race_id, line.candidate_id, municipality, line.votes),
             )
             log_audit(cursor, user_id, line.race_id, municipality, line.candidate_id,
