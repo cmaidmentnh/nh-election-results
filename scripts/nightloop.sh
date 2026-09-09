@@ -21,6 +21,12 @@ while [ ! -f /tmp/stop-nightloop ]; do
   $P scripts/import_feed.py --apply 2>&1 | tail -4
   $P scripts/drain_queue.py --apply 2>&1 | tail -2
   $P scripts/fix_partial_races.py --apply 2>&1 | tail -2
+  # Two repairs that must keep pace with the incoming data, not just run once:
+  # a sheet's bookkeeping lines ("Blanks", "(Not on Ballot)") arrive as
+  # candidates on every new report, and a town's ballots figure goes stale the
+  # moment a fuller return lands on top of an earlier tape.
+  $P scripts/purge_non_candidates.py --apply 2>&1 | tail -1
+  $P scripts/fix_stale_ballots.py --apply 2>&1 | tail -1
   sqlite3 nh_elections.db "SELECT 'towns=' || (SELECT count(DISTINCT municipality) FROM results r JOIN races ra ON ra.id = r.race_id WHERE ra.election_id IN (29,30)) || ' rows=' || (SELECT count(*) FROM results r JOIN races ra ON ra.id = r.race_id WHERE ra.election_id IN (29,30)) || ' pending=' || (SELECT count(*) FROM intake_items WHERE status = 'pending');"
   sleep 90
 done
