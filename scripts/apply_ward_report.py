@@ -157,7 +157,8 @@ def candidates_for(cur, election_id, municipality):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", required=True)
-    ap.add_argument("--city", required=True, help="e.g. Manchester")
+    ap.add_argument("--city", required=True,
+                    help="e.g. Manchester; with ward 0 rows, a plain town name")
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
@@ -172,7 +173,9 @@ def main():
 
     for (ward, party, office), lines in sorted(load(args.file).items()):
         election_id = PARTY_ELECTION[party]
-        municipality = f"{args.city} Ward {ward}"
+        # Ward 0 means the town does not have wards - Campton faxed a single
+        # Return of Votes for the whole town, and the same reader should take it.
+        municipality = args.city if ward == 0 else f"{args.city} Ward {ward}"
         printed = [v for n, v in lines if n == "__TOTAL__"]
         cands = [(n, v) for n, v in lines if n != "__TOTAL__"]
         if not cands:
