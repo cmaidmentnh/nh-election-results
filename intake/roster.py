@@ -325,20 +325,36 @@ _WRITEIN_MARK = re.compile(
 _NAME_SUFFIXES = {"JR", "SR", "II", "III", "IV", "V"}
 
 
+# What a sheet calls its aggregate write-in figure. These are not people, and
+# creating a candidate called SCATTERING would take the whole race's write-in
+# total away from the shared line that is meant to hold it.
+_AGGREGATE_LINE = re.compile(
+    r"^(?:ALL\s+)?(?:OTHERS?|MISC\w*|SCATTER\w*|WRITE\s*INS?|TOTALS?|VOTES?)"
+    r"(?:\s+(?:VOTES?|TOTALS?|CANDIDATES?|NAMES?))?$", re.I)
+
+
 def writein_name(line):
     """The person written in on this line, or None if it is not a named write-in.
 
-    The aggregate line still belongs to the race's shared write-in candidate:
-    "SCATTERING" and a bare "WRITE-IN" have no name left once the marker is
-    stripped, and returning None here keeps them on that path.
+    The aggregate figure still belongs to the race's shared write-in candidate:
+    "SCATTERING", a bare "WRITE-IN" and "OTHER VOTES" are the whole race's
+    write-in total, not somebody's name, and returning None keeps them on that
+    path. "ME" is somebody's name - Stoddard really did report it - so this
+    filters by what the word is, never by how short it is.
     """
     text = getattr(line, "candidate_text", None) or ""
     if not (getattr(line, "is_writein", False) or _WRITEIN_MARK.search(text)):
         return None
+    # Tested before the marker is stripped as well as after: "Write In Votes"
+    # would otherwise come back as a candidate called "Votes".
+    if _AGGREGATE_LINE.match(normalize_name(text)):
+        return None
     name = _WRITEIN_MARK.sub(" ", text)
     name = re.sub(r"[\(\[]\s*[\)\]]", " ", name)         # emptied parentheses
     name = re.sub(r"\s+", " ", name).strip(" ,;:-–—")
-    return name if re.search(r"[A-Za-z]", name) else None
+    if not re.search(r"[A-Za-z]", name) or _AGGREGATE_LINE.match(normalize_name(name)):
+        return None
+    return name
 
 
 def _name_tokens(name):
@@ -430,7 +446,15 @@ def canonicalise_writeins(reads, index):
     for read in reads:
         for line in getattr(read, "lines", None) or []:
             name = writein_name(line)
-            if name and line.race_id in index and not line.candidate_id:
+            if not name or line.race_id not in index:
+                continue
+            # A named write-in the reader parked on the race's shared write-in
+            # id counts as unassigned. Stoddard's sheet listed eight names in
+            # one race - BOB FEE, FRED PASLER, MARY AUGELL and five more - and
+            # every one of them came back on the aggregate id, so seven of the
+            # eight collided on the same results row and the town published 1
+            # vote where the tape showed 8.
+            if not line.candidate_id or line.candidate_id == index[line.race_id]["writein_id"]:
                 by_race.setdefault(line.race_id, []).append((line, name))
 
     for race_id, entries in by_race.items():
@@ -457,8 +481,11 @@ def canonicalise_writeins(reads, index):
             for line, name in entries:
                 if name in group:
                     line.candidate_text = f"{canonical} (write-in)"
-                    if candidate_id:
-                        line.candidate_id = candidate_id
+                    # Cleared, not left alone: a name parked on the aggregate id
+                    # has to reach the named-write-in path in validate_line, or
+                    # it collides on the shared row with every other name in the
+                    # race - which is what happened to Stoddard.
+                    line.candidate_id = candidate_id or 0
 
 
 def ensure_named_writein(conn, race_id, name, race_meta):

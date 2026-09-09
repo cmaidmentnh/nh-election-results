@@ -130,12 +130,18 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
                                 for v in values)
             return False, f"Reads disagreed ({shown})", race, None
 
-    if not line.candidate_id or line.candidate_id not in race["candidate_ids"]:
+    name = roster.writein_name(line) if resolve_writein else None
+    # A named write-in on the race's shared aggregate id is not the aggregate
+    # line. Stoddard's sheet named eight write-ins in one race and the reader
+    # put all eight on that one id, so seven of them collided on the same
+    # results row and the town published 1 vote against a tape showing 8.
+    on_aggregate = name and line.candidate_id == race["writein_id"]
+
+    if on_aggregate or not line.candidate_id or line.candidate_id not in race["candidate_ids"]:
         # A write-in names somebody the ballot does not, by definition, so the
         # roster check can never pass for one and every write-in a hand-count
         # town reports was being held. Carroll's return alone had 102 lines
         # stuck behind this. Give the name a roster row of its own instead.
-        name = roster.writein_name(line) if resolve_writein else None
         line.candidate_id = (resolve_writein(race, name) or 0) if name else 0
         if not line.candidate_id:
             return (False, f"Candidate '{line.candidate_text}' not on this race's roster",
