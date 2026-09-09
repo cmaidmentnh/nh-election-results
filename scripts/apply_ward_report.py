@@ -30,6 +30,34 @@ from intake.apply import _existing_votes    # noqa: E402
 from entry import log_audit                 # noqa: E402
 
 PARTY_ELECTION = {"DEMOCRATIC": 30, "REPUBLICAN": 29}
+
+# The clerk's headings, mapped to offices.name.  Order matters: the longest
+# distinctive phrase is tested first so "COUNTY TREASURER" is not swallowed by
+# a looser rule, and the two convention rows are told apart from state rep.
+OFFICE_LABELS = [
+    ("DELEGATE", "Delegate to the State Convention"),
+    ("STATE REPRESENTATIVE", "State Representative"),
+    ("STATE SENATOR", "State Senator"),
+    ("US SENATOR", "United States Senator"),
+    ("UNITED STATES SENATOR", "United States Senator"),
+    ("REPRESENTATIVE IN CONGRESS", "Representative in Congress"),
+    ("GOVERNOR", "Governor"),
+    ("EXECUTIVE COUNCILOR", "Executive Councilor"),
+    ("SHERIFF", "County Sheriff"),
+    ("COUNTY ATTORNEY", "County Attorney"),
+    ("COUNTY TREASURER", "County Treasurer"),
+    ("COUNTY COMMISSIONER", "County Commissioner"),
+    ("REGISTER OF DEEDS", "Register of Deeds"),
+    ("REGISTER OF PROBATE", "Register of Probate"),
+]
+
+
+def office_name(label):
+    up = label.upper()
+    for needle, name in OFFICE_LABELS:
+        if needle in up:
+            return name
+    return None
 SUFFIXES = {"JR", "SR", "II", "III", "IV"}
 
 
@@ -55,23 +83,37 @@ def load(path):
 
 
 def candidates_for(cur, election_id, municipality):
-    """Every candidate this ward could legitimately vote for, with its race."""
+    """Every candidate this ward could legitimately vote for, with its race.
+
+    Two sources, because municipality_districts only knows the districted
+    offices.  Governor and U.S. Senator have no district and no row there, so
+    they are read straight off the races table - there is only one of each.
+    """
     cur.execute("""
-        SELECT rc.candidate_id, c.name, rc.race_id
+        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office
           FROM municipality_districts md
           JOIN races ra ON ra.office_id = md.office_id
                        AND IFNULL(ra.district,'') = IFNULL(md.district,'')
                        AND (ra.county IS NULL OR ra.county = '' OR ra.county = md.county)
+          JOIN offices o ON o.id = ra.office_id
           JOIN race_candidates rc ON rc.race_id = ra.id
           JOIN candidates c ON c.id = rc.candidate_id
          WHERE md.municipality = ? AND ra.election_id = ?
-    """, (municipality, election_id))
+        UNION
+        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office
+          FROM races ra
+          JOIN offices o ON o.id = ra.office_id
+          JOIN race_candidates rc ON rc.race_id = ra.id
+          JOIN candidates c ON c.id = rc.candidate_id
+         WHERE ra.election_id = ?
+           AND o.name IN ('Governor', 'United States Senator')
+    """, (municipality, election_id, election_id))
     by_name = defaultdict(set)
     by_surname = defaultdict(set)
     for row in cur.fetchall():
-        pair = (row["race_id"], row["candidate_id"])
-        by_name[norm(row["name"])].add(pair)
-        by_surname[surname(row["name"])].add(pair)
+        entry = (row["race_id"], row["candidate_id"], row["office"])
+        by_name[norm(row["name"])].add(entry)
+        by_surname[surname(row["name"])].add(entry)
     return by_name, by_surname
 
 
@@ -109,15 +151,23 @@ def main():
             cache[key] = candidates_for(cur, election_id, municipality)
         by_name, by_surname = cache[key]
 
+        want_office = office_name(office)
         resolved = []
         for name, votes in cands:
             hits = by_name.get(norm(name)) or by_surname.get(surname(name)) or set()
+            # Carlos Gonzalez is on the ballot twice in ward 40 - once for the
+            # House and once as a convention delegate.  The heading says which.
+            if want_office:
+                narrowed = {h for h in hits if h[2] == want_office}
+                if narrowed:
+                    hits = narrowed
             if len(hits) != 1:
                 unmatched.append((municipality, party, office, name, votes,
                                   f"{len(hits)} matches"))
                 resolved = None
                 break
-            resolved.append((next(iter(hits)), name, votes))
+            race_id, cand_id, _office = next(iter(hits))
+            resolved.append(((race_id, cand_id), name, votes))
         if resolved is None:
             continue
         # every figure in a race lands together or none of it does
