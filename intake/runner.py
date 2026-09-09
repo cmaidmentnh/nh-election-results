@@ -264,11 +264,26 @@ def _format_parse(town, msg, summary, extraction):
         lines.append(f"   {d['name']} {d['votes']:,}")
 
     if held:
+        # A hand-count town writes down every name a voter scrawled, so one
+        # sheet can hold thirty unreadable one-vote write-ins - Mickey Mouse,
+        # Donald Duck, one person spelled four ways. Listing each of those made
+        # the message look like a page of failures and buried the line that
+        # actually mattered: a real candidate with 258 votes held at 80%.
+        # Count the noise, name the rest.
+        def _trivial(d):
+            return (d.get("votes") or 0) <= 1 and "write-in" in (d["name"] or "").lower()
+
+        real = [d for d in held if not _trivial(d)]
+        trivial = len(held) - len(real)
+
         lines.append("")
         lines.append("NEEDS REVIEW")
-        for d in held:
+        for d in sorted(real, key=lambda x: -(x.get("votes") or 0)):
             lines.append(f"   {d['party']} {d['label']} - {d['name']} "
                          f"{d['votes']:,} ({d['reason']})")
+        if trivial:
+            lines.append(f"   (+{trivial} unreadable one-vote write-ins, "
+                         f"on the review page)")
 
     for b in extraction.ballots:
         if b.ballots_cast:
