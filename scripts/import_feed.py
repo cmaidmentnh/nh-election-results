@@ -495,6 +495,20 @@ def main():
                         towns_touched.add(muni)
                         races_touched.add(race_id)
 
+        # Commit each race before fetching the next. The loop interleaves
+        # network calls with writes, so holding one transaction across all 431
+        # races kept SQLite's write lock for minutes at a time - past the
+        # intake service's 30-second busy timeout. Five real reports died with
+        # "database is locked" while this ran on a 90-second cycle. A race is a
+        # complete unit of work; there is nothing to gain by batching them.
+        if args.apply:
+            doubled = double_counted_cities(cursor)
+            if doubled:
+                conn.rollback()
+                print(f"  !! {rid}: would double-count {', '.join(doubled)} - rolled back")
+                continue
+            conn.commit()
+
     # Fail closed. Check the board WITH this run's rows in the transaction but
     # BEFORE the commit, so a run that would put a city on the board twice is
     # rolled back rather than published.
