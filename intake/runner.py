@@ -12,6 +12,7 @@ import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from intake import apply as apply_mod
 from intake import commands
@@ -40,11 +41,37 @@ def _handle(msg):
         conn.close()
 
 
+def _attachment_label(path):
+    """The human part of a stored attachment's filename.
+
+    Attachments are stored as '<8 hex>_<the name the sender gave it>.pdf', and
+    clerks name those files after the polling place: Concord's deputy city clerk
+    sends 'Concord_Ward_Three_-_Preliminary_Results.pdf'. That is a town name we
+    can read without a model call, so read it.
+    """
+    stem = Path(path or "").name
+    stem = re.sub(r"^[0-9a-f]{8}_", "", stem)
+    stem = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", stem)
+    return stem.replace("_", " ").replace("-", " ").strip()
+
+
+def _attachment_towns(cursor, attachments):
+    """Which polling place each attachment names, by filename. None if unclear."""
+    out = []
+    for path in attachments or []:
+        name, _ = roster.resolve_municipality(cursor, _attachment_label(path))
+        out.append(name)
+    return out
+
+
 def _guess_town(cursor, msg):
     """Exact match on the obvious places first; ask the model only if needed."""
     candidates = [msg.get("subject") or ""]
     body = msg.get("body") or ""
     candidates += [ln.strip(" \t:-*#") for ln in body.splitlines() if ln.strip()][:6]
+    # A clerk who attaches 'Concord_Ward_Nine_-_Preliminary_Results.pdf' has
+    # named the polling place even if the covering note never does.
+    candidates += [_attachment_label(p) for p in (msg.get("attachments") or [])]
     for text in candidates:
         name, conf = roster.resolve_municipality(cursor, text)
         if name:
@@ -62,7 +89,52 @@ def _guess_town(cursor, msg):
         msg.get("subject", ""), msg.get("sender", ""), msg.get("attachments"),
     )
     name, _ = roster.resolve_municipality(cursor, guess.municipality)
-    return name, guess.confidence, "model"
+    if name:
+        return name, guess.confidence, "model"
+
+    # Nothing in the report names a town. Fall back to where this reporter has
+    # been filing from all night - see resolve_by_sender_history.
+    name, conf = roster.resolve_by_sender_history(
+        cursor, msg.get("source"), msg.get("sender"))
+    if name:
+        return name, conf, "sender history"
+    return None, 0.0, "none"
+
+
+def _split_by_attachment(conn, cursor, message_id, msg):
+    """Handle a message whose attachments come from more than one polling place.
+
+    Returns the combined summary, or None if this is an ordinary one-town
+    message. Each attachment is re-submitted as its own message - same sender,
+    same body, one tape - so it is parsed against the ballot of the ward it
+    actually came from. The external_id gets a suffix per attachment so the
+    children are distinct rows and can be replayed individually.
+    """
+    attachments = msg.get("attachments") or []
+    if len(attachments) < 2:
+        return None
+    towns = _attachment_towns(cursor, attachments)
+    if len({t for t in towns if t}) < 2:
+        return None
+
+    log.info("msg %s: %d attachments from %d polling places, splitting",
+             message_id, len(attachments), len({t for t in towns if t}))
+    totals = {"applied": 0, "queued": 0}
+    for i, path in enumerate(attachments):
+        child = dict(msg)
+        child["attachments"] = [path]
+        child["external_id"] = f"{msg['external_id']}#{i}"
+        # The covering note names every ward at once, so it cannot be allowed to
+        # decide this tape's ward. The filename can, and _guess_town reads it.
+        child["subject"] = _attachment_label(path)
+        summary = process(conn, child) or {}
+        totals["applied"] += summary.get("applied", 0)
+        totals["queued"] += summary.get("queued", 0)
+
+    status = ("applied" if totals["applied"] and not totals["queued"]
+              else "partial" if totals["applied"] else "queued")
+    store.set_message_status(conn, message_id, status)
+    return {**totals, "town": None, "details": []}
 
 
 def process(conn, msg):
@@ -86,8 +158,28 @@ def process(conn, msg):
             log.info("msg %s: no numbers and no image, ignoring", message_id)
             return {"applied": 0, "queued": 0, "town": None}
 
+        # One email, several polling places. Concord's deputy city clerk sent
+        # five ward tapes in a single message ("Concord Wards: Three, Five, Six,
+        # Eight, Ten"); the pipeline files one town per message, so all five
+        # wards were dropped as unidentifiable. Split it and parse each tape
+        # against its own ward's ballot.
+        split = _split_by_attachment(conn, cursor, message_id, msg)
+        if split is not None:
+            return split
+
         town, town_conf, how = _guess_town(cursor, msg)
         if not town:
+            # A text-only report always names its town - a reporter typing
+            # numbers into Signal says where they are. When it does not, it is
+            # chatter that happened to contain digits: primary night queued an
+            # RSA quotation ("659:63"), a printer's phone number and a Google
+            # Drive share notice as unidentifiable towns, burying the real
+            # reports in the review queue. Anything with a tape attached still
+            # goes to review, because that is a photo of real returns.
+            if not msg.get("attachments"):
+                store.set_message_status(conn, message_id, "ignored")
+                log.info("msg %s: no town and no tape, ignoring as chatter", message_id)
+                return {"applied": 0, "queued": 0, "town": None}
             store.set_message_status(conn, message_id, "queued")
             store.add_item(conn, message_id, status="pending",
                            municipality_text=(msg.get("subject") or msg.get("body") or "")[:120],
@@ -250,6 +342,18 @@ def replay(message_id):
         return
     conn.execute("DELETE FROM intake_items WHERE message_id = ? AND status = 'pending'", (message_id,))
     conn.execute("DELETE FROM intake_messages WHERE id = ?", (message_id,))
+    # A multi-town message is re-submitted as one child message per attachment
+    # (see _split_by_attachment). Those children are keyed off the parent's
+    # external_id, so they have to go too or the replay is a no-op the second
+    # time round - every child would be recognised as already seen.
+    conn.execute(
+        """DELETE FROM intake_items WHERE status = 'pending' AND message_id IN
+               (SELECT id FROM intake_messages
+                 WHERE source = ? AND external_id LIKE ? || '#%')""",
+        (row["source"], row["external_id"]))
+    conn.execute(
+        "DELETE FROM intake_messages WHERE source = ? AND external_id LIKE ? || '#%'",
+        (row["source"], row["external_id"]))
     conn.commit()
     process(conn, {
         "source": row["source"], "external_id": row["external_id"], "sender": row["sender"],
