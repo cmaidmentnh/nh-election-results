@@ -58,6 +58,19 @@ def main():
     cur = conn.cursor()
     bot = store.bot_user_id(conn)
 
+    # Replaying a message deletes its row and re-creates it under a new id, but
+    # leaves the old items behind. An inner join here made those invisible, so
+    # they sat pending for the rest of the night while the town republished
+    # under the new id - 151 of them, across three towns. Retire them first,
+    # then work only what a live message still backs.
+    cur.execute("""UPDATE intake_items SET status = 'superseded',
+                          reason = 'orphaned when the message was re-parsed under a new id'
+                    WHERE status = 'pending'
+                      AND message_id NOT IN (SELECT id FROM intake_messages)""")
+    if cur.rowcount:
+        print(f"retired {cur.rowcount} orphaned items")
+        conn.commit()
+
     cur.execute("""SELECT i.*, m.parse_json
                      FROM intake_items i
                      JOIN intake_messages m ON m.id = i.message_id
