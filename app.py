@@ -1143,19 +1143,32 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # field under a wall of noise. The individual names are still recorded and
     # still reachable town by town; the topline just says how many people wrote
     # somebody in.
-    writein_ids = {r['cid'] for r in cur.execute(
+    named_wi = {r['cid'] for r in cur.execute(
         """SELECT rc.candidate_id AS cid FROM race_candidates rc
-             WHERE rc.race_id = ? AND rc.recruitment_filing_id = -1
-           UNION
-           SELECT c.id FROM candidates c
-            WHERE lower(c.name) IN ('write-in', 'write in', 'writein', 'scattering')""",
+             WHERE rc.race_id = ? AND rc.recruitment_filing_id = -1""",
         (race_id,)).fetchall()}
+    agg_wi = {r['cid'] for r in cur.execute(
+        """SELECT c.id AS cid FROM candidates c
+            WHERE lower(c.name) IN ('write-in', 'write in', 'writein', 'scattering')"""
+    ).fetchall()}
+    writein_ids = named_wi | agg_wi
 
     cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
                   'projected': round(projected[cid]) if reported_weight > 0 else None}
                  for cid in name_by_id if cid not in writein_ids]
-    wi_votes = sum(overall[cid] for cid in name_by_id if cid in writein_ids)
-    wi_proj = sum(projected[cid] for cid in name_by_id if cid in writein_ids)
+
+    # A return of votes prints a WRITE-INS total and then the names beneath it,
+    # and both get recorded - so adding them counts every write-in twice
+    # (Hopkinton's 162 became 309). The sheet's own total and the sum of its
+    # names are two statements of the same quantity, so take the larger and
+    # never their sum: where a town gave only one of the two that is the answer,
+    # and where it gave both this cannot inflate.
+    agg_votes = sum(overall[cid] for cid in name_by_id if cid in agg_wi)
+    agg_proj = sum(projected[cid] for cid in name_by_id if cid in agg_wi)
+    named_votes = sum(overall[cid] for cid in name_by_id if cid in named_wi)
+    named_proj = sum(projected[cid] for cid in name_by_id if cid in named_wi)
+    wi_votes = max(agg_votes, named_votes)
+    wi_proj = max(agg_proj, named_proj)
     if wi_votes or any(cid in writein_ids for cid in name_by_id):
         cand_list.append({'name': 'Write-in', 'votes': wi_votes,
                           'projected': round(wi_proj) if reported_weight > 0 else None})
