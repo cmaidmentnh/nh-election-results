@@ -383,9 +383,17 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             if existing is None:
                 cursor.execute("SELECT county FROM polling_places WHERE municipality = ?", (municipality,))
                 cr = cursor.fetchone()
+                # Upsert, because "no figure on file" and "no row on file" are
+                # different things: a ballots figure cleared to NULL (because a
+                # later return disproved it) leaves the row in place, and a
+                # plain INSERT then dies on the unique key and takes the whole
+                # report down with it.
                 cursor.execute(
-                    """INSERT INTO voter_registration (election_id, county, municipality, ballots_cast)
-                       VALUES (?,?,?,?)""",
+                    """INSERT INTO voter_registration
+                              (election_id, county, municipality, ballots_cast)
+                       VALUES (?,?,?,?)
+                       ON CONFLICT(election_id, county, municipality)
+                       DO UPDATE SET ballots_cast = excluded.ballots_cast""",
                     (b.election_id, (cr["county"] if cr else "") or "", municipality, b.ballots_cast),
                 )
                 store.add_item(conn, message_id, kind="ballots", municipality=municipality,

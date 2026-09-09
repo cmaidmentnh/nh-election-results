@@ -84,13 +84,16 @@ def _guess_town(cursor, msg):
     if name:
         return name, conf, "sender"
 
+    # The model can decline to name a town at all, and returns nothing rather
+    # than an empty guess. Reading through that killed whole reports.
     guess = parser.identify_town(
         roster.town_list_text(cursor), body,
         msg.get("subject", ""), msg.get("sender", ""), msg.get("attachments"),
     )
-    name, _ = roster.resolve_municipality(cursor, guess.municipality)
-    if name:
-        return name, guess.confidence, "model"
+    if guess is not None and getattr(guess, "municipality", None):
+        name, _ = roster.resolve_municipality(cursor, guess.municipality)
+        if name:
+            return name, guess.confidence, "model"
 
     # Nothing in the report names a town. Fall back to where this reporter has
     # been filing from all night - see resolve_by_sender_history.
