@@ -80,11 +80,11 @@ MIN_CONFIDENCE = float(os.environ.get("INTAKE_MIN_CONFIDENCE", "0.85"))
 # API, not the box.
 WORKERS = int(os.environ.get("INTAKE_WORKERS", "16"))
 
-# Reads escalate one at a time and each one costs most of a minute, so a report
-# the reads cannot settle took over two and a half minutes to clear the queue
-# while returns were arriving faster than that. Three reads still gives a
-# supermajority verdict; the fourth and fifth almost never changed the answer.
-MAX_READS = int(os.environ.get("INTAKE_MAX_READS", "3"))
+# Five reads, because _verdict's supermajority rules are written for two or
+# five - at three, a 2-1 line has no rule and falls through to review, which
+# stranded 87 Goffstown lines. The escalation now runs as one parallel batch,
+# so five reads cost two round trips rather than four.
+MAX_READS = int(os.environ.get("INTAKE_MAX_READS", "5"))
 
 # How often to look for messages stranded mid-parse, and how old one must be
 # before it counts as stranded rather than simply still being worked on.

@@ -546,8 +546,16 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     def unsettled(rs):
         return any(not _verdict(v)[1] for v in _tally(rs).values())
 
-    while len(reads) < (max_reads or config.MAX_READS) and unsettled(reads):
-        reads.append(extract(municipality, roster_text, body, subject, sender, attachments))
+    # Escalate in one parallel batch, not one read at a time. Reading serially
+    # cost most of a minute per extra read and put an unsettled report two and a
+    # half minutes behind the towns; the verdict is the same either way, so pay
+    # for one more round trip instead of three.
+    limit = max_reads or config.MAX_READS
+    if len(reads) < limit and unsettled(reads):
+        extra = limit - len(reads)
+        with ThreadPoolExecutor(max_workers=extra) as pool:
+            futures = [pool.submit(read_once) for _ in range(extra)]
+            reads.extend(f.result() for f in futures)
 
     tally = _tally(reads)
     agreed, disagreements = set(), {}
