@@ -1,0 +1,2157 @@
+{
+ "20260908NH30004": {
+  "office": "U.S. Senate",
+  "party": "GOP",
+  "seat": "Class II"
+ },
+ "20260908NH30006": {
+  "office": "Governor",
+  "party": "GOP",
+  "seat": null
+ },
+ "20260908NH30016": {
+  "office": "U.S. House",
+  "party": "GOP",
+  "seat": "District 1"
+ },
+ "20260908NH30018": {
+  "office": "U.S. House",
+  "party": "GOP",
+  "seat": "District 2"
+ },
+ "20260908NH30019": {
+  "office": "Executive Council",
+  "party": "Dem",
+  "seat": "District 1"
+ },
+ "20260908NH30020": {
+  "office": "Executive Council",
+  "party": "GOP",
+  "seat": "District 1"
+ },
+ "20260908NH30021": {
+  "office": "Executive Council",
+  "party": "Dem",
+  "seat": "District 2"
+ },
+ "20260908NH30022": {
+  "office": "Executive Council",
+  "party": "GOP",
+  "seat": "District 2"
+ },
+ "20260908NH30023": {
+  "office": "Executive Council",
+  "party": "Dem",
+  "seat": "District 3"
+ },
+ "20260908NH30024": {
+  "office": "Executive Council",
+  "party": "GOP",
+  "seat": "District 3"
+ },
+ "20260908NH30026": {
+  "office": "Executive Council",
+  "party": "GOP",
+  "seat": "District 4"
+ },
+ "20260908NH30027": {
+  "office": "Executive Council",
+  "party": "Dem",
+  "seat": "District 5"
+ },
+ "20260908NH30028": {
+  "office": "Executive Council",
+  "party": "GOP",
+  "seat": "District 5"
+ },
+ "20260908NH30029": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 1"
+ },
+ "20260908NH30030": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 1"
+ },
+ "20260908NH30031": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 2"
+ },
+ "20260908NH30032": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 2"
+ },
+ "20260908NH30033": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 3"
+ },
+ "20260908NH30034": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 3"
+ },
+ "20260908NH30035": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 4"
+ },
+ "20260908NH30036": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 4"
+ },
+ "20260908NH30037": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 5"
+ },
+ "20260908NH30038": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 5"
+ },
+ "20260908NH30039": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 6"
+ },
+ "20260908NH30040": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 6"
+ },
+ "20260908NH30041": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 7"
+ },
+ "20260908NH30042": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 7"
+ },
+ "20260908NH30043": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 8"
+ },
+ "20260908NH30044": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 8"
+ },
+ "20260908NH30045": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 9"
+ },
+ "20260908NH30046": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 9"
+ },
+ "20260908NH30047": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 10"
+ },
+ "20260908NH30050": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 11"
+ },
+ "20260908NH30051": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 12"
+ },
+ "20260908NH30052": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 12"
+ },
+ "20260908NH30053": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 13"
+ },
+ "20260908NH30054": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 13"
+ },
+ "20260908NH30055": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 14"
+ },
+ "20260908NH30056": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 14"
+ },
+ "20260908NH30057": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 15"
+ },
+ "20260908NH30058": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 15"
+ },
+ "20260908NH30059": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 16"
+ },
+ "20260908NH30060": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 16"
+ },
+ "20260908NH30062": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 17"
+ },
+ "20260908NH30063": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 18"
+ },
+ "20260908NH30064": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 18"
+ },
+ "20260908NH30065": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 19"
+ },
+ "20260908NH30066": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 19"
+ },
+ "20260908NH30067": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 20"
+ },
+ "20260908NH30068": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 20"
+ },
+ "20260908NH30069": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 21"
+ },
+ "20260908NH30070": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 21"
+ },
+ "20260908NH30071": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 22"
+ },
+ "20260908NH30072": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 22"
+ },
+ "20260908NH30073": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 23"
+ },
+ "20260908NH30074": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 23"
+ },
+ "20260908NH30075": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 24"
+ },
+ "20260908NH30076": {
+  "office": "State Senate",
+  "party": "GOP",
+  "seat": "District 24"
+ },
+ "20260908NH30639": {
+  "office": "U.S. House",
+  "party": "Dem",
+  "seat": "District 1"
+ },
+ "20260908NH30640": {
+  "office": "U.S. House",
+  "party": "Dem",
+  "seat": "District 2"
+ },
+ "20260908NH30641": {
+  "office": "Governor",
+  "party": "Dem",
+  "seat": null
+ },
+ "20260908NH31150": {
+  "office": "Executive Council",
+  "party": "Dem",
+  "seat": "District 4"
+ },
+ "20260908NH31152": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 17"
+ },
+ "20260908NH31169": {
+  "office": "State Senate",
+  "party": "Dem",
+  "seat": "District 11"
+ },
+ "20260908NH31170": {
+  "office": "U.S. Senate",
+  "party": "Dem",
+  "seat": "Class II"
+ },
+ "20260908NH31462": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 1"
+ },
+ "20260908NH31463": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 1"
+ },
+ "20260908NH31465": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 2"
+ },
+ "20260908NH31466": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 2"
+ },
+ "20260908NH31468": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 3"
+ },
+ "20260908NH31469": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 3"
+ },
+ "20260908NH31471": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 4"
+ },
+ "20260908NH31472": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 4"
+ },
+ "20260908NH31474": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 5"
+ },
+ "20260908NH31475": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 5"
+ },
+ "20260908NH31477": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 6"
+ },
+ "20260908NH31478": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 6"
+ },
+ "20260908NH31480": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 1"
+ },
+ "20260908NH31481": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 1"
+ },
+ "20260908NH31483": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 2"
+ },
+ "20260908NH31485": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 2"
+ },
+ "20260908NH31487": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 3"
+ },
+ "20260908NH31488": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 3"
+ },
+ "20260908NH31490": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 4"
+ },
+ "20260908NH31491": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 4"
+ },
+ "20260908NH31493": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 5"
+ },
+ "20260908NH31494": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 5"
+ },
+ "20260908NH31496": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 1"
+ },
+ "20260908NH31497": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 1"
+ },
+ "20260908NH31499": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 2"
+ },
+ "20260908NH31502": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 3"
+ },
+ "20260908NH31503": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 3"
+ },
+ "20260908NH31505": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 4"
+ },
+ "20260908NH31506": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 4"
+ },
+ "20260908NH31508": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 5"
+ },
+ "20260908NH31509": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 5"
+ },
+ "20260908NH31511": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 6"
+ },
+ "20260908NH31512": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 6"
+ },
+ "20260908NH31514": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 7"
+ },
+ "20260908NH31515": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 7"
+ },
+ "20260908NH31517": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Coos District 1"
+ },
+ "20260908NH31518": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 1"
+ },
+ "20260908NH31520": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Coos District 2"
+ },
+ "20260908NH31521": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 2"
+ },
+ "20260908NH31524": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 3"
+ },
+ "20260908NH31527": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 4"
+ },
+ "20260908NH31530": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 1"
+ },
+ "20260908NH31531": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 1"
+ },
+ "20260908NH31533": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 2"
+ },
+ "20260908NH31537": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 3"
+ },
+ "20260908NH31539": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 4"
+ },
+ "20260908NH31540": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 4"
+ },
+ "20260908NH31542": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 5"
+ },
+ "20260908NH31543": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 5"
+ },
+ "20260908NH31545": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 6"
+ },
+ "20260908NH31546": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 6"
+ },
+ "20260908NH31548": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 7"
+ },
+ "20260908NH31549": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 7"
+ },
+ "20260908NH31551": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 8"
+ },
+ "20260908NH31552": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 8"
+ },
+ "20260908NH31554": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 9"
+ },
+ "20260908NH31555": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 9"
+ },
+ "20260908NH31557": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 10"
+ },
+ "20260908NH31558": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 10"
+ },
+ "20260908NH31560": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 11"
+ },
+ "20260908NH31561": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 11"
+ },
+ "20260908NH31563": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 1"
+ },
+ "20260908NH31565": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 1"
+ },
+ "20260908NH31567": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 2"
+ },
+ "20260908NH31568": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 2"
+ },
+ "20260908NH31570": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 3"
+ },
+ "20260908NH31571": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 3"
+ },
+ "20260908NH31573": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 4"
+ },
+ "20260908NH31574": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 4"
+ },
+ "20260908NH31576": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 5"
+ },
+ "20260908NH31577": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 5"
+ },
+ "20260908NH31579": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 6"
+ },
+ "20260908NH31580": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 6"
+ },
+ "20260908NH31582": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 7"
+ },
+ "20260908NH31583": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 7"
+ },
+ "20260908NH31585": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 8"
+ },
+ "20260908NH31586": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 8"
+ },
+ "20260908NH31588": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 9"
+ },
+ "20260908NH31589": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 9"
+ },
+ "20260908NH31591": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 10"
+ },
+ "20260908NH31592": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 10"
+ },
+ "20260908NH31594": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 11"
+ },
+ "20260908NH31595": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 11"
+ },
+ "20260908NH31597": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 12"
+ },
+ "20260908NH31598": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 12"
+ },
+ "20260908NH31600": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 13"
+ },
+ "20260908NH31601": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 13"
+ },
+ "20260908NH31603": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 14"
+ },
+ "20260908NH31604": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 14"
+ },
+ "20260908NH31606": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 15"
+ },
+ "20260908NH31607": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 15"
+ },
+ "20260908NH31609": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 16"
+ },
+ "20260908NH31610": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 16"
+ },
+ "20260908NH31612": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 17"
+ },
+ "20260908NH31613": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 17"
+ },
+ "20260908NH31616": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 18"
+ },
+ "20260908NH31617": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 18"
+ },
+ "20260908NH31619": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 19"
+ },
+ "20260908NH31620": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 19"
+ },
+ "20260908NH31622": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 20"
+ },
+ "20260908NH31623": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 20"
+ },
+ "20260908NH31625": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 21"
+ },
+ "20260908NH31626": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 21"
+ },
+ "20260908NH31628": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 22"
+ },
+ "20260908NH31629": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 22"
+ },
+ "20260908NH31631": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 23"
+ },
+ "20260908NH31634": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 24"
+ },
+ "20260908NH31635": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 24"
+ },
+ "20260908NH31637": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 25"
+ },
+ "20260908NH31638": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 25"
+ },
+ "20260908NH31640": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 26"
+ },
+ "20260908NH31641": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 26"
+ },
+ "20260908NH31644": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 27"
+ },
+ "20260908NH31646": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 1"
+ },
+ "20260908NH31647": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 1"
+ },
+ "20260908NH31650": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 2"
+ },
+ "20260908NH31651": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 2"
+ },
+ "20260908NH31653": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 3"
+ },
+ "20260908NH31654": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 3"
+ },
+ "20260908NH31656": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 4"
+ },
+ "20260908NH31657": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 4"
+ },
+ "20260908NH31659": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 5"
+ },
+ "20260908NH31660": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 5"
+ },
+ "20260908NH31662": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 6"
+ },
+ "20260908NH31663": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 6"
+ },
+ "20260908NH31665": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 7"
+ },
+ "20260908NH31666": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 7"
+ },
+ "20260908NH31668": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 8"
+ },
+ "20260908NH31669": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 8"
+ },
+ "20260908NH31674": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 10"
+ },
+ "20260908NH31675": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 10"
+ },
+ "20260908NH31676": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 9"
+ },
+ "20260908NH31678": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 11"
+ },
+ "20260908NH31679": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 11"
+ },
+ "20260908NH31681": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 12"
+ },
+ "20260908NH31682": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 12"
+ },
+ "20260908NH31685": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 13"
+ },
+ "20260908NH31687": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 1"
+ },
+ "20260908NH31688": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 1"
+ },
+ "20260908NH31690": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 2"
+ },
+ "20260908NH31691": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 2"
+ },
+ "20260908NH31693": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 3"
+ },
+ "20260908NH31694": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 3"
+ },
+ "20260908NH31696": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 4"
+ },
+ "20260908NH31697": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 4"
+ },
+ "20260908NH31699": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 5"
+ },
+ "20260908NH31700": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 5"
+ },
+ "20260908NH31702": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 6"
+ },
+ "20260908NH31703": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 6"
+ },
+ "20260908NH31705": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 7"
+ },
+ "20260908NH31706": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 7"
+ },
+ "20260908NH31709": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 8"
+ },
+ "20260908NH31712": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 9"
+ },
+ "20260908NH31714": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 10"
+ },
+ "20260908NH31717": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 11"
+ },
+ "20260908NH31718": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 11"
+ },
+ "20260908NH31720": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 12"
+ },
+ "20260908NH31721": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 12"
+ },
+ "20260908NH31723": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 13"
+ },
+ "20260908NH31724": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 13"
+ },
+ "20260908NH31726": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 14"
+ },
+ "20260908NH31727": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 14"
+ },
+ "20260908NH31729": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 15"
+ },
+ "20260908NH31730": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 15"
+ },
+ "20260908NH31732": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 16"
+ },
+ "20260908NH31733": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 16"
+ },
+ "20260908NH31735": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 17"
+ },
+ "20260908NH31736": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 17"
+ },
+ "20260908NH31738": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 18"
+ },
+ "20260908NH31739": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 18"
+ },
+ "20260908NH31741": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 1"
+ },
+ "20260908NH31742": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 1"
+ },
+ "20260908NH31744": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 2"
+ },
+ "20260908NH31745": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 2"
+ },
+ "20260908NH31747": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 3"
+ },
+ "20260908NH31748": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 3"
+ },
+ "20260908NH31750": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 4"
+ },
+ "20260908NH31751": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 4"
+ },
+ "20260908NH31754": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 5"
+ },
+ "20260908NH31756": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 6"
+ },
+ "20260908NH31757": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 6"
+ },
+ "20260908NH31759": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 7"
+ },
+ "20260908NH31760": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 7"
+ },
+ "20260908NH31762": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 1"
+ },
+ "20260908NH31763": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 1"
+ },
+ "20260908NH31765": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 2"
+ },
+ "20260908NH31766": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 2"
+ },
+ "20260908NH31768": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 3"
+ },
+ "20260908NH31770": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 3"
+ },
+ "20260908NH31772": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 4"
+ },
+ "20260908NH31773": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 4"
+ },
+ "20260908NH31775": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 5"
+ },
+ "20260908NH31776": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 5"
+ },
+ "20260908NH31787": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 3"
+ },
+ "20260908NH31798": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 7"
+ },
+ "20260908NH31799": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 7"
+ },
+ "20260908NH31801": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Belknap District 8"
+ },
+ "20260908NH31802": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Belknap District 8"
+ },
+ "20260908NH31807": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 6"
+ },
+ "20260908NH31808": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 6"
+ },
+ "20260908NH31810": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 7"
+ },
+ "20260908NH31811": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 7"
+ },
+ "20260908NH31813": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Carroll District 8"
+ },
+ "20260908NH31814": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Carroll District 8"
+ },
+ "20260908NH31816": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 8"
+ },
+ "20260908NH31819": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 9"
+ },
+ "20260908NH31820": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 9"
+ },
+ "20260908NH31822": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 10"
+ },
+ "20260908NH31823": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 10"
+ },
+ "20260908NH31825": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 11"
+ },
+ "20260908NH31826": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 11"
+ },
+ "20260908NH31828": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 12"
+ },
+ "20260908NH31829": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 12"
+ },
+ "20260908NH31831": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 13"
+ },
+ "20260908NH31832": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 13"
+ },
+ "20260908NH31834": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 14"
+ },
+ "20260908NH31835": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 14"
+ },
+ "20260908NH31837": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 15"
+ },
+ "20260908NH31838": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 15"
+ },
+ "20260908NH31840": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 16"
+ },
+ "20260908NH31841": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 16"
+ },
+ "20260908NH31844": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 5"
+ },
+ "20260908NH31846": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Coos District 6"
+ },
+ "20260908NH31847": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 6"
+ },
+ "20260908NH31850": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Coos District 7"
+ },
+ "20260908NH31852": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 12"
+ },
+ "20260908NH31855": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 13"
+ },
+ "20260908NH31858": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 14"
+ },
+ "20260908NH31861": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 15"
+ },
+ "20260908NH31864": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 16"
+ },
+ "20260908NH31867": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 17"
+ },
+ "20260908NH31870": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 28"
+ },
+ "20260908NH31871": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 28"
+ },
+ "20260908NH31873": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 29"
+ },
+ "20260908NH31874": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 29"
+ },
+ "20260908NH31876": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 30"
+ },
+ "20260908NH31877": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 30"
+ },
+ "20260908NH31879": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 31"
+ },
+ "20260908NH31880": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 31"
+ },
+ "20260908NH31882": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 32"
+ },
+ "20260908NH31883": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 32"
+ },
+ "20260908NH31885": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 33"
+ },
+ "20260908NH31886": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 33"
+ },
+ "20260908NH31888": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 34"
+ },
+ "20260908NH31889": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 34"
+ },
+ "20260908NH31891": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 35"
+ },
+ "20260908NH31892": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 35"
+ },
+ "20260908NH31894": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 36"
+ },
+ "20260908NH31895": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 36"
+ },
+ "20260908NH31897": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 37"
+ },
+ "20260908NH31898": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 37"
+ },
+ "20260908NH31900": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 38"
+ },
+ "20260908NH31901": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 38"
+ },
+ "20260908NH31903": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 39"
+ },
+ "20260908NH31904": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 39"
+ },
+ "20260908NH31906": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 40"
+ },
+ "20260908NH31907": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 40"
+ },
+ "20260908NH31909": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 41"
+ },
+ "20260908NH31910": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 41"
+ },
+ "20260908NH31912": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 42"
+ },
+ "20260908NH31913": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 42"
+ },
+ "20260908NH31915": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 43"
+ },
+ "20260908NH31916": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 43"
+ },
+ "20260908NH31918": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 44"
+ },
+ "20260908NH31919": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 44"
+ },
+ "20260908NH31921": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Hillsborough District 45"
+ },
+ "20260908NH31922": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Hillsborough District 45"
+ },
+ "20260908NH31924": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 14"
+ },
+ "20260908NH31925": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 14"
+ },
+ "20260908NH31927": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 15"
+ },
+ "20260908NH31933": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 16"
+ },
+ "20260908NH31934": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 16"
+ },
+ "20260908NH31936": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 17"
+ },
+ "20260908NH31939": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 18"
+ },
+ "20260908NH31940": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 18"
+ },
+ "20260908NH31942": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 19"
+ },
+ "20260908NH31945": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 20"
+ },
+ "20260908NH31946": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 20"
+ },
+ "20260908NH31948": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 21"
+ },
+ "20260908NH31949": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 21"
+ },
+ "20260908NH31951": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 22"
+ },
+ "20260908NH31952": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 22"
+ },
+ "20260908NH31954": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 23"
+ },
+ "20260908NH31955": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 23"
+ },
+ "20260908NH31957": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 24"
+ },
+ "20260908NH31960": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 25"
+ },
+ "20260908NH31961": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 25"
+ },
+ "20260908NH31963": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 26"
+ },
+ "20260908NH31964": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 26"
+ },
+ "20260908NH31966": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 27"
+ },
+ "20260908NH31967": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 27"
+ },
+ "20260908NH31969": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 28"
+ },
+ "20260908NH31972": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 29"
+ },
+ "20260908NH31975": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 19"
+ },
+ "20260908NH31976": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 19"
+ },
+ "20260908NH31978": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 20"
+ },
+ "20260908NH31979": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 20"
+ },
+ "20260908NH31981": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 21"
+ },
+ "20260908NH31984": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 22"
+ },
+ "20260908NH31987": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 23"
+ },
+ "20260908NH31990": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 24"
+ },
+ "20260908NH31991": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 24"
+ },
+ "20260908NH31993": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 25"
+ },
+ "20260908NH31994": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 25"
+ },
+ "20260908NH31996": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 26"
+ },
+ "20260908NH31999": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 27"
+ },
+ "20260908NH32002": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 28"
+ },
+ "20260908NH32005": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 29"
+ },
+ "20260908NH32006": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 29"
+ },
+ "20260908NH32008": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 30"
+ },
+ "20260908NH32009": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 30"
+ },
+ "20260908NH32011": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 31"
+ },
+ "20260908NH32012": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 31"
+ },
+ "20260908NH32015": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 32"
+ },
+ "20260908NH32017": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 33"
+ },
+ "20260908NH32020": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 34"
+ },
+ "20260908NH32021": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 34"
+ },
+ "20260908NH32023": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 35"
+ },
+ "20260908NH32024": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 35"
+ },
+ "20260908NH32026": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 36"
+ },
+ "20260908NH32027": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 36"
+ },
+ "20260908NH32029": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 37"
+ },
+ "20260908NH32032": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 8"
+ },
+ "20260908NH32033": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 8"
+ },
+ "20260908NH32035": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 9"
+ },
+ "20260908NH32036": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 9"
+ },
+ "20260908NH32038": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 10"
+ },
+ "20260908NH32041": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 11"
+ },
+ "20260908NH32042": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 11"
+ },
+ "20260908NH32044": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 12"
+ },
+ "20260908NH32045": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 12"
+ },
+ "20260908NH32047": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 13"
+ },
+ "20260908NH32048": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 13"
+ },
+ "20260908NH32050": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 14"
+ },
+ "20260908NH32053": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 15"
+ },
+ "20260908NH32056": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 16"
+ },
+ "20260908NH32059": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 17"
+ },
+ "20260908NH32060": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 17"
+ },
+ "20260908NH32062": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 18"
+ },
+ "20260908NH32063": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 18"
+ },
+ "20260908NH32065": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 19"
+ },
+ "20260908NH32066": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 19"
+ },
+ "20260908NH32068": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 20"
+ },
+ "20260908NH32069": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 20"
+ },
+ "20260908NH32071": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Strafford District 21"
+ },
+ "20260908NH32072": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Strafford District 21"
+ },
+ "20260908NH32086": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 6"
+ },
+ "20260908NH32087": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 6"
+ },
+ "20260908NH32089": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 7"
+ },
+ "20260908NH32090": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 7"
+ },
+ "20260908NH32092": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Sullivan District 8"
+ },
+ "20260908NH32093": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Sullivan District 8"
+ },
+ "20260908NH32120": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 17"
+ },
+ "20260908NH32121": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 17"
+ },
+ "20260908NH32122": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Cheshire District 18"
+ },
+ "20260908NH32123": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Cheshire District 18"
+ },
+ "20260908NH32126": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 38"
+ },
+ "20260908NH32127": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 38"
+ },
+ "20260908NH32128": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 39"
+ },
+ "20260908NH32129": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 39"
+ },
+ "20260908NH32130": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Rockingham District 40"
+ },
+ "20260908NH32131": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Rockingham District 40"
+ },
+ "20260908NH32132": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Grafton District 18"
+ },
+ "20260908NH32133": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Grafton District 18"
+ },
+ "20260908NH32134": {
+  "office": "State House",
+  "party": "Dem",
+  "seat": "Merrimack District 30"
+ },
+ "20260908NH32135": {
+  "office": "State House",
+  "party": "GOP",
+  "seat": "Merrimack District 30"
+ }
+}
