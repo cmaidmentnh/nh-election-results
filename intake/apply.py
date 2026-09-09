@@ -37,6 +37,36 @@ def _ballots_cast(cursor, election_id, municipality):
     return row["ballots_cast"] if row and row["ballots_cast"] else None
 
 
+def _ballots_already_counted(cursor, election_id, municipality, ballots_cast):
+    """Whether this exact Ballot Count has already been added for this town+party.
+
+    Once tapes are added together, the only thing standing between us and
+    counting a machine twice is having seen its figure before: the same photo
+    sent again, or a message replayed by the stranded-message sweep. An applied
+    ballots item records every figure we have taken, so a repeat of one is a
+    resend, not a new machine.
+
+    Two machines can of course print the identical Ballot Count, and this treats
+    the second as a resend. That is the same trade the vote path already makes
+    (old == line.votes is recorded as a duplicate report and changes nothing),
+    and the cost of being wrong is a town short by one machine - visible, and
+    fixable by hand - rather than a silent double count.
+    """
+    cursor.execute(
+        """SELECT 1 FROM intake_items
+            WHERE kind = 'ballots' AND status = 'applied'
+              AND municipality = ? AND election_id = ? AND votes = ?""",
+        (municipality, election_id, ballots_cast),
+    )
+    return cursor.fetchone() is not None
+
+
+def _report_scope(extraction):
+    """'machine_tape' | 'town_total' | 'unknown' for this report, however stored."""
+    scope = getattr(extraction, "report_scope", None)
+    return getattr(scope, "value", scope) or "unknown"
+
+
 def _existing_votes(cursor, race_id, candidate_id, municipality):
     cursor.execute(
         "SELECT votes FROM results WHERE race_id = ? AND candidate_id = ? AND municipality = ?",
@@ -251,6 +281,23 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
         details.append({"ok": True, "party": party, "label": label,
                         "name": name, "votes": line.votes, "reason": None})
 
+    # A town's ballots cast is the SUM of its machines' Ballot Counts, exactly
+    # like its votes. This loop used to treat the second tape's figure as a
+    # contradiction and throw it away, which left towns holding one machine's
+    # ballots against every machine's votes - and _ballots_cast() then gates
+    # publishing on that number, so the town's own real votes were rejected as
+    # "Exceeds N ballots cast". Goffstown sat at 254 ballots on file while the
+    # three tapes it sent totalled 1,386 Democratic ballots and its Democratic
+    # Governor race alone had 1,160 votes; Raymond sat at 291 against a true
+    # 1,111. So add tapes here, the way sum_tapes.py already adds the vote rows.
+    #
+    # Which reports may be added is not a new judgement: report_scope already
+    # tells the vote path apart - 'machine_tape' is part of the town and adds,
+    # 'town_total' is the whole town and would supersede, 'unknown' is a guess.
+    # Only 'machine_tape' adds itself automatically. A town total that disagrees
+    # with the running sum, and anything unscoped, still goes to review, because
+    # replacing a figure is destructive and only a human should choose it.
+    scope = _report_scope(extraction)
     for b in extraction.ballots:
         valid_ids = {e["id"] for e in elections}
         if b.election_id in valid_ids and b.ballots_cast is not None and gate_open:
@@ -268,12 +315,39 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
                                confidence=b.confidence, status="applied")
                 applied += 1
                 continue
-            if existing != b.ballots_cast:
+
+            # Already agrees, or repeats a figure we have taken before: a resend
+            # or a town total confirming the sum. Record it, change nothing.
+            if existing == b.ballots_cast or _ballots_already_counted(
+                    cursor, b.election_id, municipality, b.ballots_cast):
                 store.add_item(conn, message_id, kind="ballots", municipality=municipality,
                                election_id=b.election_id, votes=b.ballots_cast,
-                               old_votes=existing, confidence=b.confidence, status="pending",
-                               reason=f"Conflicts with {existing:,} ballots already on file")
-                queued += 1
+                               old_votes=existing, confidence=b.confidence, status="applied")
+                applied += 1
+                continue
+
+            if scope == "machine_tape":
+                total = existing + b.ballots_cast
+                cursor.execute(
+                    """UPDATE voter_registration SET ballots_cast = ?
+                        WHERE election_id = ? AND municipality = ?""",
+                    (total, b.election_id, municipality),
+                )
+                store.add_item(conn, message_id, kind="ballots", municipality=municipality,
+                               election_id=b.election_id, votes=b.ballots_cast,
+                               old_votes=existing, confidence=b.confidence, status="applied",
+                               reason=f"Another machine's tape: {existing:,} + "
+                                      f"{b.ballots_cast:,} = {total:,}")
+                applied += 1
+                continue
+
+            hint = ("town total supersedes it - Replace" if scope == "town_total"
+                    else f"add = {existing + b.ballots_cast:,}, or a correction?")
+            store.add_item(conn, message_id, kind="ballots", municipality=municipality,
+                           election_id=b.election_id, votes=b.ballots_cast,
+                           old_votes=existing, confidence=b.confidence, status="pending",
+                           reason=f"Conflicts with {existing:,} ballots already on file; {hint}")
+            queued += 1
         elif b.election_id:
             store.add_item(conn, message_id, kind="ballots", municipality=municipality,
                            election_id=b.election_id, votes=b.ballots_cast,
