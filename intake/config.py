@@ -21,6 +21,15 @@ ATTACH_DIR = Path(os.environ.get("INTAKE_ATTACH_DIR", str(BASE_DIR / "data" / "i
 # --- Anthropic ------------------------------------------------------------
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("INTAKE_MODEL", "claude-opus-5")
+
+# Collect the mail and the Signal photos, but do not read them with the model.
+# Every message is still stored, still attachment-for-attachment on disk, and
+# still shows up in the review queue - it just waits for a person (or a session
+# already being paid for) to read it, instead of spending an API call the
+# moment it lands.  Primary night ran the parser on several hundred messages
+# with several reads each; the feeds themselves cost nothing.
+COLLECT_ONLY = os.environ.get("INTAKE_COLLECT_ONLY", "").strip().lower() \
+    in ("1", "true", "yes", "on")
 # A town's full return of votes is a lot of structured output, and adaptive
 # thinking is billed against the same ceiling.
 # Kept under the SDK's non-streaming ceiling; the oversize retry streams.

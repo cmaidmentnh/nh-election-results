@@ -163,6 +163,13 @@ def process(conn, msg):
         log.info("Already seen message %s (%s)", message_id, msg["external_id"])
         return None
 
+    if config.COLLECT_ONLY:
+        # Keep the feeds, drop the bill.  The message and its attachments are
+        # on disk; it goes to the review queue to be read by hand.
+        store.set_message_status(conn, message_id, "queued")
+        log.info("msg %s: stored, not parsed (collect-only)", message_id)
+        return {"applied": 0, "queued": 1, "town": None}
+
     cursor = conn.cursor()
     try:
         # Chatter with no town and no numbers is not a results report. Queueing
@@ -468,11 +475,17 @@ def main():
     threads = [
         threading.Thread(target=email_loop, args=(stop,), daemon=True, name="email"),
         threading.Thread(target=signal_loop, args=(stop,), daemon=True, name="signal"),
-        threading.Thread(target=stranded_loop, args=(stop,), daemon=True, name="stranded"),
     ]
+    # The stranded sweeper exists to re-read messages the parser dropped.  With
+    # the parser switched off there is nothing for it to rescue, and running it
+    # would only churn the queue.
+    if not config.COLLECT_ONLY:
+        threads.append(threading.Thread(target=stranded_loop, args=(stop,),
+                                        daemon=True, name="stranded"))
     for t in threads:
         t.start()
-    log.info("Intake running: email every %ss, Signal group %s",
+    log.info("Intake running%s: email every %ss, Signal group %s",
+             " (collect-only, no model reads)" if config.COLLECT_ONLY else "",
              config.EMAIL_POLL_SECONDS,
              config.SIGNAL_GROUP_NAME or config.SIGNAL_GROUP_ID or "(none)")
     try:
