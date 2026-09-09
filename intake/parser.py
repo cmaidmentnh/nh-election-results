@@ -486,7 +486,15 @@ def line_key(line):
     def norm(t):
         return re.sub(r"[^a-z0-9]+", "", (t or "").lower())
 
-    return ("text", norm(line.race_text), norm(line.candidate_text))
+    # Once the race is resolved to an id, that id IS the race - what the
+    # reporter called it is not part of the line's identity any more. Keying on
+    # the text held Carroll's write-ins for a second time after they were
+    # matched: five reads had all found "NOTA, 1" in the same race, but one had
+    # copied the office down as "State Representative" and another as "STATE
+    # REP CARROLL 1", so they counted as five different lines seen once each
+    # and none of them ever agreed with anything.
+    race = ("race", line.race_id) if line.race_id else ("text", norm(line.race_text))
+    return ("text", race, norm(line.candidate_text))
 
 
 def _tally(reads):

@@ -87,6 +87,17 @@ NOTIFY_TARGET = os.environ.get("INTAKE_NOTIFY_TARGET", "")
 AUTO_APPLY = os.environ.get("INTAKE_AUTO_APPLY", "1") not in ("0", "false", "no")
 MIN_CONFIDENCE = float(os.environ.get("INTAKE_MIN_CONFIDENCE", "0.85"))
 
+# A written-in name is held to a lower bar than a printed one, because the
+# reader's confidence on a write-in is mostly about the SPELLING of a
+# handwritten name it has no reference for: "Ellen Labrecque" is an 80% read
+# however clear the "3" beside it. Carroll's return came back with 61 write-ins
+# between 0.40 and 0.83, and under the race-publishes-whole rule each one of
+# them held an entire race. The count itself is still guarded by having to
+# agree across every read, which is the stronger of the two checks (see
+# parser._verdict) - this only stops an unsure spelling from being treated as
+# an unsure number.
+MIN_WRITEIN_CONFIDENCE = float(os.environ.get("INTAKE_MIN_WRITEIN_CONFIDENCE", "0.4"))
+
 # Username the service writes audit rows as. Created on first run.
 # How many reports to work on at once. The bound that matters is the model
 # API, not the box.

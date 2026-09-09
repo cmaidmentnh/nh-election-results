@@ -116,7 +116,12 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
         return False, "Vote count missing or negative", race, None
     if line.votes > MAX_PLAUSIBLE_VOTES:
         return False, f"Implausible count ({line.votes:,})", race, None
-    if (line.confidence or 0) < config.MIN_CONFIDENCE:
+
+    # Pure string work, so it costs nothing to know here whether this is a
+    # write-in - which decides the confidence bar it has to clear.
+    name = roster.writein_name(line) if resolve_writein else None
+    floor = config.MIN_WRITEIN_CONFIDENCE if name else config.MIN_CONFIDENCE
+    if (line.confidence or 0) < floor:
         return False, f"Low parser confidence ({line.confidence:.0%})", race, None
 
     # Two independent reads must agree. Confidence alone missed real errors.
@@ -130,7 +135,6 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
                                 for v in values)
             return False, f"Reads disagreed ({shown})", race, None
 
-    name = roster.writein_name(line) if resolve_writein else None
     # A named write-in on the race's shared aggregate id is not the aggregate
     # line. Stoddard's sheet named eight write-ins in one race and the reader
     # put all eight on that one id, so seven of them collided on the same
