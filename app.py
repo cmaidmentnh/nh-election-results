@@ -1137,9 +1137,28 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
         for cid in name_by_id:
             projected[cid] += ev * sh[cid]
 
+    # Collapse write-ins to one line. A hand-count town lists every name a voter
+    # wrote, so a race can carry dozens of one-vote entries - the Democratic
+    # governor primary picked up 68 of them tonight - and they bury the actual
+    # field under a wall of noise. The individual names are still recorded and
+    # still reachable town by town; the topline just says how many people wrote
+    # somebody in.
+    writein_ids = {r['cid'] for r in cur.execute(
+        """SELECT rc.candidate_id AS cid FROM race_candidates rc
+             WHERE rc.race_id = ? AND rc.recruitment_filing_id = -1
+           UNION
+           SELECT c.id FROM candidates c
+            WHERE lower(c.name) IN ('write-in', 'write in', 'writein', 'scattering')""",
+        (race_id,)).fetchall()}
+
     cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
                   'projected': round(projected[cid]) if reported_weight > 0 else None}
-                 for cid in name_by_id]
+                 for cid in name_by_id if cid not in writein_ids]
+    wi_votes = sum(overall[cid] for cid in name_by_id if cid in writein_ids)
+    wi_proj = sum(projected[cid] for cid in name_by_id if cid in writein_ids)
+    if wi_votes or any(cid in writein_ids for cid in name_by_id):
+        cand_list.append({'name': 'Write-in', 'votes': wi_votes,
+                          'projected': round(wi_proj) if reported_weight > 0 else None})
     # Order by the votes actually counted, because that is the number next to
     # the name. Sorting by the projection put Maura Sullivan above Stefany
     # Shaheen while showing Sullivan the smaller percentage, which reads as a
