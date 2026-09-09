@@ -138,7 +138,8 @@ def candidates_for(cur, election_id, municipality):
     they are read straight off the races table - there is only one of each.
     """
     cur.execute("""
-        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office
+        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office,
+               IFNULL(ra.district,'') AS district
           FROM municipality_districts md
           JOIN races ra ON ra.office_id = md.office_id
                        AND IFNULL(ra.district,'') = IFNULL(md.district,'')
@@ -148,7 +149,8 @@ def candidates_for(cur, election_id, municipality):
           JOIN candidates c ON c.id = rc.candidate_id
          WHERE md.municipality = ? AND ra.election_id = ?
         UNION
-        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office
+        SELECT rc.candidate_id, c.name, rc.race_id, o.name AS office,
+               IFNULL(ra.district,'') AS district
           FROM races ra
           JOIN offices o ON o.id = ra.office_id
           JOIN race_candidates rc ON rc.race_id = ra.id
@@ -159,7 +161,8 @@ def candidates_for(cur, election_id, municipality):
     by_name = defaultdict(set)
     by_surname = defaultdict(set)
     for row in cur.fetchall():
-        entry = (row["race_id"], row["candidate_id"], row["office"])
+        entry = (row["race_id"], row["candidate_id"], row["office"],
+                 row["district"])
         by_name[norm(row["name"])].add(entry)
         by_surname[surname(row["name"])].add(entry)
     return by_name, by_surname
@@ -221,8 +224,16 @@ def main():
             hits = set()
             if want_office:
                 for pool in (by_name.get(exact), by_surname.get(sur)):
-                    hits = {h for h in (pool or set()) if h[2] == want_office}
-                    if hits:
+                    found = {h for h in (pool or set()) if h[2] == want_office}
+                    # Jennie Gomarlo is on two of Richmond's ballots - Cheshire
+                    # 10 and Cheshire 17 - so the office alone cannot say which
+                    # race a figure belongs to.  The heading's district can.
+                    if want_district:
+                        narrowed = {h for h in found if h[3] == want_district}
+                        if narrowed:
+                            found = narrowed
+                    if found:
+                        hits = found
                         break
             if not hits:
                 hits = by_name.get(exact) or by_surname.get(sur) or set()
@@ -231,7 +242,7 @@ def main():
                                   f"{len(hits)} matches"))
                 resolved = None
                 break
-            race_id, cand_id, _office = next(iter(hits))
+            race_id, cand_id, _office, _district = next(iter(hits))
             resolved.append(((race_id, cand_id), name, votes))
         if resolved is None:
             continue
