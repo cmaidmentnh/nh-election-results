@@ -405,25 +405,20 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
     sheets = spreadsheet_texts(attachments)
     if sheets:
         content.append({"type": "text", "text": f"\n--- ATTACHED SPREADSHEET ---\n{sheets}"})
+    # Stream every read at the full ceiling rather than trying a small
+    # non-streaming call first. A town's return-of-votes sheet routinely runs
+    # past 16k output tokens and comes back as truncated JSON; the retry then
+    # re-read the whole sheet from scratch, so the biggest towns - the ones
+    # people are waiting on - were the slowest to publish. Streaming is the
+    # only way the SDK allows a ceiling this high, and one read at 48k beats
+    # a read at 16k plus a second read at 48k.
     try:
-        resp = client().messages.parse(
-            model=config.MODEL,
-            max_tokens=max_tokens or config.MAX_OUTPUT_TOKENS,
-            system=EXTRACT_SYSTEM,
-            thinking={"type": "adaptive"},
-            messages=[{"role": "user", "content": content}],
-            output_format=Extraction,
-        )
-        return resp.parsed_output
+        return _extract_streamed(content, max_tokens=max_tokens)
     except Exception as exc:
-        # A big return-of-votes sheet can run past the output ceiling and come
-        # back as truncated JSON. Losing the whole town over that is the worst
-        # outcome, so retry once with far more room - which the SDK only allows
-        # when streaming.
-        if _retry and "json" in str(exc).lower():
-            log.warning("%s: reply did not parse (%s); retrying streamed",
-                        municipality, str(exc)[:120])
-            return _extract_streamed(content)
+        if _retry:
+            log.warning("%s: extraction failed (%s); one more try",
+                        municipality, str(exc)[:140])
+            return _extract_streamed(content, max_tokens=max_tokens)
         raise
 
 
@@ -445,11 +440,11 @@ def _strict_schema(node):
     return node
 
 
-def _extract_streamed(content):
+def _extract_streamed(content, max_tokens=None):
     """One extraction with a large output ceiling, which requires streaming."""
     with client().messages.stream(
         model=config.MODEL,
-        max_tokens=config.MAX_OUTPUT_TOKENS_RETRY,
+        max_tokens=max_tokens or config.MAX_OUTPUT_TOKENS_RETRY,
         system=EXTRACT_SYSTEM,
         thinking={"type": "adaptive"},
         messages=[{"role": "user", "content": content}],
