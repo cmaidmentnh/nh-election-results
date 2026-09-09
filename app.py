@@ -1201,6 +1201,23 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     projection = _project(cand_list, seats, reported_weight, current_total, volatility,
                           n_reported=reported_n, n_total=total)
 
+    # A race with no more candidates than seats is decided the moment it is
+    # printed, and the wire services do not carry it at all - AP publishes
+    # nothing for the Democratic governor primary because Cinde Warmington is
+    # unopposed. Reporting-by-precinct then reads as "101 towns have not
+    # reported" for towns that plainly did, and the top of the ticket looks
+    # broken. Say unopposed instead of pretending to wait for a result.
+    filed = cur.execute(
+        """SELECT COUNT(*) AS n FROM race_candidates
+            WHERE race_id = ? AND recruitment_filing_id > 0""",
+        (race_id,)).fetchone()['n']
+    if filed and filed <= seats:
+        projection = dict(projection)
+        projection['status'] = 'unopposed'
+        projection['win_prob'] = None
+        projection['winners'] = [c['name'] for c in cand_list
+                                 if c['name'] != 'Write-in'][:seats]
+
     out = {'exists': True, 'office': office_name, 'party': party, 'county': county,
            'district': district, 'seats': seats, 'candidates': cand_list,
            'reporting': {'reported': reported_n, 'total': total,
