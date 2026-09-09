@@ -12,11 +12,13 @@ Sources (all local, no external dependencies):
            (same redistricting cycle, ward-level for cities).
   * County-wide offices (Sheriff, Attorney, Treasurer, Registers)
         -> every municipality in the county (county taken from its House district).
+  * County Commissioner
+        -> every commissioner district in the town's own county. The districts
+           decide who may run, not who may vote; the county elects all three
+           seats. See section 4 for the evidence.
 
 NOT stored here (handled elsewhere by the entry layer):
   * Statewide offices (Governor, US Senator, President) - apply to every town.
-  * County Commissioner - sub-district town membership is not available in any
-    current data source; entered via the race-centric view until a map exists.
 
 Idempotent. Usage: python3 build_municipality_districts.py [nh_elections.db]
 """
@@ -133,9 +135,28 @@ def main():
             cw_count += 1
     print(f"  County-wide offices: {cw_count} town rows across {len(COUNTY_WIDE_OFFICES)} offices")
 
-    # --- 4. County Commissioner, from the town -> district map ----------------
+    # --- 4. County Commissioner: every district in the town's own county ------
     # commissioner_districts.json (town.UPPER -> {county, district}) is the same
-    # authoritative map used by candidates.electhouserepublicans.com.
+    # authoritative map used by candidates.electhouserepublicans.com. But that
+    # map answers "which commissioner district is this town IN" - a RESIDENCY
+    # fact, about who may run - and this table answers "what does this town VOTE
+    # ON". For NH county commissioners those are not the same question: a
+    # candidate must live in the district, and then the whole county elects all
+    # three seats. Filing one row per town, for its own district only, therefore
+    # understated every town's ballot by two races.
+    #
+    # The Return of Votes proves it. Goshen's official Republican return prints
+    # "For County Commissioner, 1st District - Joe Osgood 53, Undervotes 21" AND
+    # "2nd District - Bennie Nelson 53, Undervotes 21" against 74 Republican
+    # ballots cast: 53 + 21 = 74 in BOTH races. You cannot account for every
+    # ballot in a race the town does not vote in. Ossipee's Republican ballot and
+    # Chatham's Democratic ballot likewise print all three Carroll districts,
+    # each "Vote for not more than 1".
+    #
+    # On primary night this cost 76 real County Commissioner lines from ten
+    # towns, all held as "Race not identified on this town's ballot", because the
+    # roster we hand the parser showed one commissioner race where the ballot has
+    # three. So: a town votes on every commissioner district in its county.
     comm_oid = office_id(cur, "County Commissioner")
     comm_path = os.path.join(HERE, "data", "commissioner_districts.json")
     comm_count = 0
@@ -145,12 +166,18 @@ def main():
         comm_map = {}
         print("  County Commissioner: data/commissioner_districts.json not found, skipped")
     if comm_map and comm_oid:
+        # county -> every commissioner district in it, from the residency map.
+        districts_in_county = {}
+        for rec in comm_map.values():
+            districts_in_county.setdefault(rec["county"], set()).add(str(rec["district"]))
         for muni in muni_county:
             base = re.sub(r"\s+Ward\s+\d+\*?$", "", muni).strip().upper()
             rec = comm_map.get(base)
             if rec:
-                upsert(cur, muni, comm_oid, rec["county"], str(rec["district"]), "commissioner-json")
-                comm_count += 1
+                for district in sorted(districts_in_county[rec["county"]]):
+                    upsert(cur, muni, comm_oid, rec["county"], district,
+                           "commissioner-json(county-wide)")
+                    comm_count += 1
         print(f"  County Commissioner: {comm_count} town rows")
 
     conn.commit()
