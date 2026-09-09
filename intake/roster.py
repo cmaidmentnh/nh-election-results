@@ -8,12 +8,20 @@ not on the town's ballot cannot be matched to a candidate id by accident.
 Roster construction is imported from entry.py rather than reimplemented, so the
 automated path and the hand-entry path can never disagree about what is on a
 town's ballot.
+
+The one thing a town can report that is not on its ballot is a write-in, and
+hand-count towns report the name the voter actually wrote. Those names are
+resolved and added to the roster here - see the named write-ins section at the
+bottom of this file.
 """
 
+import difflib
+import itertools
 import re
 import threading
+from collections import Counter
 
-from entry import event_elections, place_races  # single source of truth
+from entry import event_elections, normalize_name, place_races  # single source of truth
 from entry_sources import normkey
 from intake import config
 
@@ -275,6 +283,7 @@ def roster_for(cursor, municipality):
             display = label if label == race["office"] else f"{race['office']} - {label}"
 
             index[race["id"]] = {
+                "race_id": race["id"],
                 "election_id": race["election_id"],
                 "party": party,
                 "office": race["office"],
@@ -287,3 +296,228 @@ def roster_for(cursor, municipality):
             }
 
     return "\n".join(lines), index, elections
+
+
+# ---------------------------------------------------------------------------
+# Named write-ins
+#
+# A machine town reports one aggregate "WRITE-IN" or "SCATTERING" figure per
+# race. A hand-count town reports the name the voter actually wrote, one line
+# each, and none of those names is on the ballot the roster was built from - so
+# every one of them failed the validator's roster check. Carroll's return alone
+# put 102 lines into the review queue that way, and most of the towns still out
+# on primary night are small hand-count towns that will report the same shape.
+#
+# So a named write-in creates its own roster row, flagged with
+# recruitment_filing_id = -1, exactly as the hand-entry form and the operator's
+# "that's a write-in" DM already do (entry.py save_place / commands._apply_action).
+# ---------------------------------------------------------------------------
+
+# "(write-in)" as the readers actually emit it, plus the forms clerks print.
+# Deliberately anchored on the whole word: a bare "wi" would eat the first two
+# letters of "Wilson".
+_WRITEIN_MARK = re.compile(
+    r"[\(\[]?\s*\b(?:write[\s._-]*ins?|w\s*/\s*i)\b\.?\s*[\)\]]?", re.I)
+
+# Generational suffixes are written down inconsistently by the same voter pool -
+# Carroll produced both "George Brodeur Sr" and "George Brodeur" - so they are
+# not part of the identity being matched.
+_NAME_SUFFIXES = {"JR", "SR", "II", "III", "IV", "V"}
+
+
+def writein_name(line):
+    """The person written in on this line, or None if it is not a named write-in.
+
+    The aggregate line still belongs to the race's shared write-in candidate:
+    "SCATTERING" and a bare "WRITE-IN" have no name left once the marker is
+    stripped, and returning None here keeps them on that path.
+    """
+    text = getattr(line, "candidate_text", None) or ""
+    if not (getattr(line, "is_writein", False) or _WRITEIN_MARK.search(text)):
+        return None
+    name = _WRITEIN_MARK.sub(" ", text)
+    name = re.sub(r"[\(\[]\s*[\)\]]", " ", name)         # emptied parentheses
+    name = re.sub(r"\s+", " ", name).strip(" ,;:-–—")
+    return name if re.search(r"[A-Za-z]", name) else None
+
+
+def _name_tokens(name):
+    tokens = normalize_name(name).split()
+    while len(tokens) > 1 and tokens[-1] in _NAME_SUFFIXES:
+        tokens = tokens[:-1]
+    return tokens
+
+
+def _ratio(a, b):
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def same_person(a, b):
+    """Whether two written-in names are one person, read two ways.
+
+    Tonight's five reads of Carroll's tally sheet produced "Ellen LaBrack",
+    "Ellen LaBreck", "Ellen Labreck" and "Ellen Labrecque" for one woman, and
+    "David Perkay" / "Perkey" / "Perray" / "Perry" for one man. Publishing her
+    four times with a quarter of her votes each is worse than not publishing her
+    at all, so names are matched before any of them becomes a roster row.
+
+    A single flat difflib cutoff cannot do it - "LABRACK" against "LABRECQUE"
+    scores 0.79, below the 0.87 resolve_municipality uses - so the comparison
+    uses the structure of a name instead: one half has to be right for a
+    misreading of the other half to be forgiven. Callers cluster transitively,
+    which is what carries "Labrecque" to "LaBrack" by way of "Labreck".
+    """
+    ta, tb = _name_tokens(a), _name_tokens(b)
+    if not ta or not tb:
+        return False
+    if ta == tb:
+        return True
+    # A single word is not a name with halves to check, and the protest votes
+    # arrive as single words: "NOTA" must never be fuzzed into anybody.
+    if len(ta) == 1 or len(tb) == 1:
+        return False
+
+    if _ratio(" ".join(ta), " ".join(tb)) >= 0.85:
+        return True                        # "Connie Osgood Dan" / "... Don"
+    given, surname = _ratio(ta[0], tb[0]), _ratio(ta[-1], tb[-1])
+    if ta[0] == tb[0] and surname >= 0.72:
+        return True                        # David Perkay / Perkey / Perray / Perry
+    if ta[-1] == tb[-1] and given >= 0.5:
+        return True                        # Crystal Bailey / Xtal Bailey
+    return given >= 0.8 and surname >= 0.8
+
+
+def _cluster(names):
+    """Group names that are the same person. Returns a list of lists.
+
+    Transitive on purpose: see same_person - the chain is what links the widest
+    pair of spellings of one name.
+    """
+    parent = {n: n for n in names}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a, b in itertools.combinations(names, 2):
+        if find(a) != find(b) and same_person(a, b):
+            parent[find(b)] = find(a)
+
+    groups = {}
+    for n in names:
+        groups.setdefault(find(n), []).append(n)
+    return list(groups.values())
+
+
+def canonicalise_writeins(reads, index):
+    """Settle on one spelling of each written-in name across every read.
+
+    Has to happen before the reads are compared, not after. An unmatched line is
+    identified by the text the reporter wrote (parser.line_key), so five reads
+    that spelled Ellen LaBrack five ways are five different lines that each
+    appear once - the consensus check then finds no agreement on any of them and
+    holds the lot. Rewriting every variant to one spelling first turns them back
+    into one line read five times, which is what they are.
+
+    Where the cluster matches somebody already on the race - a real candidate
+    written in on the other party's ballot, or a write-in a previous report from
+    this district already created - the line is pointed at that candidate_id
+    instead, so nobody is filed twice.
+    """
+    by_race = {}
+    for read in reads:
+        for line in getattr(read, "lines", None) or []:
+            name = writein_name(line)
+            if name and line.race_id in index and not line.candidate_id:
+                by_race.setdefault(line.race_id, []).append((line, name))
+
+    for race_id, entries in by_race.items():
+        race = index[race_id]
+        on_ballot = {name: cid for cid, name in race["names"].items()}
+        counts = Counter(name for _line, name in entries)
+        universe = list(dict.fromkeys(list(counts) + list(on_ballot)))
+
+        for group in _cluster(universe):
+            known = [n for n in group if n in on_ballot]
+            if len(known) > 1:
+                # Two people already on this ballot look alike, so a written-in
+                # name near both of them cannot be assigned. Leave it for a human.
+                continue
+            if known:
+                # Already on this race: use the roster spelling and its id.
+                canonical, candidate_id = known[0], on_ballot[known[0]]
+            else:
+                # Otherwise the spelling the most reads agreed on wins; a tie
+                # goes to the longer form, which is the one carrying a suffix
+                # or an accent rather than the one that dropped it.
+                canonical = max(group, key=lambda n: (counts[n], len(n), n))
+                candidate_id = None
+            for line, name in entries:
+                if name in group:
+                    line.candidate_text = f"{canonical} (write-in)"
+                    if candidate_id:
+                        line.candidate_id = candidate_id
+
+
+def ensure_named_writein(conn, race_id, name, race_meta):
+    """Find or create the candidate written in on this race, and roster them.
+
+    Returns a candidate_id, or None if the race cannot be read.
+
+    Serialised on the same lock roster_for uses, and committed straight away,
+    for the same reason: reports are handled by a thread pool on their own
+    connections, so an uncommitted insert is invisible to the thread beside it
+    and two towns in one district reporting the same write-in would otherwise
+    each create their own row and split the district total.
+    """
+    name = (name or "").strip()
+    if not (race_id and name):
+        return None
+    with _roster_lock:
+        cur = conn.cursor()
+        cur.execute("""SELECT r.election_id, e.party FROM races r
+                       JOIN elections e ON r.election_id = e.id WHERE r.id = ?""", (race_id,))
+        race = cur.fetchone()
+        if not race:
+            return None
+
+        # Re-read the roster from the database rather than trusting the index
+        # this thread built: another report may have created this write-in in
+        # between. Matched tolerantly, so a second town's spelling of one name
+        # joins the row the first town created.
+        cur.execute("""SELECT rc.candidate_id, c.name
+                         FROM race_candidates rc
+                         JOIN candidates c ON c.id = rc.candidate_id
+                        WHERE rc.race_id = ?""", (race_id,))
+        for row in cur.fetchall():
+            if same_person(name, row["name"]):
+                candidate_id = row["candidate_id"]
+                break
+        else:
+            norm = normalize_name(name)
+            cur.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                        (norm, race["party"]))
+            existing = cur.fetchone()
+            if existing:
+                candidate_id = existing["id"]
+            else:
+                # Party is the ballot the vote was cast on, not the person's own:
+                # "Kelly Ayotte (write-in)" on a Democratic sheet is a Democratic
+                # primary vote and has to be counted as one. Same convention as
+                # entry.py's hand-entry form, so the two paths agree.
+                cur.execute("INSERT INTO candidates (name, name_normalized, party) VALUES (?,?,?)",
+                            (name, norm, race["party"]))
+                candidate_id = cur.lastrowid
+            cur.execute("""INSERT OR IGNORE INTO race_candidates
+                           (race_id, candidate_id, party, ballot_order, is_incumbent,
+                            recruitment_candidate_id, recruitment_filing_id)
+                           VALUES (?, ?, ?, 900, 0, NULL, -1)""",
+                        (race_id, candidate_id, race["party"]))
+        conn.commit()
+
+    if race_meta is not None:
+        race_meta["candidate_ids"].add(candidate_id)
+        race_meta["names"].setdefault(candidate_id, name)
+    return candidate_id

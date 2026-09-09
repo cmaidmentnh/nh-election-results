@@ -205,6 +205,7 @@ def process(conn, msg):
         extraction, agreed, disagreements = parser.extract_consensus(
             town, roster_text, msg.get("body"), msg.get("subject", ""),
             msg.get("sender", ""), msg.get("attachments"),
+            settle_names=lambda reads: roster.canonicalise_writeins(reads, index),
         )
 
         parse_json = json.dumps(extraction.model_dump(), default=str)

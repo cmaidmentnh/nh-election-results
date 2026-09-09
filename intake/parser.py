@@ -47,6 +47,9 @@ class VoteLine(BaseModel):
     candidate_text: str = Field(description="The name exactly as the reporter wrote it")
     race_text: str = Field(description="The race exactly as the reporter wrote it, if stated")
     votes: int
+    is_writein: bool = Field(
+        description="True when the sheet lists this name in a write-in section or "
+                    "marks it as a write-in. False for a name printed on the ballot.")
     confidence: float = Field(description="0.0 to 1.0 for this one line")
 
 
@@ -177,6 +180,16 @@ SCATTERED, VOID, SPOILED, ABSENTEE (as a column heading), REGISTERED VOTERS. \
 A "TOTAL BALLOTS CAST" or "BALLOTS CAST" figure goes in ballots, not lines.
 - "SCATTERING" or a plain "WRITE-IN" total is the aggregate write-in line - use \
 the "Write-in (aggregate line)" candidate_id for that race.
+- A HAND-COUNT TOWN LISTS EACH WRITTEN-IN NAME SEPARATELY, under a "write-in" \
+heading or beside a "W/I" mark. Report every one: set is_writein=true, put the \
+person's name in candidate_text, candidate_id=0, and use that race's race_id. \
+Copy the name exactly as it is written, letter for letter, however odd it looks \
+and even if it is not a person ("NOTA", "None of the above") - it will be matched \
+downstream, and a name you tidied up cannot be matched to the same name read off \
+another line. Leave candidate_id=0 unless the name is already listed for that \
+race - including one tagged "(write-in)", which an earlier town in the same \
+district has already reported - in which case use that candidate_id.
+- Set is_writein=false on every line that is not a write-in.
 - Multi-seat State Representative races list many candidates at once; report every \
 one you can read.
 - Numbers are often handwritten. Distinguish carefully between 1/7, 3/8, 5/6, and \
@@ -523,7 +536,7 @@ def _verdict(values):
 
 
 def extract_consensus(municipality, roster_text, body, subject="", sender="",
-                      attachments=None, max_reads=None):
+                      attachments=None, max_reads=None, settle_names=None):
     """Read the report until the readings settle, then report what is solid.
 
     Back-testing against real 2024 clerk PDFs showed the model reporting high
@@ -539,11 +552,21 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
 
     Returns (extraction, agreed_keys, disagreements) where disagreements maps a
     key to the full list of readings, for the review queue to show.
+
+    settle_names, if given, is handed every read before they are compared. A
+    line nobody could match to a candidate id is identified by the text the
+    reporter wrote, so a written-in name that five reads spelled five ways is
+    five single-sighting lines that agree on nothing - see
+    roster.canonicalise_writeins, which puts them back together first.
     """
     from concurrent.futures import ThreadPoolExecutor
 
     def read_once():
         return extract(municipality, roster_text, body, subject, sender, attachments)
+
+    def settle(rs):
+        if settle_names:
+            settle_names(rs)
 
     # The two baseline reads are independent, so pay for one round trip, not
     # two. On election night latency per report is what decides whether the
@@ -551,6 +574,7 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     with ThreadPoolExecutor(max_workers=2) as pool:
         futures = [pool.submit(read_once) for _ in range(2)]
         reads = [f.result() for f in futures]
+    settle(reads)
 
     first = reads[0]
     if not first.contains_results or not first.lines:
@@ -569,6 +593,7 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
         with ThreadPoolExecutor(max_workers=extra) as pool:
             futures = [pool.submit(read_once) for _ in range(extra)]
             reads.extend(f.result() for f in futures)
+        settle(reads)
 
     tally = _tally(reads)
     agreed, disagreements = set(), {}

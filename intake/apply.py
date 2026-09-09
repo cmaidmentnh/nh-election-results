@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 import logging
 
 from entry import log_audit
-from intake import config, store
+from intake import config, roster, store
 from intake.parser import line_key
 
 log = logging.getLogger("intake.apply")
@@ -97,19 +97,49 @@ def _gate_open():
 
 
 def validate_line(cursor, line, municipality, index, agreed=None, disagreements=None,
-                  extraction_scope=None):
-    """Return (ok, reason, race_meta, old_votes). ok=False means queue it."""
+                  extraction_scope=None, resolve_writein=None):
+    """Return (ok, reason, race_meta, old_votes). ok=False means queue it.
+
+    The gates that do not need a candidate id are taken first so that the
+    write-in gate below is only reached by a line that is otherwise going to
+    publish. A roster row belongs to the race, not to the town that reported it,
+    so a write-in invented from a blurred line would follow the race into every
+    other town in the district - and creating one for a line we were about to
+    hold anyway is exactly how that happens.
+    """
     race = index.get(line.race_id)
     old = None
 
     if not line.race_id or race is None:
         return False, "Race not identified on this town's ballot", None, None
-    if not line.candidate_id or line.candidate_id not in race["candidate_ids"]:
-        return False, f"Candidate '{line.candidate_text}' not on this race's roster", race, None
     if line.votes is None or line.votes < 0:
         return False, "Vote count missing or negative", race, None
     if line.votes > MAX_PLAUSIBLE_VOTES:
         return False, f"Implausible count ({line.votes:,})", race, None
+    if (line.confidence or 0) < config.MIN_CONFIDENCE:
+        return False, f"Low parser confidence ({line.confidence:.0%})", race, None
+
+    # Two independent reads must agree. Confidence alone missed real errors.
+    if agreed is not None:
+        key = line_key(line)
+        if key not in agreed:
+            # Reads escalate from two to five when they cannot settle, so this
+            # holds however many values the reads produced - never assume a pair.
+            values = list((disagreements or {}).get(key) or [line.votes])
+            shown = " vs ".join(f"{v:,}" if isinstance(v, int) else str(v)
+                                for v in values)
+            return False, f"Reads disagreed ({shown})", race, None
+
+    if not line.candidate_id or line.candidate_id not in race["candidate_ids"]:
+        # A write-in names somebody the ballot does not, by definition, so the
+        # roster check can never pass for one and every write-in a hand-count
+        # town reports was being held. Carroll's return alone had 102 lines
+        # stuck behind this. Give the name a roster row of its own instead.
+        name = roster.writein_name(line) if resolve_writein else None
+        line.candidate_id = (resolve_writein(race, name) or 0) if name else 0
+        if not line.candidate_id:
+            return (False, f"Candidate '{line.candidate_text}' not on this race's roster",
+                    race, None)
 
     old = _existing_votes(cursor, line.race_id, line.candidate_id, municipality)
     if old is not None and old != line.votes:
@@ -129,20 +159,6 @@ def validate_line(cursor, line, municipality, index, agreed=None, disagreements=
     cast = _ballots_cast(cursor, race["election_id"], municipality)
     if cast and line.votes > cast:
         return False, f"Exceeds {cast:,} ballots cast for this town", race, old
-
-    if (line.confidence or 0) < config.MIN_CONFIDENCE:
-        return False, f"Low parser confidence ({line.confidence:.0%})", race, old
-
-    # Two independent reads must agree. Confidence alone missed real errors.
-    if agreed is not None:
-        key = line_key(line)
-        if key not in agreed:
-            # Reads escalate from two to five when they cannot settle, so this
-            # holds however many values the reads produced - never assume a pair.
-            values = list((disagreements or {}).get(key) or [line.votes])
-            shown = " vs ".join(f"{v:,}" if isinstance(v, int) else str(v)
-                                for v in values)
-            return False, f"Reads disagreed ({shown})", race, old
 
     return True, None, race, old
 
@@ -213,11 +229,18 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     # the ward 341-223, sat in the queue; Grafton published its three fringe
     # candidates and held the two real ones. A missing race is honest, a race
     # missing half its field is not.
+    # Nothing has been written to results yet at this point, so the write-in
+    # rows this creates are the only thing its commit flushes.
+    def resolve_writein(race_meta, name):
+        return roster.ensure_named_writein(conn, race_meta and race_meta.get("race_id"),
+                                           name, race_meta)
+
     verdicts = {}
     for line in extraction.lines:
         ok, reason, race, old = validate_line(cursor, line, municipality, index,
                                               agreed, disagreements,
-                                              getattr(extraction, "report_scope", None))
+                                              getattr(extraction, "report_scope", None),
+                                              resolve_writein)
         if ok and line.race_id in unreconciled:
             ok, reason = False, unreconciled[line.race_id]
         if ok and not gate_open:
