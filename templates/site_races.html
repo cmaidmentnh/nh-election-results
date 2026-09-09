@@ -78,7 +78,42 @@ const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
 const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
 const ST={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
           leaning:{l:'Leaning',c:'#6b7280'},too_close:{l:'Too close',c:'#b26a00'},
+          unopposed:{l:'Unopposed',c:'#7d8894'},writein:{l:'Write-in only',c:'#b0a08c'},
           awaiting:{l:'Awaiting',c:'#c9ccd1'}};
+
+/* One status for a race, used by the card, the map shading, the map hover and
+   the detail callout so they cannot disagree. Before this the card said
+   "Unopposed" while the same district on the map was shaded "Awaiting" and its
+   tooltip said AWAITING next to 1,935 counted votes. */
+function statusKey(r){
+  if(!r) return 'awaiting';
+  const pj=r.projection||{};
+  // Only the server knows who actually filed, so take its word for unopposed.
+  if(pj.status==='unopposed') return 'unopposed';
+  // Nobody filed: the nomination goes to whoever was written in. A stray
+  // write-in recorded under a person's name can leave one named row behind
+  // (Cheshire's Republican Register of Deeds is "Write-in 42, Jack Wozmak 1"),
+  // so treat a race the desk calls for "Write-in" as write-in-only too.
+  const named=r.candidates.filter(c=>c.name!=='Write-in');
+  if(!named.length || (named.length<=r.seats && (pj.winners||[])[0]==='Write-in'))
+    return 'writein';
+  return pj.status||'awaiting';
+}
+function statusOf(r){ return ST[statusKey(r)]||ST.awaiting; }
+const SETTLED=new Set(['unopposed','writein']);
+
+/* Never round a share to 100% while somebody else still has votes, and never
+   round a real vote down to 0%. A one-line "Bill Wright 3,313 100% /
+   Write-in 15 0%" reads as a reporting error rather than as a rounding. */
+function pctStr(v,tot){
+  if(!tot) return '0%';
+  const p=100*v/tot;
+  if(v>0 && p<0.05) return '<0.1%';
+  if(v>0 && p<0.5) return p.toFixed(1)+'%';
+  if(v<tot && p>99.95) return '>99.9%';
+  if(v<tot && p>99.5) return p.toFixed(1)+'%';
+  return Math.round(p)+'%';
+}
 const CAND_COLORS=['#d9601f','#1b8f6b','#7a52c9'];
 const OTHER_COLOR='#8a8f96', NOTIN_COLOR='#e4e6e9';
 
@@ -152,6 +187,17 @@ function distName(o,rec){
   if(o.key==='us-house')return 'U.S. House District '+rec.district;
   if(o.key==='exec-council')return 'Executive Council District '+rec.district;
   if(o.key==='state-senate')return 'State Senate District '+rec.district;
+  // County offices: without the county every card on the page read just
+  // "Sheriff" - nine identical headings, and no way to tell which county a
+  // result belonged to.
+  if(o.level==='county'||o.level==='county-district'){
+    // "Merrimack County Sheriff", "Merrimack County Attorney" - the label
+    // already carries "County" for some of these offices and not others.
+    const head=rec.county
+      ? rec.county+(/^County /.test(o.label)?' ':' County ')+o.label
+      : o.label;
+    return o.level==='county-district' ? head+' District '+rec.district : head;
+  }
   return o.label;
 }
 
@@ -165,8 +211,14 @@ function buildOffices(){
 }
 function buildParty(){
   const el=document.getElementById('party'); el.innerHTML='';
-  const avail=['R','D'].filter(p=>Object.values(data.districts).some(r=>contested(r,p)));
-  const use=avail.length?avail:['R'];
+  // Which parties have anything to show. Deciding this from the contested
+  // races alone hid every Democratic result for Governor, Executive Council,
+  // Sheriff, Register of Deeds, Register of Probate and County Commissioner -
+  // 46 races - behind a toggle that was never drawn, even in "All races".
+  const has=p=>Object.values(data.districts).some(r=>
+    SCOPE==='all' ? ((r.parties&&r.parties[p])||0)>0 : contested(r,p));
+  const use=['R','D'].filter(has);
+  if(!use.length) use.push('R','D');
   if(!use.includes(P)) P=use[0];
   use.forEach(p=>{const b=document.createElement('button');
     b.textContent=PARTY[p].n; b.className=(p===P?'on '+p:'');
@@ -177,7 +229,8 @@ function buildScope(){
   [['contested','Contested'],['all','All races']].forEach(([v,l])=>{
     const b=document.createElement('button');
     b.textContent=l; b.className=(v===SCOPE?'on':'');
-    b.onclick=()=>{SCOPE=v;buildScope();load();}; el.appendChild(b);});
+    // Party availability depends on the scope, so rebuild it alongside.
+    b.onclick=()=>{SCOPE=v;buildScope();buildParty();load();}; el.appendChild(b);});
 }
 function buildBase(){
   const el=document.getElementById('base');
@@ -245,43 +298,50 @@ function tick(){
 
 function counts(){
   const rs=Object.values(board).filter(r=>inView(r.code));
-  const c={called:0,close:0,await:0};
-  rs.forEach(r=>{const s=r.projection.status;
-    if(s==='called')c.called++;
-    else if(s==='awaiting')c.await++;
+  // Every race lands in exactly one bucket, so the three add up to the total.
+  // Counting a one-candidate race as "in play" told readers there were 21
+  // State Senate Republican primaries still going when 21 of them had a single
+  // name on the ballot.
+  const c={called:0,close:0,settled:0};
+  rs.forEach(r=>{const k=statusKey(r);
+    if(SETTLED.has(k))c.settled++;
+    else if(k==='called')c.called++;
     else c.close++;});
   document.getElementById('count').innerHTML=
-    `<div><span class="n">${rs.length}</span><span class="l">Contested</span></div>
+    `<div><span class="n">${rs.length}</span><span class="l">${SCOPE==='all'?'Races':'Contested'}</span></div>
      <div class="called"><span class="n">${c.called}</span><span class="l">Called</span></div>
      <div class="close"><span class="n">${c.close}</span><span class="l">In play</span></div>
-     <div><span class="n">${c.await}</span><span class="l">Awaiting</span></div>`;
+     <div><span class="n">${c.settled}</span><span class="l">Uncontested</span></div>`;
 }
 
 /* ---- list --------------------------------------------------------------- */
-function odds(pj){
-  if(!pj||pj.status==='called'||pj.win_prob==null) return '';
-  return `<div class="od"><b>${Math.round(pj.win_prob*100)}%</b> chance ${esc(pj.leader||'')} holds on</div>`;
+function odds(r){
+  const pj=r.projection, k=statusKey(r);
+  if(!pj||k==='called'||SETTLED.has(k)||pj.win_prob==null) return '';
+  // `leader` is the candidate on the win/lose boundary - in a multi-seat race
+  // that is the last winner, not the front-runner - so say which seat is at
+  // stake rather than calling them the leader.
+  const what = r.seats>1 ? ` holds the ${r.seats}${r.seats===2?'nd':r.seats===3?'rd':'th'} seat` : ' holds on';
+  return `<div class="od"><b>${Math.round(pj.win_prob*100)}%</b> chance ${esc(pj.leader||'')}${what}</div>`;
 }
 function card(r){
   const win=new Set(r.projection.winners||[]);
   const tot=r.candidates.reduce((s,c)=>s+c.votes,0)||0;
   const max=Math.max(1,...r.candidates.map(c=>c.votes));
   const rows=r.candidates.slice(0,4).map(c=>{
-    const w=win.has(c.name), pc=tot?Math.round(100*c.votes/tot):0;
+    const w=win.has(c.name);
     return `<div class="cr">
       <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}</span>
-        <span class="v2">${nf.format(c.votes)} <span>${pc}%</span></span></div>
+        <span class="v2">${nf.format(c.votes)} <span>${pctStr(c.votes,tot)}</span></span></div>
       <div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[P].c}"></i></div></div>`;
   }).join('');
-  let s=ST[r.projection.status]||ST.awaiting;
-  const filed=r.candidates.filter(c=>c.name!=='Write-in').length;
-  if(filed<=r.seats) s={l: filed===0 ? 'Write-in only' : 'Unopposed', c:'#6b7280'};
+  const s=statusOf(r);
   return `<button type="button" class="dist" data-code="${r.code}">
     <div class="t"><span class="dn">${esc(distName(O,r))}</span>
       <span class="tag" style="color:${s.c}">${s.l}</span></div>
     <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% counted</div>
     ${rows}${r.candidates.length>4?`<div class="dm" style="margin:6px 0 0">+${r.candidates.length-4} more</div>`:''}
-    ${odds(r.projection)}</button>`;
+    ${odds(r)}</button>`;
 }
 function inView(code){
   if(O.level!=='house'||!floSet) return true;
@@ -292,8 +352,9 @@ function renderList(){
   const rs=Object.values(board).filter(r=>inView(r.code));
   document.getElementById('grid').innerHTML = rs.length
     ? rs.map(card).join('')
-    : `<div class="dm" style="padding:26px 0">No contested ${PARTY[P].n} races in the
-        ${O.level==='house'?BASEV.toLowerCase()+' districts':'this office'}.</div>`;
+    : `<div class="dm" style="padding:26px 0">No ${SCOPE==='all'?'':'contested '}${PARTY[P].n} races for
+        ${O.level==='house'?BASEV.toLowerCase()+' '+O.label.toLowerCase()+' districts':O.label}.${
+        SCOPE!=='all'?' Switch to “All races” to see the uncontested ones.':''}</div>`;
   document.querySelectorAll('.dist').forEach(b=>
     b.onclick=()=>openDetail(O,b.dataset.code,P));
 }
@@ -302,7 +363,7 @@ function renderList(){
 function legend(){
   document.getElementById('legend').innerHTML =
     Object.entries(ST).map(([k,v])=>`<div class="r"><i style="background:${v.c}"></i>${v.l}</div>`).join('')
-    + `<div class="r"><i style="background:#eef0f2"></i>No contest</div>`;
+    + `<div class="r"><i style="background:#eef0f2"></i>No race</div>`;
 }
 function styleOf(code){
   const rec=data.districts[code];
@@ -311,17 +372,18 @@ function styleOf(code){
   // with no race at all stay blank.
   if(!b && !contested(rec,P))
     return {fillColor:'#eef0f2',fillOpacity:.85,color:'#fff',weight:.6,interactive:false};
-  const s=b?(ST[b.projection.status]||ST.awaiting):ST.awaiting;
+  const s=b?statusOf(b):ST.awaiting;
   return {fillColor:s.c,fillOpacity:.88,color:'#fff',weight:.8,interactive:true};
 }
 function tipFor(code){
   const rec=data.districts[code], b=board[code];
   if(!b) return `<div class="tn">${esc(distName(O,rec))}</div><div class="tm"><span>Awaiting results</span></div>`;
   const tot=b.candidates.reduce((s,c)=>s+c.votes,0)||0;
-  const s=ST[b.projection.status]||ST.awaiting;
+  const s=statusOf(b);
   const rows=b.candidates.slice(0,5).map(c=>
-    `<div class="tr"><span>${esc(c.name)}</span><span class="v">${nf.format(c.votes)} ${tot?Math.round(100*c.votes/tot):0}%</span></div>`).join('');
-  const p=b.projection.win_prob!=null&&b.projection.status!=='called'
+    `<div class="tr"><span>${esc(c.name)}</span><span class="v">${nf.format(c.votes)} ${pctStr(c.votes,tot)}</span></div>`).join('');
+  const k=statusKey(b);
+  const p=(b.projection.win_prob!=null && k!=='called' && !SETTLED.has(k))
     ? `<div class="tr"><span>${Math.round(b.projection.win_prob*100)}% chance it holds</span><span></span></div>` : '';
   return `<div class="tn">${esc(distName(O,rec))}</div>
     <div class="tm"><span>${s.l}</span><span>${b.reporting.expected_in||0}% in</span></div>${rows}${p}`;
@@ -353,9 +415,18 @@ function renderMap(){
     // Frame the whole state, tight to its actual outline.
   });
 }
+/* There is no county or commissioner-district polygon layer to shade
+   (nh-counties.geojson is unnamed boundary lines, not areas), so those offices
+   were drawing an empty grey rectangle with a status legend beside it that
+   nothing on the map used. Give the races the full width instead until a real
+   layer exists; the per-race detail map still draws, town by town. */
+const NOMAP=new Set(['county','county-district']);
 function paint(){
+  const solo=NOMAP.has(O.level);
+  document.getElementById('split').classList.toggle('solo',solo);
   if(O.level==='house'&&!floSet){ floCodes().then(()=>{counts();renderList();renderMap();}); return; }
   renderList();
+  if(solo){ if(map){try{map.remove();}catch(e){}map=null;layer=null;} return; }
   if(O.level==='statewide') stateMap(); else renderMap();
 }
 
@@ -417,11 +488,15 @@ function openDetail(o,code,p){
       document.getElementById('dtitle').textContent=distName(o,{...rec,district:r.district,county:r.county});
       document.getElementById('dsub').textContent=
         `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`;
-      const pj=r.projection, s=ST[pj.status]||ST.awaiting;
+      const pj=r.projection, k=statusKey(r), s=ST[k]||ST.awaiting;
       const co=document.getElementById('callout');
-      co.className='callout '+pj.status;
-      co.innerHTML=`<span>${s.l}${(pj.winners||[]).length?': '+esc(pj.winners.join(', ')):''}</span>`+
-        (pj.win_prob!=null&&pj.status!=='called'
+      co.className='callout '+k;
+      // "Awaiting: Bill Wright" - an unopposed race has no status entry of its
+      // own, so the callout fell back to "Awaiting" over a settled nomination.
+      const who = k==='writein' ? ' — no candidate filed'
+                : (pj.winners||[]).length ? ': '+esc(pj.winners.join(', ')) : '';
+      co.innerHTML=`<span>${s.l}${who}</span>`+
+        (pj.win_prob!=null&&k!=='called'&&!SETTLED.has(k)
           ? `<span class="p">${Math.round(pj.win_prob*100)}% chance it holds</span>`:'');
       ptable(r); detailMap(r,p);
       document.getElementById('dparty').innerHTML='';
