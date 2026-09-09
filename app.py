@@ -1355,13 +1355,21 @@ def api_contested_board(office_key):
     cur = conn.cursor()
     rows = cur.execute(f"""
         SELECT r.county AS county, r.district AS district, r.seats AS seats,
-               COUNT(CASE WHEN rc.recruitment_filing_id > 0 THEN 1 END) AS ncand
+               COUNT(CASE WHEN rc.recruitment_filing_id > 0 THEN 1 END) AS ncand,
+               -- Every contest printed on a ballot has a race row, including the
+               -- ones nobody filed for, so that a write-in has somewhere to land.
+               -- Showing those before anyone votes in them fills the page with
+               -- hundreds of blank contests - 203 Democratic delegate races with
+               -- no candidate and no vote. A race earns its place on the board by
+               -- having someone on the ballot or a vote recorded.
+               (SELECT COUNT(*) FROM results res WHERE res.race_id = r.id) AS nvotes
         FROM races r
         JOIN elections e ON r.election_id = e.id
         JOIN offices o   ON r.office_id = o.id
         LEFT JOIN race_candidates rc ON rc.race_id = r.id
         WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ? AND o.name = ?
-        GROUP BY r.id {'' if scope_all else 'HAVING ncand > r.seats'}
+        GROUP BY r.id
+        HAVING {'ncand > 0 OR nvotes > 0' if scope_all else 'ncand > r.seats'}
     """, (party_full, office_name)).fetchall()
 
     board = []
