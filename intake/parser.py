@@ -323,8 +323,42 @@ def _spreadsheet_text(path):
     return "\n".join(out)
 
 
+def _document_text(path):
+    """A .docx of results as plain text.
+
+    A Word file is a zip like .xlsx, so it passed the container check and was
+    then handed to openpyxl, which raised, logged, and returned nothing. The
+    message read as chatter and was dropped without a trace - Gorham sent its
+    whole town that way and published zero rows. Read the document part
+    directly rather than adding a dependency mid-count.
+    """
+    import re
+    import zipfile
+    try:
+        with zipfile.ZipFile(path) as zf:
+            names = [n for n in ("word/document.xml",) if n in zf.namelist()]
+            if not names:
+                return ""
+            xml = zf.read(names[0]).decode("utf-8", "replace")
+    except Exception:
+        log.exception("Could not open document %s", path)
+        return ""
+    # Paragraph and row breaks first, so a table of votes keeps its lines.
+    xml = re.sub(r"</w:(p|tr)>", "\n", xml)
+    xml = re.sub(r"</w:tc>", " | ", xml)
+    text = re.sub(r"<[^>]+>", "", xml)
+    lines = [ln.strip(" |\t") for ln in text.splitlines()]
+    return "\n".join(ln for ln in lines if ln)
+
+
 def spreadsheet_texts(paths):
-    """Text extracted from any spreadsheet attachments, for the prompt body."""
+    """Text extracted from spreadsheet or word-processor attachments.
+
+    Clerks send whatever their office produces - a tape photo, a scanned PDF,
+    a spreadsheet, or a Word document. Anything that carries numbers has to
+    reach the model, because a report we cannot read is indistinguishable from
+    a town that never reported.
+    """
     chunks = []
     for p in (paths or []):
         path = Path(p)
@@ -334,11 +368,17 @@ def spreadsheet_texts(paths):
             head = path.open("rb").read(8)
         except OSError:
             continue
-        if head[:4] != b"PK\x03\x04" and path.suffix.lower() not in (".xlsx", ".xlsm"):
+        suffix = path.suffix.lower()
+        if suffix in (".docx", ".docm"):
+            text = _document_text(path)
+            label = "document attachment"
+        elif head[:4] == b"PK\x03\x04" or suffix in (".xlsx", ".xlsm"):
+            text = _spreadsheet_text(path)
+            label = "spreadsheet attachment"
+        else:
             continue
-        text = _spreadsheet_text(path)
         if text:
-            chunks.append(f"[spreadsheet attachment: {path.name}]\n{text}")
+            chunks.append(f"[{label}: {path.name}]\n{text}")
     return "\n\n".join(chunks)
 
 
