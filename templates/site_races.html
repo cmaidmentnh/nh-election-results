@@ -273,6 +273,9 @@ function readState(){
 function load(){
   clearInterval(timer);
   saveState();
+  // The filter bar is built from the API response, so its height is only real
+  // by the time we get here; at boot it is an empty 3px box.
+  stickOffset();
   refresh(); timer=setInterval(refresh,30000);
 }
 function refresh(){
@@ -610,7 +613,29 @@ document.getElementById('back').onclick=()=>{
   paint();
 };
 
+/* The filter bar is sticky at the top of the page, and its height moves with
+   the window: the office list wraps onto a second row on a narrower screen,
+   and the Base/Floterial toggle only exists for the State House. So the map's
+   own sticky offset cannot be the constant 52px it was - against a 107px bar
+   the top of the map sat behind it for the entire scroll, zoom buttons
+   included. Measure the bar and park the map just underneath it. */
+function stickOffset(){
+  const f=document.querySelector('.filters');
+  if(!f) return;
+  document.documentElement.style.setProperty('--stick',
+    Math.round(f.getBoundingClientRect().height)+10+'px');
+}
+// Hold the observer in a variable: `new ResizeObserver(fn).observe(el)` keeps
+// no reference to the observer itself and it stops reporting.
+let filtersRO=null;
+if(window.ResizeObserver){
+  filtersRO=new ResizeObserver(stickOffset);
+  filtersRO.observe(document.querySelector('.filters'));
+}
+addEventListener('resize', stickOffset);
+
 (function boot(){
+  stickOffset();
   const st=readState();
   if(st.party==='D'||st.party==='R') P=st.party;
   if(st.scope) SCOPE=st.scope;

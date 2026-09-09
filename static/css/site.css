@@ -191,7 +191,11 @@ footer.f p{margin:4px 0;max-width:80ch}
 .split.solo .mapcol{display:none}
 @media(max-width:980px){.split{grid-template-columns:1fr;gap:24px}
   .mapcol{order:2} .grid{order:1}}
-.mapcol{position:sticky;top:52px}
+/* The offset is measured from the sticky filter bar at run time (see
+   stickOffset() in site_races.html); 52px is only the fallback. The bar is
+   107px tall whenever the office list wraps to two rows, so a fixed 52px
+   parked the top of the map - zoom buttons and all - underneath it. */
+.mapcol{position:sticky;top:var(--stick,52px)}
 @media(max-width:980px){.mapcol{position:static}}
 .mapbox{border:1px solid var(--hair);position:relative;background:#fbfbfa}
 #nhmap{height:clamp(340px,60vh,660px)}
