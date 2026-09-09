@@ -36,6 +36,8 @@ PARTY_ELECTION = {"DEMOCRATIC": 30, "REPUBLICAN": 29}
 # a looser rule, and the two convention rows are told apart from state rep.
 OFFICE_LABELS = [
     ("DELEGATE", "Delegate to the State Convention"),
+    ("SHERRIFF", "County Sheriff"),          # Lebanon spells it with two Rs
+    ("SENTATOR", "United States Senator"),   # and drops a letter here
     ("STATE REPRESENTATIVE", "State Representative"),
     ("STATE SENATOR", "State Senator"),
     ("US SENATOR", "United States Senator"),
@@ -70,6 +72,41 @@ def norm(name):
 def surname(name):
     parts = norm(name).split()
     return parts[-1] if parts else ""
+
+
+def district_of(label):
+    """The trailing number in "STATE REPRESENTATIVES GRAFTON DISTRICT 17"."""
+    m = re.search(r"DISTRICT\s+(\d+)\s*$", label.upper())
+    return m.group(1) if m else None
+
+
+def race_by_office(cur, election_id, municipality, office, district):
+    """Find the race the long way, for lines no candidate name can anchor.
+
+    A write-in-only race has nobody on the ballot to match against, and
+    Lebanon files several of them - "State Representative District 13,
+    Write-Ins* 8" is the whole race.  Those votes are real and belong to
+    somebody, so the race is found through the ward's own district table.
+    """
+    cur.execute("""
+        SELECT DISTINCT ra.id
+          FROM municipality_districts md
+          JOIN races ra ON ra.office_id = md.office_id
+                       AND (ra.county IS NULL OR ra.county = '' OR ra.county = md.county)
+          JOIN offices o ON o.id = ra.office_id
+         WHERE md.municipality = ? AND ra.election_id = ? AND o.name = ?
+           AND (? IS NULL OR IFNULL(ra.district,'') = ?)
+           AND IFNULL(ra.district,'') = IFNULL(md.district,'')
+    """, (municipality, election_id, office, district, district or ""))
+    hits = [r["id"] for r in cur.fetchall()]
+    return hits[0] if len(hits) == 1 else None
+
+
+def writein_id(cur):
+    cur.execute("""SELECT id FROM candidates WHERE name_normalized = 'WRITE IN'
+                   ORDER BY id LIMIT 1""")
+    row = cur.fetchone()
+    return row["id"] if row else None
 
 
 def load(path):
@@ -152,8 +189,14 @@ def main():
         by_name, by_surname = cache[key]
 
         want_office = office_name(office)
+        want_district = district_of(office)
+        wildcard = writein_id(cur)
         resolved = []
+        deferred = []          # write-in lines, placed once the race is known
         for name, votes in cands:
+            if norm(name) == "WRITE IN":
+                deferred.append(votes)
+                continue
             hits = by_name.get(norm(name)) or by_surname.get(surname(name)) or set()
             # Carlos Gonzalez is on the ballot twice in ward 40 - once for the
             # House and once as a convention delegate.  The heading says which.
@@ -172,10 +215,24 @@ def main():
             continue
         # every figure in a race lands together or none of it does
         race_ids = {r for (r, _c), _n, _v in resolved}
-        if len(race_ids) != 1:
+        if len(race_ids) > 1:
             skipped_race.append((municipality, party, office,
                                  f"candidates span races {sorted(race_ids)}"))
             continue
+        race_id = next(iter(race_ids)) if race_ids else None
+        if race_id is None and want_office:
+            race_id = race_by_office(cur, election_id, municipality,
+                                     want_office, want_district)
+        if race_id is None:
+            if deferred:
+                skipped_race.append((municipality, party, office,
+                                     "write-in only, and the race is not "
+                                     "on this ward's district list"))
+            continue
+        for votes in deferred:
+            if wildcard is None:
+                break
+            resolved.append(((race_id, wildcard), "Write-in", votes))
 
         for (race_id, cand_id), name, votes in resolved:
             old = _existing_votes(cur, race_id, cand_id, municipality)
