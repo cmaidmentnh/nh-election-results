@@ -278,24 +278,78 @@ def build_place_index(cursor):
     return plain, wards
 
 
+# Why a reporting unit was skipped. Only SKIP_UNKNOWN is a coverage gap; the
+# other two are this script deliberately refusing a row that would double-count
+# a city we already have.
+SKIP_ROLLUP = "citywide rollup, we file this city by ward"
+SKIP_WARD = "ward row, we file this city as one town"
+SKIP_UNKNOWN = "no polling place of this name"
+
+
 def resolve_unit(name, plain, wards):
-    """AP reportingunitName -> our polling place name, or None."""
+    """AP reportingunitName -> (our polling place name, skip reason).
+
+    Exactly one of the pair is None.
+
+    AP publishes every ward city TWICE: once as a row per ward ("Manchester1",
+    "Concord W1", "Dover3") and once as a whole-city rollup under the bare city
+    name ("Manchester", "Concord", "Dover"). The rollup is arithmetically
+    identical to the sum of that city's reported ward rows - checked across all
+    431 NH races on 2026-09-08, where every one of the thirteen rollups matched
+    its own wards to the vote. So the rollup carries nothing the ward rows have
+    not already given us, and taking both would count Manchester's ~58k votes
+    twice in every statewide total.
+
+    Which of the two we want depends entirely on how the city files with us:
+    Manchester files twelve ward tapes, Berlin files one town total. A city
+    with ward rows in polling_places takes only AP's ward units; a city without
+    them takes only AP's rollup. Never both.
+
+    The bare city name must therefore never reach results.municipality for a
+    ward city. polling_places is keyed on the ward names, so a bare
+    'Manchester' row would join to no county in app.py's _precinct_counties()
+    and would count as ONE of the 320 reporting precincts on the front page
+    while actually standing for twelve.
+    """
     if not name:
-        return None
+        return None, SKIP_UNKNOWN
     m = re.match(r"^(.*?)\s*W?(\d+)$", name)
     if m:
         city = normalize_name(m.group(1))
         ward = int(m.group(2))
         # A ward row is only usable if we file that city by ward.
         if city in wards and ward in wards[city]:
-            return wards[city][ward]
-        return None
+            return wards[city][ward], None
+        if city in wards:
+            return None, SKIP_UNKNOWN   # ward city, but not a ward we hold
+        if city in plain:
+            # AP splits a town we file whole - it lists Berlin1 and Berlin3
+            # alongside the 'Berlin' rollup we actually want.
+            return None, SKIP_WARD
+        return None, SKIP_UNKNOWN
     key = normalize_name(name)          # strips the apostrophe in "Hart's Location"
     if key in plain:
-        return plain[key]
+        return plain[key], None
     if key in wards:
-        return None                     # city rollup for a city we file by ward
-    return None
+        return None, SKIP_ROLLUP        # city rollup for a city we file by ward
+    return None, SKIP_UNKNOWN
+
+
+def double_counted_cities(cursor):
+    """Cities on the board as BOTH a bare name and wards - i.e. counted twice.
+
+    This is the one error mode that would silently inflate every statewide
+    total, and it is invisible in a per-town view, so it is checked rather than
+    trusted. Returns the offending city names; empty means clean.
+    """
+    cursor.execute("""
+        SELECT DISTINCT r.municipality
+          FROM results r JOIN races ra ON ra.id = r.race_id
+         WHERE ra.election_id IN (29, 30)
+    """)
+    munis = {r["municipality"] for r in cursor.fetchall()}
+    ward_cities = {m.rsplit(" Ward ", 1)[0] for m in munis if re.search(r" Ward \d+$", m)}
+    return sorted(ward_cities & munis)
 
 
 # ---------------------------------------------------------------------------
@@ -348,7 +402,10 @@ def main():
 
     inserted = updated = 0
     towns_touched, races_touched = set(), set()
-    conflicts, unmatched_cand, unmatched_race, unmatched_town = [], [], set(), set()
+    conflicts, unmatched_cand, unmatched_race = [], [], set()
+    # AP unit name -> why we skipped it. Kept per reason so a deliberate refusal
+    # (a duplicate city rollup) is never mistaken for a hole in our coverage.
+    skipped_units = defaultdict(set)
     skipped_incomplete = 0
 
     for rid in ids:
@@ -387,9 +444,9 @@ def main():
         for key, unit in detail.items():
             if key == "summary":
                 continue
-            muni = resolve_unit(unit.get("reportingunitName"), plain, wards)
+            muni, skip = resolve_unit(unit.get("reportingunitName"), plain, wards)
             if not muni:
-                unmatched_town.add(unit.get("reportingunitName"))
+                skipped_units[skip].add(unit.get("reportingunitName"))
                 continue
             # Only fully-counted towns. AP seeds every town with zeros at poll
             # close; importing those would show 0-vote returns for towns that
@@ -438,6 +495,20 @@ def main():
                         towns_touched.add(muni)
                         races_touched.add(race_id)
 
+    # Fail closed. Check the board WITH this run's rows in the transaction but
+    # BEFORE the commit, so a run that would put a city on the board twice is
+    # rolled back rather than published.
+    doubled = double_counted_cities(cursor)
+    if doubled:
+        conn.rollback()
+        print()
+        print("!! ABORTED - these cities would appear as both a bare name and wards,")
+        print("!! which double-counts them in every statewide total:")
+        for c in doubled:
+            print(f"!!     {c}")
+        print("!! Nothing was written.")
+        sys.exit(1)
+
     if args.apply:
         conn.commit()
 
@@ -462,8 +533,19 @@ def main():
         print(f"      {c}")
     if len(unmatched_cand) > 25:
         print(f"      ... and {len(unmatched_cand) - 25} more")
-    print(f"  AP reporting units not mapped to a polling place: {len(unmatched_town)}")
-    print(f"      {sorted(x for x in unmatched_town if x)}")
+    # Split deliberately-refused units from genuine gaps. Reporting them in one
+    # undifferentiated list read as "the biggest cities in the state are
+    # missing" when in fact every one of their wards was already imported and
+    # the refused rows were duplicate citywide rollups.
+    deliberate = sorted(skipped_units[SKIP_ROLLUP] | skipped_units[SKIP_WARD])
+    unknown = sorted(x for x in skipped_units[SKIP_UNKNOWN] if x)
+    print(f"  AP units skipped as duplicates of rows we already hold: {len(deliberate)}")
+    print(f"      (AP publishes ward cities twice - per ward AND as one citywide")
+    print(f"       rollup; we take whichever form matches how the city files)")
+    print(f"      {deliberate}")
+    print(f"  AP units we cannot map at all (REAL coverage gap): {len(unknown)}")
+    print(f"      {unknown}")
+    print(f"  cities on the board twice (bare name AND wards): 0  [checked]")
     if not args.apply:
         print()
         print("  Nothing was written. Re-run with --apply.")
