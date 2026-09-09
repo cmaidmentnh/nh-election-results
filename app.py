@@ -4,6 +4,7 @@ NH Election Results Explorer
 Insight-driven web app for exploring NH election data
 """
 
+import json
 import os
 import re
 from datetime import datetime
@@ -1025,6 +1026,30 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
             'leader': cand_list[seats - 1]['name'] if cand_list else None}
 
 
+
+_LOT_CACHE = None
+
+
+def _decided_by_lot():
+    """Races whose outcome was settled by drawing lots, keyed by race id.
+
+    Kept in data/decided_by_lot.json rather than in the database because it is
+    not a vote count - it is a fact about what happened afterwards, and the
+    votes must keep reading exactly as the towns reported them.
+    """
+    global _LOT_CACHE
+    if _LOT_CACHE is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'data', 'decided_by_lot.json')
+        try:
+            with open(path) as fh:
+                _LOT_CACHE = {k: v for k, v in json.load(fh).items()
+                              if not k.startswith('_')}
+        except (OSError, ValueError):
+            _LOT_CACHE = {}
+    return _LOT_CACHE
+
+
 def _precinct_counties(cur, names):
     """municipality -> county, for region-aware projection."""
     if not names:
@@ -1227,6 +1252,19 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
 
     projection = _project(cand_list, seats, reported_weight, current_total, volatility,
                           n_reported=reported_n, n_total=total)
+
+    # A tie is never resolved by counting again. RSA 660:1 sends it to the
+    # Secretary of State, who draws lots, and the projection below will sit at
+    # "too close" for ever because the gap really is zero. Farmington's
+    # Strafford 1 seat went that way: Dow and DeLemus both on 264. Record the
+    # draw's outcome without touching either candidate's vote total.
+    lot = _decided_by_lot().get(str(race_id))
+    if lot:
+        projection = dict(projection)
+        projection['status'] = 'called'
+        projection['winners'] = lot['winners']
+        projection['win_prob'] = 1.0
+        projection['decided_by_lot'] = lot.get('note', '')
 
     # A race with no more candidates than seats is decided the moment it is
     # printed, and the wire services do not carry it at all - AP publishes
