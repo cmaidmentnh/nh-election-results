@@ -427,6 +427,24 @@ def extract(municipality, roster_text, body, subject="", sender="", attachments=
         raise
 
 
+def _strict_schema(node):
+    """Pydantic's JSON schema, with additionalProperties pinned false throughout.
+
+    The API rejects an object schema that does not say so explicitly, and the
+    rejection only shows up on the streamed retry - which is the path a report
+    with six tape photos takes. Goffstown's tapes died on it with a 400.
+    """
+    if isinstance(node, dict):
+        if node.get("type") == "object" or "properties" in node:
+            node["additionalProperties"] = False
+        for value in node.values():
+            _strict_schema(value)
+    elif isinstance(node, list):
+        for value in node:
+            _strict_schema(value)
+    return node
+
+
 def _extract_streamed(content):
     """One extraction with a large output ceiling, which requires streaming."""
     with client().messages.stream(
@@ -436,7 +454,7 @@ def _extract_streamed(content):
         thinking={"type": "adaptive"},
         messages=[{"role": "user", "content": content}],
         output_config={"format": {"type": "json_schema",
-                                  "schema": Extraction.model_json_schema()}},
+                                  "schema": _strict_schema(Extraction.model_json_schema())}},
     ) as stream:
         message = stream.get_final_message()
     text = next(b.text for b in message.content if b.type == "text")
