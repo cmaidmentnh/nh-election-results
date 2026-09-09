@@ -546,6 +546,12 @@ def main():
     print(f"  AP units we cannot map at all (REAL coverage gap): {len(unknown)}")
     print(f"      {unknown}")
     print(f"  cities on the board twice (bare name AND wards): 0  [checked]")
+    # One compact line last, because nightloop.sh only keeps `tail -4` of this
+    # output and the counts are what the operator watches between passes.
+    print(f"  == {'applied' if args.apply else 'dry run'}: +{inserted} new, "
+          f"{updated} refreshed, {len(towns_touched)} places, "
+          f"{len(conflicts)} conflicts kept, {len(unknown)} unmappable, "
+          f"0 double-counted")
     if not args.apply:
         print()
         print("  Nothing was written. Re-run with --apply.")
