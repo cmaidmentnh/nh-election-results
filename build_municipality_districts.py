@@ -191,11 +191,42 @@ def main():
             (comm_oid, int(CYCLE.split("-")[0])),
         )
         county_wide = {row[0] for row in cur.fetchall()}
+
+        # Where the same general elections say what a place actually voted on,
+        # that beats the JSON outright. commissioner_districts.json is keyed by
+        # TOWN, so it cannot express a city split across districts - and two
+        # cities are split. Rochester's wards 1, 5 and 6 vote in Strafford's 1st
+        # while 2, 3 and 4 vote in the 3rd (its tape is literally headed "Wards
+        # 1, 5, 6"); Dover's wards 5 and 6 vote in the 3rd while 1-4 vote in the
+        # 2nd; Laconia's ward 2 votes in Belknap's 3rd, not the 1st. Stripping
+        # "Ward N" and looking up the city put all six on the wrong ballot, which
+        # filed Rochester Ward 5's commissioner write-ins into a district it does
+        # not vote in and held John Frank Scruton's 393 as "not on this race's
+        # roster".
+        cur.execute(
+            """SELECT res.municipality, r.county, r.district
+                 FROM results res
+                 JOIN races r     ON r.id = res.race_id
+                 JOIN elections e ON e.id = r.election_id
+                WHERE r.office_id = ? AND e.election_type = 'general' AND e.year >= ?
+                GROUP BY res.municipality, r.county, r.district""",
+            (comm_oid, int(CYCLE.split("-")[0])),
+        )
+        voted = {}
+        for muni, county, district in cur.fetchall():
+            voted.setdefault(muni, (county, set()))[1].add(str(district or ""))
+
         # county -> every commissioner district in it, from the residency map.
         districts_in_county = {}
         for rec in comm_map.values():
             districts_in_county.setdefault(rec["county"], set()).add(str(rec["district"]))
         for muni in muni_county:
+            if muni in voted:
+                county, districts = voted[muni]
+                for district in sorted(districts):
+                    upsert(cur, muni, comm_oid, county, district, "results-general")
+                    comm_count += 1
+                continue
             base = re.sub(r"\s+Ward\s+\d+\*?$", "", muni).strip().upper()
             rec = comm_map.get(base)
             if not rec:
@@ -210,7 +241,8 @@ def main():
                        "commissioner-json")
                 comm_count += 1
         print(f"  County Commissioner: {comm_count} town rows "
-              f"(county-wide: {', '.join(sorted(county_wide)) or 'none'})")
+              f"({len(voted)} from results; county-wide: "
+              f"{', '.join(sorted(county_wide)) or 'none'})")
 
     conn.commit()
 
