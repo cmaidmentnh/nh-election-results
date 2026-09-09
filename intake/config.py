@@ -34,6 +34,23 @@ MAX_OUTPUT_TOKENS_RETRY = int(os.environ.get("INTAKE_MAX_TOKENS_RETRY", "48000")
 # password has to be minted. IMAP below is only used if this is unset.
 GMAIL_TOKEN_PATH = os.environ.get("INTAKE_GMAIL_TOKEN", "")
 
+# One token watches one mailbox, and one mailbox is not where the results are.
+# On 2026 primary night the service held a token for chris@electhouserepublicans.com
+# and nothing else. Hinsdale and Albany both sent their returns to the
+# results@nhgop.org list, which carries chris@maidmentnh.com and no
+# electhouserepublicans.com address at all, so neither town existed as far as the
+# pipeline was concerned until they were forwarded in by hand mid-count. Clerks
+# mail whichever list they were already on; we do not get to pick. So the token
+# path is a LIST, and every mailbox we are on gets polled.
+#
+# Message-ID is the dedupe key in runner.process, and it is stamped by the
+# clerk's own mail server before any list fans the message out. A report that
+# lands in two watched mailboxes is therefore stored exactly once - which is
+# what makes it safe to add a mailbox here without first auditing it for
+# overlap with the ones already listed.
+GMAIL_TOKEN_PATHS = [p.strip() for p in os.environ.get(
+    "INTAKE_GMAIL_TOKENS", GMAIL_TOKEN_PATH).split(",") if p.strip()]
+
 # Which mail the Gmail poller has already taken is tracked with a label of our
 # own rather than with read state. Read state belongs to whoever is triaging
 # the inbox, and on primary night a human opening a clerk's mail before the
@@ -59,9 +76,18 @@ GROUP_ADDRESS = os.environ.get("INTAKE_GROUP_ADDRESS", "results@electhouserepubl
 # one of them was dropped, because the filter only accepted the group address.
 # Accept any address we publish; the parser's own chatter check throws out mail
 # that is not a set of results.
+#
+# results@nhgop.org and chris@maidmentnh.com are on this list for the same
+# reason, learned the same way. Adding a second mailbox to GMAIL_TOKEN_PATHS
+# would NOT on its own have rescued Hinsdale or Albany on 2026 primary night:
+# their To: lines name results@nhgop.org and no address that was in this list,
+# so _addressed_to_group would have fetched the mail and then discarded it. The
+# token says which mailboxes we can see into; this list says which mail in them
+# is ours. Both have to know about a list before a town on it can be counted.
 ACCEPT_ADDRESSES = [a.strip().lower() for a in os.environ.get(
     "INTAKE_ACCEPT_ADDRESSES",
-    f"{GROUP_ADDRESS},chris@electhouserepublicans.com").split(",") if a.strip()]
+    f"{GROUP_ADDRESS},chris@electhouserepublicans.com,"
+    "results@nhgop.org,chris@maidmentnh.com").split(",") if a.strip()]
 EMAIL_POLL_SECONDS = int(os.environ.get("INTAKE_EMAIL_POLL", "20"))
 
 # --- Signal ---------------------------------------------------------------

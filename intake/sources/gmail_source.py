@@ -1,14 +1,19 @@
-"""Gmail API feed for results@electhouserepublicans.com.
+"""Gmail API feed for every mailbox that clerks actually mail results to.
 
-Preferred over IMAP because the mailbox is already authorised - the stored
+Preferred over IMAP because the mailboxes are already authorised - a stored
 OAuth token is self-contained (it carries its own client id, secret and refresh
 token), so no app password has to be minted or rotated.
 
-Scope discipline: that token also carries gmail.send and calendar, which this
+One token per mailbox, and config.GMAIL_TOKEN_PATHS may name several. It has to:
+clerks send to whichever distribution list they were already on, and those lists
+do not all deliver to the same inbox. See the comment on GMAIL_TOKEN_PATHS for
+the night that taught us this.
+
+Scope discipline: these tokens also carry gmail.send and calendar, which this
 service has no business using. Everything here is read-only apart from stamping
 each message we take with our own label (and clearing UNREAD alongside it), and
-every message is filtered to the results group before it is touched. Mail in
-the mailbox that is not addressed to the group is never fetched.
+every message is filtered against ACCEPT_ADDRESSES before it is touched. Mail in
+a mailbox that is not addressed to one of our lists is never fetched.
 """
 
 import base64
@@ -21,32 +26,54 @@ from intake import config
 
 log = logging.getLogger("intake.gmail")
 
-_service = None
-_label_id = None
+# Keyed by token path: one Gmail service and one label id per watched mailbox.
+# The label id in particular MUST NOT be shared - label ids are per-mailbox, so
+# a single cached id would stamp the wrong label (or raise) on the second
+# account, and the poller's bookmark would silently stop working there.
+_services = {}
+_label_ids = {}
 
 
 def available():
-    return bool(config.GMAIL_TOKEN_PATH and Path(config.GMAIL_TOKEN_PATH).exists())
+    return any(Path(p).exists() for p in config.GMAIL_TOKEN_PATHS)
 
 
-def service():
-    global _service
-    if _service is None:
+def _token_paths():
+    """Watched mailboxes, skipping tokens that are not on disk.
+
+    A missing token is logged and stepped over rather than raised, because the
+    mailboxes are independent: if the second account's token has not been
+    installed yet, that is no reason to stop polling the first one on election
+    night.
+    """
+    live = []
+    for path in config.GMAIL_TOKEN_PATHS:
+        if Path(path).exists():
+            live.append(path)
+        else:
+            log.warning("Gmail token %s not found; that mailbox is not being "
+                        "polled and any results sent only there will be missed", path)
+    return live
+
+
+def service(token_path):
+    if token_path not in _services:
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
 
-        creds = Credentials.from_authorized_user_file(config.GMAIL_TOKEN_PATH)
+        creds = Credentials.from_authorized_user_file(token_path)
         if not creds.valid:
             if not (creds.expired and creds.refresh_token):
                 raise RuntimeError(
-                    f"Gmail token at {config.GMAIL_TOKEN_PATH} cannot be refreshed; "
+                    f"Gmail token at {token_path} cannot be refreshed; "
                     "re-authorise it and copy the token back to the server."
                 )
             creds.refresh(Request())
-            Path(config.GMAIL_TOKEN_PATH).write_text(creds.to_json())
-        _service = build("gmail", "v1", credentials=creds, cache_discovery=False)
-    return _service
+            Path(token_path).write_text(creds.to_json())
+        _services[token_path] = build(
+            "gmail", "v1", credentials=creds, cache_discovery=False)
+    return _services[token_path]
 
 
 def _headers(payload):
@@ -64,7 +91,7 @@ def _addressed_to_group(hdrs):
     return False
 
 
-def _ingested_label_id(users):
+def _ingested_label_id(users, token_path):
     """Id of the label we stamp on mail we have already handed to the pipeline.
 
     Read state was the wrong bookmark, because it is shared with the operator.
@@ -72,20 +99,22 @@ def _ingested_label_id(users):
     so a clerk report a human opened first went read before the 20-second poll
     reached it and `is:unread` then skipped it forever. This label is only ever
     set by the code below, so nothing anyone does in Gmail can lose a town.
+
+    Cached per token, because the label is created separately in each watched
+    mailbox and the ids do not match across accounts.
     """
-    global _label_id
-    if _label_id is None:
+    if token_path not in _label_ids:
         existing = users.labels().list(userId="me").execute().get("labels") or []
         match = [l["id"] for l in existing if l["name"] == config.GMAIL_INGESTED_LABEL]
         if match:
-            _label_id = match[0]
+            _label_ids[token_path] = match[0]
         else:
-            _label_id = users.labels().create(userId="me", body={
+            _label_ids[token_path] = users.labels().create(userId="me", body={
                 "name": config.GMAIL_INGESTED_LABEL,
                 "labelListVisibility": "labelShow",
                 "messageListVisibility": "show",
             }).execute()["id"]
-    return _label_id
+    return _label_ids[token_path]
 
 
 def _walk(part, out_text, out_html, attachments):
@@ -144,10 +173,24 @@ def _candidate_ids(users):
 
 
 def fetch_new():
-    """Yield dicts for group mail we have not taken, labelling each as we go."""
+    """Yield dicts for group mail we have not taken, labelling each as we go.
+
+    Walks every watched mailbox. A mailbox that fails - expired token, API
+    outage - is logged and skipped so the others still deliver their towns;
+    losing one account must not cost us the returns sitting in the rest.
+    """
     config.ATTACH_DIR.mkdir(parents=True, exist_ok=True)
-    users = service().users()
-    label_id = _ingested_label_id(users)
+    for token_path in _token_paths():
+        try:
+            yield from _fetch_mailbox(token_path)
+        except Exception:
+            log.exception("Gmail poll failed for %s; other mailboxes continue",
+                          token_path)
+
+
+def _fetch_mailbox(token_path):
+    users = service(token_path).users()
+    label_id = _ingested_label_id(users, token_path)
 
     for ref in [{"id": i} for i in _candidate_ids(users)]:
         msg = users.messages().get(userId="me", id=ref["id"], format="full").execute()
