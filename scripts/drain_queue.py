@@ -31,14 +31,20 @@ def unreconciled(cur, cache, message_id, parse_json, municipality):
     """Race ids in this message whose totals still fail to add up."""
     if message_id in cache:
         return cache[message_id]
-    bad = set()
+    bad = None
     if parse_json and municipality:
         try:
             extraction = Extraction.model_validate_json(parse_json)
             _text, index, _elections = roster.roster_for(cur, municipality)
             bad = set(reconcile(extraction, index))
-        except Exception as exc:            # a parse we can no longer read
-            print(f"  message {message_id}: cannot re-check ({exc})")
+        except Exception as exc:
+            # Fail CLOSED. The extraction schema gains fields as the parser
+            # grows, so a parse stored before a change no longer validates -
+            # and returning an empty set here reads as "nothing failed
+            # reconciliation", waving the whole message past the one check that
+            # catches a misread digit. Silence on the arithmetic gate is not
+            # permission; hold the message and say why.
+            print(f"  message {message_id}: cannot re-check, holding ({exc})")
     cache[message_id] = bad
     return bad
 
@@ -72,8 +78,12 @@ def main():
         if key in seen:
             held.append((item, "duplicate of another pending item"))
             continue
-        if item["race_id"] in unreconciled(cur, cache, item["message_id"],
-                                           item["parse_json"], item["municipality"]):
+        bad = unreconciled(cur, cache, item["message_id"],
+                           item["parse_json"], item["municipality"])
+        if bad is None:
+            held.append((item, "cannot re-check reconciliation"))
+            continue
+        if item["race_id"] in bad:
             held.append((item, "still does not reconcile"))
             continue
         on_file = _existing_votes(cur, item["race_id"], item["candidate_id"],
