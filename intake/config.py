@@ -34,6 +34,18 @@ MAX_OUTPUT_TOKENS_RETRY = int(os.environ.get("INTAKE_MAX_TOKENS_RETRY", "48000")
 # password has to be minted. IMAP below is only used if this is unset.
 GMAIL_TOKEN_PATH = os.environ.get("INTAKE_GMAIL_TOKEN", "")
 
+# Which mail the Gmail poller has already taken is tracked with a label of our
+# own rather than with read state. Read state belongs to whoever is triaging
+# the inbox, and on primary night a human opening a clerk's mail before the
+# 20-second poll reached it would drop that town for good.
+GMAIL_INGESTED_LABEL = os.environ.get("INTAKE_GMAIL_LABEL", "intake-ingested")
+# How far back each poll looks. The label makes re-listing cheap, so this only
+# has to cover the night; a wide window costs a search, not a re-parse.
+GMAIL_LOOKBACK = os.environ.get("INTAKE_GMAIL_LOOKBACK", "2d")
+# Ceiling per poll. The old code took a flat 50 with no paging, so once more
+# than fifty reports were waiting at once the rest were silently invisible.
+GMAIL_MAX_FETCH = int(os.environ.get("INTAKE_GMAIL_MAX_FETCH", "300"))
+
 IMAP_HOST = os.environ.get("INTAKE_IMAP_HOST", "imap.gmail.com")
 IMAP_USER = os.environ.get("INTAKE_IMAP_USER", "")
 IMAP_PASSWORD = os.environ.get("INTAKE_IMAP_PASSWORD", "")   # Google app password
