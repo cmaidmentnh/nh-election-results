@@ -175,6 +175,15 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     gate_open = _gate_open()
     unreconciled = reconcile(extraction, index)
 
+    # Judge every line first, then decide race by race. A race publishes whole
+    # or not at all: releasing the candidates that read cleanly while holding
+    # the rest of the same field puts a race on the page with one name at 100%
+    # and everybody else at zero. Concord Ward 6 went out showing Chris Pappas
+    # unopposed in the Democratic Senate race while Karishma Manzur, who carried
+    # the ward 341-223, sat in the queue; Grafton published its three fringe
+    # candidates and held the two real ones. A missing race is honest, a race
+    # missing half its field is not.
+    verdicts = {}
     for line in extraction.lines:
         ok, reason, race, old = validate_line(cursor, line, municipality, index,
                                               agreed, disagreements,
@@ -185,6 +194,20 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             ok, reason = False, f"Held until polls close ({config.OPEN_AFTER})"
         if ok and not config.AUTO_APPLY:
             ok, reason = False, "Review-everything mode is on"
+        verdicts[id(line)] = (ok, reason, race, old)
+
+    held_race = {}
+    for line in extraction.lines:
+        ok, reason, _race, _old = verdicts[id(line)]
+        if not ok and line.race_id:
+            held_race.setdefault(line.race_id, reason)
+
+    for line in extraction.lines:
+        ok, reason, race, old = verdicts[id(line)]
+        if ok and line.race_id in held_race:
+            ok = False
+            reason = ("Another candidate in this race is held "
+                      f"({held_race[line.race_id]})")
 
         common = dict(
             kind="result",

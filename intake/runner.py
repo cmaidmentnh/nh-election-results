@@ -119,6 +119,18 @@ def _split_by_attachment(conn, cursor, message_id, msg):
 
     log.info("msg %s: %d attachments from %d polling places, splitting",
              message_id, len(attachments), len({t for t in towns if t}))
+    # Claim the parent before reading a single tape. A split takes as long as
+    # all of its wards put together - Concord's five-ward email ("Concord Wards:
+    # Three, Five, Six, Eight, Ten") ran close to a minute per tape - and until
+    # the loop below finishes the parent is still sitting at 'new'. The stranded
+    # sweep replays anything left at 'new' for five minutes, and a replay of the
+    # parent deletes every child it has already made. That would have thrown
+    # away the finished Ward 3, 5 and 6 rows halfway through Ward 8 and started
+    # the whole email over, re-reading tapes whose votes were already on file -
+    # so the second pass would have found them 'already recorded' and dumped the
+    # lot into the review queue. A status the sweep does not collect keeps a
+    # long split off its list; the real outcome is written when the loop ends.
+    store.set_message_status(conn, message_id, "splitting")
     totals = {"applied": 0, "queued": 0}
     for i, path in enumerate(attachments):
         child = dict(msg)
@@ -372,7 +384,14 @@ def stranded_loop(stop):
     'new' forever and no feed will ever offer it again. Primary night restarted
     the service several times and left six real reports sitting there. Sweep
     them back up.
+
+    A multi-ward email in mid-split sits at 'splitting' instead (see
+    _split_by_attachment) so this does not restart it while it is still working.
+    That status is still collected, but only long after any real split could
+    still be running, because a process killed mid-split would otherwise leave
+    the parent parked there and its remaining wards unread forever.
     """
+    split_after = config.STRANDED_AFTER_SECONDS * 6
     while not stop.is_set():
         stop.wait(config.STRANDED_SWEEP_SECONDS)
         if stop.is_set():
@@ -382,10 +401,13 @@ def stranded_loop(stop):
             try:
                 rows = conn.execute(
                     """SELECT id FROM intake_messages
-                        WHERE status IN ('new','error')
-                          AND created_at < datetime('now', ?)
+                        WHERE (status IN ('new','error')
+                                   AND created_at < datetime('now', ?))
+                           OR (status = 'splitting'
+                                   AND created_at < datetime('now', ?))
                         ORDER BY id LIMIT 20""",
-                    (f"-{config.STRANDED_AFTER_SECONDS} seconds",)).fetchall()
+                    (f"-{config.STRANDED_AFTER_SECONDS} seconds",
+                     f"-{split_after} seconds")).fetchall()
             finally:
                 conn.close()
             for row in rows:
