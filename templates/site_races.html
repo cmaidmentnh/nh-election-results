@@ -67,6 +67,12 @@ const OFFICES=[
  {key:'state-senate',label:'State Senate',level:'district',file:'nh-senate-districts.geojson',prop:'Senate2022'},
  {key:'state-house',label:'State House',level:'house'},
  {key:'delegate',label:'Delegate',level:'house'},
+ {key:'sheriff',label:'Sheriff',level:'county'},
+ {key:'cty-attorney',label:'County Attorney',level:'county'},
+ {key:'cty-treasurer',label:'County Treasurer',level:'county'},
+ {key:'deeds',label:'Register of Deeds',level:'county'},
+ {key:'probate',label:'Register of Probate',level:'county'},
+ {key:'commissioner',label:'County Commissioner',level:'county-district'},
 ];
 const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
 const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
@@ -191,8 +197,29 @@ function selectOffice(o){
     load();
   });
 }
+// Keep the chosen office, party, scope and open district in the URL. The board
+// refreshes itself every 30 seconds, and without this a reader who reloads - or
+// who is reloaded by a flaky connection - is thrown back to the U.S. Senate
+// race from wherever they were. It also makes the view they are looking at a
+// link they can send to somebody.
+function saveState(){
+  const s=new URLSearchParams();
+  if(O) s.set('office',O.key);
+  s.set('party',P);
+  if(SCOPE!=='contested') s.set('scope',SCOPE);
+  if(BASEV!=='Base') s.set('base',BASEV);
+  if(ctx&&ctx.code) s.set('code',ctx.code);
+  const url=location.pathname+(location.search||'')+'#'+s.toString();
+  history.replaceState(null,'',url);
+}
+function readState(){
+  const s=new URLSearchParams((location.hash||'').replace(/^#/,''));
+  return {office:s.get('office'),party:s.get('party'),scope:s.get('scope'),
+          base:s.get('base'),code:s.get('code')};
+}
 function load(){
   clearInterval(timer);
+  saveState();
   refresh(); timer=setInterval(refresh,30000);
 }
 function refresh(){
@@ -380,6 +407,7 @@ function stateMap(){
 
 /* ---- detail ------------------------------------------------------------- */
 function openDetail(o,code,p){
+  ctx={o:o,code:code,p:p}; saveState();
   ctx={o,code,p};
   document.getElementById('split').style.display='none';
   document.getElementById('detail').classList.add('show');
@@ -469,9 +497,18 @@ document.getElementById('back').onclick=()=>{
   ctx=null;
   document.getElementById('detail').classList.remove('show');
   document.getElementById('split').style.display='';
+  saveState();
   paint();
 };
 
-selectOffice(BY['us-senate']);
+(function boot(){
+  const st=readState();
+  if(st.party==='D'||st.party==='R') P=st.party;
+  if(st.scope) SCOPE=st.scope;
+  if(st.base) BASEV=st.base;
+  const o=BY[st.office]||BY['us-senate'];
+  selectOffice(o);
+  if(st.code) setTimeout(()=>{ try{ openDetail(o,st.code,P); }catch(e){} },900);
+})();
 </script>
 {% endblock %}

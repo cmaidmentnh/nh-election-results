@@ -759,6 +759,16 @@ CONTESTED_OFFICES = {
     "state-senate": ("State Senator", "district"),
     "state-house":  ("State Representative", "house"),
     "delegate":     ("Delegate to the State Convention", "house"),
+    # County offices were collected all night and had nowhere to appear: a
+    # sheriff or register race is county-wide with no district, and county
+    # commissioner is districted within a county. Both shapes need their own
+    # level, because the district code for them is the county name, not a number.
+    "sheriff":      ("County Sheriff", "county"),
+    "cty-attorney": ("County Attorney", "county"),
+    "cty-treasurer": ("County Treasurer", "county"),
+    "deeds":        ("Register of Deeds", "county"),
+    "probate":      ("Register of Probate", "county"),
+    "commissioner": ("County Commissioner", "county-district"),
 }
 
 
@@ -774,11 +784,20 @@ def _district_code(level, county, district):
         return f"{COUNTY_ABBR.get(county, county)}{district}"
     if level == "statewide":
         return "STATE"
+    if level == "county":
+        return str(county)
+    if level == "county-district":
+        return f"{county}|{district}"
     return str(district)
 
 
 def _decode_code(level, code):
     """Inverse of _district_code -> (county, district)."""
+    if level == "county":
+        return code, ""
+    if level == "county-district":
+        county, _, district = code.partition("|")
+        return county, district
     if level == "house":
         m = re.match(r"([A-Z]{2})(\d+)", code)
         if m:
