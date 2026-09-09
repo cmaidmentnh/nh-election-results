@@ -27,6 +27,10 @@ while [ ! -f /tmp/stop-nightloop ]; do
   # moment a fuller return lands on top of an earlier tape.
   $P scripts/purge_non_candidates.py --apply 2>&1 | tail -1
   $P scripts/fix_stale_ballots.py --apply 2>&1 | tail -1
+  # A town reporting only some of its machines passes every other check: it has
+  # results, nothing exceeds its ballots, and it counts as reported. Only its
+  # ratio against its own top of ticket gives it away.
+  $P scripts/anchor_check.py 2>&1 | tail -6
   sqlite3 nh_elections.db "SELECT 'towns=' || (SELECT count(DISTINCT municipality) FROM results r JOIN races ra ON ra.id = r.race_id WHERE ra.election_id IN (29,30)) || ' rows=' || (SELECT count(*) FROM results r JOIN races ra ON ra.id = r.race_id WHERE ra.election_id IN (29,30)) || ' pending=' || (SELECT count(*) FROM intake_items WHERE status = 'pending');"
   sleep 90
 done
