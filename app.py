@@ -1182,11 +1182,19 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # names are two statements of the same quantity, so take the larger and
     # never their sum: where a town gave only one of the two that is the answer,
     # and where it gave both this cannot inflate.
-    agg_votes = sum(overall[cid] for cid in name_by_id if cid in agg_wi)
+    # Take the larger of the two PER TOWN, not across the race. Doing it at the
+    # race level assumed every town reported the same way; 32 towns sent only
+    # named write-ins with no aggregate line, and their votes lost the maximum
+    # to towns that had sent an aggregate - about a fifth of the write-in vote
+    # in the Democratic governor primary simply vanished. Each town states this
+    # quantity once, in whichever form its clerk used.
+    wi_votes = 0
+    for p in reported:
+        v = by_prec.get(p, {})
+        wi_votes += max(sum(val for cid, val in v.items() if cid in agg_wi),
+                        sum(val for cid, val in v.items() if cid in named_wi))
     agg_proj = sum(projected[cid] for cid in name_by_id if cid in agg_wi)
-    named_votes = sum(overall[cid] for cid in name_by_id if cid in named_wi)
     named_proj = sum(projected[cid] for cid in name_by_id if cid in named_wi)
-    wi_votes = max(agg_votes, named_votes)
     wi_proj = max(agg_proj, named_proj)
     if wi_votes or any(cid in writein_ids for cid in name_by_id):
         cand_list.append({'name': 'Write-in', 'votes': wi_votes,

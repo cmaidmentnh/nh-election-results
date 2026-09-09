@@ -507,6 +507,20 @@ function openDetail(o,code,p){
 }
 function ptable(r){
   const cn=r.candidates.map(c=>c.name);
+  const known=new Set(cn);
+  // The topline collapses every written-in name into one Write-in row, but a
+  // precinct's votes are still keyed by the raw names off the sheet. Drawing
+  // only the collapsed columns dropped those votes silently: a town that
+  // recorded seven write-ins showed "Write-in 0", and its row did not add up to
+  // the total above it. Anything without a column of its own belongs in the
+  // write-in cell.
+  const wiCol=cn.indexOf('Write-in');
+  (r.precincts||[]).forEach(p=>{
+    if(!p.votes)return;
+    let extra=0;
+    Object.keys(p.votes).forEach(n=>{ if(!known.has(n)) extra+=p.votes[n]||0; });
+    if(extra&&wiCol>=0) p.votes['Write-in']=Math.max(p.votes['Write-in']||0, extra);
+  });
   let h=`<thead><tr><th>Precinct</th>${cn.map(n=>`<th>${esc(n)}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
   (r.precincts||[]).forEach(p=>{
     h+=`<tr><td>${esc(p.name)}</td>${cn.map(n=>`<td>${p.reported?nf.format(p.votes[n]||0):'—'}</td>`).join('')}`+
