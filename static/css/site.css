@@ -203,7 +203,14 @@ footer.f p{margin:4px 0;max-width:80ch}
 .legend .r{display:flex;align-items:center;gap:6px}
 .legend i{width:12px;height:9px;display:inline-block;border:1px solid rgba(0,0,0,.15);flex:none}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 34px}
+/* Cards run from two names to fourteen, and a grid row is only ever as short
+   as its tallest card: a four-name race sitting beside Rockingham 13 left
+   about 400px of white space above and below itself. Newspaper columns pack
+   instead - each card takes the height it needs and the next one starts
+   directly beneath it. `columns:300px` keeps the old auto-fill behaviour of
+   letting the width decide how many columns there are. */
+.grid{columns:300px;column-gap:34px}
+.dist{-webkit-column-break-inside:avoid;break-inside:avoid}
 .dist{border-top:1px solid var(--hair);padding:15px 0;text-align:left;background:none;
       border-left:0;border-right:0;border-bottom:0;width:100%;cursor:pointer;font:inherit;color:inherit}
 .dist:hover{background:var(--tint)}

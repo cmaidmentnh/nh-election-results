@@ -340,12 +340,20 @@ function card(r){
   // Scale the bars to the names actually drawn; keeping a hidden write-in row
   // as the maximum left every visible bar short with nothing to explain it.
   const max=Math.max(1,...show.map(c=>c.votes));
+  /* Fourteen bars in one party colour read as a single red block, and in a
+     ten-seat race every share is small and close together so their lengths
+     barely separate anybody. Fill only the candidates the projection has
+     winning: the seat cutoff then shows down the card rather than living
+     solely in the weight of the names. An awaiting race has no winners to
+     mark, so leave every bar in the party colour there. */
+  const marked=win.size>0;
   const rows=show.map(c=>{
     const w=win.has(c.name);
     return `<div class="cr">
       <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}</span>
         <span class="v2">${nf.format(c.votes)} <span>${pctStr(c.votes,tot)}</span></span></div>
-      <div class="cb"><i style="width:${100*c.votes/max}%;background:${PARTY[P].c}"></i></div></div>`;
+      <div class="cb"><i style="width:${100*c.votes/max}%;background:${
+        !marked||w?PARTY[P].c:'#cdd1d6'}"></i></div></div>`;
   }).join('');
   const s=statusOf(r);
   return `<button type="button" class="dist" data-code="${r.code}">
