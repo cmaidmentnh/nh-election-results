@@ -103,10 +103,21 @@ def race_by_office(cur, election_id, municipality, office, district):
 
 
 def writein_id(cur):
-    cur.execute("""SELECT id FROM candidates WHERE name_normalized = 'WRITE IN'
-                   ORDER BY id LIMIT 1""")
+    """The shared aggregate write-in candidate.
+
+    Its normalised name is 'WRITEIN', with no space - punctuation is stripped
+    rather than replaced.  Looking for 'WRITE IN' finds nothing, and the first
+    version of this script then dropped every write-in line without a word,
+    which is how Campton's returns went in missing all of theirs.
+    """
+    cur.execute("""SELECT id FROM candidates
+                    WHERE name_normalized IN ('WRITEIN', 'WRITE IN', 'WRITE-IN')
+                    ORDER BY (name_normalized = 'WRITEIN') DESC, id LIMIT 1""")
     row = cur.fetchone()
-    return row["id"] if row else None
+    if row is None:
+        raise SystemExit("No aggregate write-in candidate on file - refusing "
+                         "to run, because every write-in line would be lost.")
+    return row["id"]
 
 
 def load(path):
