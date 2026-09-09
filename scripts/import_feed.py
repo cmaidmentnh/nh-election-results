@@ -220,6 +220,23 @@ def ap_name(cand):
     return " ".join(p for p in parts if p)
 
 
+# Generational suffixes are carried on our roster names ("Richard A. McMenamon
+# II") but not in AP's candidate record ("Richard A. McMenamon"). Ignoring them
+# matters: the surname fallback below compares the LAST token, which for a
+# suffixed roster name is "II", not the surname - so every AP-sourced town
+# silently dropped that candidate until this was fixed.
+NAME_SUFFIXES = {"JR", "SR", "II", "III", "IV"}
+
+
+def strip_suffix(normalized):
+    return " ".join(p for p in normalized.split() if p not in NAME_SUFFIXES)
+
+
+def surname_token(normalized):
+    parts = strip_suffix(normalized).split()
+    return parts[-1] if parts else ""
+
+
 def match_candidate(cand, roster):
     """AP candidate -> our candidate_id, or None.
 
@@ -231,19 +248,22 @@ def match_candidate(cand, roster):
     for cid, name in roster:
         if normalize_name(name) == full:
             return cid
-    last = normalize_name(cand.get("last") or "")
+    for cid, name in roster:
+        if strip_suffix(normalize_name(name)) == strip_suffix(full):
+            return cid
+    last = surname_token(normalize_name(cand.get("last") or ""))
     first = normalize_name(cand.get("first") or "")
     if not last:
         return None
     hits = [cid for cid, name in roster
-            if normalize_name(name).split() and normalize_name(name).split()[-1] == last]
+            if surname_token(normalize_name(name)) == last]
     if len(hits) == 1:
         return hits[0]
     # Two people on one ballot share a surname (it happens in State Rep races).
     # Break the tie only on an exact first name, never on an initial.
     if len(hits) > 1 and first:
         exact = [cid for cid, name in roster
-                 if normalize_name(name).split()[-1] == last
+                 if surname_token(normalize_name(name)) == last
                  and normalize_name(name).split()[0] == first]
         if len(exact) == 1:
             return exact[0]
