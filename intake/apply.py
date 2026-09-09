@@ -272,8 +272,18 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
         ok, _reason, _race, _old = verdicts[id(line)]
         if ok:
             claimed.setdefault((line.race_id, line.candidate_id), []).append(line)
+
+    duplicate = set()
     for (_race_id, _cand_id), lines in claimed.items():
         if len(lines) < 2:
+            continue
+        if len({l.votes for l in lines}) == 1:
+            # One line the reader listed twice. Carroll's write-in section gave
+            # David Holmander's 14 both as "DAVID HOLMANDER" and as "DAVID
+            # HOLMANDER (write-in)"; once the write-in is matched to the row the
+            # first one made, they are the same line saying the same number.
+            # Holding them would take the whole race down over an agreement.
+            duplicate.update(id(l) for l in lines[1:])
             continue
         shown = " and ".join(f"{l.votes:,}" for l in lines)
         for line in lines:
@@ -286,7 +296,7 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     held_race = {}
     for line in extraction.lines:
         ok, reason, _race, _old = verdicts[id(line)]
-        if not ok and line.race_id:
+        if not ok and line.race_id and id(line) not in duplicate:
             held_race.setdefault(line.race_id, reason)
 
     for line in extraction.lines:
@@ -313,6 +323,12 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
         label = (race.get("display") or race["label"]) if race else (line.race_text or "?")
         party = race["party"][:1] if race else "?"
         name = (race["names"].get(line.candidate_id) if race else None) or line.candidate_text
+
+        if id(line) in duplicate:
+            # Recorded, never counted twice - nothing is silently dropped.
+            store.add_item(conn, message_id, status="superseded",
+                           reason="Same line reported twice in this report", **common)
+            continue
 
         if not ok:
             store.add_item(conn, message_id, status="pending", reason=reason, **common)
