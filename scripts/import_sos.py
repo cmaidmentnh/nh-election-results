@@ -181,7 +181,18 @@ def split_row(row, cols):
 
 # ----------------------------------------------------------- the ballot -----
 
-def ballot_roster(office, election_id):
+def district_clause(district):
+    """An office can be one race or several. Governor and U.S. Senator are one,
+    so the office name alone finds them; Representative in Congress is two, and
+    without the district CD-1's roster and CD-2's answer to the same query.
+    Nashua is in the second district and Dover in the first, and a surname that
+    appears on both ballots would resolve against the wrong one."""
+    if district in (None, ""):
+        return "", ()
+    return " AND ra.district = ?", (str(district),)
+
+
+def ballot_roster(office, election_id, district=None):
     """Everyone actually printed on one party's ballot for an office.
 
     race_candidates also carries every name anybody wrote in - Vermin Supreme,
@@ -189,6 +200,7 @@ def ballot_roster(office, election_id):
     the Secretary of State's sheet. The filed candidates are the ones carrying
     a recruitment filing id; the write-ins are parked at ballot_order 900.
     """
+    dclause, dargs = district_clause(district)
     from intake import store
     conn = store.connect()
     cur = conn.cursor()
@@ -198,7 +210,8 @@ def ballot_roster(office, election_id):
                      JOIN offices o ON o.id = ra.office_id
                     WHERE ra.election_id = ? AND o.name = ?
                       AND IFNULL(rc.recruitment_filing_id, -1) > 0
-                      AND IFNULL(rc.ballot_order, 900) < 900""", (election_id, office))
+                      AND IFNULL(rc.ballot_order, 900) < 900""" + dclause,
+                (election_id, office, *dargs))
     names = [r["name"] for r in cur.fetchall()]
     conn.close()
     return sorted(names, key=surname)
@@ -311,7 +324,7 @@ def parse(pdf_path, election_ids, office_hint=None):
 
 # ------------------------------------------------------- the spreadsheet ----
 
-def parse_xlsx(path):
+def parse_xlsx(path, source=None):
     """Read a county sheet published as a workbook instead of a PDF.
 
     None of the PDF's trouble applies here. A cell is a cell, so an empty one
@@ -325,7 +338,7 @@ def parse_xlsx(path):
     ws = wb[wb.sheetnames[0]]
     grid = [list(r) for r in ws.iter_rows(values_only=True)]
 
-    office = ""
+    office, district = "", None
     for row in grid[:5]:
         for cell in row:
             if not isinstance(cell, str):
@@ -333,12 +346,37 @@ def parse_xlsx(path):
             m = re.search(r"^(.+?)\s*-\s*(Republican|Democratic)$", cell.strip())
             if m and "Primary Election" not in m.group(1):
                 office = m.group(1).strip()
+            # The congressional sheets title themselves differently from the
+            # county ones - "Congressional District 1 Republican", with no
+            # dash - and they carry a district, which the statewide offices do
+            # not. Getting that number wrong would write CD-1's towns into
+            # CD-2's race, so it is taken from the title and then made to agree
+            # with the tab name and the file name before it is used.
+            m2 = re.match(r"^Congressional District\s+(\d)\s+"
+                          r"(Republican|Democratic)$", cell.strip(), re.I)
+            if m2:
+                office, district = "Representative in Congress", m2.group(1)
+    if office == "Representative in Congress":
+        for label, found in (("sheet tab", re.search(r"con\s*(\d)", ws.title, re.I)),
+                             ("file name", re.search(r"district[-_ ]?(\d)", str(source or path), re.I))):
+            if not found:
+                return {"error": f"congressional sheet with no district in its {label}"}
+            if found.group(1) != district:
+                return {"error": f"the title says district {district} and the "
+                                 f"{label} says {found.group(1)}"}
     if not office:
         return {"error": "no office title on the sheet"}
 
     head = next((i for i, r in enumerate(grid)
                  if isinstance(r[0], str)
                  and ("COUNTY" in r[0].upper() or "SUMMARY" in r[0].upper())), None)
+    if head is None:
+        # The congressional sheets label the first column with the election
+        # date rather than the county. Find the candidate row instead: every
+        # name on these sheets carries its party as a trailing ", r" or ", d".
+        head = next((i for i, r in enumerate(grid[:8])
+                     if sum(1 for c in r[1:] if isinstance(c, str)
+                            and re.search(r",\s*[rd]\s*$", c.strip())) >= 2), None)
     if head is None:
         return {"error": "no header row - nothing says which column is whose"}
 
@@ -369,7 +407,7 @@ def parse_xlsx(path):
             totals = figures
             continue
         town_rows.append((label.strip(), figures))
-    return {"office": office, "candidates": names,
+    return {"office": office, "district": district, "candidates": names,
             "rows": town_rows, "totals": totals}
 
 
@@ -391,8 +429,9 @@ def municipalities():
     return got
 
 
-def race_roll(office, election_id):
+def race_roll(office, election_id, district=None):
     """Every name on this race, ballot or written in, with its race id."""
+    dclause, dargs = district_clause(district)
     from intake import store
     conn = store.connect()
     cur = conn.cursor()
@@ -402,8 +441,8 @@ def race_roll(office, election_id):
                      JOIN candidates c ON c.id = rc.candidate_id
                      JOIN races ra ON ra.id = rc.race_id
                      JOIN offices o ON o.id = ra.office_id
-                    WHERE ra.election_id = ? AND o.name = ?""",
-                (election_id, office))
+                    WHERE ra.election_id = ? AND o.name = ?""" + dclause,
+                (election_id, office, *dargs))
     rows = [(r["race_id"], r["name"], r["filed"]) for r in cur.fetchall()]
     conn.close()
     return rows
@@ -414,7 +453,7 @@ def norm(name):
                     if p not in SUFFIXES)
 
 
-def resolve_names(office, election_id, sheet_names):
+def resolve_names(office, election_id, sheet_names, district=None):
     """Match the sheet's spelling of a name to the one we file it under.
 
     The ward reader looks a name up exactly and then by surname, and gives up
@@ -424,7 +463,7 @@ def resolve_names(office, election_id, sheet_names):
     town down with it. Resolving here instead, on how much of the name actually
     agrees, keeps that from happening and hands the reader our own spelling.
     """
-    roll = race_roll(office, election_id)
+    roll = race_roll(office, election_id, district)
     out = {}
     for sheet in sheet_names:
         if sheet.lower().startswith("write"):
@@ -453,8 +492,9 @@ def resolve_names(office, election_id, sheet_names):
     return out
 
 
-def our_votes(office, election_id, towns):
+def our_votes(office, election_id, towns, district=None):
     """What we currently hold for this race, by candidate and municipality."""
+    dclause, dargs = district_clause(district)
     from intake import store
     conn = store.connect()
     cur = conn.cursor()
@@ -468,8 +508,8 @@ def our_votes(office, election_id, towns):
                           JOIN offices o ON o.id = ra.office_id
                           JOIN candidates c ON c.id = r.candidate_id
                          WHERE ra.election_id = ? AND o.name = ?
-                           AND r.municipality IN ({marks})""",
-                    (election_id, office, *chunk))
+                           AND r.municipality IN ({marks})""" + dclause,
+                    (election_id, office, *chunk, *dargs))
         for row in cur.fetchall():
             got.setdefault(row["municipality"], {})[row["name"]] = row["votes"]
     conn.close()
@@ -490,10 +530,10 @@ def validate(got, election_id, mapped, resolved):
     write-in columns are counted as one bucket, because the sheet splits
     declared write-ins out by name where we lumped them together.
     """
-    office = got["office"]
-    ballot = set(ballot_roster(office, election_id))
+    office, dist = got["office"], got.get("district")
+    ballot = set(ballot_roster(office, election_id, dist))
     towns = sorted(mapped.values())
-    ours = our_votes(office, election_id, towns)
+    ours = our_votes(office, election_id, towns, dist)
     seen = {t for t in towns if ours.get(t)}
     problems, moves = [], []
 
@@ -559,6 +599,7 @@ def ward_check(got, resolved, ballot, known, election_id):
     doing all the same: our wards should add up to the certified city, and where
     they do not, the gap is the undercount showing itself.
     """
+    dclause, dargs = district_clause(got.get("district"))
     from intake import store
     conn = store.connect()
     cur = conn.cursor()
@@ -577,9 +618,9 @@ def ward_check(got, resolved, ballot, known, election_id):
                           JOIN offices o ON o.id = ra.office_id
                           JOIN candidates c ON c.id = r.candidate_id
                          WHERE ra.election_id = ? AND o.name = ?
-                           AND r.municipality IN ({marks})
+                           AND r.municipality IN ({marks})""" + dclause + """
                          GROUP BY c.name""",
-                    (election_id, got["office"], *wards))
+                    (election_id, got["office"], *wards, *dargs))
         mine = {r["name"]: r["v"] for r in cur.fetchall()}
         for name, votes in figures.items():
             db = resolved.get(name)
@@ -631,10 +672,10 @@ def apply_county(got, party, mapped, resolved, ours, ballot, apply):
     return done
 
 
-def add_missing(office, election_id, names, party, apply):
+def add_missing(office, election_id, names, party, apply, district=None):
     """Put a certified name we do not carry onto the race, so it can be read."""
     here = Path(__file__).resolve().parent
-    roll = race_roll(office, election_id)
+    roll = race_roll(office, election_id, district)
     if not roll:
         return
     race_id = roll[0][0]
@@ -653,14 +694,17 @@ def handle(source, path, party, apply, out_tsv=None):
     name = Path(source).name
 
     if str(path).lower().endswith(".xlsx"):
-        got = parse_xlsx(path)
+        # the download lands in a temp file, so the published name - which
+        # carries the district - has to come from the source
+        got = parse_xlsx(path, source)
     else:
         got = parse(path, [election_id, other])
     if got.get("error"):
         print(f"REFUSED {name}: {got['error']}")
         return False
 
-    print(f"\n=== {name}: {got['office']} - {party.title()}")
+    where = f" district {got['district']}" if got.get("district") else ""
+    print(f"\n=== {name}: {got['office']}{where} - {party.title()}")
     print(f"columns: {got['candidates']}")
 
     known = municipalities()
@@ -676,8 +720,9 @@ def handle(source, path, party, apply, out_tsv=None):
     print(f"{len(got['rows'])} rows on the sheet, {len(mapped)} of them "
           f"municipalities we hold")
 
-    resolved = resolve_names(got["office"], election_id, got["candidates"])
-    ballot = set(ballot_roster(got["office"], election_id))
+    dist = got.get("district")
+    resolved = resolve_names(got["office"], election_id, got["candidates"], dist)
+    ballot = set(ballot_roster(got["office"], election_id, dist))
     unknown = [n for n, db in resolved.items() if db is None]
     if unknown:
         totals = {n: sum(f.get(n, 0) for _t, f in got["rows"]) for n in unknown}
@@ -701,10 +746,10 @@ def handle(source, path, party, apply, out_tsv=None):
     wanted = [n for n in unknown
               if sum(f.get(n, 0) for _t, f in got["rows"]) > 0]
     if wanted:
-        add_missing(got["office"], election_id, wanted, party, apply)
+        add_missing(got["office"], election_id, wanted, party, apply, dist)
         if apply:
             resolved = resolve_names(got["office"], election_id,
-                                     got["candidates"])
+                                     got["candidates"], dist)
 
     if warded:
         gaps = ward_check(got, resolved, ballot, known, election_id)
