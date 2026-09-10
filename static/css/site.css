@@ -205,6 +205,11 @@ footer.f p{margin:4px 0;max-width:80ch}
         font-family:var(--mono);font-size:10px;letter-spacing:.08em;
         text-transform:uppercase;color:var(--ink2)}
 .legend .r{display:flex;align-items:center;gap:6px}
+/* The count of towns and wards each candidate leads, so the key answers
+   "where is she winning?" without hunting for a swatch on the map. */
+.legend .r b{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.legend .r.n{color:var(--ink3);font-style:normal}
+#detlegend{padding:0 2px 16px}
 .legend i{width:12px;height:9px;display:inline-block;border:1px solid rgba(0,0,0,.15);flex:none}
 
 /* Cards run from two names to fourteen, and a grid row is only ever as short
@@ -253,7 +258,15 @@ table.pt thead th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;tex
                   color:var(--ink2);border-bottom:2px solid var(--rule);background:var(--paper)}
 table.pt td{font-family:var(--mono)}
 table.pt td:first-child{font-family:var(--sans)}
-.tw{overflow-x:auto;border:1px solid var(--hair)}
+/* A 300-row precinct table scrolled inside the page loses its header on the
+   first flick, and every column is a candidate name you need to read the row.
+   Give the table its own scroll box and pin the header and the precinct
+   column inside it. */
+.tw{overflow:auto;max-height:min(70vh,720px);overscroll-behavior:contain;
+    border:1px solid var(--hair)}
+table.pt thead th{position:sticky;top:0;z-index:2}
+table.pt th:first-child,table.pt td:first-child{z-index:1}
+table.pt thead th:first-child{z-index:3}
 .leaflet-container{background:#f0f0ee}
 .leaflet-tooltip.tip{background:#fff;border:1px solid var(--rule);border-radius:0;box-shadow:none;
   padding:9px 11px;font:400 13px/1.35 var(--sans);color:var(--ink);width:min(260px,84vw);white-space:normal}

@@ -45,8 +45,9 @@
       <span class="seg" id="dparty" style="margin-left:auto"></span>
     </div>
     <div class="callout" id="callout"></div>
-    <div class="mapbox" style="margin-bottom:18px"><div id="detmap"></div>
+    <div class="mapbox" style="margin-bottom:8px"><div id="detmap"></div>
       <div class="mapinfo" id="detinfo" hidden></div></div>
+    <div class="legend row" id="detlegend"></div>
     <div class="tw"><table class="pt" id="ptable"></table></div>
   </section>
 </main>
@@ -129,6 +130,30 @@ function leaderScale(r){
   ranked.forEach((n,i)=>{ color[n]= i<CAND_COLORS.length ? CAND_COLORS[i] : OTHER_COLOR; });
   return {color, ranked};
 }
+/* Colour alone could not answer "where is she winning?" - ten wards out of
+   293 polygons are easy to miss on a state-sized map. The key now counts the
+   towns and wards each candidate leads, and anyone leading somewhere their
+   statewide standing would not predict gets a dark outline so those places
+   can be found rather than hunted for. */
+function leaderLegend(elId, sc, features){
+  const c={}; let none=0;
+  features.forEach(f=>{const l=leaderOf(f.properties.members);
+    if(!l){none++;return;} c[l]=(c[l]||0)+1;});
+  const named=sc.ranked.slice(0,CAND_COLORS.length).filter(n=>c[n]);
+  let h=named.map(n=>`<div class="r"><i style="background:${sc.color[n]}"></i>${esc(n)}<b>${c[n]}</b></div>`).join('');
+  const other=Object.keys(c).filter(n=>!named.includes(n)).reduce((s,n)=>s+c[n],0);
+  if(other) h+=`<div class="r"><i style="background:${OTHER_COLOR}"></i>Other<b>${other}</b></div>`;
+  if(none)  h+=`<div class="r"><i style="background:${NOTIN_COLOR}"></i>Not yet in<b>${none}</b></div>`;
+  const el=document.getElementById(elId);
+  if(el) el.innerHTML=h+`<div class="r n">towns &amp; wards led</div>`;
+}
+function leaderStyle(f, sc, w){
+  const lead=leaderOf(f.properties.members);
+  if(!lead) return {fillColor:NOTIN_COLOR,fillOpacity:.7,color:'#fff',weight:w};
+  const upset = sc.ranked.length>1 && lead!==sc.ranked[0];
+  return {fillColor:sc.color[lead]||OTHER_COLOR,fillOpacity:.9,
+          color:upset?'#20242a':'#fff',weight:upset?1.4:w};
+}
 function leaderOf(members){
   const tot={}; let any=false;
   members.forEach(m=>{ if(!m.reported) return; any=true;
@@ -153,6 +178,22 @@ function floCodes(){
 }
 let geoMap=null, houseByCode=null, townsByName=null;
 let map=null, layer=null, cfg=null, dmap=null, dlayer=null;
+let mapSig='', mapBase=null, detSig='';
+/* A page that redraws itself every 30 seconds fights the reader: zoom into a
+   city, and half a minute later the map is torn down, rebuilt and refitted to
+   the whole state with your view thrown away. Note when the map was last
+   touched and let the refresh wait its turn - the numbers keep updating, only
+   the redraw is deferred. */
+let lastTouch=0;
+const TOUCH_QUIET_MS=20000;
+function markTouch(){ lastTouch=Date.now(); }
+function userBusy(){ return Date.now()-lastTouch<TOUCH_QUIET_MS; }
+function watchMap(m){
+  if(!m) return m;
+  ['movestart','zoomstart','dragstart','mousedown','wheel','touchstart',
+   'moveend','zoomend'].forEach(ev=>m.on(ev,markTouch));
+  return m;
+}
 let O=null, P='R', BASEV='Base', SCOPE='contested', data=null, board={}, timer=null, ctx=null;
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -284,7 +325,10 @@ function refresh(){
     if(o!==O||p!==P)return;
     board={}; b.races.forEach(r=>board[r.code]=r);
     counts();
-    if(ctx) openDetail(ctx.o,ctx.code,ctx.p); else paint();
+    // Mid-pan or mid-zoom a redraw would yank the map out from under the
+    // reader; the next tick is 30 seconds away and the counts above are
+    // already current.
+    if(!userBusy()){ if(ctx) openDetail(ctx.o,ctx.code,ctx.p); else paint(); }
     tick();
   }).catch(()=>{});
 }
@@ -412,14 +456,19 @@ function tipFor(code){
     <div class="tm"><span>${s.l}</span><span>${b.reporting.expected_in||0}% in</span></div>${rows}${p}`;
 }
 function renderMap(){
-  if(map){try{map.remove();}catch(e){}map=null;layer=null;}
-  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
-  G('nh-towns.geojson').then(g=>{
-    const base=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
-      .addTo(map);
-    base.bringToBack();
-    fitState(map, base);
-  });
+  const sig='dist|'+O.key+'|'+P+'|'+BASEV+'|'+SCOPE;
+  const reuse = map && mapSig===sig;
+  if(!reuse){
+    if(map){try{map.remove();}catch(e){}map=null;layer=null;mapBase=null;}
+    map=watchMap(L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+    G('nh-towns.geojson').then(g=>{
+      mapBase=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
+        .addTo(map);
+      mapBase.bringToBack();
+      fitState(map, mapBase);
+    });
+  }
+  mapSig=sig;
   legend();
   cfg = O.level==='house' ? (BASEV==='Floterial'?HFLOT:HBASE) : {file:O.file,prop:O.prop};
   if(!cfg.file) return;
@@ -457,9 +506,15 @@ function paint(){
    319 towns. Draw those instead of leaving an empty column. */
 function stateMap(){
   document.getElementById('split').classList.remove('solo');
-  if(map){try{map.remove();}catch(e){}map=null;layer=null;}
-  map=L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
-  document.getElementById('legend').innerHTML='';
+  // Same office and party as last time: keep the map, and with it the
+  // reader's zoom and pan. Only the data layer is replaced.
+  const sig='state|'+O.key+'|'+P;
+  const reuse = map && mapSig===sig;
+  if(!reuse){
+    if(map){try{map.remove();}catch(e){}map=null;layer=null;mapBase=null;}
+    map=watchMap(L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+    document.getElementById('legend').innerHTML='';
+  }
   Promise.all([
     fetch('/api/contested/'+O.key+'/results?code=STATE&party='+P+Q).then(r=>r.json()),
     geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
@@ -469,19 +524,18 @@ function stateMap(){
       houseByCode[String(f.properties.basehse22).trim()]=f);}
     if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>
       townsByName[String(f.properties.name||'').toLowerCase()]=f);}
-    const base=L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
-      color:'#fff',weight:.5,interactive:false}}).addTo(map);
-    base.bringToBack(); fitState(map, base);
+    if(!reuse){
+      mapBase=L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
+        color:'#fff',weight:.5,interactive:false}}).addTo(map);
+      mapBase.bringToBack(); fitState(map, mapBase);
+    }
+    if(layer){try{map.removeLayer(layer);}catch(e){}layer=null;}
     const sc=leaderScale(r);
-    document.getElementById('legend').innerHTML=
-      sc.ranked.slice(0,CAND_COLORS.length).map((n,i)=>
-        `<div class="r"><i style="background:${CAND_COLORS[i]}"></i>${esc(n)}</div>`).join('')+
-      (sc.ranked.length>CAND_COLORS.length?`<div class="r"><i style="background:${OTHER_COLOR}"></i>Other</div>`:'')+
-      `<div class="r"><i style="background:${NOTIN_COLOR}"></i>Not yet in</div>`;
-    layer=L.geoJSON({type:'FeatureCollection',features:fcFor(r.precincts||[])},{
-      style:f=>{const lead=leaderOf(f.properties.members);
-        return {fillColor: lead ? (sc.color[lead]||OTHER_COLOR) : NOTIN_COLOR,
-                fillOpacity: lead?.9:.7, color:'#fff', weight:.7};},
+    const feats=fcFor(r.precincts||[]);
+    leaderLegend('legend', sc, feats);
+    mapSig=sig;
+    layer=L.geoJSON({type:'FeatureCollection',features:feats},{
+      style:f=>leaderStyle(f, sc, .7),
       onEachFeature:(f,l)=>{
         const ms=f.properties.members, rep=ms.filter(m=>m.reported);
         let h=`<div class="tn">${esc(f.properties.name)}</div>`;
@@ -566,23 +620,28 @@ function fcFor(precincts){
       :g.members[0].name.replace(/\s+Ward.*/i,'')}}));
 }
 function detailMap(r,p){
-  if(dmap){try{dmap.remove();}catch(e){}dmap=null;}
-  dmap=L.map('detmap',{attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH);
+  const sig=(ctx?ctx.o.key+'|'+ctx.code:O.key)+'|'+p;
+  const reuse = dmap && detSig===sig;   // same race: keep the map and its zoom
+  if(!reuse){
+    if(dmap){try{dmap.remove();}catch(e){}dmap=null;dlayer=null;}
+    dmap=watchMap(L.map('detmap',{attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+  }
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
     if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>
       houseByCode[String(f.properties.basehse22).trim()]=f);}
     if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>
       townsByName[String(f.properties.name||'').toLowerCase()]=f);}
-    L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
+    if(!reuse) L.geoJSON(geo['nh-towns.geojson'],{style:{fillColor:'#f4f4f2',fillOpacity:1,
       color:'#fff',weight:.5,interactive:false}}).addTo(dmap).bringToBack();
+    if(dlayer){try{dmap.removeLayer(dlayer);}catch(e){}dlayer=null;}
     const fc={type:'FeatureCollection',features:fcFor(r.precincts||[])};
     const b=L.latLngBounds([]);
     const sc=leaderScale(r);
+    leaderLegend('detlegend', sc, fc.features);
+    detSig=sig;
     dlayer=L.geoJSON(fc,{
-      style:f=>{const lead=leaderOf(f.properties.members);
-        return {fillColor: lead ? (sc.color[lead]||OTHER_COLOR) : NOTIN_COLOR,
-                fillOpacity: lead?.9:.7, color:'#fff', weight:.8};},
+      style:f=>leaderStyle(f, sc, .8),
       onEachFeature:(f,l)=>{
         const ms=f.properties.members, rep=ms.filter(m=>m.reported);
         let html=`<div class="tn">${esc(f.properties.name)}</div>`;
@@ -599,10 +658,12 @@ function detailMap(r,p){
       }}).addTo(dmap);
     // Use the layer's own bounds once it is on the map; the accumulated
     // bounds could be empty if a precinct had no matching polygon.
-    let fb=null;
-    try{ fb=dlayer.getBounds(); }catch(e){}
-    if(!fb||!fb.isValid()) fb = b.isValid()? b : NH;
-    dmap.fitBounds(fb,{padding:[4,4]});
+    if(!reuse){
+      let fb=null;
+      try{ fb=dlayer.getBounds(); }catch(e){}
+      if(!fb||!fb.isValid()) fb = b.isValid()? b : NH;
+      dmap.fitBounds(fb,{padding:[4,4]});
+    }
   });
 }
 document.getElementById('back').onclick=()=>{
