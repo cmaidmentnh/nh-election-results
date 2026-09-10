@@ -604,20 +604,40 @@ function ptable(r){
        `<td>${p.reported?'✓':'—'}</td></tr>`;});
   document.getElementById('ptable').innerHTML=h+'</tbody>';
 }
+/* A ward gets its own polygon only where it is its own House district. Dover
+   Ward 4 shares Strafford 11 with Lee and Madbury, so it has no shape of its
+   own and falls back to the outline of the whole city - and that outline was
+   then drawn over Wards 1, 2, 3, 5 and 6, hiding five real results under one
+   ward's colour. Dover looked solid for whoever carried Ward 4.
+
+   Fall-back town shapes are now drawn first and the ward shapes on top, so the
+   city outline shows through only where no ward covers it - which is exactly
+   the unmapped ward's own ground. Same for Rochester 5, Portsmouth 1 and 5,
+   and Nashua 1-7. */
 function fcFor(precincts){
   const groups={};
   precincts.forEach(p=>{
     const code=geoMap&&geoMap[p.name];
-    let key,feat;
-    if(code&&houseByCode[code]){key='c:'+code;feat=houseByCode[code];}
+    let key,feat,ward;
+    if(code&&houseByCode[code]){key='c:'+code;feat=houseByCode[code];ward=true;}
     else{const base=p.name.replace(/\s+Ward\s+\d+\*?$/i,'').trim();
-         key='t:'+base.toLowerCase(); feat=townsByName[base.toLowerCase()];}
+         key='t:'+base.toLowerCase(); feat=townsByName[base.toLowerCase()]; ward=false;}
     if(!feat)return;
-    (groups[key]||(groups[key]={feat,members:[]})).members.push(p);
+    (groups[key]||(groups[key]={feat,ward,members:[]})).members.push(p);
   });
-  return Object.values(groups).map(g=>({type:'Feature',geometry:g.feat.geometry,
-    properties:{members:g.members,name:g.members.length===1?g.members[0].name
-      :g.members[0].name.replace(/\s+Ward.*/i,'')}}));
+  const feats=Object.values(groups).map(g=>({type:'Feature',geometry:g.feat.geometry,
+    properties:{members:g.members,ward:g.ward,name:groupName(g.members)}}));
+  // Town shapes underneath, ward shapes on top.
+  return feats.sort((a,b)=>(a.properties.ward?1:0)-(b.properties.ward?1:0));
+}
+/* Naming a merged group after its town claims more ground than it holds:
+   "Nashua" for Wards 1-7 reads as the whole city. Name the wards it has. */
+function groupName(ms){
+  if(ms.length===1) return ms[0].name;
+  const town=ms[0].name.replace(/\s+Ward.*/i,'');
+  const nums=ms.map(m=>{const x=/Ward\s+(\d+)/i.exec(m.name);return x?x[1]:null;})
+                .filter(Boolean);
+  return nums.length===ms.length ? `${town} Wards ${nums.join(', ')}` : town;
 }
 function detailMap(r,p){
   const sig=(ctx?ctx.o.key+'|'+ctx.code:O.key)+'|'+p;
