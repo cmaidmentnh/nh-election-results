@@ -85,15 +85,31 @@ def columns_from_totals(lines):
     return None
 
 
-def header_names(lines, cols, stop_at):
-    """Rebuild each column's candidate name from the wrapped header block."""
+def header_names(lines, cols, start, stop):
+    """Rebuild each column's candidate name from the wrapped header block.
+
+    Only the lines between the office title and the first town are considered,
+    and three kinds of text are thrown away: the sheet's own title and date, the
+    "CARROLL COUNTY" row-label that shares a line with the first candidate, and
+    the trailing ", r" / ", d" party letter. What is left is assembled in
+    reading order within each column.
+    """
     parts = [[] for _ in cols]
-    for line in lines[:stop_at]:
+    for line in lines[start:stop]:
         if not line.strip():
+            continue
+        upper = line.upper()
+        if "STATE OF NEW HAMPSHIRE" in upper or "PRIMARY ELECTION" in upper:
             continue
         for m in re.finditer(r"[A-Za-z][A-Za-z.'\-]*(?:\s+[A-Za-z][A-Za-z.'\-]*)*", line):
             text = m.group(0).strip()
-            if not text or text.upper().startswith(("STATE OF NEW", "SEPTEMBER")):
+            if not text:
+                continue
+            # the county label sits at the left margin sharing a line with the
+            # first candidate; it is a row heading, not a name
+            if m.start() < 18 and "COUNTY" in text.upper():
+                continue
+            if re.fullmatch(r"[rd]", text):
                 continue
             i = min(range(len(cols)), key=lambda k: abs(cols[k] - m.end()))
             parts[i].append((m.start(), text))
@@ -101,7 +117,8 @@ def header_names(lines, cols, stop_at):
     for chunk in parts:
         chunk.sort()
         joined = " ".join(t for _, t in chunk)
-        joined = re.sub(r"\s*,\s*[rd]\b", "", joined)      # drop the ", r" / ", d" suffix
+        joined = re.sub(r"\s*,\s*[rd]\b", "", joined)
+        joined = re.sub(r"\b[rd]\b", "", joined)
         names.append(re.sub(r"\s+", " ", joined).strip())
     return names
 
@@ -111,9 +128,13 @@ def parse(pdf_path):
                           capture_output=True, text=True).stdout
     lines = text.split("\n")
     office = ""
-    for line in lines[:6]:
-        if "-" in line and "Primary Election" not in line and line.strip():
-            office = line.strip()
+    office_line = 0
+    for i, line in enumerate(lines[:8]):
+        m = re.search(r"([A-Za-z][A-Za-z.,'\- ]+?)\s*-\s*(Republican|Democratic)\s*$",
+                      line.strip())
+        if m:
+            office = m.group(1).strip()
+            office_line = i
             break
     cols = columns_from_totals(lines)
     if not cols:
@@ -121,7 +142,7 @@ def parse(pdf_path):
     first_data = next((i for i, l in enumerate(lines)
                        if re.match(r"^\s*[A-Z][A-Za-z.'\- ]+\s{2,}\d", l)
                        and "COUNTY" not in l.upper()), len(lines))
-    names = header_names(lines, cols, first_data)
+    names = header_names(lines, cols, office_line + 1, first_data)
     rows = []
     for line in lines[first_data:]:
         t = line.strip()
@@ -172,7 +193,7 @@ def main():
         with open(args.out, "w") as fh:
             for town, cand, votes in got["rows"]:
                 name = "Write-in" if cand.lower().startswith("write") else cand
-                fh.write(f"0\t{party}\t{got['office']}\t{name}\t{votes}\n")
+                fh.write(f"{town}\t{party}\t{got['office']}\t{name}\t{votes}\n")
         print(f"wrote {args.out}")
 
 
