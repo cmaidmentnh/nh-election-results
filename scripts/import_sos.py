@@ -181,6 +181,18 @@ def split_row(row, cols):
 
 # ----------------------------------------------------------- the ballot -----
 
+def race_clause(district, county=None):
+    """Narrow to one race. State Representative districts are numbered per
+    county - Carroll 4 and Strafford 4 are different races - so the county has
+    to travel with the district."""
+    sql, args = "", []
+    if district not in (None, ""):
+        sql += " AND ra.district = ?"; args.append(str(district))
+    if county not in (None, ""):
+        sql += " AND ra.county = ?"; args.append(county)
+    return sql, tuple(args)
+
+
 def district_clause(district):
     """An office can be one race or several. Governor and U.S. Senator are one,
     so the office name alone finds them; Representative in Congress is two, and
@@ -409,6 +421,94 @@ def parse_xlsx(path, source=None):
         town_rows.append((label.strip(), figures))
     return {"office": office, "district": district, "candidates": names,
             "rows": town_rows, "totals": totals}
+
+
+# ---------------------------------------------------- the House sheets ------
+
+HOUSE_BLOCK = re.compile(r"^District No\.\s*(\d+)\s*\((\d+)\)\s*(F)?\s*$", re.I)
+
+
+def parse_house_xlsx(path, source=None):
+    """One county's State Representative returns.
+
+    Unlike every other sheet, this one is not a single race. It is a stack of
+    them: a "District No. 4 (2)" header carrying that district's own candidate
+    columns, the towns that vote in it, then a Totals row, then the next
+    district. A trailing F marks a floterial. Districts are numbered per
+    county, so the county comes from the file name and travels with them.
+    """
+    import openpyxl
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+    grid = [list(r) for r in ws.iter_rows(values_only=True)]
+
+    m = re.search(r"house-([a-z]+)-(republican|democratic)",
+                  str(source or path), re.I)
+    if not m:
+        return {"error": "no county in the file name"}
+    county = m.group(1).capitalize()
+    if county == "Coos":
+        county = "Coos"
+
+    blocks, cur = [], None
+    for row in grid:
+        label = row[0] if row and isinstance(row[0], str) else None
+        head = HOUSE_BLOCK.match(label.strip()) if label else None
+        if head:
+            names, cols = [], []
+            for j, cell in enumerate(row[1:], start=1):
+                if not isinstance(cell, str) or not cell.strip():
+                    continue
+                nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
+                names.append("Write-in" if nm.lower().startswith("write") else nm)
+                cols.append(j)
+            cur = {"district": head.group(1), "seats": int(head.group(2)),
+                   "floterial": bool(head.group(3)), "candidates": names,
+                   "cols": cols, "rows": [], "totals": {}}
+            blocks.append(cur)
+            continue
+        if cur is None or not label or not label.strip():
+            continue
+        figures = {}
+        for nm, j in zip(cur["candidates"], cur["cols"]):
+            v = row[j] if j < len(row) else None
+            if isinstance(v, (int, float)):
+                figures[nm] = int(v)
+            elif isinstance(v, str) and re.fullmatch(r"[\d,]+", v.strip()):
+                figures[nm] = int(v.replace(",", ""))
+            else:
+                figures[nm] = 0
+        if label.strip().lower().startswith("total"):
+            cur["totals"] = figures
+        else:
+            cur["rows"].append((label.strip(), figures))
+    if not blocks:
+        return {"error": "no district blocks on the sheet"}
+    return {"office": "State Representative", "county": county, "blocks": blocks}
+
+
+def house_votes(county, district, election_id, towns):
+    """What we hold for one House district, by candidate and municipality."""
+    clause, args = race_clause(district, county)
+    from intake import store
+    conn = store.connect()
+    cur = conn.cursor()
+    got = {}
+    for i in range(0, len(towns), 400):
+        chunk = towns[i:i + 400]
+        marks = ",".join("?" for _ in chunk)
+        cur.execute(f"""SELECT c.name, r.municipality, r.votes
+                          FROM results r
+                          JOIN races ra ON ra.id = r.race_id
+                          JOIN offices o ON o.id = ra.office_id
+                          JOIN candidates c ON c.id = r.candidate_id
+                         WHERE ra.election_id = ? AND o.name = 'State Representative'
+                           AND r.municipality IN ({marks})""" + clause,
+                    (election_id, *chunk, *args))
+        for row in cur.fetchall():
+            got.setdefault(row["municipality"], {})[row["name"]] = row["votes"]
+    conn.close()
+    return got
 
 
 # ------------------------------------------------------------ the check -----
@@ -693,6 +793,9 @@ def handle(source, path, party, apply, out_tsv=None):
     other = 30 if election_id == 29 else 29
     name = Path(source).name
 
+    if "house" in Path(source).name.lower():
+        return handle_house(source, path, party, apply, out_tsv)
+
     if str(path).lower().endswith(".xlsx"):
         # the download lands in a temp file, so the published name - which
         # carries the district - has to come from the source
@@ -787,6 +890,93 @@ def handle(source, path, party, apply, out_tsv=None):
     done = apply_county(got, party, mapped, resolved, ours, ballot, apply)
     print(f"{done} municipality/ies {'applied' if apply else 'dry run'}")
     return True
+
+
+def handle_house(source, path, party, apply, out_tsv=None):
+    """Apply one county's House sheet, district by district.
+
+    Each district is handed to the ward reader as its own report, because that
+    is the unit it can check: the candidates in a block all belong to one race,
+    so a name it cannot place, or one that could belong to two races, stops
+    that district and leaves the rest alone.
+    """
+    election_id = PARTY_ELECTION[party]
+    got = parse_house_xlsx(path, source)
+    name = Path(source).name
+    if got.get("error"):
+        print(f"REFUSED {name}: {got['error']}")
+        return False
+
+    county = got["county"]
+    print(f"\n=== {name}: {county} County State Representatives - {party.title()}")
+    print(f"{len(got['blocks'])} district block(s)")
+
+    known = municipalities()
+    here = Path(__file__).resolve().parent
+    done = held = 0
+    for b in got["blocks"]:
+        tag = f"{county} {b['district']}" + (" (floterial)" if b["floterial"] else "")
+        # the sheet's own arithmetic first: the town rows have to make the
+        # Totals row the sheet prints, or the columns are not what they say
+        if b["totals"]:
+            bad = [(n, sum(f.get(n, 0) for _t, f in b["rows"]), b["totals"].get(n, 0))
+                   for n in b["candidates"]
+                   if sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"].get(n, 0)]
+            if bad:
+                print(f"  REFUSED {tag}: town rows do not make the printed total: {bad}")
+                held += 1
+                continue
+
+        mapped = {}
+        for town, _f in b["rows"]:
+            key = re.sub(r"[^A-Za-z0-9]", "", town).upper()
+            if key in known:
+                mapped[town] = known[key]
+        ours = house_votes(county, b["district"], election_id,
+                           sorted(mapped.values()))
+
+        # a column on the wrong candidate is off by a multiple, so compare
+        # what we already hold against what the sheet says for the same towns
+        moves, problems = [], []
+        for n in b["candidates"]:
+            if n.lower().startswith("write"):
+                continue
+            mine = sum(v.get(n, 0) for t, v in ours.items())
+            sos = sum(f.get(n, 0) for t, f in b["rows"] if t in mapped and ours.get(mapped[t]))
+            if mine:
+                moves.append((n, mine, sos))
+                if sos < mine * 0.5 or sos > mine * 2 + 20:
+                    problems.append(f"{n}: ours {mine}, certified {sos}")
+        if problems:
+            print(f"  REFUSED {tag}: " + "; ".join(problems))
+            held += 1
+            continue
+
+        wrote = 0
+        for town, figures in b["rows"]:
+            db_town = mapped.get(town)
+            if not db_town:
+                continue
+            lines = [f"0\t{party}\tState Representative\t{n}\t{v}"
+                     for n, v in figures.items()]
+            with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
+                fh.write("\n".join(lines) + "\n")
+                tsv = fh.name
+            cmd = [sys.executable, str(here / "apply_ward_report.py"),
+                   "--file", tsv, "--city", db_town]
+            if apply:
+                cmd.append("--apply")
+            out = subprocess.run(cmd, capture_output=True, text=True)
+            if "held back" in out.stdout or "refus" in out.stdout.lower():
+                sys.stdout.write(f"  {db_town}: " + out.stdout.split("held back")[-1][:160] + "\n")
+            Path(tsv).unlink(missing_ok=True)
+            wrote += 1
+        print(f"  {tag}: {len(b['candidates'])} columns, {wrote} town(s) "
+              f"{'applied' if apply else 'dry run'}"
+              + (f"   [{', '.join(f'{n} {m}->{x}' for n, m, x in moves[:3])}]" if moves else ""))
+        done += 1
+    print(f"{done} district(s) {'applied' if apply else 'checked'}, {held} held back")
+    return held == 0
 
 
 def main():
