@@ -152,7 +152,9 @@
 /* ---- detail ------------------------------------------------------------- */
 .pt-detail { display: none; } .pt-detail.show { display: block; }
 .pt-board.hide, .pt-mapwrap.hide, .pt-legendwrap.hide { display: none; }
-.pt-dhead { display: flex; align-items: center; gap: var(--rs-s4);
+.pt-dhead { position: sticky; top: 0; z-index: 5;
+  background: var(--rs-bg, var(--rs-card)); padding-block: var(--rs-s2);
+  display: flex; align-items: center; gap: var(--rs-s4);
             flex-wrap: wrap; margin-bottom: var(--rs-s3); }
 .pt-back { cursor: pointer; color: var(--rs-ink); font-weight: 750;
            font-size: var(--rs-t-md); background: none; border: 0;
@@ -201,17 +203,28 @@
 .pt-bv b { font-weight: 800; }
 .pt-bv .pj { color: var(--rs-ink-3); font-size: var(--rs-t-sm); }
 
-.pt-tablewrap { overflow-x: auto; border: 1px solid var(--rs-line);
+/* The header row was already declared sticky and still scrolled away, because
+   overflow-x:auto makes this wrapper the scroll container and the wrapper had
+   no height - so the header stuck to a box that never moved while the page
+   scrolled past it. Capping the height gives it something to stick inside. */
+.pt-tablewrap { overflow: auto; max-height: min(70vh, 760px);
+                overscroll-behavior: contain;
+                border: 1px solid var(--rs-line);
                 border-radius: var(--rs-r-lg); background: var(--rs-card);
                 box-shadow: var(--rs-shadow); }
 table.pt-ptable { border-collapse: collapse; width: 100%; font-size: var(--rs-t-sm); }
 .pt-ptable th, .pt-ptable td { padding: .45rem .7rem;
   border-bottom: 1px solid var(--rs-line); white-space: nowrap; text-align: right; }
 .pt-ptable th:first-child, .pt-ptable td:first-child { text-align: left;
-  position: sticky; left: 0; background: var(--rs-card); font-weight: 600; }
+  position: sticky; left: 0; z-index: 1; background: var(--rs-card);
+  font-weight: 600; }
 .pt-ptable thead th { background: var(--rs-card-2); position: sticky; top: 0;
-  font-size: var(--rs-t-xs); text-transform: uppercase; letter-spacing: .05em;
-  color: var(--rs-ink-2); }
+  z-index: 2; font-size: var(--rs-t-xs); text-transform: uppercase;
+  letter-spacing: .05em; color: var(--rs-ink-2);
+  /* a real edge under the row, so it reads as floating over the towns */
+  box-shadow: inset 0 -1px 0 var(--rs-line); }
+/* the corner cell is sticky on both axes, so it has to outrank both */
+.pt-ptable thead th:first-child { z-index: 3; background: var(--rs-card-2); }
 .pt-ptable td.in  { color: var(--rs-good); }
 .pt-ptable td.out { color: var(--rs-ink-3); }   /* was #cbd5e1 — 1.5:1, invisible */
 
