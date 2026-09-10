@@ -123,6 +123,43 @@ def header_names(lines, cols, start, stop):
     return names
 
 
+
+def roster_order(office, election_ids):
+    """The column order the Secretary of State prints, taken from our roster.
+
+    The header cannot be read positionally: the figures are right-aligned to
+    their column and the names are not, so matching a name fragment to a column
+    by where it ends puts them in the wrong places. The order itself is regular
+    though - every Republican by surname, then every Democrat by surname, then
+    Write-Ins - so the names come from the ballot we already hold and the
+    mapping is then CHECKED against our own county totals before anything is
+    written. If that check fails the file is refused rather than guessed at.
+    """
+    from intake import store
+    conn = store.connect()
+    cur = conn.cursor()
+    out = []
+    for eid in election_ids:
+        cur.execute("""SELECT DISTINCT c.id, c.name FROM race_candidates rc
+                         JOIN candidates c ON c.id = rc.candidate_id
+                         JOIN races ra ON ra.id = rc.race_id
+                         JOIN offices o ON o.id = ra.office_id
+                        WHERE ra.election_id = ? AND o.name = ?""", (eid, office))
+        names = [r["name"] for r in cur.fetchall()
+                 if not r["name"].lower().startswith("write")]
+        SUFFIX = {"JR", "SR", "II", "III", "IV"}
+
+        def surname(n):
+            parts = [x for x in re.sub(r"[^A-Za-z ]", " ", n.upper()).split()
+                     if x not in SUFFIX]
+            return parts[-1] if parts else n.upper()
+
+        out.extend(sorted(names, key=surname))
+    out.append("Write-in")
+    conn.close()
+    return out
+
+
 def parse(pdf_path):
     text = subprocess.run(["pdftotext", "-layout", str(pdf_path), "-"],
                           capture_output=True, text=True).stdout
@@ -142,6 +179,7 @@ def parse(pdf_path):
     first_data = next((i for i, l in enumerate(lines)
                        if re.match(r"^\s*[A-Z][A-Za-z.'\- ]+\s{2,}\d", l)
                        and "COUNTY" not in l.upper()), len(lines))
+    party_ids = [29] if "republican" in str(pdf_path).lower() else [30]
     names = header_names(lines, cols, office_line + 1, first_data)
     rows = []
     for line in lines[first_data:]:
