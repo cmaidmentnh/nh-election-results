@@ -183,7 +183,19 @@
 
 #pt-bigmap { height: clamp(260px, 42vh, 460px); border-radius: var(--rs-r-lg);
              border: 1px solid var(--rs-line); background: var(--rs-card);
-             margin-bottom: var(--rs-s4); }
+             margin-bottom: var(--rs-s2); }
+/* The detail map is coloured by who is leading each town, so it needs a key.
+   It runs as a wrapping row under the map rather than floating on top of it -
+   candidate names are long, and a corner box would cover half the state. */
+.pt-blegend { font-family: var(--rs-mono); font-size: var(--rs-t-xs);
+              display: flex; flex-wrap: wrap; gap: .3rem .9rem;
+              margin-bottom: var(--rs-s4); }
+.pt-blegend:empty { display: none; }
+.pt-blegend .row { display: flex; align-items: center; gap: .45rem;
+                   color: var(--rs-ink-2); }
+.pt-blegend i { width: 14px; height: 11px; border-radius: 2px; display: inline-block;
+                border: 1px solid rgba(13,21,38,.12); }
+.pt-legend .lead-note, .pt-blegend .lead-note { color: var(--rs-ink-3); }
 .pt-overall { background: var(--rs-card); border: 1px solid var(--rs-line);
               border-radius: var(--rs-r-lg); padding: var(--rs-s4);
               margin-bottom: var(--rs-s4); box-shadow: var(--rs-shadow); }

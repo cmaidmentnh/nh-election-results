@@ -6,7 +6,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=9">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}?v=10">
 {% endblock %}
 
 {% block content %}
@@ -50,6 +50,7 @@
     </div>
     <div class="pt-banner preview" id="pt-banner"></div>
     <div id="pt-bigmap"></div>
+    <div class="pt-blegend" id="pt-blegend"></div>
     <div class="pt-overall" id="pt-overall"></div>
     <div class="pt-tablewrap"><table class="pt-ptable" id="pt-ptable"></table></div>
   </div>
@@ -76,8 +77,80 @@ const PARTY={R:{name:'Republican',color:'#b91c1c'},D:{name:'Democratic',color:'#
 const STATUS={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#12304f'},leaning:{l:'Leaning',c:'#64748b'},
   too_close:{l:'Too close',c:'#d98c00'},awaiting:{l:'Awaiting',c:'#b6c0cd'},preview:{l:'Contested',c:'#64748b'}};
 const NH=L.latLngBounds([[42.66,-72.62],[45.32,-70.6]]);
+/* Leader colours for the town/ward maps. Every candidate in a primary shares a
+   party, so a party-coloured map can only say "this town reported" - it can
+   never show who carried it, which is the thing people came to see. Four hue
+   slots, checked all-pairs for colour-vision deficiency against the white card
+   (worst pair deutan/protan dE 7.4, which is why the legend, the hover card and
+   the precinct table below all name the leader in words as well). A fifth
+   leader folds into "Other" rather than inventing a hue. */
+const LEAD_COLORS=['#0072B2','#D55E00','#009E73','#b0468a'];
+const LEAD_OTHER='#7c8899', LEAD_TIE='#8d99ab', LEAD_NONE='#cbd5e1';
+const leadPals={};
+function leadPalette(cands,sig){
+  // Slots go to the front-runners, so the two candidates who actually colour
+  // the map get the best-separated pair. Colour then follows the candidate and
+  // not their rank: the assignment is cached per race, so a lead changing on a
+  // later refresh never repaints the map out from under the reader.
+  if(sig&&leadPals[sig])return leadPals[sig];
+  const m={};
+  (cands||[]).filter(c=>!/^write[\s-]?in$/i.test(c.name||''))
+    .slice().sort((a,b)=>(b.votes||0)-(a.votes||0)||a.name.localeCompare(b.name))
+    .forEach((c,i)=>{m[c.name]=i<LEAD_COLORS.length?LEAD_COLORS[i]:LEAD_OTHER;});
+  if(sig)leadPals[sig]=m;
+  return m;
+}
+function leadOf(members){
+  const tot={}; let sum=0, rep=0;
+  (members||[]).forEach(m=>{ if(!m.reported)return; rep++;
+    Object.entries(m.votes||{}).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v; sum+=v;}); });
+  if(!rep||!sum) return null;
+  const e=Object.entries(tot).sort((a,b)=>b[1]-a[1]);
+  const top=e[0], second=e[1]||[null,0];
+  return {name:top[0],votes:top[1],sum:sum,margin:(top[1]-second[1])/sum,tie:top[1]===second[1]};
+}
+function leadStyle(members,pal,w){
+  if(!LIVE) return {fillColor:LEAD_NONE,fillOpacity:.4,color:'#fff',weight:w};
+  const L=leadOf(members);
+  if(!L)     return {fillColor:LEAD_NONE,fillOpacity:.32,color:'#fff',weight:w};
+  if(L.tie)  return {fillColor:LEAD_TIE,fillOpacity:.55,color:'#fff',weight:w};
+  // Pale where it is close, solid where it is not, so the map shows the shape
+  // of the win and not just its owner. 30 points of margin reaches full ink.
+  return {fillColor:pal[L.name]||LEAD_OTHER,
+          fillOpacity:.30+.50*Math.min(1,L.margin/.30),color:'#fff',weight:w};
+}
+// Key only what is actually on the map. A ten-candidate Senate primary where
+// two of them carry a town between them does not need eight dead swatches.
+function leadLegend(el,pal,fc){
+  if(!el)return;
+  if(!LIVE||!pal||!fc){el.innerHTML='';return;}
+  const leaders=new Set(); let other=false, none=false, tied=false;
+  fc.features.forEach(f=>{const L=leadOf(f.properties.members);
+    if(!L){none=true;return;}
+    if(L.tie){tied=true;return;}
+    if(pal[L.name]&&pal[L.name]!==LEAD_OTHER) leaders.add(L.name); else other=true;});
+  let h=[...leaders].sort((a,b)=>LEAD_COLORS.indexOf(pal[a])-LEAD_COLORS.indexOf(pal[b]))
+    .map(n=>`<div class="row"><i style="background:${pal[n]}"></i>${n}</div>`).join('');
+  if(other) h+=`<div class="row"><i style="background:${LEAD_OTHER}"></i>Another candidate</div>`;
+  if(tied)  h+=`<div class="row"><i style="background:${LEAD_TIE}"></i>Tied</div>`;
+  if(none)  h+=`<div class="row"><i style="background:${LEAD_NONE}"></i>Not yet reported</div>`;
+  el.innerHTML=h+`<div class="row lead-note">Shaded by margin · leading candidate</div>`;
+}
 const HBASE={file:'nh-house-districts.geojson',prop:'basehse22'}, HFLOT={file:'nh-house-floterial-districts.geojson',prop:'floathse22'};
 const geo={}, jc={}; let geoMap=null, houseByCode=null, townsByName=null;
+// A live page that redraws itself every 30s fights the reader: pan or zoom in,
+// and the polygons are torn out and rebuilt under your cursor. Track when the
+// map was last touched and let the refresh wait its turn.
+let lastTouch = 0;
+const TOUCH_QUIET_MS = 20000;
+function markTouch(){ lastTouch = Date.now(); }
+function userBusy(){ return Date.now() - lastTouch < TOUCH_QUIET_MS; }
+function watchMap(m){
+  if(!m) return m;
+  ['movestart','zoomstart','dragstart','mousedown','wheel','touchstart',
+   'moveend','zoomend'].forEach(ev => m.on(ev, markTouch));
+  return m;
+}
 let mainMap=null, mainLayer=null, mainCfg=null, lastMapSig='', bigMap=null, bigLayer=null, bigSig='', detailCtx=null,
     curO=null, curP='R', curBase='Base', curData=null, board={}, timer=null;
 function mapSig(){return curO.key+'|'+curP+'|'+curBase;}
@@ -147,6 +220,9 @@ function renderView(){
 }
 
 function refresh(){ const o=curO,p=curP;
+  // Mid-pan or mid-zoom, redrawing would yank the map out from under the
+  // reader. The next tick is 30s away; the numbers can wait that long.
+  if(userBusy()) return;
   fetch('/api/contested/'+o.key+'/board?party='+p+Q).then(r=>r.json()).then(b=>{
     if(o!==curO||p!==curP)return; board={}; b.races.forEach(r=>board[r.code]=r);
     const n=new Date(); document.getElementById('pt-updated').innerHTML=`<span class="pt-pulse"></span>Updated ${n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
@@ -175,10 +251,15 @@ function paint(){ renderScore();
 function statewideMap(){
   document.getElementById('pt-split').classList.remove('nomap');
   document.getElementById('pt-mapwrap').classList.remove('hide');
-  if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
-  mainMap=L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
-  addBasemap(mainMap);
-  renderLegend();
+  // Same race as last tick: keep the map object, and with it the reader's zoom
+  // and pan. Only a change of office or party earns a rebuild.
+  const sig=mapSig();
+  const reuse = mainMap && lastMapSig===sig;
+  if(!reuse){
+    if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
+    mainMap=watchMap(L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH));
+    addBasemap(mainMap);
+  }
   Promise.all([
     fetch('/api/contested/'+curO.key+'/results?code=STATE&party='+curP+Q).then(r=>r.json()),
     geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
@@ -186,15 +267,18 @@ function statewideMap(){
   ]).then(([r])=>{
     if(!houseByCode){houseByCode={};geo[HBASE.file].features.forEach(f=>houseByCode[String(f.properties.basehse22).trim()]=f);}
     if(!townsByName){townsByName={};geo['nh-towns.geojson'].features.forEach(f=>townsByName[String(f.properties.name||'').toLowerCase()]=f);}
+    if(mainLayer){try{mainMap.removeLayer(mainLayer);}catch(e){}mainLayer=null;}
+    const pal=leadPalette(r.candidates||[],sig);
     const fc={type:'FeatureCollection',features:buildPrecinctFC(r.precincts||[])};
+    if(LIVE) leadLegend(document.getElementById('pt-legend'),pal,fc); else renderLegend();
     mainLayer=L.geoJSON(fc,{
-      style:f=>{const anyIn=f.properties.members.some(m=>m.reported);
-        return {fillColor:anyIn?PARTY[curP].color:'#e6eaf0',fillOpacity:anyIn?.62:.5,color:'#fff',weight:.8};},
+      style:f=>leadStyle(f.properties.members,pal,.8),
       onEachFeature:(f,l)=>{l.bindTooltip(precinctTip(f.properties,r),{className:'pt-tt '+curP,sticky:true});
         l.on('mouseover',()=>l.setStyle({weight:2.2,color:'#0d1526'}));
         l.on('mouseout',()=>l.setStyle({weight:.8,color:'#fff'}));}
     }).addTo(mainMap);
-    mainMap.fitBounds(NH,{padding:[6,6]});
+    lastMapSig=sig;
+    if(!reuse) mainMap.fitBounds(NH,{padding:[6,6]});
   }).catch(()=>{});
 }
 
@@ -234,9 +318,13 @@ function styleFor(code){const rec=recOf(code);
   const inpct=LIVE&&board[code]?board[code].reporting.expected_in/100:1;
   return {fillColor:statusColor(st),fillOpacity:.35+.5*(LIVE?inpct:1),color:'#fff',weight:1,interactive:true};}
 function renderMap(){
-  const o=curO; if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
-  mainMap=L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH);
-  addBasemap(mainMap);
+  const o=curO;
+  const reuse = mainMap && lastMapSig===mapSig();
+  if(!reuse){
+    if(mainMap){try{mainMap.remove();}catch(e){}mainMap=null;mainLayer=null;}
+    mainMap=watchMap(L.map('pt-map',{attributionControl:false,scrollWheelZoom:false,zoomControl:true}).fitBounds(NH));
+    addBasemap(mainMap);
+  } else if(mainLayer){ try{mainMap.removeLayer(mainLayer);}catch(e){} mainLayer=null; }
   renderLegend();
   mainCfg = o.level==='house' ? (curBase==='Floterial'?HFLOT:HBASE) : {file:o.file,prop:o.prop};
   G(mainCfg.file).then(g=>{
@@ -253,7 +341,7 @@ function renderMap(){
     // Always frame the whole state. Fitting to the contested districts zoomed
     // into whichever corner happened to be contested - for State Rep that is
     // the south - and cropped New Hampshire off the panel.
-    mainMap.fitBounds(NH, {padding:[6,6]});
+    if(!reuse) mainMap.fitBounds(NH, {padding:[6,6]});
   });
 }
 function restyleMain(){  // update colors + tooltips from new board, preserving zoom/pan
@@ -395,7 +483,7 @@ function pmap(o,r){
   const sig=o.key+'|'+(detailCtx?detailCtx.code:'')+'|'+r.party;
   const reuse = bigMap && bigSig===sig;   // same race: keep map + zoom, just refresh data
   if(!reuse){ if(bigMap){try{bigMap.remove();}catch(e){}bigMap=null;}
-    bigMap=L.map('pt-bigmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH);
+    bigMap=watchMap(L.map('pt-bigmap',{attributionControl:false,scrollWheelZoom:false}).fitBounds(NH));
     addBasemap(bigMap); }
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
@@ -404,9 +492,10 @@ function pmap(o,r){
     if(bigLayer){bigMap.removeLayer(bigLayer);bigLayer=null;}
     const fc={type:'FeatureCollection',features:buildPrecinctFC(r.precincts||[])};
     const b=L.latLngBounds([]);
+    const pal=leadPalette(r.candidates||[],sig);
+    leadLegend(document.getElementById('pt-blegend'),pal,fc);
     bigLayer=L.geoJSON(fc,{
-      style:f=>{const ms=f.properties.members,anyIn=ms.some(m=>m.reported);
-        return {fillColor:anyIn?PARTY[r.party].color:'#cbd5e1',fillOpacity:anyIn?.62:.32,color:'#fff',weight:1};},
+      style:f=>leadStyle(f.properties.members,pal,1),
       onEachFeature:(f,l)=>{l.bindTooltip(precinctTip(f.properties,r),{className:'pt-tt '+r.party,sticky:true});
         l.on('mouseover',()=>l.setStyle({weight:2.5,color:'#0f172a'}));l.on('mouseout',()=>l.setStyle({weight:1,color:'#fff'}));b.extend(l.getBounds());}
     }).addTo(bigMap);
