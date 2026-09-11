@@ -867,18 +867,48 @@ def api_contested(office_key):
     return jsonify({'office': office_name, 'level': level, 'districts': districts})
 
 
+# The board draws every contested district for an office - four hundred of them
+# for State Rep with scope=all - and each one used to re-read the same three
+# reference tables: who votes where, each town's county, and the 2024 turnout
+# the projection weights by. None of that changes during a count, so it is read
+# once per process and held. This is what took the board from 3.6s to well
+# under a second; the tables are static, so a deploy is the only thing that
+# needs to clear it.
+_REF = {}
+
+
+def _ref(key, build):
+    if key not in _REF:
+        _REF[key] = build()
+    return _REF[key]
+
+
+def _towns_by_district(cur, office_name):
+    def build():
+        oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
+        if not oid:
+            return {}
+        out = {}
+        for r in cur.execute("""SELECT county, district, municipality
+                                  FROM municipality_districts
+                                 WHERE office_id = ?
+                                 ORDER BY municipality""", (oid['id'],)):
+            out.setdefault((r['county'] or '', r['district'] or ''), []).append(r['municipality'])
+        return out
+    return _ref(('districts', office_name), build)
+
+
+def _all_precincts(cur):
+    return _ref('statewide', lambda: [
+        r['municipality'] for r in
+        cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")])
+
+
 def _precincts_for(cur, office_name, level, county, district):
     """The municipalities (towns/wards) that vote in a district."""
     if level == 'statewide':
-        cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
-    else:
-        oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
-        if not oid:
-            return []
-        cur.execute("""SELECT municipality FROM municipality_districts
-                       WHERE office_id = ? AND county = ? AND district = ?
-                       ORDER BY municipality""", (oid['id'], county, district))
-    return [r['municipality'] for r in cur.fetchall()]
+        return list(_all_precincts(cur))
+    return list(_towns_by_district(cur, office_name).get((county or '', district or ''), []))
 
 
 @app.route('/api/contested/<office_key>/precincts')
@@ -923,24 +953,25 @@ def _precinct_weights(cur, party_full, names):
     2024 general turnout (Governor), then to an equal share."""
     if not names:
         return {}
-    qm = ",".join("?" * len(names))
-    prim, genr = {}, {}
-    cur.execute(f"""SELECT res.municipality AS m, SUM(res.votes) AS v
-                    FROM results res JOIN races r ON res.race_id = r.id
-                    JOIN elections e ON r.election_id = e.id
-                    WHERE e.year = 2024 AND e.election_type = 'state_primary' AND e.party = ?
-                      AND res.municipality IN ({qm}) GROUP BY res.municipality""",
-                (party_full, *names))
-    for row in cur.fetchall():
-        prim[row['m']] = row['v']
-    cur.execute(f"""SELECT res.municipality AS m, SUM(res.votes) AS v
-                    FROM results res JOIN races r ON res.race_id = r.id
-                    JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
-                    WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
-                      AND res.municipality IN ({qm}) GROUP BY res.municipality""",
-                (*names,))
-    for row in cur.fetchall():
-        genr[row['m']] = row['v']
+
+    def _prim():
+        return {r['m']: r['v'] for r in cur.execute(
+            """SELECT res.municipality AS m, SUM(res.votes) AS v
+                 FROM results res JOIN races r ON res.race_id = r.id
+                 JOIN elections e ON r.election_id = e.id
+                WHERE e.year = 2024 AND e.election_type = 'state_primary' AND e.party = ?
+                GROUP BY res.municipality""", (party_full,))}
+
+    def _genr():
+        return {r['m']: r['v'] for r in cur.execute(
+            """SELECT res.municipality AS m, SUM(res.votes) AS v
+                 FROM results res JOIN races r ON res.race_id = r.id
+                 JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
+                GROUP BY res.municipality""")}
+
+    prim = _ref(('turnout24', party_full), _prim)
+    genr = _ref('gov24', _genr)
     raw = {n: (prim.get(n) or genr.get(n) or 1) for n in names}
     total = sum(raw.values()) or 1
     return {n: raw[n] / total for n in names}
@@ -1054,9 +1085,10 @@ def _precinct_counties(cur, names):
     """municipality -> county, for region-aware projection."""
     if not names:
         return {}
-    qm = ",".join("?" * len(names))
-    cur.execute(f"SELECT municipality, county FROM polling_places WHERE municipality IN ({qm})", names)
-    return {r['municipality']: (r['county'] or '') for r in cur.fetchall()}
+    full = _ref('counties', lambda: {
+        r['municipality']: (r['county'] or '') for r in
+        cur.execute("SELECT municipality, county FROM polling_places")})
+    return {n: full[n] for n in names if n in full}
 
 
 def _demo_results(precs, cand_ids, race_id):
