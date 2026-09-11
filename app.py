@@ -1167,7 +1167,19 @@ def _board_bulk(cur, office_name, party_full):
         d = votes.setdefault(r['race_id'], {})
         d.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
         cands.setdefault(r['race_id'], {}).setdefault(r['candidate_id'], (r['name'], 950))
-    return {'races': races, 'cands': cands, 'votes': votes}
+
+    named = {}
+    for r in cur.execute("""SELECT rc.race_id, rc.candidate_id AS cid
+                              FROM race_candidates rc
+                              JOIN races ra ON ra.id = rc.race_id
+                              JOIN elections e ON ra.election_id = e.id
+                              JOIN offices o ON ra.office_id = o.id
+                             WHERE rc.recruitment_filing_id = -1
+                               AND e.year = 2026 AND e.election_type = 'state_primary'
+                               AND e.party = ? AND o.name = ?""",
+                         (party_full, office_name)):
+        named.setdefault(r['race_id'], set()).add(r['cid'])
+    return {'races': races, 'cands': cands, 'votes': votes, 'named_wi': named}
 
 
 def _compute_results(cur, office_name, level, county, district, party_full, party,
@@ -1279,14 +1291,18 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # field under a wall of noise. The individual names are still recorded and
     # still reachable town by town; the topline just says how many people wrote
     # somebody in.
-    named_wi = {r['cid'] for r in cur.execute(
-        """SELECT rc.candidate_id AS cid FROM race_candidates rc
-             WHERE rc.race_id = ? AND rc.recruitment_filing_id = -1""",
-        (race_id,)).fetchall()}
-    agg_wi = {r['cid'] for r in cur.execute(
+    if bulk is not None:
+        named_wi = bulk['named_wi'].get(race_id, set())
+    else:
+        named_wi = {r['cid'] for r in cur.execute(
+            """SELECT rc.candidate_id AS cid FROM race_candidates rc
+                 WHERE rc.race_id = ? AND rc.recruitment_filing_id = -1""",
+            (race_id,)).fetchall()}
+    # the aggregate write-in ids never depended on the race at all
+    agg_wi = _ref('aggregate_writeins', lambda: {r['cid'] for r in cur.execute(
         """SELECT c.id AS cid FROM candidates c
             WHERE lower(c.name) IN ('write-in', 'write in', 'writein', 'scattering')"""
-    ).fetchall()}
+    ).fetchall()})
     writein_ids = named_wi | agg_wi
 
     cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
