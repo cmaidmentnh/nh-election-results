@@ -1120,16 +1120,69 @@ def _demo_results(precs, cand_ids, race_id):
     return by_prec
 
 
+def _board_bulk(cur, office_name, party_full):
+    """Every race for one office and party, with its roster and its votes.
+
+    The board asks for four hundred districts at once and each one was looking
+    up its own race, its own candidates and its own results - three queries a
+    race, and the race lookup joins elections and offices, so it scanned. Three
+    queries for the whole board instead.
+    """
+    races, by_id = {}, {}
+    for r in cur.execute("""SELECT r.id, r.seats, COALESCE(r.county,'') AS county,
+                                   COALESCE(r.district,'') AS district
+                              FROM races r
+                              JOIN elections e ON r.election_id = e.id
+                              JOIN offices o   ON r.office_id = o.id
+                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
+                               AND e.party = ? AND o.name = ?""",
+                         (party_full, office_name)):
+        races[(r['county'], r['district'])] = {'id': r['id'], 'seats': r['seats']}
+        by_id[r['id']] = (r['county'], r['district'])
+
+    cands = {}
+    for r in cur.execute("""SELECT rc.race_id, c.id AS cid, c.name,
+                                   COALESCE(rc.ballot_order, 900) AS ord
+                              FROM race_candidates rc
+                              JOIN candidates c ON rc.candidate_id = c.id
+                              JOIN races ra ON ra.id = rc.race_id
+                              JOIN elections e ON ra.election_id = e.id
+                              JOIN offices o ON ra.office_id = o.id
+                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
+                               AND e.party = ? AND o.name = ?""",
+                         (party_full, office_name)):
+        cands.setdefault(r['race_id'], {})[r['cid']] = (r['name'], r['ord'])
+
+    votes = {}
+    for r in cur.execute("""SELECT res.race_id, res.municipality, res.candidate_id,
+                                   res.votes, c.name
+                              FROM results res
+                              JOIN candidates c ON c.id = res.candidate_id
+                              JOIN races ra ON ra.id = res.race_id
+                              JOIN elections e ON ra.election_id = e.id
+                              JOIN offices o ON ra.office_id = o.id
+                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
+                               AND e.party = ? AND o.name = ?""",
+                         (party_full, office_name)):
+        d = votes.setdefault(r['race_id'], {})
+        d.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
+        cands.setdefault(r['race_id'], {}).setdefault(r['candidate_id'], (r['name'], 950))
+    return {'races': races, 'cands': cands, 'votes': votes}
+
+
 def _compute_results(cur, office_name, level, county, district, party_full, party,
-                     with_precincts=True, demo=False):
+                     with_precincts=True, demo=False, bulk=None):
     """Full results + region-aware projection for one party's primary in a district."""
-    race = cur.execute("""
-        SELECT r.id AS id, r.seats AS seats FROM races r
-        JOIN elections e ON r.election_id = e.id
-        JOIN offices o   ON r.office_id = o.id
-        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ?
-          AND o.name = ? AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
-    """, (party_full, office_name, county, district)).fetchone()
+    if bulk is not None:
+        race = bulk['races'].get((county, district))
+    else:
+        race = cur.execute("""
+            SELECT r.id AS id, r.seats AS seats FROM races r
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o   ON r.office_id = o.id
+            WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ?
+              AND o.name = ? AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
+        """, (party_full, office_name, county, district)).fetchone()
     if not race:
         return {'exists': False, 'office': office_name, 'party': party, 'candidates': [],
                 'precincts': [], 'towns': [], 'seats': 1,
@@ -1142,7 +1195,12 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # and never on the roster. Filtering to filing_id > 0 hid every write-in vote
     # - including whole races where nobody filed and a write-in decides the
     # nomination, which is 30 State House seats and 2 State Senate seats this year.
-    cands = cur.execute("""SELECT cid, name, MIN(ord) AS ord FROM (
+    if bulk is not None:
+        pairs = sorted(bulk['cands'].get(race_id, {}).items(),
+                       key=lambda kv: (kv[1][1], kv[1][0]))
+        name_by_id = {cid: nm for cid, (nm, _o) in pairs}
+    else:
+        cands = cur.execute("""SELECT cid, name, MIN(ord) AS ord FROM (
                              SELECT c.id AS cid, c.name AS name,
                                     COALESCE(rc.ballot_order, 900) AS ord
                                FROM race_candidates rc
@@ -1155,11 +1213,13 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                               WHERE res.race_id = ?
                            ) GROUP BY cid, name
                            ORDER BY ord, name""", (race_id, race_id)).fetchall()
-    name_by_id = {c['cid']: c['name'] for c in cands}
+        name_by_id = {c['cid']: c['name'] for c in cands}
 
     precs = _precincts_for(cur, office_name, level, county, district)
     if demo:
         by_prec = _demo_results(precs, list(name_by_id.keys()), race_id)
+    elif bulk is not None:
+        by_prec = bulk['votes'].get(race_id, {})
     else:
         res = cur.execute("SELECT municipality, candidate_id, votes FROM results WHERE race_id = ?", (race_id,)).fetchall()
         by_prec = {}
@@ -1518,10 +1578,11 @@ def api_contested_board(office_key):
         HAVING {'ncand > 0 OR nvotes > 0' if scope_all else 'ncand > r.seats'}
     """, (party_full, office_name)).fetchall()
 
+    bulk = None if demo else _board_bulk(cur, office_name, party_full)
     board = []
     for row in rows:
         county, district = row['county'] or '', row['district'] or ''
-        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False, demo=demo)
+        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False, demo=demo, bulk=bulk)
         r['code'] = _district_code(level, county, district)
         board.append(r)
     conn.close()
