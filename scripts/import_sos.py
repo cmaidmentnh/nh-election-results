@@ -511,6 +511,134 @@ def house_votes(county, district, election_id, towns):
     return got
 
 
+# -------------------------------------------------- the county sheets -------
+
+COUNTY_OFFICE = {
+    "SHERIFF": "County Sheriff",
+    "ATTORNEY": "County Attorney",
+    "TREASURER": "County Treasurer",
+    "REGISTER OF DEEDS": "Register of Deeds",
+    "REGISTER OF PROBATE": "Register of Probate",
+    "COUNTY COMMISSIONERS": "County Commissioner",
+    "COUNTY COMMISSIONER": "County Commissioner",
+    "DELEGATES TO THE STATE CONVENTION": "Delegate to the State Convention",
+    "DELEGATE TO THE STATE CONVENTION": "Delegate to the State Convention",
+}
+
+
+def _office_of(label):
+    up = re.sub(r"\s+", " ", str(label or "")).strip().upper().rstrip(":")
+    return COUNTY_OFFICE.get(up)
+
+
+def parse_county_offices_xlsx(path, source=None):
+    """One county's county-office returns.
+
+    A third shape again. Offices run side by side across the page - Sheriff in
+    one span of columns, Attorney in the next - and those spans are stacked
+    down the sheet in blocks, each with its own header, towns and Totals row.
+
+    The only thing separating one race from its neighbour is the Write-Ins
+    column that ends it, and that is what this splits on. It matters most for
+    the commissioners, where the header says "County Commissioners" once and
+    the three districts that follow are unlabelled: cutting at the write-in
+    column is what tells Chandler's race from McGee's from Parker's.
+    """
+    import openpyxl
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+    grid = [list(r) for r in ws.iter_rows(values_only=True)]
+
+    m = re.search(r"county-offices-([a-z]+)-(republican|democratic)",
+                  str(source or path), re.I)
+    if not m:
+        return {"error": "no county in the file name"}
+    county = m.group(1).capitalize()
+
+    races, i = [], 0
+    while i < len(grid):
+        row = grid[i]
+        labels = [(j, _office_of(c)) for j, c in enumerate(row)
+                  if j and _office_of(c)]
+        if not labels:
+            i += 1
+            continue
+        # the candidate row usually follows the office row, but the
+        # commissioners block puts a spacer between them
+        head, hrow = None, None
+        for k in range(i + 1, min(i + 4, len(grid))):
+            if any(isinstance(c, str) and (re.search(r",\s*[rd]\s*$", c.strip())
+                                           or c.strip().lower().startswith("write"))
+                   for c in grid[k]):
+                head, hrow = grid[k], k
+                break
+        if head is None:
+            i += 1
+            continue
+
+        # cut the header into one race per write-in column
+        runs, start = [], None
+        for j, cell in enumerate(head):
+            if not isinstance(cell, str) or not cell.strip():
+                continue
+            if start is None:
+                start = j
+            if cell.strip().lower().startswith("write"):
+                runs.append((start, j))
+                start = None
+        if start is not None:
+            runs.append((start, len(head) - 1))
+
+        # the towns for this block
+        rows, k = [], hrow + 1
+        while k < len(grid):
+            label = grid[k][0]
+            if isinstance(label, str) and label.strip():
+                if label.strip().upper().startswith("TOTAL"):
+                    k += 1
+                    break
+                rows.append(grid[k])
+            elif _office_of(grid[k][1] if len(grid[k]) > 1 else None):
+                break
+            k += 1
+
+        for lo, hi in runs:
+            office = None
+            for j, name in labels:
+                if j <= lo:
+                    office = name
+            if not office:
+                continue
+            names, cols = [], []
+            for j in range(lo, hi + 1):
+                cell = head[j] if j < len(head) else None
+                if not isinstance(cell, str) or not cell.strip():
+                    continue
+                nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
+                names.append("Write-in" if nm.lower().startswith("write") else nm)
+                cols.append(j)
+            if len(names) < 2:      # a write-in column on its own is not a race
+                continue
+            town_rows = []
+            for r in rows:
+                figures = {}
+                for nm, j in zip(names, cols):
+                    v = r[j] if j < len(r) else None
+                    if isinstance(v, (int, float)):
+                        figures[nm] = int(v)
+                    elif isinstance(v, str) and re.fullmatch(r"[\d,]+", v.strip()):
+                        figures[nm] = int(v.replace(",", ""))
+                    else:
+                        figures[nm] = 0
+                town_rows.append((str(r[0]).strip(), figures))
+            races.append({"office": office, "candidates": names, "rows": town_rows})
+        i = k
+
+    if not races:
+        return {"error": "no office blocks on the sheet"}
+    return {"county": county, "races": races}
+
+
 # ------------------------------------------------------------ the check -----
 
 def municipalities():
@@ -793,6 +921,9 @@ def handle(source, path, party, apply, out_tsv=None):
     other = 30 if election_id == 29 else 29
     name = Path(source).name
 
+    if "county-offices" in Path(source).name.lower():
+        return handle_county_offices(source, path, party, apply, out_tsv)
+
     if "house" in Path(source).name.lower():
         return handle_house(source, path, party, apply, out_tsv)
 
@@ -976,6 +1107,75 @@ def handle_house(source, path, party, apply, out_tsv=None):
               + (f"   [{', '.join(f'{n} {m}->{x}' for n, m, x in moves[:3])}]" if moves else ""))
         done += 1
     print(f"{done} district(s) {'applied' if apply else 'checked'}, {held} held back")
+    return held == 0
+
+
+def handle_county_offices(source, path, party, apply, out_tsv=None):
+    """Apply one county's county-office sheet, one race at a time."""
+    election_id = PARTY_ELECTION[party]
+    got = parse_county_offices_xlsx(path, source)
+    name = Path(source).name
+    if got.get("error"):
+        print(f"REFUSED {name}: {got['error']}")
+        return False
+
+    county = got["county"]
+    print(f"\n=== {name}: {county} County offices - {party.title()}")
+    known = municipalities()
+    here = Path(__file__).resolve().parent
+    done = held = 0
+    seen = {}
+    for race in got["races"]:
+        office = race["office"]
+        seen[office] = seen.get(office, 0) + 1
+        tag = office + (f" #{seen[office]}" if office == "County Commissioner" else "")
+
+        mapped = {}
+        for town, _f in race["rows"]:
+            key = re.sub(r"[^A-Za-z0-9]", "", town).upper()
+            if key in known:
+                mapped[town] = known[key]
+        ours = our_votes(office, election_id, sorted(mapped.values()))
+
+        problems, moves = [], []
+        for n in race["candidates"]:
+            if n.lower().startswith("write"):
+                continue
+            mine = sum(v.get(n, 0) for v in ours.values())
+            sos = sum(f.get(n, 0) for t, f in race["rows"]
+                      if t in mapped and ours.get(mapped[t]))
+            if mine:
+                moves.append((n, mine, sos))
+                if sos < mine * 0.5 or sos > mine * 2 + 20:
+                    problems.append(f"{n}: ours {mine}, certified {sos}")
+        if problems:
+            print(f"  REFUSED {tag}: " + "; ".join(problems))
+            held += 1
+            continue
+
+        wrote = 0
+        for town, figures in race["rows"]:
+            db_town = mapped.get(town)
+            if not db_town:
+                continue
+            lines = [f"0\t{party}\t{office}\t{n}\t{v}" for n, v in figures.items()]
+            with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
+                fh.write("\n".join(lines) + "\n")
+                tsv = fh.name
+            cmd = [sys.executable, str(here / "apply_ward_report.py"),
+                   "--file", tsv, "--city", db_town]
+            if apply:
+                cmd.append("--apply")
+            out = subprocess.run(cmd, capture_output=True, text=True)
+            if "held back" in out.stdout:
+                sys.stdout.write(f"  {db_town} {tag}: "
+                                 + out.stdout.split("held back")[-1].strip()[:140] + "\n")
+            Path(tsv).unlink(missing_ok=True)
+            wrote += 1
+        print(f"  {tag}: {wrote} town(s) {'applied' if apply else 'dry run'}"
+              + (f"   [{', '.join(f'{n} {m}->{x}' for n, m, x in moves[:2])}]" if moves else ""))
+        done += 1
+    print(f"{done} race(s) {'applied' if apply else 'checked'}, {held} held back")
     return held == 0
 
 
