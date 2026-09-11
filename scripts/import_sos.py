@@ -1124,7 +1124,7 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
     known = municipalities()
     here = Path(__file__).resolve().parent
     done = held = 0
-    seen = {}
+    seen, per_town = {}, {}
     for race in got["races"]:
         office = race["office"]
         seen[office] = seen.get(office, 0) + 1
@@ -1153,29 +1153,36 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
             held += 1
             continue
 
-        wrote = 0
+        # the heading carries the district, so the three commissioner races can
+        # travel in the same report as the rest without being confused for one
+        # another - one call per town instead of one per town per race
+        heading = office + (f" District {seen[office]}"
+                            if office == "County Commissioner" else "")
         for town, figures in race["rows"]:
             db_town = mapped.get(town)
             if not db_town:
                 continue
-            lines = [f"0\t{party}\t{office}\t{n}\t{v}" for n, v in figures.items()]
-            with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
-                fh.write("\n".join(lines) + "\n")
-                tsv = fh.name
-            cmd = [sys.executable, str(here / "apply_ward_report.py"),
-                   "--file", tsv, "--city", db_town]
-            if apply:
-                cmd.append("--apply")
-            out = subprocess.run(cmd, capture_output=True, text=True)
-            if "held back" in out.stdout:
-                sys.stdout.write(f"  {db_town} {tag}: "
-                                 + out.stdout.split("held back")[-1].strip()[:140] + "\n")
-            Path(tsv).unlink(missing_ok=True)
-            wrote += 1
-        print(f"  {tag}: {wrote} town(s) {'applied' if apply else 'dry run'}"
+            per_town.setdefault(db_town, []).extend(
+                f"0\t{party}\t{heading}\t{n}\t{v}" for n, v in figures.items())
+        print(f"  {tag}: {len(mapped)} town(s) queued"
               + (f"   [{', '.join(f'{n} {m}->{x}' for n, m, x in moves[:2])}]" if moves else ""))
         done += 1
-    print(f"{done} race(s) {'applied' if apply else 'checked'}, {held} held back")
+
+    for db_town, lines in sorted(per_town.items()):
+        with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
+            fh.write("\n".join(lines) + "\n")
+            tsv = fh.name
+        cmd = [sys.executable, str(here / "apply_ward_report.py"),
+               "--file", tsv, "--city", db_town]
+        if apply:
+            cmd.append("--apply")
+        out = subprocess.run(cmd, capture_output=True, text=True)
+        if "held back" in out.stdout:
+            sys.stdout.write(f"  {db_town}: "
+                             + out.stdout.split("held back")[-1].strip()[:200] + "\n")
+        Path(tsv).unlink(missing_ok=True)
+    print(f"{done} race(s) {'applied' if apply else 'checked'} over "
+          f"{len(per_town)} town(s), {held} held back")
     return held == 0
 
 
