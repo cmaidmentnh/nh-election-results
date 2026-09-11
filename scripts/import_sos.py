@@ -748,6 +748,22 @@ def column_trouble(pairs):
     mid = ratios[len(ratios) // 2]
     if mid <= 0:
         return []
+
+    # Ratios that disagree are not automatically trouble. Our own figures are
+    # unevenly incomplete - Derry sent one page, so some candidates on that
+    # ballot are whole and others are half, and the certified sheet lifts the
+    # halves and leaves the rest. Every one of those moves up.
+    #
+    # A column on the wrong candidate cannot look like that: it takes votes off
+    # one name and puts them on another, so it moves figures in BOTH
+    # directions. That, or a ratio wildly adrift of the rest, is what this
+    # refuses.
+    up = [r for r in ratios if r > 1.25]
+    down = [r for r in ratios if r < 0.8]
+    wild = [r for r in ratios if r > mid * 5 or r < mid / 5]
+    if not ((up and down) or wild):
+        return []
+
     out = []
     for n, o, c in usable:
         r = c / o
