@@ -655,14 +655,20 @@ def parse_county_offices_xlsx(path, source=None):
 
 SENATE_TITLE = re.compile(r"^State Senate District\s+(\d+)\s+"
                           r"(Republican|Democratic)\s*$", re.I)
+COUNCIL_TITLE = re.compile(r"^Executive Council\s*-\s*District No\.\s*(\d+)\s+"
+                           r"(Republican|Democratic)\s*$", re.I)
 
 
-def parse_senate_xlsx(path, source=None):
-    """State Senate returns: the congressional shape, but stacked.
+def parse_senate_xlsx(path, source=None, title=None):
+    """State Senate and Executive Council returns: the congressional shape,
+    but stacked.
 
-    One file can hold two or three districts - 10 and 11 share a sheet - each
-    with its own title, header, towns and Totals row.
+    One file can hold two or three districts - State Senate 10 and 11 share a
+    sheet - each with its own title, header, towns and Totals row. Executive
+    Council is the same sheet with a different title line, so it comes through
+    here too.
     """
+    SENATE_TITLE_LOCAL = title or SENATE_TITLE
     import openpyxl
     wb = openpyxl.load_workbook(path, data_only=True)
     ws = wb[wb.sheetnames[0]]
@@ -670,12 +676,12 @@ def parse_senate_xlsx(path, source=None):
 
     blocks, i = [], 0
     while i < len(grid):
-        title = None
+        found = None
         for cell in grid[i]:
-            if isinstance(cell, str) and SENATE_TITLE.match(cell.strip()):
-                title = SENATE_TITLE.match(cell.strip())
+            if isinstance(cell, str) and SENATE_TITLE_LOCAL.match(cell.strip()):
+                found = SENATE_TITLE_LOCAL.match(cell.strip())
                 break
-        if not title:
+        if not found:
             i += 1
             continue
         head, hrow = None, None
@@ -698,7 +704,7 @@ def parse_senate_xlsx(path, source=None):
         rows, totals, k = [], {}, hrow + 1
         while k < len(grid):
             label = grid[k][0]
-            if isinstance(label, str) and SENATE_TITLE.match(label.strip()):
+            if isinstance(label, str) and SENATE_TITLE_LOCAL.match(label.strip()):
                 break
             if isinstance(label, str) and label.strip():
                 figures = {}
@@ -716,7 +722,7 @@ def parse_senate_xlsx(path, source=None):
                     break
                 rows.append((label.strip(), figures))
             k += 1
-        blocks.append({"district": title.group(1), "candidates": names,
+        blocks.append({"district": found.group(1), "candidates": names,
                        "rows": rows, "totals": totals})
         i = k
 
@@ -1055,6 +1061,10 @@ def handle(source, path, party, apply, out_tsv=None):
     other = 30 if election_id == 29 else 29
     name = Path(source).name
 
+    if "executive-council" in Path(source).name.lower():
+        return handle_senate(source, path, party, apply, out_tsv,
+                             office="Executive Councilor", title=COUNCIL_TITLE)
+
     if "state-senate" in Path(source).name.lower():
         return handle_senate(source, path, party, apply, out_tsv)
 
@@ -1331,16 +1341,17 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
     return held == 0
 
 
-def handle_senate(source, path, party, apply, out_tsv=None):
-    """Apply one State Senate sheet, district by district."""
+def handle_senate(source, path, party, apply, out_tsv=None,
+                  office="State Senator", title=None):
+    """Apply one State Senate or Executive Council sheet, district by district."""
     election_id = PARTY_ELECTION[party]
-    got = parse_senate_xlsx(path, source)
+    got = parse_senate_xlsx(path, source, title)
     name = Path(source).name
     if got.get("error"):
         print(f"REFUSED {name}: {got['error']}")
         return False
 
-    print(f"\n=== {name}: State Senate - {party.title()}")
+    print(f"\n=== {name}: {office} - {party.title()}")
     known = municipalities()
     here = Path(__file__).resolve().parent
     done = held = 0
@@ -1366,7 +1377,7 @@ def handle_senate(source, path, party, apply, out_tsv=None):
             key = re.sub(r"[^A-Za-z0-9]", "", town).upper()
             if key in known:
                 mapped[town] = known[key]
-        ours = our_votes("State Senator", election_id, sorted(mapped.values()),
+        ours = our_votes(office, election_id, sorted(mapped.values()),
                          b["district"])
         pairs, moves = [], []
         for n in b["candidates"]:
@@ -1383,7 +1394,7 @@ def handle_senate(source, path, party, apply, out_tsv=None):
             held += 1
             continue
 
-        heading = f"State Senator District {b['district']}"
+        heading = f"{office} District {b['district']}"
         wrote = 0
         for town, figures in b["rows"]:
             db_town = mapped.get(town)
