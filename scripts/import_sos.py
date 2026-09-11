@@ -484,6 +484,20 @@ def parse_house_xlsx(path, source=None):
             cur["rows"].append((label.strip(), figures))
     if not blocks:
         return {"error": "no district blocks on the sheet"}
+    # Derry prints three times in Rockingham 13, one row per polling place, and
+    # we hold Derry as one municipality. Left alone, each row would be applied
+    # in turn and the last would win, leaving the town with a third of its
+    # votes. Add them up instead.
+    for b in blocks:
+        merged, order = {}, []
+        for town, figures in b["rows"]:
+            if town not in merged:
+                merged[town] = dict(figures)
+                order.append(town)
+            else:
+                for k, v in figures.items():
+                    merged[town][k] = merged[town].get(k, 0) + v
+        b["rows"] = [(t, merged[t]) for t in order]
     return {"office": "State Representative", "county": county, "blocks": blocks}
 
 
@@ -637,6 +651,38 @@ def parse_county_offices_xlsx(path, source=None):
     if not races:
         return {"error": "no office blocks on the sheet"}
     return {"county": county, "races": races}
+
+
+def column_trouble(pairs):
+    """Does any column look like it belongs to a different candidate?
+
+    The original test - certified within half to double what we hold - was
+    built for the U.S. Senate sheets, where we already had every town. It is
+    the wrong test here, and it failed in both directions: Rochester filed a
+    whole floterial on Ward 1, so our ward figure was four times the certified
+    one, and Derry never sent its second page, so ours is half.
+
+    Neither is a mapping fault. A column on the wrong candidate moves one
+    figure and leaves the rest, so what gives it away is a candidate whose
+    ratio disagrees with everybody else's - not the size of the ratio. Small
+    figures are ignored: a write-in going from 6 to 1 says nothing.
+
+    `pairs` is (name, ours, certified). Returns a list of complaints.
+    """
+    usable = [(n, o, c) for n, o, c in pairs if o >= 25 and c >= 25]
+    if len(usable) < 2:
+        return []
+    ratios = sorted(c / o for _n, o, c in usable)
+    mid = ratios[len(ratios) // 2]
+    if mid <= 0:
+        return []
+    out = []
+    for n, o, c in usable:
+        r = c / o
+        if r > mid * 1.6 or r < mid / 1.6:
+            out.append(f"{n}: ours {o}, certified {c} "
+                       f"({r:.2f}x against {mid:.2f}x for the rest)")
+    return out
 
 
 # ------------------------------------------------------------ the check -----
@@ -1068,16 +1114,18 @@ def handle_house(source, path, party, apply, out_tsv=None):
 
         # a column on the wrong candidate is off by a multiple, so compare
         # what we already hold against what the sheet says for the same towns
-        moves, problems = [], []
+        # district totals, not town by town: a city that filed its whole
+        # district on one ward still totals the same across the district
+        moves, pairs = [], []
         for n in b["candidates"]:
             if n.lower().startswith("write"):
                 continue
             mine = sum(v.get(n, 0) for t, v in ours.items())
-            sos = sum(f.get(n, 0) for t, f in b["rows"] if t in mapped and ours.get(mapped[t]))
+            sos = sum(f.get(n, 0) for _t, f in b["rows"])
             if mine:
                 moves.append((n, mine, sos))
-                if sos < mine * 0.5 or sos > mine * 2 + 20:
-                    problems.append(f"{n}: ours {mine}, certified {sos}")
+                pairs.append((n, mine, sos))
+        problems = column_trouble(pairs)
         if problems:
             print(f"  REFUSED {tag}: " + "; ".join(problems))
             held += 1
@@ -1137,17 +1185,16 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
                 mapped[town] = known[key]
         ours = our_votes(office, election_id, sorted(mapped.values()))
 
-        problems, moves = [], []
+        moves, pairs = [], []
         for n in race["candidates"]:
             if n.lower().startswith("write"):
                 continue
             mine = sum(v.get(n, 0) for v in ours.values())
-            sos = sum(f.get(n, 0) for t, f in race["rows"]
-                      if t in mapped and ours.get(mapped[t]))
+            sos = sum(f.get(n, 0) for _t, f in race["rows"])
             if mine:
                 moves.append((n, mine, sos))
-                if sos < mine * 0.5 or sos > mine * 2 + 20:
-                    problems.append(f"{n}: ours {mine}, certified {sos}")
+                pairs.append((n, mine, sos))
+        problems = column_trouble(pairs)
         if problems:
             print(f"  REFUSED {tag}: " + "; ".join(problems))
             held += 1
