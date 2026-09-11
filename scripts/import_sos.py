@@ -653,6 +653,78 @@ def parse_county_offices_xlsx(path, source=None):
     return {"county": county, "races": races}
 
 
+SENATE_TITLE = re.compile(r"^State Senate District\s+(\d+)\s+"
+                          r"(Republican|Democratic)\s*$", re.I)
+
+
+def parse_senate_xlsx(path, source=None):
+    """State Senate returns: the congressional shape, but stacked.
+
+    One file can hold two or three districts - 10 and 11 share a sheet - each
+    with its own title, header, towns and Totals row.
+    """
+    import openpyxl
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+    grid = [list(r) for r in ws.iter_rows(values_only=True)]
+
+    blocks, i = [], 0
+    while i < len(grid):
+        title = None
+        for cell in grid[i]:
+            if isinstance(cell, str) and SENATE_TITLE.match(cell.strip()):
+                title = SENATE_TITLE.match(cell.strip())
+                break
+        if not title:
+            i += 1
+            continue
+        head, hrow = None, None
+        for k in range(i + 1, min(i + 4, len(grid))):
+            if any(isinstance(c, str) and (re.search(r",\s*[rd]\s*$", c.strip())
+                                           or c.strip().lower().startswith("write"))
+                   for c in grid[k]):
+                head, hrow = grid[k], k
+                break
+        if head is None:
+            i += 1
+            continue
+        names, cols = [], []
+        for j, cell in enumerate(head[1:], start=1):
+            if not isinstance(cell, str) or not cell.strip():
+                continue
+            nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
+            names.append("Write-in" if nm.lower().startswith("write") else nm)
+            cols.append(j)
+        rows, totals, k = [], {}, hrow + 1
+        while k < len(grid):
+            label = grid[k][0]
+            if isinstance(label, str) and SENATE_TITLE.match(label.strip()):
+                break
+            if isinstance(label, str) and label.strip():
+                figures = {}
+                for nm, j in zip(names, cols):
+                    v = grid[k][j] if j < len(grid[k]) else None
+                    if isinstance(v, (int, float)):
+                        figures[nm] = int(v)
+                    elif isinstance(v, str) and re.fullmatch(r"[\d,]+", v.strip()):
+                        figures[nm] = int(v.replace(",", ""))
+                    else:
+                        figures[nm] = 0
+                if label.strip().upper().startswith("TOTAL"):
+                    totals = figures
+                    k += 1
+                    break
+                rows.append((label.strip(), figures))
+            k += 1
+        blocks.append({"district": title.group(1), "candidates": names,
+                       "rows": rows, "totals": totals})
+        i = k
+
+    if not blocks:
+        return {"error": "no district titles on the sheet"}
+    return {"office": "State Senator", "blocks": blocks}
+
+
 def column_trouble(pairs):
     """Does any column look like it belongs to a different candidate?
 
@@ -766,7 +838,7 @@ def resolve_names(office, election_id, sheet_names, district=None):
     return out
 
 
-def our_votes(office, election_id, towns, district=None):
+def our_votes(office, election_id, towns, district=None):  # district: one race of several
     """What we currently hold for this race, by candidate and municipality."""
     dclause, dargs = district_clause(district)
     from intake import store
@@ -966,6 +1038,9 @@ def handle(source, path, party, apply, out_tsv=None):
     election_id = PARTY_ELECTION[party]
     other = 30 if election_id == 29 else 29
     name = Path(source).name
+
+    if "state-senate" in Path(source).name.lower():
+        return handle_senate(source, path, party, apply, out_tsv)
 
     if "county-offices" in Path(source).name.lower():
         return handle_county_offices(source, path, party, apply, out_tsv)
@@ -1230,6 +1305,79 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
         Path(tsv).unlink(missing_ok=True)
     print(f"{done} race(s) {'applied' if apply else 'checked'} over "
           f"{len(per_town)} town(s), {held} held back")
+    return held == 0
+
+
+def handle_senate(source, path, party, apply, out_tsv=None):
+    """Apply one State Senate sheet, district by district."""
+    election_id = PARTY_ELECTION[party]
+    got = parse_senate_xlsx(path, source)
+    name = Path(source).name
+    if got.get("error"):
+        print(f"REFUSED {name}: {got['error']}")
+        return False
+
+    print(f"\n=== {name}: State Senate - {party.title()}")
+    known = municipalities()
+    here = Path(__file__).resolve().parent
+    done = held = 0
+    for b in got["blocks"]:
+        tag = f"District {b['district']}"
+        if b["totals"]:
+            bad = [(n, sum(f.get(n, 0) for _t, f in b["rows"]), b["totals"].get(n, 0))
+                   for n in b["candidates"]
+                   if sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"].get(n, 0)]
+            if bad:
+                print(f"  REFUSED {tag}: town rows do not make the printed total: {bad}")
+                held += 1
+                continue
+
+        mapped = {}
+        for town, _f in b["rows"]:
+            key = re.sub(r"[^A-Za-z0-9]", "", town).upper()
+            if key in known:
+                mapped[town] = known[key]
+        ours = our_votes("State Senator", election_id, sorted(mapped.values()),
+                         b["district"])
+        pairs, moves = [], []
+        for n in b["candidates"]:
+            if n.lower().startswith("write"):
+                continue
+            mine = sum(v.get(n, 0) for v in ours.values())
+            sos = sum(f.get(n, 0) for _t, f in b["rows"])
+            if mine:
+                moves.append((n, mine, sos))
+                pairs.append((n, mine, sos))
+        problems = column_trouble(pairs)
+        if problems:
+            print(f"  REFUSED {tag}: " + "; ".join(problems))
+            held += 1
+            continue
+
+        heading = f"State Senator District {b['district']}"
+        wrote = 0
+        for town, figures in b["rows"]:
+            db_town = mapped.get(town)
+            if not db_town:
+                continue
+            lines = [f"0\t{party}\t{heading}\t{n}\t{v}" for n, v in figures.items()]
+            with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
+                fh.write("\n".join(lines) + "\n")
+                tsv = fh.name
+            cmd = [sys.executable, str(here / "apply_ward_report.py"),
+                   "--file", tsv, "--city", db_town]
+            if apply:
+                cmd.append("--apply")
+            out = subprocess.run(cmd, capture_output=True, text=True)
+            if "held back" in out.stdout:
+                sys.stdout.write(f"  {db_town} {tag}: "
+                                 + out.stdout.split("held back")[-1].strip()[:140] + "\n")
+            Path(tsv).unlink(missing_ok=True)
+            wrote += 1
+        print(f"  {tag}: {wrote} town(s) {'applied' if apply else 'dry run'}"
+              + (f"   [{', '.join(f'{n} {m}->{x}' for n, m, x in moves[:2])}]" if moves else ""))
+        done += 1
+    print(f"{done} district(s) {'applied' if apply else 'checked'}, {held} held back")
     return held == 0
 
 
