@@ -1170,10 +1170,17 @@ def handle_house(source, path, party, apply, out_tsv=None):
         tag = f"{county} {b['district']}" + (" (floterial)" if b["floterial"] else "")
         # the sheet's own arithmetic first: the town rows have to make the
         # Totals row the sheet prints, or the columns are not what they say
-        if b["totals"]:
+        # Only against figures the sheet actually printed. Hillsborough 2, 12
+        # and 13 leave every candidate cell of their Totals row empty and fill
+        # in only the write-in column, and an empty cell is not a claim that
+        # the district cast no votes. Strafford 3 still fails this, because
+        # there the printed total is a real number and the rows do not reach
+        # it.
+        if b["totals"] and any(b["totals"].get(n, 0) for n in b["candidates"]):
             bad = [(n, sum(f.get(n, 0) for _t, f in b["rows"]), b["totals"].get(n, 0))
                    for n in b["candidates"]
-                   if sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"].get(n, 0)]
+                   if b["totals"].get(n, 0)
+                   and sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"][n]]
             if bad:
                 print(f"  REFUSED {tag}: town rows do not make the printed total: {bad}")
                 held += 1
@@ -1323,10 +1330,16 @@ def handle_senate(source, path, party, apply, out_tsv=None):
     done = held = 0
     for b in got["blocks"]:
         tag = f"District {b['district']}"
-        if b["totals"]:
+        # Only against figures the sheet actually printed. Some sheets leave every candidate cell of their Totals row empty and fill
+        # in only the write-in column, and an empty cell is not a claim that
+        # the district cast no votes. Strafford 3 still fails this, because
+        # there the printed total is a real number and the rows do not reach
+        # it.
+        if b["totals"] and any(b["totals"].get(n, 0) for n in b["candidates"]):
             bad = [(n, sum(f.get(n, 0) for _t, f in b["rows"]), b["totals"].get(n, 0))
                    for n in b["candidates"]
-                   if sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"].get(n, 0)]
+                   if b["totals"].get(n, 0)
+                   and sum(f.get(n, 0) for _t, f in b["rows"]) != b["totals"][n]]
             if bad:
                 print(f"  REFUSED {tag}: town rows do not make the printed total: {bad}")
                 held += 1
