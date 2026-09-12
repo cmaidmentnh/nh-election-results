@@ -27,6 +27,8 @@ def main():
     ap.add_argument("--race", type=int, required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--party")
+    ap.add_argument("--writein", action="store_true",
+                    help="a write-in the certified sheet names, not a ballot candidate")
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
@@ -50,9 +52,14 @@ def main():
         cur.execute("""INSERT INTO candidates (name, name_normalized, party)
                        VALUES (?,?,?)""", (args.name, normalized, args.party))
         cand_id = cur.lastrowid
+    # -2 marks a write-in the Secretary of State itemised: a real result under
+    # a real name, but not somebody who was printed on the ballot. It shows on
+    # the page as a candidate, labelled, where -1 (a name the old feed recorded
+    # beside an aggregate figure) is folded into the write-in line.
+    filing = -2 if args.writein else 0
     cur.execute("""INSERT OR IGNORE INTO race_candidates
                        (race_id, candidate_id, party, recruitment_filing_id)
-                   VALUES (?,?,?,0)""", (args.race, cand_id, args.party))
+                   VALUES (?,?,?,?)""", (args.race, cand_id, args.party, filing))
     conn.commit()
     print(f"candidate id {cand_id} on race {args.race}")
 

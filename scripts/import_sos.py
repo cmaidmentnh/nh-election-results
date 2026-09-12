@@ -181,6 +181,24 @@ def split_row(row, cols):
 
 # ----------------------------------------------------------- the ballot -----
 
+def column_name(cell):
+    """The candidate a column belongs to, and whether they are a write-in.
+
+    The Secretary of State itemises a write-in once they have enough votes to
+    be worth naming - Gilford's county treasurer column reads "Travis O'Hara
+    WRITE-IN" against 122 votes, where the filed candidate took 7. Those are
+    real results and belong under the person's name, not swept into the
+    aggregate write-in line with the Donald Ducks.
+    """
+    txt = re.sub(r",\s*[rd]\s*$", "", str(cell or "").strip()).strip()
+    if re.fullmatch(r"write[\s-]?ins?", txt, re.I):
+        return "Write-in", False
+    m = re.search(r"\s+WRITE[\s-]?IN\s*$", txt, re.I)
+    if m:
+        return txt[:m.start()].strip(), True
+    return txt, False
+
+
 def race_clause(district, county=None):
     """Narrow to one race. State Representative districts are numbered per
     county - Carroll 4 and Strafford 4 are different races - so the county has
@@ -453,7 +471,7 @@ def parse_house_xlsx(path, source=None):
               if m.group(1).lower() == "delegate" else "State Representative")
     county = m.group(2).capitalize()
 
-    blocks, cur = [], None
+    blocks, cur, writeins = [], None, set()
     for row in grid:
         label = row[0] if row and isinstance(row[0], str) else None
         head = HOUSE_BLOCK.match(label.strip()) if label else None
@@ -462,8 +480,10 @@ def parse_house_xlsx(path, source=None):
             for j, cell in enumerate(row[1:], start=1):
                 if not isinstance(cell, str) or not cell.strip():
                     continue
-                nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
-                names.append("Write-in" if nm.lower().startswith("write") else nm)
+                nm, wi = column_name(cell)
+                names.append(nm)
+                if wi:
+                    writeins.add(nm)
                 cols.append(j)
             cur = {"district": head.group(1), "seats": int(head.group(2)),
                    "floterial": bool(head.group(3)), "candidates": names,
@@ -534,7 +554,8 @@ def parse_house_xlsx(path, source=None):
                 for k, v in figures.items():
                     merged[town][k] = max(merged[town].get(k, 0), v)
         b["rows"] = [(t, merged[t]) for t in order]
-    return {"office": office, "county": county, "blocks": blocks}
+    return {"office": office, "county": county, "blocks": blocks,
+            "writeins": writeins}
 
 
 def house_votes(county, district, election_id, towns, office='State Representative'):
@@ -605,7 +626,7 @@ def parse_county_offices_xlsx(path, source=None):
         return {"error": "no county in the file name"}
     county = m.group(1).capitalize()
 
-    races, i = [], 0
+    races, writeins, i = [], set(), 0
     while i < len(grid):
         row = grid[i]
         labels = [(j, _office_of(c)) for j, c in enumerate(row)
@@ -664,8 +685,10 @@ def parse_county_offices_xlsx(path, source=None):
                 cell = head[j] if j < len(head) else None
                 if not isinstance(cell, str) or not cell.strip():
                     continue
-                nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
-                names.append("Write-in" if nm.lower().startswith("write") else nm)
+                nm, wi = column_name(cell)
+                names.append(nm)
+                if wi:
+                    writeins.add(nm)
                 cols.append(j)
             if len(names) < 2:      # a write-in column on its own is not a race
                 continue
@@ -686,7 +709,7 @@ def parse_county_offices_xlsx(path, source=None):
 
     if not races:
         return {"error": "no office blocks on the sheet"}
-    return {"county": county, "races": races}
+    return {"county": county, "races": races, "writeins": writeins}
 
 
 SENATE_TITLE = re.compile(r"^State Senate District\s+(\d+)\s+"
@@ -710,7 +733,7 @@ def parse_senate_xlsx(path, source=None, title=None):
     ws = wb[wb.sheetnames[0]]
     grid = [list(r) for r in ws.iter_rows(values_only=True)]
 
-    blocks, i = [], 0
+    blocks, writeins, i = [], set(), 0
     while i < len(grid):
         found = None
         for cell in grid[i]:
@@ -734,8 +757,10 @@ def parse_senate_xlsx(path, source=None, title=None):
         for j, cell in enumerate(head[1:], start=1):
             if not isinstance(cell, str) or not cell.strip():
                 continue
-            nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
-            names.append("Write-in" if nm.lower().startswith("write") else nm)
+            nm, wi = column_name(cell)
+            names.append(nm)
+            if wi:
+                writeins.add(nm)
             cols.append(j)
         rows, totals, k = [], {}, hrow + 1
         while k < len(grid):
@@ -764,7 +789,7 @@ def parse_senate_xlsx(path, source=None, title=None):
 
     if not blocks:
         return {"error": "no district titles on the sheet"}
-    return {"office": "State Senator", "blocks": blocks}
+    return {"office": "State Senator", "blocks": blocks, "writeins": writeins}
 
 
 def column_trouble(pairs):
@@ -833,9 +858,9 @@ def municipalities():
     return got
 
 
-def race_roll(office, election_id, district=None):
+def race_roll(office, election_id, district=None, county=None):
     """Every name on this race, ballot or written in, with its race id."""
-    dclause, dargs = district_clause(district)
+    dclause, dargs = race_clause(district, county)
     from intake import store
     conn = store.connect()
     cur = conn.cursor()
@@ -1076,16 +1101,19 @@ def apply_county(got, party, mapped, resolved, ours, ballot, apply):
     return done
 
 
-def add_missing(office, election_id, names, party, apply, district=None):
+def add_missing(office, election_id, names, party, apply, district=None,
+                county=None, writeins=()):
     """Put a certified name we do not carry onto the race, so it can be read."""
     here = Path(__file__).resolve().parent
-    roll = race_roll(office, election_id, district)
+    roll = race_roll(office, election_id, district, county)
     if not roll:
         return
     race_id = roll[0][0]
     for name in names:
         cmd = [sys.executable, str(here / "add_ballot_candidate.py"),
                "--race", str(race_id), "--name", name, "--party", party.title()]
+        if name in writeins:
+            cmd.append("--writein")
         if apply:
             cmd.append("--apply")
         out = subprocess.run(cmd, capture_output=True, text=True)
@@ -1275,6 +1303,15 @@ def handle_house(source, path, party, apply, out_tsv=None):
             held += 1
             continue
 
+        roll_names = {norm(n) for _r, n, _f in
+                      race_roll(got["office"], election_id, b["district"], county)}
+        wanted = [n for n in b["candidates"]
+                  if not n.lower().startswith("write") and norm(n) not in roll_names]
+        if wanted:
+            add_missing(got["office"], election_id, wanted, party, apply,
+                        district=b["district"], county=county,
+                        writeins=got.get("writeins", set()))
+
         wrote = 0
         for town, figures in b["rows"]:
             db_town = mapped.get(town)
@@ -1328,6 +1365,9 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
             if key in known:
                 mapped[town] = known[key]
         ours = our_votes(office, election_id, sorted(mapped.values()))
+        roll_names = [n for _r, n, _f in race_roll(
+            office, election_id,
+            str(seen[office]) if office == "County Commissioner" else None, county)]
 
         moves, pairs = [], []
         for n in race["candidates"]:
@@ -1343,6 +1383,19 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
             print(f"  REFUSED {tag}: " + "; ".join(problems))
             held += 1
             continue
+
+        # A certified column we do not carry is not noise to skip: the
+        # Secretary of State names a write-in once they have the votes to be
+        # worth naming, and in Gilford that write-in beat the filed candidate
+        # 122 to 7. Put the name on the race first, so its figures land under
+        # it instead of stranding the whole race.
+        wanted = [n for n in race["candidates"]
+                  if not n.lower().startswith("write")
+                  and norm(n) not in {norm(x) for x in roll_names}]
+        if wanted:
+            add_missing(office, election_id, wanted, party, apply,
+                        district=(str(seen[office]) if office == "County Commissioner" else None),
+                        county=county, writeins=got.get("writeins", set()))
 
         # the heading carries the district, so the three commissioner races can
         # travel in the same report as the rest without being confused for one
