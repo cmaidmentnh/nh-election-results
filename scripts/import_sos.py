@@ -467,8 +467,31 @@ def parse_house_xlsx(path, source=None):
                 cols.append(j)
             cur = {"district": head.group(1), "seats": int(head.group(2)),
                    "floterial": bool(head.group(3)), "candidates": names,
-                   "cols": cols, "rows": [], "totals": {}}
+                   "cols": cols, "rows": [], "totals": {}, "seg": 0}
             blocks.append(cur)
+            continue
+
+        # A district with more candidates than the sheet is wide wraps: eight
+        # names on the header row, the town's figures, then a headerless row
+        # carrying the ninth and tenth, and the town again beneath it. Salem
+        # elects nine delegates from ten candidates and does exactly this.
+        # Read as an ordinary town row, that second line put Brian Thornock's
+        # 1,491 onto Barretto and Jaime's 1,378 onto Conte, turning 1,546 and
+        # 1,515 into 3,037 and 2,893.
+        if cur is not None and (label is None or not str(label).strip()):
+            more = [(j, c) for j, c in enumerate(row)
+                    if j and isinstance(c, str) and c.strip()
+                    and (re.search(r",\s*[rd]\s*$", c.strip())
+                         or c.strip().lower().startswith("write"))]
+            if more:
+                keep = {j: n for j, n in zip(cur["cols"], cur["candidates"])
+                        if j not in {j for j, _c in more}}
+                for j, cell in more:
+                    nm = re.sub(r",\s*[rd]\s*$", "", cell.strip()).strip()
+                    keep[j] = "Write-in" if nm.lower().startswith("write") else nm
+                cur["cols"] = sorted(keep)
+                cur["candidates"] = [keep[j] for j in cur["cols"]]
+                cur["seg"] += 1
             continue
         if cur is None or not label or not label.strip():
             continue
@@ -482,9 +505,9 @@ def parse_house_xlsx(path, source=None):
             else:
                 figures[nm] = 0
         if label.strip().lower().startswith("total"):
-            cur["totals"] = figures
+            cur["totals"].update(figures)
         else:
-            cur["rows"].append((label.strip(), figures))
+            cur["rows"].append((label.strip(), figures, cur["seg"]))
     if not blocks:
         return {"error": "no district blocks on the sheet"}
     # Derry prints three times in Rockingham 13, one row per polling place, and
@@ -492,14 +515,24 @@ def parse_house_xlsx(path, source=None):
     # in turn and the last would win, leaving the town with a third of its
     # votes. Add them up instead.
     for b in blocks:
-        merged, order = {}, []
-        for town, figures in b["rows"]:
+        merged, seen_seg, order = {}, {}, []
+        for town, figures, seg in b["rows"]:
             if town not in merged:
                 merged[town] = dict(figures)
+                seen_seg[town] = {seg}
                 order.append(town)
-            else:
+            elif seg in seen_seg[town]:
+                # the same town twice under the same header: Derry prints one
+                # row per polling place, and those add up
                 for k, v in figures.items():
                     merged[town][k] = merged[town].get(k, 0) + v
+            else:
+                # a wrapped header: different candidates, so they sit side by
+                # side, and a column both halves carry (the write-in total) is
+                # one statement of the same number, not two
+                seen_seg[town].add(seg)
+                for k, v in figures.items():
+                    merged[town][k] = max(merged[town].get(k, 0), v)
         b["rows"] = [(t, merged[t]) for t in order]
     return {"office": office, "county": county, "blocks": blocks}
 
