@@ -42,6 +42,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -86,6 +87,27 @@ def fetch(url, referer=None):
         headers["Referer"] = referer
     req = urllib.request.Request(url, headers=headers)
     return urllib.request.urlopen(req, timeout=60).read()
+
+
+def fetch_sheet(url, referer=None):
+    """Fetch a published sheet, allowing for the Secretary of State's
+    re-upload suffix.
+
+    A file replaced after it was first posted keeps the old name with _0 on the
+    end, and only that copy is linked. Coos's Democratic House returns are
+    2026-sp-house-coos-democratic_0.xlsx and Belknap's Democratic Senate the
+    same, so every run that asked for the plain name got a 404 and skipped a
+    whole county without saying so.
+    """
+    try:
+        return fetch(url, referer)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404 or not url.lower().endswith(".xlsx"):
+            raise
+    alt = url[:-5] + "_0.xlsx"
+    data = fetch(alt, referer)
+    print(f"  (published as {alt.rsplit('/', 1)[-1]})")
+    return data
 
 
 def list_documents():
@@ -647,18 +669,37 @@ def parse_county_offices_xlsx(path, source=None):
             i += 1
             continue
 
-        # cut the header into one race per write-in column
-        runs, start = [], None
-        for j, cell in enumerate(head):
-            if not isinstance(cell, str) or not cell.strip():
-                continue
-            if start is None:
-                start = j
-            if cell.strip().lower().startswith("write"):
-                runs.append((start, j))
-                start = None
-        if start is not None:
-            runs.append((start, len(head) - 1))
+        # Cut the header into one race per write-in column. Coos needs more
+        # than that: its second commissioner district had no election, so it
+        # has no write-in column of its own and districts 2 and 3 ran together.
+        # Where the sheet prints a District row above the names, that decides
+        # the cuts instead.
+        dist_row = None
+        for k in range(i + 1, min(hrow + 1, len(grid))):
+            marks = [(j, c) for j, c in enumerate(grid[k])
+                     if isinstance(c, str)
+                     and re.fullmatch(r"District\s*(No\.)?\s*\d+", c.strip(), re.I)]
+            if len(marks) > 1:
+                dist_row = marks
+                break
+
+        runs = []
+        if dist_row:
+            bounds = [j for j, _c in dist_row] + [len(head)]
+            for a, b in zip(bounds, bounds[1:]):
+                runs.append((a, b - 1))
+        else:
+            start = None
+            for j, cell in enumerate(head):
+                if not isinstance(cell, str) or not cell.strip():
+                    continue
+                if start is None:
+                    start = j
+                if cell.strip().lower().startswith("write"):
+                    runs.append((start, j))
+                    start = None
+            if start is not None:
+                runs.append((start, len(head) - 1))
 
         # the towns for this block
         rows, k = [], hrow + 1
@@ -686,6 +727,8 @@ def parse_county_offices_xlsx(path, source=None):
                 if not isinstance(cell, str) or not cell.strip():
                     continue
                 nm, wi = column_name(cell)
+                if re.fullmatch(r"no\s*election", nm, re.I):
+                    continue
                 names.append(nm)
                 if wi:
                     writeins.add(nm)
@@ -704,7 +747,14 @@ def parse_county_offices_xlsx(path, source=None):
                     else:
                         figures[nm] = 0
                 town_rows.append((str(r[0]).strip(), figures))
-            races.append({"office": office, "candidates": names, "rows": town_rows})
+            dist = ""
+            if dist_row:
+                for j, cell in dist_row:
+                    if j <= lo:
+                        mm = re.search(r"(\d+)", cell)
+                        dist = mm.group(1) if mm else ""
+            races.append({"office": office, "candidates": names,
+                          "rows": town_rows, "district": dist})
         i = k
 
     if not races:
@@ -1357,7 +1407,12 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
     for race in got["races"]:
         office = race["office"]
         seen[office] = seen.get(office, 0) + 1
-        tag = office + (f" #{seen[office]}" if office == "County Commissioner" else "")
+        # the district the sheet prints, where it prints one - Coos skips its
+        # second commissioner district entirely, so counting the runs would put
+        # district 3's candidates under district 2
+        dist = race.get("district") or (str(seen[office])
+                                        if office == "County Commissioner" else "")
+        tag = office + (f" District {dist}" if dist else "")
 
         mapped = {}
         for town, _f in race["rows"]:
@@ -1366,8 +1421,7 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
                 mapped[town] = known[key]
         ours = our_votes(office, election_id, sorted(mapped.values()))
         roll_names = [n for _r, n, _f in race_roll(
-            office, election_id,
-            str(seen[office]) if office == "County Commissioner" else None, county)]
+            office, election_id, dist or None, county)]
 
         moves, pairs = [], []
         for n in race["candidates"]:
@@ -1394,14 +1448,13 @@ def handle_county_offices(source, path, party, apply, out_tsv=None):
                   and norm(n) not in {norm(x) for x in roll_names}]
         if wanted:
             add_missing(office, election_id, wanted, party, apply,
-                        district=(str(seen[office]) if office == "County Commissioner" else None),
+                        district=(dist or None),
                         county=county, writeins=got.get("writeins", set()))
 
         # the heading carries the district, so the three commissioner races can
         # travel in the same report as the rest without being confused for one
         # another - one call per town instead of one per town per race
-        heading = office + (f" District {seen[office]}"
-                            if office == "County Commissioner" else "")
+        heading = office + (f" District {dist}" if dist else "")
         for town, figures in race["rows"]:
             db_town = mapped.get(town)
             if not db_town:
@@ -1555,7 +1608,7 @@ def main():
         if page:
             suffix = ".xlsx" if source.lower().endswith(".xlsx") else ".pdf"
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as fh:
-                fh.write(fetch(source, page))
+                fh.write(fetch_sheet(source, page))
                 path = fh.name
         else:
             path = source
