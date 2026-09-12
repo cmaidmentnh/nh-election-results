@@ -890,11 +890,12 @@ def _recounts():
     until it is held - but a race going to one is not settled either, and the
     page should say so rather than show a winner and stop.
     """
-    path = Path(__file__).resolve().parent / 'data' / 'recounts.json'
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'data', 'recounts.json')
     try:
         with open(path) as fh:
             return json.load(fh).get('recounts', [])
-    except Exception:
+    except (OSError, ValueError):
         return []
 
 
