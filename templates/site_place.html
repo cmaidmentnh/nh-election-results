@@ -1,0 +1,104 @@
+{% extends "site_base.html" %}
+{% set active = 'places' %}
+{% block title %}{{ name }} — 2026 NH Primary results{% endblock %}
+{% block meta_description %}Every 2026 New Hampshire state primary result for {{ name }}: Republican and Democratic figures for every office on the ballot.{% endblock %}
+
+{% block content %}
+<main class="w">
+  <section class="lead">
+    <div>
+      <h1 id="ttl">{{ name }}</h1>
+      <p id="sub">Every race on the 2026 state primary ballot here, both parties.</p>
+    </div>
+  </section>
+
+  <div class="filters">
+    <input type="search" id="q" class="srch" autocomplete="off" spellcheck="false"
+           placeholder="Search an office or candidate">
+    <div class="seg" id="party"></div>
+  </div>
+
+  <div id="places"></div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const KIND = {{ kind|tojson }}, NAME = {{ name|tojson }};
+const nf = new Intl.NumberFormat('en-US');
+const esc = t => String(t ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PARTY = {R:'Republican', D:'Democratic'};
+let RACES = [], P = '', Q = '';
+
+function label(r){
+  if(r.district && r.county) return `${r.county} ${r.district}`;
+  if(r.district) return `District ${r.district}`;
+  return r.county || '';
+}
+function tag(r){
+  if(r.recount) return '<span class="tag close">Recount</span>';
+  if(r.certified) return '<span class="tag called">Certified</span>';
+  return '';
+}
+function card(r){
+  const top = Math.max(1, ...r.candidates.map(c=>c.votes));
+  const rows = r.candidates.map((c,i)=>{
+    const w = i < r.seats && c.name !== 'Write-in';
+    return `<div class="row ${w?'win':''}">
+      <div class="nm">${esc(c.name)}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="vt"><b>${nf.format(c.votes)}</b> <span>${
+        r.total ? (100*c.votes/r.total).toFixed(1) : '0.0'}%</span></div>
+      <div class="bar"><i class="v" style="width:${Math.round(100*c.votes/top)}%"></i></div>
+    </div>`;}).join('');
+  const where = label(r);
+  const link = r.office_key
+    ? `/contested#office=${r.office_key}&party=${r.party}&scope=all&code=${encodeURIComponent(r.code)}`
+    : '';
+  return `<div class="col ${r.party}">
+    <div class="colhead"><span class="pty">${PARTY[r.party]||r.party}</span>${tag(r)}</div>
+    ${rows}
+    <div class="foot"><span>${nf.format(r.total)} votes${
+      r.seats>1?` · ${r.seats} seats`:''}</span>${
+      link?`<span><a href="${link}">town by town →</a></span>`:''}</div>
+  </div>`;
+}
+
+function render(){
+  const q = Q.toLowerCase();
+  const groups = {};
+  RACES.forEach(r=>{
+    if(P && r.party !== P) return;
+    const hay = (r.office+' '+label(r)+' '+r.candidates.map(c=>c.name).join(' ')).toLowerCase();
+    if(q && !hay.includes(q)) return;
+    const k = r.office + '|' + label(r);
+    (groups[k] = groups[k] || []).push(r);
+  });
+  const keys = Object.keys(groups);
+  document.getElementById('places').innerHTML = keys.length ? keys.map(k=>{
+    const [office, where] = k.split('|');
+    return `<section class="race">
+      <h2 class="rh">${esc(office)}${where?` <span class="s">${esc(where)}</span>`:''}</h2>
+      <div class="cols">${groups[k].map(card).join('')}</div>
+    </section>`;
+  }).join('') : `<div class="dm" style="padding:26px 0">Nothing matching “${esc(Q)}”.</div>`;
+}
+
+function buildParty(){
+  const have = [...new Set(RACES.map(r=>r.party))].sort();
+  document.getElementById('party').innerHTML =
+    [['','Both'],...have.map(p=>[p,PARTY[p]])]
+      .map(([v,l])=>`<button data-p="${v}" class="${v===P?'on':''}">${l}</button>`).join('');
+  document.querySelectorAll('#party button').forEach(b=>b.onclick=()=>{
+    P=b.dataset.p; buildParty(); render();});
+}
+
+fetch(`/api/place/${KIND}/${encodeURIComponent(NAME)}`).then(r=>r.json()).then(d=>{
+  RACES = d.races || [];
+  document.getElementById('sub').textContent =
+    `${RACES.length} race${RACES.length===1?'':'s'} on the 2026 state primary ballot here, both parties.`;
+  buildParty(); render();
+});
+document.getElementById('q').addEventListener('input', e=>{Q=e.target.value.trim(); render();});
+</script>
+{% endblock %}

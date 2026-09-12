@@ -827,6 +827,83 @@ def contested_map():
     return render_template('site_races.html', live_mode=live, demo=demo)
 
 
+@app.route('/results/town/<path:name>')
+def site_town(name):
+    """Every 2026 primary result for one town."""
+    return render_template('site_place.html', kind='town', name=name,
+                           demo=request.args.get('demo') == '1')
+
+
+@app.route('/results/county/<path:name>')
+def site_county(name):
+    """Every 2026 primary result for one county."""
+    return render_template('site_place.html', kind='county', name=name,
+                           demo=request.args.get('demo') == '1')
+
+
+@app.route('/api/place/<kind>/<path:name>')
+def api_place(kind, name):
+    """Every 2026 primary result for one town, or one county.
+
+    The board answers "how did this race go". This answers the other question -
+    "how did this place vote" - which until now needed a district number you
+    had to know in advance.
+    """
+    if kind not in ('town', 'county'):
+        return jsonify({'error': 'unknown place'}), 404
+    conn = _contested_db()
+    cur = conn.cursor()
+
+    if kind == 'town':
+        where, args = "res.municipality = ?", (name,)
+    else:
+        where, args = "IFNULL(ra.county,'') = ?", (name,)
+
+    rows = cur.execute(f"""
+        SELECT o.name AS office, IFNULL(ra.county,'') AS county,
+               IFNULL(ra.district,'') AS district, e.party AS party,
+               ra.seats AS seats, ra.id AS race_id,
+               c.name AS cand, SUM(res.votes) AS votes,
+               IFNULL(rc.ballot_order, 900) AS ord
+          FROM results res
+          JOIN races ra ON ra.id = res.race_id
+          JOIN offices o ON o.id = ra.office_id
+          JOIN elections e ON e.id = ra.election_id
+          JOIN candidates c ON c.id = res.candidate_id
+          LEFT JOIN race_candidates rc
+                 ON rc.race_id = ra.id AND rc.candidate_id = c.id
+         WHERE e.year = 2026 AND e.election_type = 'state_primary' AND {where}
+         GROUP BY ra.id, c.id
+         ORDER BY o.name, ra.district, e.party, votes DESC""", args)
+
+    certified = _certified_races(cur)
+    races, order = {}, []
+    for r in rows:
+        key = (r['office'], r['county'], r['district'], r['party'])
+        if key not in races:
+            rc = _recount_for(r['office'], r['county'], r['district'], r['party'])
+            level = next((lv for k, (nm, lv) in CONTESTED_OFFICES.items()
+                          if nm == r['office']), 'house')
+            races[key] = {
+                'office': r['office'], 'county': r['county'], 'district': r['district'],
+                'party': r['party'][:1], 'seats': r['seats'],
+                'code': _district_code(level, r['county'], r['district']),
+                'office_key': next((k for k, (nm, _lv) in CONTESTED_OFFICES.items()
+                                    if nm == r['office']), ''),
+                'certified': r['race_id'] in certified,
+                'recount': rc, 'candidates': [], 'total': 0,
+            }
+            order.append(key)
+        races[key]['candidates'].append({'name': r['cand'], 'votes': r['votes']})
+        races[key]['total'] += r['votes']
+    conn.close()
+
+    out = [races[k] for k in order]
+    for r in out:
+        r['candidates'].sort(key=lambda c: -c['votes'])
+    return jsonify({'kind': kind, 'name': name, 'races': out})
+
+
 @app.route('/api/contested/<office_key>')
 def api_contested(office_key):
     """Per-district contested status for an office in the 2026 primary."""
