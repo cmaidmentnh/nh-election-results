@@ -201,6 +201,15 @@ footer.f p{margin:4px 0;max-width:80ch}
 #nhmap{height:clamp(340px,60vh,660px)}
 /* Below the map, not floating on it - an overlaid legend and a cursor-anchored
    hovercard will always collide eventually. */
+/* The search box sits first in the filter row and takes the width it can get,
+   dropping to full width on a phone where the office tabs already wrap. */
+.srch{font:400 13px/1.3 var(--sans);color:var(--ink);background:var(--paper);
+      border:1px solid var(--hair);border-radius:2px;padding:6px 9px;
+      min-width:210px;flex:0 1 260px;margin-right:4px}
+.srch:focus{outline:2px solid var(--ink);outline-offset:-2px}
+.srch::placeholder{color:var(--ink3)}
+@media (max-width:640px){.srch{flex:1 1 100%;margin:0 0 6px}}
+
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;padding:10px 2px 0;
         font-family:var(--mono);font-size:10px;letter-spacing:.08em;
         text-transform:uppercase;color:var(--ink2)}

@@ -862,6 +862,13 @@ def api_contested(office_key):
         d['candidates'][party] = row['names'].split('|') if row['names'] else []
         if row['ncand'] > (row['seats'] or 1):
             d['contested'] = True
+
+    # The towns each district covers, so the page can be searched by place.
+    # Reading them is nearly free now that the district table is held in
+    # memory, and it is what lets somebody type "Londonderry" instead of
+    # knowing it is Rockingham 16.
+    for code, d in districts.items():
+        d['towns'] = _precincts_for(cur, office_name, level, d['county'], d['district'])
     conn.close()
 
     return jsonify({'office': office_name, 'level': level, 'districts': districts})

@@ -22,6 +22,8 @@
   <div class="count" id="count"></div>
 
   <div class="filters">
+    <input type="search" id="q" class="srch" autocomplete="off" spellcheck="false"
+           placeholder="Search a candidate, town or district">
     <div class="grp" id="offices"></div>
     <div class="seg" id="party"></div>
     <div class="seg" id="base"></div>
@@ -373,6 +375,30 @@ function counts(){
      <div><span class="n">${c.settled}</span><span class="l">Uncontested</span></div>`;
 }
 
+/* A page of four hundred districts with no way to search it is a page you
+   cannot use to answer "how did Londonderry do". The box matches a candidate's
+   name, a town in the district, the county, or the district number, and
+   narrows the list and the map together. */
+let Q2 = '';
+function matches(rec, b){
+  if(!Q2) return true;
+  const hay = [];
+  if(rec){
+    hay.push(rec.county||'', String(rec.district||''), distName(O, rec));
+    (rec.towns||[]).forEach(t=>hay.push(t));
+    Object.values(rec.candidates||{}).forEach(list=>(list||[]).forEach(n=>hay.push(n)));
+  }
+  if(b) (b.candidates||[]).forEach(c=>hay.push(c.name));
+  return hay.join(' ').toLowerCase().includes(Q2);
+}
+const qEl = document.getElementById('q');
+if(qEl) qEl.addEventListener('input', ()=>{
+  Q2 = qEl.value.trim().toLowerCase();
+  saveState();
+  renderList();
+  if(O && O.level!=='statewide' && !NOMAP.has(O.level)) { mapSig=''; paint(); }
+});
+
 /* ---- list --------------------------------------------------------------- */
 function odds(r){
   const pj=r.projection, k=statusKey(r);
@@ -432,12 +458,16 @@ function inView(code){
   return BASEV==='Floterial' ? isFlo : !isFlo;
 }
 function renderList(){
-  const rs=Object.values(board).filter(r=>inView(r.code));
+  const rs=Object.values(board).filter(r=>inView(r.code)
+                                       && matches(data&&data.districts[r.code], r));
   document.getElementById('grid').innerHTML = rs.length
     ? rs.map(card).join('')
-    : `<div class="dm" style="padding:26px 0">No ${SCOPE==='all'?'':'contested '}${PARTY[P].n} races for
+    : (Q2
+      ? `<div class="dm" style="padding:26px 0">Nothing matching “${esc(Q2)}” in ${O.label}${
+          PARTY[P]?' · '+PARTY[P].n:''}. Try another office or clear the search.</div>`
+      : `<div class="dm" style="padding:26px 0">No ${SCOPE==='all'?'':'contested '}${PARTY[P].n} races for
         ${O.level==='house'?BASEV.toLowerCase()+' '+O.label.toLowerCase()+' districts':O.label}.${
-        SCOPE!=='all'?' Switch to “All races” to see the uncontested ones.':''}</div>`;
+        SCOPE!=='all'?' Switch to “All races” to see the uncontested ones.':''}</div>`);
   document.querySelectorAll('.dist').forEach(b=>
     b.onclick=()=>openDetail(O,b.dataset.code,P));
 }
@@ -450,6 +480,8 @@ function legend(){
 }
 function styleOf(code){
   const rec=data.districts[code];
+  if(Q2 && !matches(rec, board[code]))
+    return {fillColor:'#eef0f2',fillOpacity:.5,color:'#fff',weight:.6};
   const b=board[code];
   // In "all races" mode every race on the ballot is live, so only districts
   // with no race at all stay blank.
