@@ -30,7 +30,10 @@ PUBLISHED = {
     "County Commissioner": ("Republican", "Democratic"),
     "Register of Deeds": ("Republican", "Democratic"),
     "Register of Probate": ("Republican", "Democratic"),
-    # the Democratic delegate sheets are not out yet
+    # Only Republicans elect delegates to the state convention, so there is no
+    # Democratic sheet to wait for. The 203 Democratic delegate races on file
+    # are empty shells - no candidate, no vote - and the board already leaves
+    # out a race with neither.
     "Delegate to the State Convention": ("Republican",),
 }
 
