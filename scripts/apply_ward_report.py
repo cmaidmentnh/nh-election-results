@@ -184,6 +184,7 @@ def main():
     written = created = unchanged = 0
     skipped_race = []
     unmatched = []
+    not_carried = []
 
     for (ward, party, office), lines in sorted(load(args.file).items()):
         election_id = PARTY_ELECTION[party]
@@ -236,6 +237,19 @@ def main():
                         hits = found
                         break
             if not hits:
+                if want_office:
+                    # The heading says which office this figure belongs to, and
+                    # this race does not carry the name. On a certified sheet
+                    # that is a cross-party write-in - the Democrats printed on
+                    # a Republican ballot and the other way round - and it is
+                    # not ours to place. Searching the other offices for it is
+                    # worse than useless: a State Senate candidate answers to a
+                    # name on a State Rep sheet, the figures then span two
+                    # races, and the whole race is held. Ninety-odd races were
+                    # lost that way, including every Senate figure for Durham,
+                    # Lee, Newington and four wards of Portsmouth.
+                    not_carried.append((municipality, party, office, name, votes))
+                    continue
                 hits = by_name.get(exact) or by_surname.get(sur) or set()
             if len(hits) != 1:
                 unmatched.append((municipality, party, office, name, votes,
@@ -299,6 +313,13 @@ def main():
         print(f"\n{len(skipped_race)} races held back:")
         for row in skipped_race:
             print("  " + " | ".join(str(x) for x in row))
+    if not_carried:
+        print(f"\n{len(not_carried)} figure(s) for names this race does not carry "
+              f"(skipped, the rest of the race applied):")
+        for row in not_carried[:12]:
+            print("  " + " | ".join(str(x) for x in row))
+        if len(not_carried) > 12:
+            print(f"  ... and {len(not_carried) - 12} more")
     if unmatched:
         print(f"\n{len(unmatched)} names not resolved (their whole race is held):")
         for row in unmatched:
