@@ -435,7 +435,7 @@ function card(r){
   const rows=show.map(c=>{
     const w=win.has(c.name);
     return `<div class="cr">
-      <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}</span>
+      <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}</span>
         <span class="v2">${nf.format(c.votes)} <span>${pctStr(c.votes,tot)}</span></span></div>
       <div class="cb"><i style="width:${100*c.votes/max}%;background:${
         !marked||w?PARTY[P].c:'#cdd1d6'}"></i></div></div>`;

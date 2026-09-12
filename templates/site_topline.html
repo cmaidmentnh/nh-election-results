@@ -82,7 +82,7 @@ function col(party, s){
     const v = Math.round(100*(c.votes||0)/top), p = Math.round(100*(c.projected||0)/top);
     const w = pj.status === 'called' && win.has(c.name);
     return `<div class="row ${w?'win':''}">
-      <div class="nm">${esc(c.name)}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="nm">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}${w?' <span class="w-">✓</span>':''}</div>
       <div class="vt"><b>${nf.format(c.votes||0)}</b> <span>${(c.pct ?? 0).toFixed(1)}%</span></div>
       <div class="bar">${p>v?`<i class="p" style="width:${p}%"></i>`:''}<i class="v" style="width:${v}%"></i></div>
     </div>`;

@@ -204,6 +204,12 @@ footer.f p{margin:4px 0;max-width:80ch}
 /* The search box sits first in the filter row and takes the width it can get,
    dropping to full width on a phone where the office tabs already wrap. */
 /* place pages: one section per office, the parties side by side */
+/* A write-in the Secretary of State named: a real result under a real name,
+   but not somebody who was on the ballot, so it says so. */
+.wi{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--ink3);border:1px solid var(--hair);border-radius:2px;
+    padding:1px 4px;margin-left:5px;vertical-align:1px;white-space:nowrap}
+
 .race{margin:0 0 26px}
 .rh{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 10px;
     border-bottom:2px solid var(--rule);padding-bottom:6px}
