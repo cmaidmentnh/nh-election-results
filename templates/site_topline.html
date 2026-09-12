@@ -39,7 +39,7 @@
 <script>
 const DEMO = {{ 'true' if demo else 'false' }};
 const nf = new Intl.NumberFormat('en-US');
-const LABEL = {certified:'Certified', called:'Called', likely:'Likely', leaning:'Leaning',
+const LABEL = {recount:'Recount', certified:'Certified', called:'Called', likely:'Likely', leaning:'Leaning',
                too_close:'Too close', awaiting:'Awaiting', unopposed:'Unopposed'};
 const esc = t => String(t ?? '').replace(/[&<>"']/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -48,7 +48,8 @@ function tag(pj){
   // A certified race is not a call. The Secretary of State has counted every
   // town and published the figures, so it says so - and nothing below it talks
   // about expected vote or a projected total.
-  const st = (pj && pj.certified) ? 'certified' : ((pj && pj.status) || 'awaiting');
+  const st = (pj && pj.recount) ? 'recount'
+           : (pj && pj.certified) ? 'certified' : ((pj && pj.status) || 'awaiting');
   const cls = (st === 'called' || st === 'certified') ? ' called'
             : (st === 'too_close' ? ' close' : '');
   return `<span class="tag${cls}">${LABEL[st] || st}</span>`;
@@ -56,6 +57,8 @@ function tag(pj){
 
 function odds(pj){
   if (!pj) return '';
+  if (pj.recount)
+    return `<div class="odds"><b>!</b><span>Recount scheduled — result not final</span></div>`;
   if (pj.certified && pj.status !== 'unopposed' && (pj.winners||[]).length)
     return `<div class="odds"><b>\u2713</b><span>Certified winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
   if (pj.status === 'unopposed')

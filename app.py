@@ -883,6 +883,31 @@ def _ref(key, build):
     return _REF[key]
 
 
+def _recounts():
+    """Races the Secretary of State has scheduled a recount for.
+
+    A recount is not a correction to the count - the certified figures stand
+    until it is held - but a race going to one is not settled either, and the
+    page should say so rather than show a winner and stop.
+    """
+    path = Path(__file__).resolve().parent / 'data' / 'recounts.json'
+    try:
+        with open(path) as fh:
+            return json.load(fh).get('recounts', [])
+    except Exception:
+        return []
+
+
+def _recount_for(office_name, county, district, party_full):
+    for r in _recounts():
+        if (r.get('office') == office_name
+                and (r.get('county') or '') == (county or '')
+                and (r.get('district') or '') == (district or '')
+                and r.get('party') == party_full):
+            return r
+    return None
+
+
 def _certified_races(cur):
     """Races whose figures came from the Secretary of State's certified sheets.
 
@@ -1387,6 +1412,10 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     if certified:
         projection = dict(projection)
         projection['certified'] = True
+    rc = _recount_for(office_name, county, district, party_full)
+    if rc:
+        projection = dict(projection)
+        projection['recount'] = rc
 
     # A tie is never resolved by counting again. RSA 660:1 sends it to the
     # Secretary of State, who draws lots, and the projection below will sit at

@@ -77,7 +77,8 @@ const OFFICES=[
 ];
 const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
 const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
-const ST={certified:{l:'Certified',c:'#146c43'},
+const ST={recount:{l:'Recount',c:'#a3341f'},
+          certified:{l:'Certified',c:'#146c43'},
           called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
           leaning:{l:'Leaning',c:'#6b7280'},too_close:{l:'Too close',c:'#b26a00'},
           unopposed:{l:'Unopposed',c:'#7d8894'},writein:{l:'Write-in only',c:'#b0a08c'},
@@ -90,6 +91,9 @@ const ST={certified:{l:'Certified',c:'#146c43'},
 function statusKey(r){
   if(!r) return 'awaiting';
   const pj=r.projection||{};
+  // A race going to a recount is not settled, whatever the certified figures
+  // say, so that outranks everything else on the card.
+  if(pj.recount) return 'recount';
   // A certified race is not a projection. Every town is counted and the figures
   // are the Secretary of State's, so it says Certified rather than Called, and
   // drops the share-counted and chance-it-holds language that belongs to a
@@ -108,6 +112,8 @@ function statusKey(r){
 }
 function statusOf(r){ return ST[statusKey(r)]||ST.awaiting; }
 const SETTLED=new Set(['certified','unopposed','writein']);
+const RCDATE=d=>{const [y,m,dd]=String(d||'').split('-');
+  return dd?['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m]+' '+(+dd):'';};
 
 /* Never round a share to 100% while somebody else still has votes, and never
    round a real vote down to 0%. A one-line "Bill Wright 3,313 100% /
@@ -413,8 +419,10 @@ function card(r){
     <div class="t"><span class="dn">${esc(distName(O,r))}</span>
       <span class="tag" style="color:${s.c}">${s.l}</span></div>
     <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${
-      (r.projection&&r.projection.certified) ? 'certified by the Secretary of State'
-                                             : (r.reporting.expected_in||0)+'% counted'}</div>
+      (r.projection&&r.projection.recount)
+        ? 'recount '+RCDATE(r.projection.recount.date)+' — result not final'
+        : (r.projection&&r.projection.certified) ? 'certified by the Secretary of State'
+                                                 : (r.reporting.expected_in||0)+'% counted'}</div>
     ${rows}
     ${odds(r)}</button>`;
 }
@@ -575,9 +583,11 @@ function openDetail(o,code,p){
       document.getElementById('dtitle').textContent=distName(o,{...rec,district:r.district,county:r.county});
       document.getElementById('dsub').textContent=
         `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${
-          (r.projection&&r.projection.certified)
-            ? 'certified by the Secretary of State'
-            : (r.reporting.expected_in||0)+'% of expected vote counted'}`;
+          (r.projection&&r.projection.recount)
+            ? 'recount '+RCDATE(r.projection.recount.date)+' at '+r.projection.recount.time+' — result not final'
+            : (r.projection&&r.projection.certified)
+              ? 'certified by the Secretary of State'
+              : (r.reporting.expected_in||0)+'% of expected vote counted'}`;
       const pj=r.projection, k=statusKey(r), s=ST[k]||ST.awaiting;
       const co=document.getElementById('callout');
       co.className='callout '+k;
