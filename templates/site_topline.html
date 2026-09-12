@@ -39,18 +39,25 @@
 <script>
 const DEMO = {{ 'true' if demo else 'false' }};
 const nf = new Intl.NumberFormat('en-US');
-const LABEL = {called:'Called', likely:'Likely', leaning:'Leaning',
+const LABEL = {certified:'Certified', called:'Called', likely:'Likely', leaning:'Leaning',
                too_close:'Too close', awaiting:'Awaiting', unopposed:'Unopposed'};
 const esc = t => String(t ?? '').replace(/[&<>"']/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function tag(st){
-  const cls = st === 'called' ? ' called' : (st === 'too_close' ? ' close' : '');
+function tag(pj){
+  // A certified race is not a call. The Secretary of State has counted every
+  // town and published the figures, so it says so - and nothing below it talks
+  // about expected vote or a projected total.
+  const st = (pj && pj.certified) ? 'certified' : ((pj && pj.status) || 'awaiting');
+  const cls = (st === 'called' || st === 'certified') ? ' called'
+            : (st === 'too_close' ? ' close' : '');
   return `<span class="tag${cls}">${LABEL[st] || st}</span>`;
 }
 
 function odds(pj){
   if (!pj) return '';
+  if (pj.certified && pj.status !== 'unopposed' && (pj.winners||[]).length)
+    return `<div class="odds"><b>\u2713</b><span>Certified winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
   if (pj.status === 'unopposed')
     return `<div class="odds"><b>\u2713</b><span>Unopposed \u2014 <span class="who">${esc((pj.winners||[])[0]||'')}</span> is the nominee</span></div>`;
   if (pj.status === 'called' && (pj.winners||[]).length)
@@ -79,10 +86,13 @@ function col(party, s){
   }).join('') || '<div class="foot">No candidates filed — decided by write-in</div>';
   const rep = s.reporting || {};
   return `<div class="col ${party}">
-    <div class="colhead"><span class="pty">${party==='R'?'Republican':'Democratic'}</span>${tag(pj.status||'awaiting')}</div>
+    <div class="colhead"><span class="pty">${party==='R'?'Republican':'Democratic'}</span>${tag(pj)}</div>
     ${rows}${odds(pj)}
-    <div class="foot"><span>${rep.expected_in ?? 0}% of expected vote counted</span>
-      ${rep.projected_total?`<span>~${nf.format(rep.projected_total)} total</span>`:''}</div>
+    <div class="foot">${pj.certified
+      ? `<span>Certified by the Secretary of State</span><span>${
+          nf.format(cands.reduce((t,c)=>t+(c.votes||0),0))} votes</span>`
+      : `<span>${rep.expected_in ?? 0}% of expected vote counted</span>${
+          rep.projected_total?`<span>~${nf.format(rep.projected_total)} total</span>`:''}`}</div>
   </div>`;
 }
 
