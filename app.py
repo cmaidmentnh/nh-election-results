@@ -883,6 +883,22 @@ def _ref(key, build):
     return _REF[key]
 
 
+def _certified_races(cur):
+    """Races whose figures came from the Secretary of State's certified sheets.
+
+    A certified race is not a projection - every town is counted and the
+    numbers are final - so the page says so instead of quoting a percentage
+    counted and a chance it holds.
+    """
+    def build():
+        try:
+            return {r['race_id'] for r in
+                    cur.execute("SELECT race_id FROM certified_races")}
+        except Exception:
+            return set()
+    return _ref('certified', build)
+
+
 def _towns_by_district(cur, office_name):
     def build():
         oid = cur.execute("SELECT id FROM offices WHERE name = ?", (office_name,)).fetchone()
@@ -1321,11 +1337,19 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # to towns that had sent an aggregate - about a fifth of the write-in vote
     # in the Democratic governor primary simply vanished. Each town states this
     # quantity once, in whichever form its clerk used.
+    # On a certified race there is nothing to reconcile: the Secretary of
+    # State's WRITE-INS column is the whole of the write-in vote, and the names
+    # sitting beside it are what the old feed recorded before certification -
+    # Donald Duck, Vermin Supreme, misspellings of real candidates. Adding them
+    # counts those votes twice. The Democratic governor primary read 3,251
+    # write-ins against a certified 2,150.
+    certified = race_id in _certified_races(cur)
     wi_votes = 0
     for p in reported:
         v = by_prec.get(p, {})
-        wi_votes += max(sum(val for cid, val in v.items() if cid in agg_wi),
-                        sum(val for cid, val in v.items() if cid in named_wi))
+        agg = sum(val for cid, val in v.items() if cid in agg_wi)
+        nmd = sum(val for cid, val in v.items() if cid in named_wi)
+        wi_votes += agg if certified else max(agg, nmd)
     agg_proj = sum(projected[cid] for cid in name_by_id if cid in agg_wi)
     named_proj = sum(projected[cid] for cid in name_by_id if cid in named_wi)
     wi_proj = max(agg_proj, named_proj)
@@ -1360,6 +1384,9 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
 
     projection = _project(cand_list, seats, reported_weight, current_total, volatility,
                           n_reported=reported_n, n_total=total)
+    if certified:
+        projection = dict(projection)
+        projection['certified'] = True
 
     # A tie is never resolved by counting again. RSA 660:1 sends it to the
     # Secretary of State, who draws lots, and the projection below will sit at

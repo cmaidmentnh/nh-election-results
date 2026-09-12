@@ -77,7 +77,8 @@ const OFFICES=[
 ];
 const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
 const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
-const ST={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
+const ST={certified:{l:'Certified',c:'#146c43'},
+          called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
           leaning:{l:'Leaning',c:'#6b7280'},too_close:{l:'Too close',c:'#b26a00'},
           unopposed:{l:'Unopposed',c:'#7d8894'},writein:{l:'Write-in only',c:'#b0a08c'},
           awaiting:{l:'Awaiting',c:'#c9ccd1'}};
@@ -89,6 +90,11 @@ const ST={called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
 function statusKey(r){
   if(!r) return 'awaiting';
   const pj=r.projection||{};
+  // A certified race is not a projection. Every town is counted and the figures
+  // are the Secretary of State's, so it says Certified rather than Called, and
+  // drops the share-counted and chance-it-holds language that belongs to a
+  // count still running.
+  if(pj.certified) return 'certified';
   // Only the server knows who actually filed, so take its word for unopposed.
   if(pj.status==='unopposed') return 'unopposed';
   // Nobody filed: the nomination goes to whoever was written in. A stray
@@ -101,7 +107,7 @@ function statusKey(r){
   return pj.status||'awaiting';
 }
 function statusOf(r){ return ST[statusKey(r)]||ST.awaiting; }
-const SETTLED=new Set(['unopposed','writein']);
+const SETTLED=new Set(['certified','unopposed','writein']);
 
 /* Never round a share to 100% while somebody else still has votes, and never
    round a real vote down to 0%. A one-line "Bill Wright 3,313 100% /
@@ -406,7 +412,9 @@ function card(r){
   return `<button type="button" class="dist" data-code="${r.code}">
     <div class="t"><span class="dn">${esc(distName(O,r))}</span>
       <span class="tag" style="color:${s.c}">${s.l}</span></div>
-    <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% counted</div>
+    <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · ${
+      (r.projection&&r.projection.certified) ? 'certified by the Secretary of State'
+                                             : (r.reporting.expected_in||0)+'% counted'}</div>
     ${rows}
     ${odds(r)}</button>`;
 }
@@ -453,7 +461,9 @@ function tipFor(code){
   const p=(b.projection.win_prob!=null && k!=='called' && !SETTLED.has(k))
     ? `<div class="tr"><span>${Math.round(b.projection.win_prob*100)}% chance it holds</span><span></span></div>` : '';
   return `<div class="tn">${esc(distName(O,rec))}</div>
-    <div class="tm"><span>${s.l}</span><span>${b.reporting.expected_in||0}% in</span></div>${rows}${p}`;
+    <div class="tm"><span>${s.l}</span><span>${
+      (b.projection&&b.projection.certified) ? 'certified' : (b.reporting.expected_in||0)+'% in'
+    }</span></div>${rows}${p}`;
 }
 function renderMap(){
   const sig='dist|'+O.key+'|'+P+'|'+BASEV+'|'+SCOPE;
@@ -564,7 +574,10 @@ function openDetail(o,code,p){
       const rec=data.districts[code]||{};
       document.getElementById('dtitle').textContent=distName(o,{...rec,district:r.district,county:r.county});
       document.getElementById('dsub').textContent=
-        `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${r.reporting.expected_in||0}% of expected vote counted`;
+        `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${
+          (r.projection&&r.projection.certified)
+            ? 'certified by the Secretary of State'
+            : (r.reporting.expected_in||0)+'% of expected vote counted'}`;
       const pj=r.projection, k=statusKey(r), s=ST[k]||ST.awaiting;
       const co=document.getElementById('callout');
       co.className='callout '+k;
