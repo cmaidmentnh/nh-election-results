@@ -442,13 +442,16 @@ def parse_house_xlsx(path, source=None):
     ws = wb[wb.sheetnames[0]]
     grid = [list(r) for r in ws.iter_rows(values_only=True)]
 
-    m = re.search(r"house-([a-z]+)-(republican|democratic)",
+    # Convention delegates are published on the same sheet as the House -
+    # "District No. 1 (3)", towns, Totals - for the same districts, so the same
+    # reader takes both and the file name says which office it is.
+    m = re.search(r"(house|delegate)-([a-z]+)-(republican|democratic)",
                   str(source or path), re.I)
     if not m:
         return {"error": "no county in the file name"}
-    county = m.group(1).capitalize()
-    if county == "Coos":
-        county = "Coos"
+    office = ("Delegate to the State Convention"
+              if m.group(1).lower() == "delegate" else "State Representative")
+    county = m.group(2).capitalize()
 
     blocks, cur = [], None
     for row in grid:
@@ -498,10 +501,10 @@ def parse_house_xlsx(path, source=None):
                 for k, v in figures.items():
                     merged[town][k] = merged[town].get(k, 0) + v
         b["rows"] = [(t, merged[t]) for t in order]
-    return {"office": "State Representative", "county": county, "blocks": blocks}
+    return {"office": office, "county": county, "blocks": blocks}
 
 
-def house_votes(county, district, election_id, towns):
+def house_votes(county, district, election_id, towns, office='State Representative'):
     """What we hold for one House district, by candidate and municipality."""
     clause, args = race_clause(district, county)
     from intake import store
@@ -516,9 +519,9 @@ def house_votes(county, district, election_id, towns):
                           JOIN races ra ON ra.id = r.race_id
                           JOIN offices o ON o.id = ra.office_id
                           JOIN candidates c ON c.id = r.candidate_id
-                         WHERE ra.election_id = ? AND o.name = 'State Representative'
+                         WHERE ra.election_id = ? AND o.name = ?
                            AND r.municipality IN ({marks})""" + clause,
-                    (election_id, *chunk, *args))
+                    (election_id, office, *chunk, *args))
         for row in cur.fetchall():
             got.setdefault(row["municipality"], {})[row["name"]] = row["votes"]
     conn.close()
@@ -1071,7 +1074,7 @@ def handle(source, path, party, apply, out_tsv=None):
     if "county-offices" in Path(source).name.lower():
         return handle_county_offices(source, path, party, apply, out_tsv)
 
-    if "house" in Path(source).name.lower():
+    if "house" in Path(source).name.lower() or "delegate" in Path(source).name.lower():
         return handle_house(source, path, party, apply, out_tsv)
 
     if str(path).lower().endswith(".xlsx"):
@@ -1186,7 +1189,7 @@ def handle_house(source, path, party, apply, out_tsv=None):
         return False
 
     county = got["county"]
-    print(f"\n=== {name}: {county} County State Representatives - {party.title()}")
+    print(f"\n=== {name}: {county} County {got['office']} - {party.title()}")
     print(f"{len(got['blocks'])} district block(s)")
 
     known = municipalities()
@@ -1218,7 +1221,7 @@ def handle_house(source, path, party, apply, out_tsv=None):
             if key in known:
                 mapped[town] = known[key]
         ours = house_votes(county, b["district"], election_id,
-                           sorted(mapped.values()))
+                           sorted(mapped.values()), got["office"])
 
         # a column on the wrong candidate is off by a multiple, so compare
         # what we already hold against what the sheet says for the same towns
@@ -1244,7 +1247,7 @@ def handle_house(source, path, party, apply, out_tsv=None):
             db_town = mapped.get(town)
             if not db_town:
                 continue
-            lines = [f"0\t{party}\tState Representative\t{n}\t{v}"
+            lines = [f"0\t{party}\t{got['office']}\t{n}\t{v}"
                      for n, v in figures.items()]
             with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as fh:
                 fh.write("\n".join(lines) + "\n")
