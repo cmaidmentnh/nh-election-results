@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
 <link rel="preload" as="font" type="font/woff2" crossorigin
       href="{{ url_for('static', filename='vendor/plex/plex-sans-700.woff2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=15">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=16">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -34,6 +34,11 @@
   </div>
 </header>
 
+<div class="gsearch">
+  <input type="search" id="gq" autocomplete="off" spellcheck="false"
+         placeholder="Search any candidate, town, county or district">
+  <div class="gres" id="gres" hidden></div>
+</div>
 <nav class="sections">
   <div class="w">
     <a href="/results{{ '?demo=1' if demo else '' }}" class="{{ 'on' if active == 'topline' }}">Topline</a>
@@ -57,6 +62,39 @@
   </div>
 </footer>
 
+<script>
+/* One search for the whole site, on every page. Typing asks the server and
+   shows what it found - a candidate with their office and vote, a town, a
+   county - and goes straight there. The box on the races page filters what is
+   already in front of you; this one finds what is not. */
+(function(){
+  const box = document.getElementById('gq'), out = document.getElementById('gres');
+  if(!box || !out) return;
+  const esc = t => String(t ?? '').replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let timer = null, seq = 0;
+  function hide(){ out.hidden = true; out.innerHTML = ''; }
+  function run(){
+    const q = box.value.trim();
+    if(q.length < 2){ hide(); return; }
+    const mine = ++seq;
+    fetch('/api/search?q=' + encodeURIComponent(q)).then(r=>r.json()).then(d=>{
+      if(mine !== seq) return;
+      const rs = d.results || [];
+      out.innerHTML = rs.length
+        ? rs.map(r=>`<a class="gr" href="${r.url}"><b>${esc(r.label)}</b><span>${esc(r.detail)}</span></a>`).join('')
+        : `<div class="gr none">Nothing for “${esc(q)}”</div>`;
+      out.hidden = false;
+    }).catch(hide);
+  }
+  box.addEventListener('input', ()=>{ clearTimeout(timer); timer = setTimeout(run, 120); });
+  box.addEventListener('focus', ()=>{ if(out.innerHTML) out.hidden = false; });
+  document.addEventListener('click', e=>{
+    if(!out.contains(e.target) && e.target !== box) hide();
+  });
+  box.addEventListener('keydown', e=>{ if(e.key === 'Escape') hide(); });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

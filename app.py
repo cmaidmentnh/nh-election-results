@@ -827,6 +827,65 @@ def contested_map():
     return render_template('site_races.html', live_mode=live, demo=demo)
 
 
+@app.route('/api/search')
+def api_search():
+    """One search across the whole primary: candidates, towns, counties,
+    districts.
+
+    A box that only searches the tab you are already on is not a search - you
+    have to know the answer to use it. This one is asked from every page and
+    says where the thing you typed actually is.
+    """
+    q = (request.args.get('q') or '').strip()
+    if len(q) < 2:
+        return jsonify({'q': q, 'results': []})
+    like = f"%{q}%"
+    conn = _contested_db()
+    cur = conn.cursor()
+    out = []
+
+    for r in cur.execute("""
+        SELECT DISTINCT c.name AS cand, o.name AS office, e.party AS party,
+               IFNULL(ra.county,'') AS county, IFNULL(ra.district,'') AS district,
+               (SELECT SUM(res.votes) FROM results res
+                 WHERE res.race_id = ra.id AND res.candidate_id = c.id) AS votes
+          FROM candidates c
+          JOIN race_candidates rc ON rc.candidate_id = c.id
+          JOIN races ra ON ra.id = rc.race_id
+          JOIN offices o ON o.id = ra.office_id
+          JOIN elections e ON e.id = ra.election_id
+         WHERE e.year = 2026 AND e.election_type = 'state_primary'
+           AND c.name LIKE ? AND IFNULL(rc.recruitment_filing_id, 0) >= -2
+         ORDER BY votes DESC NULLS LAST
+         LIMIT 12""", (like,)):
+        key = next((k for k, (nm, _lv) in CONTESTED_OFFICES.items() if nm == r['office']), '')
+        level = CONTESTED_OFFICES.get(key, (None, 'house'))[1]
+        out.append({
+            'kind': 'candidate', 'label': r['cand'],
+            'detail': f"{r['office']}{(' · ' + r['county'] + ' ' + r['district']).rstrip() if r['county'] or r['district'] else ''}"
+                      f" · {'Republican' if r['party'] == 'Republican' else 'Democratic'}"
+                      + (f" · {r['votes']:,} votes" if r['votes'] else ''),
+            'url': (f"/contested#office={key}&party={r['party'][:1]}&scope=all"
+                    f"&code={_district_code(level, r['county'], r['district'])}") if key else '/contested',
+        })
+
+    for r in cur.execute("""SELECT DISTINCT municipality AS m, county
+                              FROM polling_places WHERE municipality LIKE ?
+                             ORDER BY municipality LIMIT 8""", (like,)):
+        out.append({'kind': 'town', 'label': r['m'],
+                    'detail': f"{r['county']} County · every race on this ballot" if r['county'] else 'town',
+                    'url': f"/results/town/{r['m']}"})
+
+    for r in cur.execute("""SELECT DISTINCT county FROM polling_places
+                             WHERE county LIKE ? AND county != '' ORDER BY county LIMIT 5""",
+                         (like,)):
+        out.append({'kind': 'county', 'label': f"{r['county']} County",
+                    'detail': 'county offices and every district in it',
+                    'url': f"/results/county/{r['county']}"})
+    conn.close()
+    return jsonify({'q': q, 'results': out[:25]})
+
+
 @app.route('/results/town/<path:name>')
 def site_town(name):
     """Every 2026 primary result for one town."""

@@ -218,6 +218,30 @@ footer.f p{margin:4px 0;max-width:80ch}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .foot a{color:var(--ink2)}
 
+/* site-wide search, in the header on every page */
+.gsearch{position:relative;max-width:var(--w,1100px);margin:0 auto;padding:0 var(--pad,20px) 8px}
+.gsearch input{width:100%;font:400 13px/1.3 var(--sans);color:var(--ink);
+  background:var(--paper);border:1px solid var(--hair);border-radius:2px;padding:7px 10px}
+.gsearch input:focus{outline:2px solid var(--ink);outline-offset:-2px}
+.gres{position:absolute;left:var(--pad,20px);right:var(--pad,20px);top:100%;z-index:900;
+  background:var(--paper);border:1px solid var(--rule);max-height:60vh;overflow:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.gr{display:block;padding:8px 11px;border-bottom:1px solid var(--hair);text-decoration:none;color:var(--ink)}
+.gr:last-child{border-bottom:0}
+.gr:hover{background:var(--tint)}
+.gr b{display:block;font-size:14px;font-weight:600}
+.gr span{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--ink3)}
+.gr.none{color:var(--ink3);font-size:13px}
+
+/* filters on the races page */
+.fsel{font:400 12px/1.3 var(--sans);color:var(--ink);background:var(--paper);
+  border:1px solid var(--hair);border-radius:2px;padding:5px 7px;max-width:180px}
+.fsel[hidden]{display:none}
+.fclr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:1px solid var(--hair);border-radius:2px;padding:5px 8px;
+  color:var(--ink2);cursor:pointer}
+.fclr:hover{color:var(--ink);border-color:var(--rule)}
+
 .srch{font:400 13px/1.3 var(--sans);color:var(--ink);background:var(--paper);
       border:1px solid var(--hair);border-radius:2px;padding:6px 9px;
       min-width:210px;flex:0 1 260px;margin-right:4px}

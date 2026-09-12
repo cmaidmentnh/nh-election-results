@@ -23,11 +23,25 @@
 
   <div class="filters">
     <input type="search" id="q" class="srch" autocomplete="off" spellcheck="false"
-           placeholder="Search a candidate, town or district">
+           placeholder="Filter these races by candidate, town or district">
     <div class="grp" id="offices"></div>
     <div class="seg" id="party"></div>
     <div class="seg" id="base"></div>
     <div class="seg" id="scope"></div>
+    <select id="fcounty" class="fsel" title="County"></select>
+    <select id="fstatus" class="fsel" title="Status">
+      <option value="">Any status</option>
+      <option value="recount">Recount scheduled</option>
+      <option value="too_close">Too close</option>
+      <option value="leaning">Leaning</option>
+      <option value="likely">Likely</option>
+      <option value="called">Called</option>
+      <option value="certified">Certified</option>
+      <option value="unopposed">Uncontested</option>
+      <option value="writein">Write-in only</option>
+      <option value="awaiting">Awaiting</option>
+    </select>
+    <button type="button" id="fclear" class="fclr" hidden>Clear</button>
   </div>
 
   <div class="split" id="split">
@@ -300,7 +314,7 @@ function selectOffice(o){
   O=o; ctx=null; document.getElementById('detail').classList.remove('show');
   buildOffices();
   J('/api/contested/'+o.key).then(d=>{
-    if(o!==O)return; data=d; buildParty(); buildBase(); buildScope();
+    if(o!==O)return; data=d; buildParty(); buildBase(); buildScope(); buildCounty();
     if(o.level==='house'&&!geoMap) J('/api/precinct-geo-map').then(m=>geoMap=m);
     load();
   });
@@ -379,7 +393,12 @@ function counts(){
    cannot use to answer "how did Londonderry do". The box matches a candidate's
    name, a town in the district, the county, or the district number, and
    narrows the list and the map together. */
-let Q2 = '';
+let Q2 = '', FCOUNTY = '', FSTATUS = '';
+function passes(rec, b){
+  if(FCOUNTY && (!rec || (rec.county||'') !== FCOUNTY)) return false;
+  if(FSTATUS && statusKey(b) !== FSTATUS) return false;
+  return matches(rec, b);
+}
 function matches(rec, b){
   if(!Q2) return true;
   const hay = [];
@@ -391,13 +410,39 @@ function matches(rec, b){
   if(b) (b.candidates||[]).forEach(c=>hay.push(c.name));
   return hay.join(' ').toLowerCase().includes(Q2);
 }
-const qEl = document.getElementById('q');
-if(qEl) qEl.addEventListener('input', ()=>{
-  Q2 = qEl.value.trim().toLowerCase();
-  saveState();
+function applyFilters(){
+  const on = !!(Q2 || FCOUNTY || FSTATUS);
+  const cl = document.getElementById('fclear');
+  if(cl) cl.hidden = !on;
   renderList();
   if(O && O.level!=='statewide' && !NOMAP.has(O.level)) { mapSig=''; paint(); }
+}
+const qEl = document.getElementById('q');
+if(qEl) qEl.addEventListener('input', ()=>{
+  Q2 = qEl.value.trim().toLowerCase(); saveState(); applyFilters();
 });
+const fcEl = document.getElementById('fcounty'), fsEl = document.getElementById('fstatus');
+if(fcEl) fcEl.addEventListener('change', ()=>{ FCOUNTY = fcEl.value; applyFilters(); });
+if(fsEl) fsEl.addEventListener('change', ()=>{ FSTATUS = fsEl.value; applyFilters(); });
+const fclEl = document.getElementById('fclear');
+if(fclEl) fclEl.addEventListener('click', ()=>{
+  Q2 = FCOUNTY = FSTATUS = '';
+  if(qEl) qEl.value = ''; if(fcEl) fcEl.value = ''; if(fsEl) fsEl.value = '';
+  saveState(); applyFilters();
+});
+
+/* The county list is whatever this office actually has - statewide offices
+   have none, so the control takes itself out of the way. */
+function buildCounty(){
+  if(!fcEl) return;
+  const cs = [...new Set(Object.values((data&&data.districts)||{})
+                .map(r=>r.county).filter(Boolean))].sort();
+  fcEl.hidden = cs.length < 2;
+  if(fcEl.hidden){ FCOUNTY = ''; fcEl.innerHTML = ''; return; }
+  if(FCOUNTY && !cs.includes(FCOUNTY)) FCOUNTY = '';
+  fcEl.innerHTML = `<option value="">Any county</option>` +
+    cs.map(c=>`<option value="${c}"${c===FCOUNTY?' selected':''}>${c}</option>`).join('');
+}
 
 /* ---- list --------------------------------------------------------------- */
 function odds(r){
@@ -459,7 +504,7 @@ function inView(code){
 }
 function renderList(){
   const rs=Object.values(board).filter(r=>inView(r.code)
-                                       && matches(data&&data.districts[r.code], r));
+                                       && passes(data&&data.districts[r.code], r));
   document.getElementById('grid').innerHTML = rs.length
     ? rs.map(card).join('')
     : (Q2
@@ -480,7 +525,7 @@ function legend(){
 }
 function styleOf(code){
   const rec=data.districts[code];
-  if(Q2 && !matches(rec, board[code]))
+  if((Q2||FCOUNTY||FSTATUS) && !passes(rec, board[code]))
     return {fillColor:'#eef0f2',fillOpacity:.5,color:'#fff',weight:.6};
   const b=board[code];
   // In "all races" mode every race on the ballot is live, so only districts
