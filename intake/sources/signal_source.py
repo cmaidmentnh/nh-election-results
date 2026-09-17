@@ -112,6 +112,12 @@ def listen(on_message, on_command=None, stop=None):
                         continue
                     if msg.get("method") != "receive":
                         continue
+                    # The daemon hosts several bot numbers and pushes every account's
+                    # messages to every connection. Without this, Chris's DM to the
+                    # voter bot was taken as an operator instruction and answered here.
+                    account = (msg.get("params") or {}).get("account") or ""
+                    if account and account != config.SIGNAL_ACCOUNT:
+                        continue
 
                     envelope = (msg.get("params") or {}).get("envelope") or {}
                     data_msg = envelope.get("dataMessage") or {}
