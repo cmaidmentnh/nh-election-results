@@ -188,6 +188,9 @@ def fetch_new():
                           token_path)
 
 
+_NO_TRIAGE = {"SPAM", "CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL", "CATEGORY_FORUMS"}
+
+
 def _notify(text):
     if not config.NOTIFY_ENABLED:
         log.info("(notify suppressed) %s", text[:120])
@@ -228,7 +231,12 @@ def _fetch_mailbox(token_path):
         if not take:
             # Not a return. Do it if an app can, ping Chris if he's needed,
             # otherwise leave it unread - see triage.
-            done = triage.handle(hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify)
+            # Only mail a person would actually see and hasn't read yet: a new
+            # mailbox's first poll must not ping about two days of old mail, and
+            # promotions/social/list traffic never needs Chris.
+            triagable = "UNREAD" in labels and not labels & _NO_TRIAGE
+            done = triagable and triage.handle(
+                hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify)
             users.messages().modify(userId="me", id=ref["id"], body={
                 "addLabelIds": [label_id],
                 "removeLabelIds": ["UNREAD"] if done else []}).execute()
