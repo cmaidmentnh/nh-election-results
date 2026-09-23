@@ -132,7 +132,7 @@ def _send_portal_link(addr):
         return r.status == 200
 
 
-def handle(sender, subject, body, notify):
+def handle(sender, subject, body, notify, where=""):
     """Triage one non-results email. Returns True if it may be marked read."""
     if MODE not in ("on", "shadow"):
         return False
@@ -155,7 +155,7 @@ def handle(sender, subject, body, notify):
                     # Kurt Wuelper's also had his survey answers - so the link goes out
                     # but the email stays unread for a person to read the rest.
                     short = len(_newest_text(body)) <= SHORT_CHARS
-                    notify(f"Email auto-handled: sent {sender} a fresh check-in/portal link "
+                    notify(f"Email auto-handled ({where}): sent {sender} a fresh check-in/portal link "
                            f"(they wrote: \"{gist[:160]}\")."
                            + ("" if short else " Left unread - there's more in it."))
                     return short
@@ -165,7 +165,8 @@ def handle(sender, subject, body, notify):
         choice, conf = "needs_chris", max(conf, PING_CONFIDENCE)
 
     if choice in ("needs_chris", "portal_link") and conf >= PING_CONFIDENCE:
-        notify(f"Email needs you - {sender}\n{subject}\n\"{gist}\"")
+        notify(f"Email needs you - {sender}\n{subject}\n\"{gist}\"\n\n"
+               f"({where}.) Reply here with what to do and I'll handle it.")
         return False
 
     return False  # no reply needed, or unsure: leave it unread

@@ -115,6 +115,10 @@ NOTIFY_ENABLED = os.environ.get("INTAKE_NOTIFY", "1") not in ("0", "false", "no"
 
 # Where to send "something needs review" pings. A Signal number or group id.
 NOTIFY_TARGET = os.environ.get("INTAKE_NOTIFY_TARGET", "")
+# Email-triage pings go out from the super-admin bot's number, so that Chris's
+# reply lands with the agent that can act on it (signal-voter-bot superadmin),
+# not with this service, which only understands results corrections.
+TRIAGE_SIGNAL_ACCOUNT = os.environ.get("INTAKE_TRIAGE_SIGNAL_ACCOUNT", "")
 
 # --- Publishing policy ----------------------------------------------------
 # A parsed line auto-publishes only if it clears every check in apply.py and

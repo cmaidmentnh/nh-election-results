@@ -196,7 +196,13 @@ def _notify(text):
         log.info("(notify suppressed) %s", text[:120])
         return
     from intake.sources import signal_source
-    signal_source.send(text)
+    signal_source.send(text, account=config.TRIAGE_SIGNAL_ACCOUNT or None)
+
+
+def _mailbox_name(token_path):
+    """The account a token belongs to, for telling Chris which inbox an email is in."""
+    m = re.search(r"gmail-token-(.+@.+)\.json$", str(token_path))
+    return m.group(1) if m else "chris@electhouserepublicans.com"
 
 
 def _fetch_mailbox(token_path):
@@ -236,7 +242,8 @@ def _fetch_mailbox(token_path):
             # promotions/social/list traffic never needs Chris.
             triagable = "UNREAD" in labels and not labels & _NO_TRIAGE
             done = triagable and triage.handle(
-                hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify)
+                hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify,
+                where=f"{_mailbox_name(token_path)}, Gmail message {ref['id']}")
             users.messages().modify(userId="me", id=ref["id"], body={
                 "addLabelIds": [label_id],
                 "removeLabelIds": ["UNREAD"] if done else []}).execute()

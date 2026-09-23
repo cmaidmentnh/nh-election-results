@@ -169,12 +169,13 @@ def listen(on_message, on_command=None, stop=None):
             time.sleep(10)
 
 
-def send(text, target=None):
-    """Send a short operator notification."""
+def send(text, target=None, account=None):
+    """Send a short operator notification (from `account`, default the intake's number)."""
     target = target or config.NOTIFY_TARGET
-    if not target or not config.SIGNAL_ACCOUNT:
+    account = account or config.SIGNAL_ACCOUNT
+    if not target or not account:
         return
-    params = {"account": config.SIGNAL_ACCOUNT, "message": text}
+    params = {"account": account, "message": text}
     # A person is a phone number (+1...) or an account UUID; a group is a long
     # base64 id. Getting this wrong sends a private review ping to the whole
     # group, so match the UUID shape explicitly rather than assuming.
