@@ -181,6 +181,7 @@ def handle(conn, text):
                    f"PENDING ITEMS:\n{json.dumps(pending, indent=0)}\n\n"
                    f"OPERATOR INSTRUCTION:\n{text}"}],
         output_format=Plan,
+        output_config={"effort": "low"},
     )
     plan = resp.parsed_output
     if not plan.understood or not plan.actions:

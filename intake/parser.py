@@ -462,6 +462,7 @@ def identify_town(town_list, body, subject="", sender="", attachments=None):
         system=TOWN_SYSTEM,
         messages=[{"role": "user", "content": content}],
         output_format=TownGuess,
+        output_config={"effort": "low"},
     )
     return resp.parsed_output
 
