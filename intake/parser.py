@@ -128,6 +128,12 @@ PRIMARY_BALLOTS_NOTE = """ A primary reports \
 ballots cast per party, so "1,420 Republican ballots" uses the Republican \
 election_id."""
 
+# Photo-reading: a primary tally sheet can carry R and D side by side. A general
+# has one ballot, so there is no second ballot to split columns into.
+PRIMARY_COLUMNS_NOTE = """ If one sheet has \
+separate Republican and Democratic columns, read each into its own ballot's \
+race_id."""
+
 IS_PRIMARY_EVENT = config.EVENT_TYPE in PRIMARY_EVENT_TYPES
 
 EXTRACT_SYSTEM = """You read election-night vote reports from New Hampshire town \
@@ -188,9 +194,7 @@ scanned PDF of it, with little or no typed text. Read them carefully:
 - Work down the sheet race by race. A New Hampshire tally sheet lists the office, \
 then each candidate with a vote total beside or beneath the name.
 - The sheet usually says which ballot it is - "REPUBLICAN", "DEMOCRATIC", "REP", \
-"DEM", often in the header or as a column heading. Use it. If one sheet has \
-separate Republican and Democratic columns, read each into its own ballot's \
-race_id.
+"DEM", often in the header or as a column heading. Use it.{columns_note}
 - These lines are NOT candidates and must never be returned as candidate votes: \
 TOTAL, TOTAL VOTES CAST, BLANKS, BLANK, UNDERVOTES, OVERVOTES, SCATTERING, \
 SCATTERED, VOID, SPOILED, ABSENTEE (as a column heading), REGISTERED VOTERS. \
@@ -221,7 +225,9 @@ EXTRACT_SYSTEM = (EXTRACT_SYSTEM
                   .replace("{ballot_rules}",
                            PRIMARY_BALLOT_RULES if IS_PRIMARY_EVENT else GENERAL_BALLOT_RULES)
                   .replace("{ballots_note}",
-                           PRIMARY_BALLOTS_NOTE if IS_PRIMARY_EVENT else ""))
+                           PRIMARY_BALLOTS_NOTE if IS_PRIMARY_EVENT else "")
+                  .replace("{columns_note}",
+                           PRIMARY_COLUMNS_NOTE if IS_PRIMARY_EVENT else ""))
 
 
 # Claude Opus 5 reads up to 2576px on the long edge. Tally tapes are dense
