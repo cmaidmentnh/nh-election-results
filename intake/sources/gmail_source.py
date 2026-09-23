@@ -243,7 +243,8 @@ def _fetch_mailbox(token_path):
             triagable = "UNREAD" in labels and not labels & _NO_TRIAGE
             done = triagable and triage.handle(
                 hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify,
-                where=f"{_mailbox_name(token_path)}, Gmail message {ref['id']}")
+                where=f"{_mailbox_name(token_path)}, Gmail message {ref['id']}",
+                headers=hdrs, thread_id=msg.get("threadId"))
             users.messages().modify(userId="me", id=ref["id"], body={
                 "addLabelIds": [label_id],
                 "removeLabelIds": ["UNREAD"] if done else []}).execute()

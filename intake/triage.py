@@ -10,8 +10,8 @@ ping or nothing.
 
 - auto action done       -> Signal FYI of what was done; marked read if the
                             message is short (a long one may carry more)
-- needs Chris            -> left unread, Signal message with the gist
-- alert (failing/expiring/legal) -> left unread, Signal message (SES rate alarms excepted)
+- needs Chris (>=0.9)    -> left unread, one Signal message per conversation
+- automated/bulk senders -> never pinged (sign-in notices, renewals, newsletters)
 - no reply needed/unsure -> left unread, nothing sent
 
 INTAKE_TRIAGE_MODE: on / shadow (log only) / off. Default on when Jev is on.
@@ -30,7 +30,7 @@ log = logging.getLogger("intake.triage")
 
 MODE = os.environ.get("INTAKE_TRIAGE_MODE", jev_gate.MODE).strip().lower()
 AUTO_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_AUTO_CONFIDENCE", "0.85"))
-PING_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_PING_CONFIDENCE", "0.6"))
+PING_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_PING_CONFIDENCE", "0.9"))
 # Alerts need a firmer answer: a newsletter headline like "Diesel prices could crush
 # Republicans" scored 0.78 as an alert, every real one (failed renewal, domain pending
 # delete, subscriber not welcomed, site indexing) scored 0.84+.
@@ -148,12 +148,36 @@ def _send_portal_link(addr):
         return r.status == 200
 
 
-def handle(sender, subject, body, notify, where=""):
+# Chris, 9/23/26: "I'm getting far too many pings for useless emails." Automated mail
+# (sign-in notices, renewals, plugin errors, Search Console, newsletters) never pings;
+# only a real person who needs him does, once per conversation.
+AUTOMATED_SENDER = re.compile(
+    r"^(no-?reply|do-?not-?reply|notifications?|alerts?|mailer(-daemon)?|bounces?|updates?|news(letter)?|"
+    r"billing|marketing|digest|reminders?|calendar-notification)[+@.-]", re.I)  # not info@/team@: campaigns use those
+_pinged_threads = set()
+
+
+def is_automated(addr, headers):
+    """Bulk or machine-sent mail: list headers, auto-submitted, or a noreply-style address."""
+    h = {k.lower(): v for k, v in (headers or {}).items()}
+    if h.get("list-unsubscribe") or h.get("list-id") or h.get("auto-submitted", "no").lower() != "no":
+        return True
+    if (h.get("precedence") or "").lower() in ("bulk", "list", "junk"):
+        return True
+    return bool(AUTOMATED_SENDER.match(addr or ""))
+
+
+def handle(sender, subject, body, notify, where="", headers=None, thread_id=None):
     """Triage one non-results email. Returns True if it may be marked read."""
     if MODE not in ("on", "shadow"):
         return False
     addr = _sender_email(sender)
     if not addr or _is_own(addr):
+        return False
+    if is_automated(addr, headers):
+        log.info("Triage: automated sender, no ping - %s", (subject or "")[:80])
+        return False
+    if thread_id and thread_id in _pinged_threads:
         return False
     verdict = classify(sender, subject, body)
     gist = _newest_text(body)[:300]
@@ -180,12 +204,12 @@ def handle(sender, subject, body, notify, where=""):
         # Not a candidate on file, or the send failed: a person has to look.
         choice, conf = "needs_chris", max(conf, PING_CONFIDENCE)
 
-    if choice == "alert" and conf >= ALERT_CONFIDENCE and not QUIET_ALERTS.search(subject or ""):
-        notify(f"Alert - {sender}\n{subject}\n\"{gist}\"\n\n"
-               f"({where}.) Reply here if you want it handled.")
-        return False
-
-    if choice in ("needs_chris", "portal_link") and conf >= PING_CONFIDENCE:
+    # An "alert" from a person (not a system) is rare and worth a look; alerts from
+    # systems never reach here - they are filtered as automated above.
+    if choice in ("needs_chris", "portal_link", "alert") and conf >= PING_CONFIDENCE \
+            and not QUIET_ALERTS.search(subject or ""):
+        if thread_id:
+            _pinged_threads.add(thread_id)
         notify(f"Email needs you - {sender}\n{subject}\n\"{gist}\"\n\n"
                f"({where}.) Reply here with what to do and I'll handle it.")
         return False
