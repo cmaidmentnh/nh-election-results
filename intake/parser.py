@@ -98,14 +98,13 @@ these must name the ward. Without a ward number, return an empty string.
 - Similar names: Hampton / Hampton Falls / North Hampton / East Kingston / Kingston, \
 Newport / Newington / Newmarket / New Ipswich / Newton, Lyme / Lyman / Lyndeborough."""
 
-EXTRACT_SYSTEM = """You read election-night vote reports from New Hampshire town \
-clerks and party volunteers and turn them into structured vote totals.
+# The ballot rules depend on the event. A state primary is two party ballots
+# (R + D) on the same day; a general (election_type 'general' in the elections
+# table, as in 2024) is one ballot per polling place. Matched exactly against
+# config.EVENT_TYPE (INTAKE_ELECTION_TYPE), not by substring.
+PRIMARY_EVENT_TYPES = ("state_primary",)
 
-You are given the EXACT ballot for one polling place: every race with its race_id, \
-and every candidate with its candidate_id. Your only job is to attach the reported \
-numbers to those ids.
-
-THIS IS A PRIMARY. THERE ARE TWO SEPARATE BALLOTS.
+PRIMARY_BALLOT_RULES = """THIS IS A PRIMARY. THERE ARE TWO SEPARATE BALLOTS.
 The Republican ballot and the Democratic ballot are different elections held the \
 same day. The same office appears on BOTH, with a DIFFERENT race_id and a \
 different set of candidates. Governor on the Republican ballot and Governor on the \
@@ -118,7 +117,27 @@ all. So:
 - If the party is never stated, use the ballot the reported candidates actually \
   appear on - the two candidate lists do not overlap.
 - If a line could sit on either ballot and nothing resolves it, return race_id=0 \
-  and let a human decide. Never guess between the two.
+  and let a human decide. Never guess between the two."""
+
+GENERAL_BALLOT_RULES = """THIS IS A GENERAL ELECTION. Each polling place has one ballot, and each \
+office on it has one race_id. A party label printed beside a candidate's name identifies the \
+candidate; it does not mean a separate ballot. If a line cannot be matched to a race on the \
+ballot, return race_id=0 and let a human decide."""
+
+PRIMARY_BALLOTS_NOTE = """ A primary reports \
+ballots cast per party, so "1,420 Republican ballots" uses the Republican \
+election_id."""
+
+IS_PRIMARY_EVENT = config.EVENT_TYPE in PRIMARY_EVENT_TYPES
+
+EXTRACT_SYSTEM = """You read election-night vote reports from New Hampshire town \
+clerks and party volunteers and turn them into structured vote totals.
+
+You are given the EXACT ballot for one polling place: every race with its race_id, \
+and every candidate with its candidate_id. Your only job is to attach the reported \
+numbers to those ids.
+
+{ballot_rules}
 
 Every race listed in the ballot above IS on this town's ballot. If the report names \
 an office you can see above - including abbreviations like "Exec Council D4", "EC4", \
@@ -137,9 +156,7 @@ return candidate_id=0.
 - Votes written as "412" and "412 votes" and "412 (52%)" are all 412. Never derive a \
 vote count from a percentage.
 - A total ballots cast / turnout figure is NOT a candidate vote. Put it in ballots, \
-using the election_id shown in that ballot's header above. A primary reports \
-ballots cast per party, so "1,420 Republican ballots" uses the Republican \
-election_id.
+using the election_id shown in that ballot's header above.{ballots_note}
 - For every race where the sheet prints a TOTAL VOTES CAST (and/or BLANKS,
 UNDERVOTES, OVERVOTES), copy those figures into checks for that race_id. Copy
 them exactly as printed; do not compute them yourself and do not infer a total
@@ -199,6 +216,12 @@ not silently pick one.
 outside the frame, omit that line and say so in notes rather than guessing.
 - If the photograph is too blurry or too dark to read at all, set \
 contains_results=false and say so in notes."""
+
+EXTRACT_SYSTEM = (EXTRACT_SYSTEM
+                  .replace("{ballot_rules}",
+                           PRIMARY_BALLOT_RULES if IS_PRIMARY_EVENT else GENERAL_BALLOT_RULES)
+                  .replace("{ballots_note}",
+                           PRIMARY_BALLOTS_NOTE if IS_PRIMARY_EVENT else ""))
 
 
 # Claude Opus 5 reads up to 2576px on the long edge. Tally tapes are dense
