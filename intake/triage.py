@@ -11,6 +11,7 @@ ping or nothing.
 - auto action done       -> Signal FYI of what was done; marked read if the
                             message is short (a long one may carry more)
 - needs Chris            -> left unread, Signal message with the gist
+- alert (failing/expiring/legal) -> left unread, Signal message (SES rate alarms excepted)
 - no reply needed/unsure -> left unread, nothing sent
 
 INTAKE_TRIAGE_MODE: on / shadow (log only) / off. Default on when Jev is on.
@@ -30,10 +31,17 @@ log = logging.getLogger("intake.triage")
 MODE = os.environ.get("INTAKE_TRIAGE_MODE", jev_gate.MODE).strip().lower()
 AUTO_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_AUTO_CONFIDENCE", "0.85"))
 PING_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_PING_CONFIDENCE", "0.6"))
+# Alerts need a firmer answer: a newsletter headline like "Diesel prices could crush
+# Republicans" scored 0.78 as an alert, every real one (failed renewal, domain pending
+# delete, subscriber not welcomed, site indexing) scored 0.84+.
+ALERT_CONFIDENCE = float(os.environ.get("INTAKE_TRIAGE_ALERT_CONFIDENCE", "0.8"))
 # Beyond this many characters of new text, an auto-handled email is left unread.
 SHORT_CHARS = int(os.environ.get("INTAKE_TRIAGE_SHORT_CHARS", "400"))
 CANDIDATE_DB_URL = os.environ.get("CANDIDATE_DB_URL", "")
 PORTAL_URL = os.environ.get("PORTAL_API_URL", "http://127.0.0.1:5008/portal/api")
+# Alerts Chris has said he does not want pinged about (9/23/26: "ses complaint rate
+# is fine the way it is").
+QUIET_ALERTS = re.compile(r'ALARM: "SES-|SES-(Complaint|Bounce)Rate', re.I)
 # Our own people and systems - never act on these.
 OWN_DOMAINS = ("electhouserepublicans.com", "maidmentnh.com", "winthehouse.gop", "nhcivicrm.com")
 
@@ -60,6 +68,14 @@ QUESTION = {
                          "or needs a decision or a personal reply"),
                 "examples": ["When will our yard signs arrive?", "Can Melodye get walkbook access?",
                              "I registered for the Zoom but got no link"],
+            },
+            "alert": {
+                "what": ("An automated or third-party warning that something is broken, failing, expiring or "
+                         "at risk: failed payments or renewals, domains expiring or pending deletion, security "
+                         "or sign-in alerts, sites down, delivery failures, legal filings or court deadlines"),
+                "examples": ["Renewal Payment Failed", "Domain Pending Delete Notification",
+                             "Motions to Dismiss filed in Gordon-Darby", "Someone subscribed but did not receive"],
+                "not_for": "Routine receipts, approvals, newsletters and marketing",
             },
             "no_reply_needed": {
                 "what": ("Thanks, acknowledgements, FYIs, 'can't make it', or automated notices that "
@@ -163,6 +179,11 @@ def handle(sender, subject, body, notify, where=""):
                 log.exception("portal link send failed for %s", addr)
         # Not a candidate on file, or the send failed: a person has to look.
         choice, conf = "needs_chris", max(conf, PING_CONFIDENCE)
+
+    if choice == "alert" and conf >= ALERT_CONFIDENCE and not QUIET_ALERTS.search(subject or ""):
+        notify(f"Alert - {sender}\n{subject}\n\"{gist}\"\n\n"
+               f"({where}.) Reply here if you want it handled.")
+        return False
 
     if choice in ("needs_chris", "portal_link") and conf >= PING_CONFIDENCE:
         notify(f"Email needs you - {sender}\n{subject}\n\"{gist}\"\n\n"
