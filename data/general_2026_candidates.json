@@ -1,0 +1,8127 @@
+{
+ "source": "NH Secretary of State, CANDIDATE LIST W/ ADDRESS",
+ "source_url": "https://mm.nh.gov/files/uploads/sos/docs/2026-ge-candidate-list.pdf",
+ "list_date": "09/17/2026",
+ "year": 2026,
+ "election_type": "general",
+ "candidates": [
+  {
+   "office": "Governor",
+   "county": null,
+   "district": null,
+   "name": "Cinde Warmington",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 6
+  },
+  {
+   "office": "Governor",
+   "county": null,
+   "district": null,
+   "name": "Kelly Ayotte",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 7
+  },
+  {
+   "office": "Governor",
+   "county": null,
+   "district": null,
+   "name": "Stephen Villee",
+   "party_code": "LIB",
+   "party": "Libertarian",
+   "source_line": 8
+  },
+  {
+   "office": "United States Senator",
+   "county": null,
+   "district": null,
+   "name": "Chris Pappas",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 10
+  },
+  {
+   "office": "United States Senator",
+   "county": null,
+   "district": null,
+   "name": "John E. Sununu",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 11
+  },
+  {
+   "office": "United States Senator",
+   "county": null,
+   "district": null,
+   "name": "Edmond Laplante",
+   "party_code": "CON",
+   "party": "Constitution",
+   "source_line": 13
+  },
+  {
+   "office": "Representative in Congress",
+   "county": null,
+   "district": "1",
+   "name": "Stefany Shaheen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 16
+  },
+  {
+   "office": "Representative in Congress",
+   "county": null,
+   "district": "1",
+   "name": "Anthony DiLorenzo",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 17
+  },
+  {
+   "office": "Representative in Congress",
+   "county": null,
+   "district": "2",
+   "name": "Maggie Goodlander",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 19
+  },
+  {
+   "office": "Representative in Congress",
+   "county": null,
+   "district": "2",
+   "name": "Lily Tang Williams",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 20
+  },
+  {
+   "office": "Representative in Congress",
+   "county": null,
+   "district": "2",
+   "name": "Robbie Mahrou",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 21
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "1",
+   "name": "Luz Bay",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 24
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "1",
+   "name": "Joseph D. Kenney",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 25
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "2",
+   "name": "Karen Liot Hill",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 27
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "2",
+   "name": "Tobin Menard",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 28
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "3",
+   "name": "Lisa Kennedy Sheldon",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 30
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "3",
+   "name": "Janet Stevens",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 31
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "4",
+   "name": "Jim O'Connell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 33
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "4",
+   "name": "John Stephen",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 34
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "5",
+   "name": "Melanie Levesque",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 41
+  },
+  {
+   "office": "Executive Councilor",
+   "county": null,
+   "district": "5",
+   "name": "Dave Wheeler",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 42
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "1",
+   "name": "Cathleen A. Fountain",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 45
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "1",
+   "name": "David Rochefort",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 46
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "2",
+   "name": "Kurt Webber",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 48
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "2",
+   "name": "Timothy P. Lang",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 49
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "3",
+   "name": "Bobbi Boudman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 51
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "3",
+   "name": "Mark McConkey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 52
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "4",
+   "name": "David H. Watters",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 54
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "4",
+   "name": "Shawn Mickelonis",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 55
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "5",
+   "name": "Suzanne M. Prentiss",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 57
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "5",
+   "name": "Conrad Schoeffter",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 58
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "6",
+   "name": "Cecil Abels",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 60
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "6",
+   "name": "James P. Gray",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 61
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "7",
+   "name": "Rebecca Harned",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 63
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "7",
+   "name": "Daniel E. Innis",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 64
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "8",
+   "name": "David Trumble",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 66
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "8",
+   "name": "Jim Creighton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 67
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "9",
+   "name": "Matthew McLaughlin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 69
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "9",
+   "name": "Denise Ricciardi",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 70
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "10",
+   "name": "Donovan Fenton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 77
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "11",
+   "name": "Shannon E. Chandley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 80
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "11",
+   "name": "Tim McGough",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 81
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "12",
+   "name": "Carryl L. Roy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 83
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "12",
+   "name": "Kevin Avard",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 84
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "13",
+   "name": "Laura Telerski",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 86
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "13",
+   "name": "Daniel J. Paul",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 87
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "14",
+   "name": "Timothy T. Wyatt",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 89
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "14",
+   "name": "Sharon M. Carson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 90
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "15",
+   "name": "Tara Reardon",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 92
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "15",
+   "name": "Dennis Blankenbeker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 93
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "16",
+   "name": "Dian McCarthy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 95
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "16",
+   "name": "Keith Murphy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 96
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "17",
+   "name": "Robert Lawliss",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 98
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "17",
+   "name": "Howard Pearl",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 99
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "18",
+   "name": "Leonard Bell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 101
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "18",
+   "name": "Victoria Sullivan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 102
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "19",
+   "name": "Michelle Moge",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 104
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "19",
+   "name": "Regina Birdsell",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 105
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "20",
+   "name": "Pat T. Long",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 112
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "20",
+   "name": "Patrick Binder",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 113
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "21",
+   "name": "Rebecca Perkins Kwoka",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 115
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "21",
+   "name": "Jeffrey Berlin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 116
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "22",
+   "name": "Chris Tardif",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 118
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "22",
+   "name": "Daryl Abbas",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 119
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "23",
+   "name": "David Childs",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 121
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "23",
+   "name": "Bill Gannon",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 122
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "24",
+   "name": "Debra Altschiller",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 124
+  },
+  {
+   "office": "State Senator",
+   "county": null,
+   "district": "24",
+   "name": "Lou Gargiulo",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 125
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "1",
+   "name": "Amber Schaefer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 129
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "1",
+   "name": "Tom Ploszaj",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 130
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "2",
+   "name": "Dean S.T. Cascadden",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 132
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "2",
+   "name": "Seth Wheeler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 133
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "2",
+   "name": "Matt Coker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 134
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "2",
+   "name": "Scott Wallace",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 135
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "3",
+   "name": "William Lawrence, Jr.",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 137
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "3",
+   "name": "Steven Bunce",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 138
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "4",
+   "name": "Liz Charlwood",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 140
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "4",
+   "name": "Kevin M. Nugent, Jr.",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 141
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Marcia Hayward",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 148
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Eric Hoffman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 149
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Lois A. Kessin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 150
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Denise Riley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 151
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Mike Bordes",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 152
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Timothy Minor",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 153
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Cody Pfaff",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 154
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "5",
+   "name": "Paul Rossi",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 155
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Allan Frank",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 157
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Bob McLean",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 158
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "David Nagel",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 159
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Lisa Rivard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 160
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Glen Aldrich",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 161
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Priscilla M. Bean",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 162
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Colleen M. Harkey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 163
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "name": "Jade Wood",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 164
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Stephen Copithorne",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 166
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Laura Dunham",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 167
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Nancy Mitchell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 169
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Barbara Comtois",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 170
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Paul A. Terry",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 171
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "7",
+   "name": "Peter R. Varney",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 172
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "8",
+   "name": "Donald J. Giguere",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 174
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "8",
+   "name": "Don House",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 175
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "8",
+   "name": "Lisa M. Freeman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 176
+  },
+  {
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "8",
+   "name": "Cameron Thompson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 177
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Benjamin Colbath",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 186
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Ellin M. Leonard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 187
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "David Paige",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 188
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Gregory T. Corrigan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 189
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Robert W. Nelson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 190
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Karen C. Umberger",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 191
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Anita Burroughs",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 193
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Adam Heard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 194
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Erlon Jones",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 195
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Jennifer LePla",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 196
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Todd Milliken",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 198
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Bryan Randolph",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 200
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Richard R. Brown",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 201
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Karel A. Crawford",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 202
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "4",
+   "name": "Annie Gehring",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 204
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "4",
+   "name": "Lino M. Avellani",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 205
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "4",
+   "name": "Mike Belcher",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 206
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "5",
+   "name": "Morgan Bultman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 208
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "5",
+   "name": "Steven Brown",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 209
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "6",
+   "name": "Deirdre McEachern",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 211
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "6",
+   "name": "Phoebe VanScoy-Giessler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 212
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "6",
+   "name": "Tim Bauman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 213
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "6",
+   "name": "John T. MacDonald",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 214
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "7",
+   "name": "Karen Burnett-Kurie",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 221
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "7",
+   "name": "Dale Fincher",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 222
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "name": "Jim Pittman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 224
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "name": "George Randell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 225
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "name": "Tammy Garthwaite",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 226
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "name": "Colin Mitchell",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 227
+  },
+  {
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "name": "George Randell",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 228
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "1",
+   "name": "Dylan Germana",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 232
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "1",
+   "name": "Timothy J. Donovan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 233
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "2",
+   "name": "Dru Fox",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 235
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "3",
+   "name": "Philip Jones",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 237
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "3",
+   "name": "Marissa W. Salisbury",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 238
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "4",
+   "name": "Jodi Newell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 240
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "4",
+   "name": "Robert Johnson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 241
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "5",
+   "name": "Lucy McVitty Weber",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 243
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "5",
+   "name": "William J. Sommer",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 244
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "6",
+   "name": "Paul Berch",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 246
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "6",
+   "name": "Cathryn A. Harvey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 247
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "6",
+   "name": "Sean Graves",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 248
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "6",
+   "name": "Zachary Nutting",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 249
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "7",
+   "name": "Terri O'Rorke",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 256
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "7",
+   "name": "Jonathan Liptak",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 257
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "8",
+   "name": "Christine L. Parshall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 259
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "9",
+   "name": "Jim Gruber",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 261
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "9",
+   "name": "Rich Nalevanko",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 262
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "10",
+   "name": "Alan Gross",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 264
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "10",
+   "name": "Steve Russell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 265
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "10",
+   "name": "Sly Karasinski",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 266
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "10",
+   "name": "Michael Ralph York",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 267
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "11",
+   "name": "Lindseigh Picard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 269
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "11",
+   "name": "Denis Vincent Murphy II",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 270
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "12",
+   "name": "Kristan Tilton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 272
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "12",
+   "name": "Dick Thackston",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 273
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "13",
+   "name": "Tom Ahlborn-Hsu",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 275
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "13",
+   "name": "Matthew Santonastaso",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 277
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "14",
+   "name": "Gene F. Andersen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 279
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "14",
+   "name": "John B. Hunt",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 280
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "15",
+   "name": "Nicholas Germana",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 282
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "15",
+   "name": "Samantha Jacobs",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 283
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "15",
+   "name": "Matthew Roach",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 284
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "15",
+   "name": "Becky Shields",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 285
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "16",
+   "name": "Lucius Parshall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 292
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "16",
+   "name": "Alexander Nalevanko",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 293
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "17",
+   "name": "Jennie Gomarlo",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 295
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "17",
+   "name": "Jennifer Rhodes",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 296
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "18",
+   "name": "Allen Davis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 298
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "18",
+   "name": "Rory Lovett Sherman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 299
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "18",
+   "name": "Rita Mattson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 300
+  },
+  {
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "18",
+   "name": "Jim Qualey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 301
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "1",
+   "name": "Jay Ennis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 305
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "1",
+   "name": "Lee Ann Potter",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 306
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "1",
+   "name": "Sam Hoehn",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 307
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "1",
+   "name": "Amy Norris",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 308
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "2",
+   "name": "Lincoln Robertson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 310
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "2",
+   "name": "Arnold G. Davis",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 311
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "3",
+   "name": "Mike Ouellet",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 313
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "4",
+   "name": "Dave Holmander",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 315
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "4",
+   "name": "Seth King",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 316
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "4",
+   "name": "Scott McKinnon Black",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 317
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "5",
+   "name": "Mark Evans",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 319
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "5",
+   "name": "Peter Morency",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 320
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "5",
+   "name": "Cassie Mason",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 321
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "6",
+   "name": "Richard Umiker",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 328
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "6",
+   "name": "Robert Gargano",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 329
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "7",
+   "name": "Corinne Cascadden",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 331
+  },
+  {
+   "office": "State Representative",
+   "county": "Coos",
+   "district": "7",
+   "name": "Lori Korzen",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 332
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Joseph Goderic Beaulieu",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 336
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Timothy T. Egan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 337
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Linda Massimilla",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 338
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Joseph Barton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 339
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Calvin Beaulier",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 340
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "name": "Andrew Dorsett",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 341
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "2",
+   "name": "Jared Sullivan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 343
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "3",
+   "name": "Jerry M. Stringham",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 345
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "3",
+   "name": "Bonnie Ham",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 346
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "4",
+   "name": "Heather P. Baldwin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 348
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "4",
+   "name": "David Adams Rardin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 349
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "5",
+   "name": "Dustin Vigneault",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 351
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "5",
+   "name": "Marie Louise Bjelobrk",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 352
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "5",
+   "name": "Greg Mathieson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 353
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "6",
+   "name": "Paul J. Goundrey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 355
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "6",
+   "name": "Linda Franz",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 356
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "7",
+   "name": "Janet Marie Lucas",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 363
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "7",
+   "name": "Jon A. Gablinske",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 364
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "8",
+   "name": "Bill Bolton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 366
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "8",
+   "name": "Sallie Fellows",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 367
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "8",
+   "name": "Peter Lovett",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 368
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "8",
+   "name": "George Kirk",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 369
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "9",
+   "name": "Ella V. Barrett",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 371
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "9",
+   "name": "Bradley Macrae",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 372
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "10",
+   "name": "Marc E. Bourassa",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 374
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "10",
+   "name": "Steven Pihl Coffill",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 375
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "11",
+   "name": "Roger B. Larochelle, Jr.",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 377
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "11",
+   "name": "Jake Abuhav",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 378
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "12",
+   "name": "Mary Hakken-Phillips",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 380
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "12",
+   "name": "Russell Muirhead",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 381
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "12",
+   "name": "Ellen Rockmore",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 382
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "12",
+   "name": "Terry Spahr",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 383
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "13",
+   "name": "Laurel Stavis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 385
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "14",
+   "name": "Kathryn Brennan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 387
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "15",
+   "name": "Zoe Hill",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 389
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "16",
+   "name": "David Fracht",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 391
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "17",
+   "name": "Thomas Cormen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 398
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "18",
+   "name": "Marko Kloos",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 400
+  },
+  {
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "18",
+   "name": "Donald McFarlane",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 401
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Lisa Brown",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 405
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Noah Lamoureaux",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 406
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Debbie Ryan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 407
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Deborah Kruzel",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 408
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Tom Mannion",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 409
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Diane Rogers",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 410
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Jeffrey F. Tenczar",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 411
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Todd C. Fahey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 413
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "John K. Fitzgerald",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 414
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Jeff Kerr",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 415
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Ryan Nugent",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 416
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Sheila Quick",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 417
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Catherine A. Rombeau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 418
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Geoffrey Wellington",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 419
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Matthew Castanien",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 420
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Phil Greazzo",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 421
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Peter M. Kujawski",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 422
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Brian Labrie",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 423
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Pat MacMonagle",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 424
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Kristin Noble",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 425
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "John Schneller",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 426
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "Suzanne A. Beaulieu",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 433
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "Fred Davis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 434
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "Michael Joseph",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 435
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "John Menyhard",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 436
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "4",
+   "name": "Renae Lias",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 438
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "4",
+   "name": "Camille Pattison",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 439
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "4",
+   "name": "Linda Vandecar Ryan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 440
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "4",
+   "name": "Shawn Martin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 441
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "5",
+   "name": "Susan A. Elberger",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 443
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "5",
+   "name": "Heather Raymond",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 444
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "5",
+   "name": "Dale Swanson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 445
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "5",
+   "name": "Paul Schibbelhute",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 446
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Michele Roussel Buckley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 448
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Lee Ann Kluger",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 449
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Adam R. Thompson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 450
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Doris Hohensee",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 451
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Elena Pavlou",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 452
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "6",
+   "name": "Daniel Richardson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 453
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "7",
+   "name": "Charlene Bangs Pedersen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 455
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "7",
+   "name": "Louis C. Juris",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 456
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "7",
+   "name": "Jim Mahoney",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 457
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "7",
+   "name": "Avalon Lewis",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 458
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "7",
+   "name": "Roy H. Parker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 459
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "8",
+   "name": "Efstathia C. Booras",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 466
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "8",
+   "name": "Christal Lloyd",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 467
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "8",
+   "name": "Frances Nutter-Upham",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 468
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "8",
+   "name": "Travis Tripodi",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 469
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "9",
+   "name": "Rich Green",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 471
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "9",
+   "name": "Sanjeev K. Manohar",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 472
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "9",
+   "name": "Santosh D. Salvi",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 473
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "9",
+   "name": "Joseph Cole",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 474
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "10",
+   "name": "Linda Harriott-Gathright",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 476
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "10",
+   "name": "Marty Jack",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 477
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "10",
+   "name": "Samantha O'Loughlin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 478
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "10",
+   "name": "Bill Ohm",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 479
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "11",
+   "name": "Manoj Chourasia",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 482
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "11",
+   "name": "Will Darby",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 483
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "11",
+   "name": "Arya Shams",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 484
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "11",
+   "name": "Kristie Hart",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 485
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Rebecca Boutin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 492
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Matthew Brown",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 493
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Nancy A. Murphy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 494
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Marc Nozell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 495
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Mary Beth Raven",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 496
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Heather Robitaille",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 497
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Rosemarie L. Rung",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 498
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Wendy E. N Thomas",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 499
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Kevin Francis Ballantine",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 500
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Bill Boyd",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 501
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Julie Miles",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 502
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Maureen Mooney",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 503
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Jeanine Notter",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 504
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Adam Presa",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 505
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Kevin Southwick",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 506
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Wolfram von Schoen",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 507
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "12",
+   "name": "Kyle Haines",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 508
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Luan Baci",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 515
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "James Battis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 516
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "James M. Caron",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 517
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Kate Messner",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 518
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Don Staveley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 519
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Dillon Dumont",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 520
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Cathy Kenny",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 521
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Andrew Prout",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 522
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Tom Trost",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 523
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Jordan Ulery",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 524
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "Bob Wherry",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 525
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "13",
+   "name": "C. Mark DelSesto",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 526
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "14",
+   "name": "Ray Ealy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 528
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "14",
+   "name": "Paula Paciulan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 529
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "14",
+   "name": "Rich Lascelles",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 530
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "14",
+   "name": "Raymond C. Peeples, Jr.",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 531
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "15",
+   "name": "Michael Farley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 533
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "15",
+   "name": "Michael Fitzell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 534
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "15",
+   "name": "Mark McLean",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 535
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "15",
+   "name": "Mark Proulx",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 536
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "16",
+   "name": "Ben Baroody",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 538
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "16",
+   "name": "Maxine Mosley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 539
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "16",
+   "name": "David A. Smith",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 540
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "16",
+   "name": "Michael J. Tkacz",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 541
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "17",
+   "name": "Rob Fox",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 548
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "17",
+   "name": "Sean Parr",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 549
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "17",
+   "name": "Ben Prescott",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 550
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "18",
+   "name": "Jessica Grill",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 552
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "18",
+   "name": "James Normand",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 553
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "18",
+   "name": "Steven Kesselring",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 554
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "19",
+   "name": "Jane Beaulieu",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 556
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "19",
+   "name": "Chrissy Simonds",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 557
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "19",
+   "name": "Matt Drew",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 558
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "19",
+   "name": "Mickey Mullin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 559
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "20",
+   "name": "Pauline Martineau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 561
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "20",
+   "name": "Alissandra Murray",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 562
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "20",
+   "name": "Pierre M. Dupont",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 563
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "20",
+   "name": "Jose R. Marte",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 564
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "21",
+   "name": "Jeff Goley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 566
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "21",
+   "name": "Christine Seibert",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 567
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "21",
+   "name": "Chris Morgan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 568
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "22",
+   "name": "Greg Erskine",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 570
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "22",
+   "name": "Nicole Leapley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 571
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "22",
+   "name": "Max Abramson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 572
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "22",
+   "name": "Brittany Ping",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 573
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "23",
+   "name": "Mary Ngwanda Georges",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 575
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "23",
+   "name": "Jean Jeudy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 576
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "24",
+   "name": "Frank Anthony",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 583
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "24",
+   "name": "Jessica Margeson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 584
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "24",
+   "name": "Shuvom Ghose",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 585
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "24",
+   "name": "Paul LaFerriere",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 586
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "25",
+   "name": "Heather Deiner",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 588
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "25",
+   "name": "Kathy Staub",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 589
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "25",
+   "name": "Kathleen Paquette",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 590
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "26",
+   "name": "Mary Freitas",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 592
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "26",
+   "name": "Patrick N. Long",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 593
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "26",
+   "name": "Brian Cole",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 594
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "26",
+   "name": "Henry Emele",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 595
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "27",
+   "name": "Mary Murphy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 597
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "27",
+   "name": "Timothy J. Coffin",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 598
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "28",
+   "name": "David Erikson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 600
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "28",
+   "name": "Benson H. Goodwin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 601
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "28",
+   "name": "Travis Corcoran",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 602
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "28",
+   "name": "Keith Erf",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 603
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Karyn Battey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 605
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Christopher Calhoun",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 606
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Judi L. Lanza",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 607
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Marie B. Morgan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 608
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Joe Alexander",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 609
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Shanun R. Carey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 610
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Henry R. Giasson III",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 611
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "29",
+   "name": "Sherri Reinfurt",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 612
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "W. Gordon Allen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 619
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "William Bryk",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 620
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "Janet McEwen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 621
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "Larry Baker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 622
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "Austin Cottle",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 623
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "30",
+   "name": "Tim Morehouse",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 624
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "31",
+   "name": "Molly C. Howard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 626
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "31",
+   "name": "Jarvis M. Adams IV",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 627
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "32",
+   "name": "Richard Swanson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 629
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "32",
+   "name": "Kermit Williams",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 630
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "32",
+   "name": "Diane Kelley",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 631
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "32",
+   "name": "Jim Kofalt",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 632
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "32",
+   "name": "Shane Sirois",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 633
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "33",
+   "name": "Peter R. Leishman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 635
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "33",
+   "name": "Jonah Orion Wheeler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 636
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "33",
+   "name": "Kimberly Thomas",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 637
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Stephanie Grund",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 639
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Daniel LeClerc",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 640
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Daniel T. Veilleux",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 641
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Jason Hennessey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 642
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Russ Hodgkins",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 643
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "34",
+   "name": "Diane Layton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 644
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "35",
+   "name": "Kat McGhee",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 651
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "35",
+   "name": "Ben Ming",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 652
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "35",
+   "name": "Liz Barbour",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 653
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "35",
+   "name": "Jim Kelly",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 654
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "36",
+   "name": "Michael Pellerito",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 656
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "36",
+   "name": "Stephen Spratt",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 657
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "36",
+   "name": "Diane Pauer",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 658
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "36",
+   "name": "John W. Suiter",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 659
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "37",
+   "name": "Megan A. Murray",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 661
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "37",
+   "name": "Michael E. Thornton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 662
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "37",
+   "name": "Daryl D'Angelo",
+   "party_code": "CLA",
+   "party": "CLA",
+   "source_line": 663
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "38",
+   "name": "Mahendra Bakshi",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 665
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "38",
+   "name": "Heidi P. Jakoby",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 666
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "38",
+   "name": "Adam Haverstock",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 667
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "38",
+   "name": "Ted Trost",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 668
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "39",
+   "name": "Ellen A. Boudreau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 670
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "39",
+   "name": "Tommy Katsiantonis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 671
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "39",
+   "name": "Jon DiPietro",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 672
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "39",
+   "name": "William Infantine",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 673
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Erin Kerwin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 680
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Mark S. Mackenzie",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 681
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Robert Richard-Snipes",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 682
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Trinidad Tellez",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 683
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Lynne M. Cumming",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 684
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Carlos Gonzalez",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 685
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Bill O'Brien",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 686
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "name": "Robert Rivera",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 687
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Lily M. Foss",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 689
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Bishwa Bahadur Shah",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 690
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Tom Stewart",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 691
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Ryan Hebert",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 692
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Jason Hodgdon",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 693
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "41",
+   "name": "Joseph Skinner",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 694
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Teri Harkins",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 696
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Lee C. Nyquist",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 697
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Peter Ryder",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 698
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Gerald Griffin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 699
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Rob Lovett",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 700
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "42",
+   "name": "Lisa C. M. Post",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 701
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Ethan Aho",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 708
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Paul Dargie",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 709
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Claire Holston",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 710
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Maria Elizabeth Perez",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 711
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "William J. Bieschke",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 712
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Gary Daniels",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 713
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Elizabeth Keenan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 714
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "43",
+   "name": "Vanessa L. Sheehan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 715
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "44",
+   "name": "Chris Conroy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 717
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "44",
+   "name": "Bob Jones",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 718
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "44",
+   "name": "Ross Berry",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 719
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "44",
+   "name": "Lisa Mazur",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 720
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "45",
+   "name": "Jerry Roche",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 722
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "45",
+   "name": "Jack Flanagan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 723
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "1",
+   "name": "Lorrie J. Carey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 727
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "1",
+   "name": "Rick Devoid",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 728
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "2",
+   "name": "Joyce May Fulweiler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 730
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "2",
+   "name": "Gregory Hill",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 731
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "3",
+   "name": "Scott A. Burns",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 733
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "3",
+   "name": "Vivian Marie Hall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 734
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "3",
+   "name": "Werner D. Horn",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 735
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "3",
+   "name": "Michael Visconti",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 736
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "4",
+   "name": "Cody York",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 743
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "4",
+   "name": "Jose Eduardo Cambrils",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 744
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "4",
+   "name": "Michael Moffett",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 745
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "5",
+   "name": "Lorna Carlisle",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 747
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "5",
+   "name": "Thomas Ware",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 748
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "5",
+   "name": "Louise Andrus",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 749
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "5",
+   "name": "Deborah Aylward",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 750
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "6",
+   "name": "Tom Schamberg",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 752
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "6",
+   "name": "Paul M. Little",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 753
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "7",
+   "name": "Karen Elizabeth Ebel",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 755
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "7",
+   "name": "Gregory M. Sargent",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 756
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "7",
+   "name": "Dorothy L. Hitchmoth",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 757
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Tony Caplan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 759
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Eileen Kelly",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 760
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Stephanie Payeur",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 761
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Matt Center",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 762
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Stephen Craig Pierce",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 763
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "8",
+   "name": "Natalie J. Wells",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 764
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "Eleana M. Colby",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 766
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "Muriel Hall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 767
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "David Luneau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 768
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "James Newsom",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 769
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "John F. Martin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 770
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "9",
+   "name": "Matthew Poulin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 771
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Lucas J. Coriaty",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 778
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Ricky Gurung",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 779
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "William Lynch",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 780
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Germano Mendes Martins",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 781
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Stephen Boyd",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 782
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Pamela McMahon",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 783
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Yury Polozov",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 784
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "10",
+   "name": "Thomas C. Walsh",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 785
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "11",
+   "name": "Al Turcotte",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 787
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "11",
+   "name": "Matthew Pitaro",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 788
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "12",
+   "name": "Mariana R. Beer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 790
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "12",
+   "name": "Kenneth Nivison",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 791
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "12",
+   "name": "Peter L. Mehegan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 792
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "12",
+   "name": "Brian Seaworth",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 793
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "13",
+   "name": "Cyril Aures",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 795
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "13",
+   "name": "Clayton Wood",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 796
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "13",
+   "name": "Becky Berk",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 797
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "13",
+   "name": "Paul Twomey",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 798
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "14",
+   "name": "Glenn Horner",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 800
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "14",
+   "name": "Gary Matteson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 801
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "15",
+   "name": "Tracy Bricchi",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 803
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "16",
+   "name": "Connie Lane",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 805
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "16",
+   "name": "Laurence Weissbrot",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 806
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "17",
+   "name": "Beth Richards",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 813
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "18",
+   "name": "Lisa D. Beaudoin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 815
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "18",
+   "name": "Elijah J. Wilson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 816
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "19",
+   "name": "Mary Jane Wallner",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 818
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "20",
+   "name": "Nathan Giffard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 820
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "20",
+   "name": "Jonathan Clark",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 821
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "21",
+   "name": "Timothy Soucy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 823
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "21",
+   "name": "Darryl Berleth",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 824
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "22",
+   "name": "Alison Murphy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 826
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "22",
+   "name": "Jonathan R. Cate",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 827
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "23",
+   "name": "Kristopher Levesque",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 829
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "23",
+   "name": "Andrew Georgevits",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 830
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "24",
+   "name": "Matthew Hicks",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 832
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "25",
+   "name": "Erica Russell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 834
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "25",
+   "name": "James Thibault",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 835
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "26",
+   "name": "Harold D. Tuttle",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 837
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "26",
+   "name": "Alvin B. See",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 838
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "27",
+   "name": "Harold Kozlowski",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 845
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "27",
+   "name": "Phillip James Walker",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 846
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "27",
+   "name": "Ray Plante",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 847
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "27",
+   "name": "Vanessa Poulin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 848
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "28",
+   "name": "Lisa Brown",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 850
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "29",
+   "name": "Kris Schultz",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 852
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "30",
+   "name": "Jason Quinno",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 854
+  },
+  {
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "30",
+   "name": "Robert C. Washburn",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 855
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Donna Danis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 859
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Hal Rafter",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 860
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Pamela Sanderson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 861
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Scott Bryer",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 862
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "James Guzofski",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 863
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Paul Tudor",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 864
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "Kendra Cohen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 866
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "Judith Lindsey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 867
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "Robert Prieto",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 868
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "Will Huebner",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 869
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "Jason Osborne",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 870
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "2",
+   "name": "James Spillane",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 871
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "3",
+   "name": "Chuck Heuer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 873
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "3",
+   "name": "Mary J. Ford",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 874
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "4",
+   "name": "Art Hunt",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 881
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "4",
+   "name": "Christine Pierce",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 882
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "4",
+   "name": "Cindy Bennett",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 883
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "4",
+   "name": "Michael Drago",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 884
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "4",
+   "name": "Brian Nadeau",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 885
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "5",
+   "name": "Joseph Perry",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 887
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "5",
+   "name": "Mark Vallone",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 888
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "5",
+   "name": "Trevor Morse",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 889
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "5",
+   "name": "John Scully",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 890
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "6",
+   "name": "Eric S. Turer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 892
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "6",
+   "name": "Allen Cook",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 893
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "7",
+   "name": "JJ DeFeo",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 895
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "7",
+   "name": "Laurence A. Miner",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 896
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "8",
+   "name": "Sayra Lynn DeVito",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 898
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "9",
+   "name": "Kevin M. Major",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 900
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "9",
+   "name": "Matthew Brooks",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 901
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "9",
+   "name": "Kevin M. Major",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 902
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "10",
+   "name": "Michael Cahill",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 904
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "10",
+   "name": "Charlotte DiLorenzo",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 905
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "10",
+   "name": "Ellen Read",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 906
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "11",
+   "name": "Julie Gilman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 913
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "11",
+   "name": "Enna Grazier",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 914
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "11",
+   "name": "Steven C. Jones",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 915
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "11",
+   "name": "Mark Paige",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 916
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "11",
+   "name": "Robert Goeman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 917
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "12",
+   "name": "Allison Knab",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 919
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "12",
+   "name": "Zoe Manos",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 920
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "12",
+   "name": "Patrick Abrami",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 921
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "12",
+   "name": "James Scamman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 922
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Thomas Bosia",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 929
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Haley Carreau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 930
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Jamie Carreau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 931
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Paula Mahon d'Entremont",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 932
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Matthew Glavin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 933
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Hollie Hesse",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 934
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Jim Marshall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 935
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "David Provencher",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 936
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Kristine Trow",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 937
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Thomas C. Wood",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 938
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Michael Appleton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 939
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Brandon Bach",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 940
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Brian K. Chirichiello",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 941
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Charles Foote",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 942
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Anthony Henry",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 943
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Erica Layon",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 944
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "David C. Love",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 945
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Jodi Nelson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 946
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "John Potucek",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 947
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "name": "Richard Tripp",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 948
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "14",
+   "name": "Paul C. Paone",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 950
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "14",
+   "name": "Pam Brown",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 951
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "14",
+   "name": "Kenneth L. Weyler",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 952
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "15",
+   "name": "Lisa DeMio",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 954
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "15",
+   "name": "Laurie A. Warnock",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 955
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "15",
+   "name": "Joe A. Guthrie",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 956
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "15",
+   "name": "Lilli Walsh",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 957
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Ted Combes",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 964
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Jane Cooper",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 965
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Bob Cote",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 966
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Isaac Fernandez",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 967
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Michela Hites",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 968
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Neil Marceau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 969
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Paul Skudlarek",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 970
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Gregory G. Carson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 971
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Ron Dunn",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 972
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "David Lundgren",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 973
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Wayne D. MacDonald",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 974
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Jeffrey McGraw",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 975
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Sherman Packard",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 976
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "name": "Kristine Perez",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 977
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Irene L. Harnden",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 979
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "David Martsolf",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 980
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Darryn E. Remillard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 981
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Matthew Swoboda",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 982
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Katelyn Kuttab",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 983
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Bob Lynn",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 984
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Charles E. McMahon",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 985
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "17",
+   "name": "Daniel Popovici-Muller",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 986
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "18",
+   "name": "Beth Cacciotti",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 988
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "18",
+   "name": "Christine Duerr",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 989
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "18",
+   "name": "Debra L. DeSimone",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 990
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "18",
+   "name": "Jay Markell",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 991
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "19",
+   "name": "Wendy Larson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 998
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "19",
+   "name": "Susan M. Porcelli",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 999
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "20",
+   "name": "Rick A. Faulconer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1001
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "20",
+   "name": "Robert Harb",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1002
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "20",
+   "name": "Charles R. Melvin, Sr.",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1003
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "20",
+   "name": "James Summers",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1004
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "21",
+   "name": "Anna Howard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1006
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "22",
+   "name": "Rebecca Audet",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1008
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "23",
+   "name": "Jim Maggiore",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1010
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "23",
+   "name": "Kirsten Larsen Schultz",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 1011
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "24",
+   "name": "Dennis Malloy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1013
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "24",
+   "name": "Michael J. Moody",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1014
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "24",
+   "name": "Marilyn Page",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1015
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "24",
+   "name": "Kevin Szmyd",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1016
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Claudia DeFuria",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1023
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Kienen Dyer",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1024
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Donna Loranger",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1025
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Lorie Ball",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1026
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Edward W. Huminick",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1027
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "John Janigian",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1028
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "George I. Kassas",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1029
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Dennis Mannion",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1030
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Valerie McDonnell",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1031
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Joe Sweeney",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1032
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "John Sytek",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1033
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "name": "Susan J. Vandecasteele",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1034
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "26",
+   "name": "Buzz Scherr",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1036
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "27",
+   "name": "Gerald W. R. Ward",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1038
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "28",
+   "name": "Carrie Sorensen",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1040
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Ward Galanis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1042
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Rebecca LaPierre",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1043
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Molly McCoy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1044
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Nathan Andrew Riggs",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1045
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Nicholas D. Bridle",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1046
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Kenneth Sheffert",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1047
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Bruce Theriault",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1048
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "29",
+   "name": "Richard Wickson, Jr.",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1049
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "30",
+   "name": "Diana Labrecque Chapman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1056
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "30",
+   "name": "Jason A. Janvrin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1057
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "30",
+   "name": "Aboul B. Khan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1058
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "31",
+   "name": "Peter Boudreau",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1060
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "31",
+   "name": "Yaz Safarzadeh",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1061
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "31",
+   "name": "Jess Edwards",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1062
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "31",
+   "name": "Terry Roy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1063
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "32",
+   "name": "Kaley Dvorak",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1065
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "32",
+   "name": "Melissa A. Litchfield",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1066
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "32",
+   "name": "Kaley Dvorak",
+   "party_code": "UND",
+   "party": "Undeclared",
+   "source_line": 1067
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "33",
+   "name": "Alexis Simpson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1069
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "34",
+   "name": "Jade DeMio",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1071
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "34",
+   "name": "Mark A. Pearson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1072
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "35",
+   "name": "Michelle Stith",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1074
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "35",
+   "name": "Julius F. Soti",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1075
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "36",
+   "name": "Paul Bonzani",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1077
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "36",
+   "name": "JD Bernardy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1078
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "37",
+   "name": "Kate Cook",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1080
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "38",
+   "name": "Peggy Balboni",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1082
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "38",
+   "name": "Paul Martino",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1083
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "39",
+   "name": "Barbara M. Ward",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1090
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "39",
+   "name": "Sue Polidura",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1091
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "40",
+   "name": "Justin G. Packard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1093
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "40",
+   "name": "Linda McGrath",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1094
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "1",
+   "name": "Brian Beaverstock",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1098
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "1",
+   "name": "Jimmy Bourque",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1099
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "1",
+   "name": "W. Packy Campbell",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1100
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "1",
+   "name": "Andy Dow",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1101
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "2",
+   "name": "Larry Brown",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1103
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "2",
+   "name": "Glenn Bailey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1104
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "2",
+   "name": "Michael Granger",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1105
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "2",
+   "name": "Mark F. Racic",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1106
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "3",
+   "name": "Linda R. Adamo",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1108
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "3",
+   "name": "Susan G. DeRoy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1109
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "Kimberly S. McGlinchey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1111
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "Ginna Schonwald",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1112
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "Scott Shepard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1113
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "JoAnne Hack",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1114
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "Tanya Rich",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1115
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "4",
+   "name": "Kurt Wuelper",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1116
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "5",
+   "name": "William F. Fessenden",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1118
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "5",
+   "name": "Jenny Wilson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1119
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "5",
+   "name": "William F. Fessenden",
+   "party_code": "IND",
+   "party": "Independent",
+   "source_line": 1120
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "6",
+   "name": "Daniel Fitzpatrick",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1127
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "6",
+   "name": "Denise DeDe-Poulin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1128
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "7",
+   "name": "John H. Larochelle",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1130
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "7",
+   "name": "Eric Bourgeois",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1131
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "8",
+   "name": "Ty Wyman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1133
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "8",
+   "name": "David Walker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1134
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "9",
+   "name": "Nevin Dexter",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1136
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "9",
+   "name": "Robert Qua",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1137
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "10",
+   "name": "Wayne M. Burton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1139
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "10",
+   "name": "Timothy Horrigan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1140
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "10",
+   "name": "Siena R. Schaier",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1141
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "10",
+   "name": "Loren Selig",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1142
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "11",
+   "name": "Erik Johnson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1144
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "11",
+   "name": "Thomas Southworth",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1145
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "11",
+   "name": "Janet G. Wall",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1146
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "11",
+   "name": "Monique Meadows",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1147
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Billie Butler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1149
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Myles England",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1150
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Will Hurley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1151
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Wayne Pearson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1152
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Paul T. Edgar",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1153
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "David Hilton",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1154
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Philip Houde",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1155
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "12",
+   "name": "Omero Ambriz",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1156
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "13",
+   "name": "Peter W. Bixby",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1163
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "13",
+   "name": "Daniel A. Furman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1164
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "14",
+   "name": "Peter B. Schmidt",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1166
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "15",
+   "name": "Samuel Chouinard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1168
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "16",
+   "name": "Gary Gilmore",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1170
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "17",
+   "name": "Jessica LaMontagne",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1172
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "17",
+   "name": "Matthew D. Albion",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1173
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "18",
+   "name": "Thom Flynn",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1176
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "18",
+   "name": "Michael Harrington",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1177
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "Jonathan J. King",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1179
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "Justin McIsaac",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1180
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "Nick Paul",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1181
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "Samuel Farrington",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1182
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "James Higginbottom",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1183
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "19",
+   "name": "Jonathan Verbicky",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1184
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "20",
+   "name": "Allan Howland",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1186
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "20",
+   "name": "John Colford",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1187
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "21",
+   "name": "Seth Miller",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1189
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "21",
+   "name": "Geoff Smith",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1190
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "21",
+   "name": "Alice Wade",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1191
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "21",
+   "name": "Joseph D. Morganella",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1192
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "1",
+   "name": "Brian Sullivan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1201
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "1",
+   "name": "Joel T. Hutchins",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1202
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "2",
+   "name": "Jenny Ramsey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1204
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "2",
+   "name": "Michael Belanger",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1205
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Lisa DeBartolomao",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1207
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Timothy Fitzpatrick",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1208
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Jeffrey F. Kessler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1209
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Skip Rollins",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1210
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Steven Smith",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1211
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "3",
+   "name": "Walter Spilsbury",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1212
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "4",
+   "name": "Christopher J. Salmon",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1214
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "4",
+   "name": "Ron Rule",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1216
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "5",
+   "name": "Judith M. Thackaberry",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1218
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "5",
+   "name": "George C. Grant",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1219
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "John R. Cloutier",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1221
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "Chris Cogswell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1222
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "Lisa R. Gosselin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1223
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "Dale Girard",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1224
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "Wayne J. Hemingway",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1225
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "6",
+   "name": "Emily Sandblade",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1226
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "7",
+   "name": "Lawrence A. Schissel",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1228
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "7",
+   "name": "Margaret M. Drye",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1229
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "8",
+   "name": "Hope Damon",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1236
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "8",
+   "name": "Samuel Deering",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1237
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "8",
+   "name": "Catherine Peschke",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1238
+  },
+  {
+   "office": "State Representative",
+   "county": "Sullivan",
+   "district": "8",
+   "name": "Jonathan F. Stone",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1239
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Belknap",
+   "district": null,
+   "name": "Bill Wright",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1243
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Belknap",
+   "district": null,
+   "name": "Bill Wright",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1244
+  },
+  {
+   "office": "County Attorney",
+   "county": "Belknap",
+   "district": null,
+   "name": "Keith Gerard Cormier",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1246
+  },
+  {
+   "office": "County Attorney",
+   "county": "Belknap",
+   "district": null,
+   "name": "Keith Gerard Cormier",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1247
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Belknap",
+   "district": null,
+   "name": "Jason Sproul",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1249
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Belknap",
+   "district": null,
+   "name": "Travis J. O'Hara",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1250
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Belknap",
+   "district": null,
+   "name": "Maureen Baxley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1252
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Belknap",
+   "district": null,
+   "name": "Laura Lapointe",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1253
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Belknap",
+   "district": null,
+   "name": "Ruth Larson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1255
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Belknap",
+   "district": null,
+   "name": "Krystie Sullivan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1256
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Belknap",
+   "district": "1",
+   "name": "Peter John Spanos",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1258
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Belknap",
+   "district": "2",
+   "name": "Glen A. Waring",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1260
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Carroll",
+   "district": null,
+   "name": "Domenic M. Richardi",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1269
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Carroll",
+   "district": null,
+   "name": "Domenic M. Richardi",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1270
+  },
+  {
+   "office": "County Attorney",
+   "county": "Carroll",
+   "district": null,
+   "name": "Keith D. Blair",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1272
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Carroll",
+   "district": null,
+   "name": "Matt Sawyer, Jr.",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1274
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Carroll",
+   "district": null,
+   "name": "Karen I. Rines",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1276
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Carroll",
+   "district": null,
+   "name": "Karen I. Rines",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1277
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Carroll",
+   "district": null,
+   "name": "Steve Woodcock",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1279
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Carroll",
+   "district": null,
+   "name": "Brett I. Williams",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1280
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Wharton Sinkler",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1282
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "1",
+   "name": "Gene G. Chandler",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1283
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Tom Randell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1285
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "2",
+   "name": "Chuck McGee",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1286
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Michael Parton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1288
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Carroll",
+   "district": "3",
+   "name": "Harold B. Parker",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1289
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Cheshire",
+   "district": null,
+   "name": "Eli Rivera",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1298
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Cheshire",
+   "district": null,
+   "name": "Eli Rivera",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1299
+  },
+  {
+   "office": "County Attorney",
+   "county": "Cheshire",
+   "district": null,
+   "name": "D. Chris McLaughlin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1301
+  },
+  {
+   "office": "County Attorney",
+   "county": "Cheshire",
+   "district": null,
+   "name": "D. Chris McLaughlin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1302
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Cheshire",
+   "district": null,
+   "name": "Jack Wozmak",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1304
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Cheshire",
+   "district": null,
+   "name": "Anna Z. Tilton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1306
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Cheshire",
+   "district": null,
+   "name": "Jeremy LaPlante",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1308
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Cheshire",
+   "district": "1",
+   "name": "Benjamin Tilton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1310
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Cheshire",
+   "district": "1",
+   "name": "Kate Day",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1311
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Cheshire",
+   "district": "2",
+   "name": "Terry M. Clark",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1313
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Coos",
+   "district": "1",
+   "name": "Eamon Kelley",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1317
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Coos",
+   "district": "1",
+   "name": "Robert Theberge",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1318
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Coos",
+   "district": "3",
+   "name": "Ray Gorman",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1320
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Coos",
+   "district": "3",
+   "name": "Ray Gorman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1321
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Grafton",
+   "district": null,
+   "name": "Jillian E. Myers",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1330
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Grafton",
+   "district": null,
+   "name": "Jillian E. Myers",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1331
+  },
+  {
+   "office": "County Attorney",
+   "county": "Grafton",
+   "district": null,
+   "name": "Martha Ann Hornick",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1333
+  },
+  {
+   "office": "County Attorney",
+   "county": "Grafton",
+   "district": null,
+   "name": "Matthew D. Bjelobrk",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1334
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Grafton",
+   "district": null,
+   "name": "Michael J. Cryans",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1336
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Grafton",
+   "district": null,
+   "name": "Brian Dear",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1337
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Grafton",
+   "district": null,
+   "name": "Brie Choate",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1339
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Grafton",
+   "district": null,
+   "name": "Kelley Jean Monahan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1340
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Grafton",
+   "district": null,
+   "name": "Sharon Modjeska",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1342
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Grafton",
+   "district": "1",
+   "name": "George Sykes",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1344
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Grafton",
+   "district": "3",
+   "name": "Katie Hedberg",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1346
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Grafton",
+   "district": "3",
+   "name": "Kimberly Chandonnet",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1347
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Brian Newcomb",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1351
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Brian Newcomb",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1352
+  },
+  {
+   "office": "County Attorney",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Travis Bennett",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1359
+  },
+  {
+   "office": "County Attorney",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "John J. Coughlin",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1360
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Beverly Cotton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1362
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Christopher Maidment",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1363
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Mary Ann Crowell",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1365
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Dennis Hogan",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1366
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "June Trisciani",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1368
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Hillsborough",
+   "district": null,
+   "name": "Ross W. Terrio",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1369
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Pierre A. Cetoute",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1371
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "1",
+   "name": "Toni Pappas",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1372
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "Sherry Dutzy",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1374
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "2",
+   "name": "David G. Fredette",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1375
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "Julie Radhakrishnan",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1377
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Hillsborough",
+   "district": "3",
+   "name": "Robert H. Rowe",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1378
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Peter Shephard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1387
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Frank T. Cassidy",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1388
+  },
+  {
+   "office": "County Attorney",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Steven Endres",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1390
+  },
+  {
+   "office": "County Attorney",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Meg Hagaman",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1391
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Kathleen Donnelly",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1393
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Erica S. Davis",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1395
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Samantha Morse",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1396
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Jane Bradstreet",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1398
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Merrimack",
+   "district": null,
+   "name": "Alyssa Ehl",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1399
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Merrimack",
+   "district": "1",
+   "name": "Steve Shurtleff",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1401
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Merrimack",
+   "district": "2",
+   "name": "Vincent S. Ribas",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1403
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Merrimack",
+   "district": "2",
+   "name": "Harold F. French",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1404
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Chuck Massahos",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1408
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Chuck Massahos",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1409
+  },
+  {
+   "office": "County Attorney",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Robert Wilson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1416
+  },
+  {
+   "office": "County Attorney",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Patricia G. Conway",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1418
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Kevin Coyle",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1420
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Scott Priestley",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1421
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Cathy Stacey",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1423
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Cathy Stacey",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1424
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Douglas Marino",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1426
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Rockingham",
+   "district": null,
+   "name": "Jon Stark",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1427
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Rockingham",
+   "district": "1",
+   "name": "Kate Coyle",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1429
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Rockingham",
+   "district": "3",
+   "name": "Thomas Tombarello",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1431
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Rockingham",
+   "district": "3",
+   "name": "Thomas Tombarello",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1432
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Strafford",
+   "district": null,
+   "name": "Kathryn L. Mone",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1436
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Strafford",
+   "district": null,
+   "name": "Richard Krauss",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1437
+  },
+  {
+   "office": "County Attorney",
+   "county": "Strafford",
+   "district": null,
+   "name": "Emily C. Garod",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1439
+  },
+  {
+   "office": "County Attorney",
+   "county": "Strafford",
+   "district": null,
+   "name": "Emily C. Garod",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1440
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Strafford",
+   "district": null,
+   "name": "Pamela J. Arnold",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1447
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Strafford",
+   "district": null,
+   "name": "Catherine A. Berube",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1449
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Strafford",
+   "district": null,
+   "name": "Catherine A. Berube",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1450
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Strafford",
+   "district": null,
+   "name": "Jan Nedelka",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1452
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Strafford",
+   "district": null,
+   "name": "Nancy Sirois",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1453
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "1",
+   "name": "John Frank Scruton",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1455
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "1",
+   "name": "Susan J. Rice",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1456
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "2",
+   "name": "George Maglaras",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1458
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "2",
+   "name": "George Maglaras",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1459
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "3",
+   "name": "Heath Howard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1461
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Strafford",
+   "district": "3",
+   "name": "Robert J. Drew",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1462
+  },
+  {
+   "office": "County Sheriff",
+   "county": "Sullivan",
+   "district": null,
+   "name": "James Ethan Yazinski",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1466
+  },
+  {
+   "office": "County Attorney",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Christine Hilliard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1468
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Michael Sanderson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1475
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Je Austin",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1477
+  },
+  {
+   "office": "Register of Deeds",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Renee Simino",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1478
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Loren David Howard",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1480
+  },
+  {
+   "office": "Register of Probate",
+   "county": "Sullivan",
+   "district": null,
+   "name": "Rodd Ward",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1481
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Sullivan",
+   "district": "1",
+   "name": "Benjamin Nelson",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1483
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Sullivan",
+   "district": "1",
+   "name": "Joe Osgood",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1484
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Sullivan",
+   "district": "2",
+   "name": "Jim Bednar",
+   "party_code": "DEM",
+   "party": "Democratic",
+   "source_line": 1486
+  },
+  {
+   "office": "County Commissioner",
+   "county": "Sullivan",
+   "district": "2",
+   "name": "Bennie Nelson",
+   "party_code": "REP",
+   "party": "Republican",
+   "source_line": 1487
+  }
+ ]
+}
