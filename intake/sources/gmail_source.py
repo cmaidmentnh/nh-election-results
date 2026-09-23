@@ -11,7 +11,7 @@ the night that taught us this.
 
 Scope discipline: these tokens also carry gmail.send and calendar, which this
 service has no business using. Everything here is read-only apart from stamping
-each message we take with our own label (and clearing UNREAD alongside it), and
+each message we take with our own label (and clearing UNREAD on confirmed returns), and
 every message is filtered against ACCEPT_ADDRESSES before it is touched. Mail in
 a mailbox that is not addressed to one of our lists is never fetched.
 """
@@ -22,7 +22,7 @@ import re
 import uuid
 from pathlib import Path
 
-from intake import config
+from intake import config, jev_gate
 
 log = logging.getLogger("intake.gmail")
 
@@ -209,6 +209,19 @@ def _fetch_mailbox(token_path):
         if not body and htmls:
             body = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", "\n".join(htmls))).strip()
 
+        # Most of what reaches these mailboxes is ordinary campaign mail, not
+        # returns. Ask Jev before downloading anything; see jev_gate for the rules.
+        verdict = jev_gate.classify(hdrs.get("from", ""), hdrs.get("subject", ""),
+                                    body, [f for f, _ in atts])
+        take, mark_read = jev_gate.decide(verdict, bool(atts))
+        if verdict is not None:
+            log.info("Jev %s: %s %.2f take=%s read=%s - %s", jev_gate.MODE, verdict[0],
+                     verdict[1], take, mark_read, (hdrs.get("subject") or "")[:80])
+        if not take:
+            users.messages().modify(userId="me", id=ref["id"],
+                                    body={"addLabelIds": [label_id]}).execute()
+            continue
+
         paths = []
         for filename, att_id in atts[:12]:
             try:
@@ -236,7 +249,10 @@ def _fetch_mailbox(token_path):
         # The label is the bookmark; clearing UNREAD only keeps the operator's
         # inbox badge honest. Runner.process dedupes on Message-ID anyway, so a
         # message that slips through twice is stored once.
+        # Only a confirmed return is marked read; anything Jev was unsure of stays
+        # visible in the inbox as well as in the review queue.
         users.messages().modify(
             userId="me", id=ref["id"],
-            body={"addLabelIds": [label_id], "removeLabelIds": ["UNREAD"]}
+            body={"addLabelIds": [label_id],
+                  "removeLabelIds": ["UNREAD"] if mark_read else []}
         ).execute()
