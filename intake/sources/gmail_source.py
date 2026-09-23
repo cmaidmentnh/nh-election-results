@@ -22,7 +22,7 @@ import re
 import uuid
 from pathlib import Path
 
-from intake import config, jev_gate
+from intake import config, jev_gate, triage
 
 log = logging.getLogger("intake.gmail")
 
@@ -188,6 +188,14 @@ def fetch_new():
                           token_path)
 
 
+def _notify(text):
+    if not config.NOTIFY_ENABLED:
+        log.info("(notify suppressed) %s", text[:120])
+        return
+    from intake.sources import signal_source
+    signal_source.send(text)
+
+
 def _fetch_mailbox(token_path):
     users = service(token_path).users()
     label_id = _ingested_label_id(users, token_path)
@@ -218,8 +226,12 @@ def _fetch_mailbox(token_path):
             log.info("Jev %s: %s %.2f take=%s read=%s - %s", jev_gate.MODE, verdict[0],
                      verdict[1], take, mark_read, (hdrs.get("subject") or "")[:80])
         if not take:
-            users.messages().modify(userId="me", id=ref["id"],
-                                    body={"addLabelIds": [label_id]}).execute()
+            # Not a return. Do it if an app can, ping Chris if he's needed,
+            # otherwise leave it unread - see triage.
+            done = triage.handle(hdrs.get("from", ""), hdrs.get("subject", ""), body, _notify)
+            users.messages().modify(userId="me", id=ref["id"], body={
+                "addLabelIds": [label_id],
+                "removeLabelIds": ["UNREAD"] if done else []}).execute()
             continue
 
         paths = []

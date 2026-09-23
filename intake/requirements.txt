@@ -13,3 +13,5 @@ google-api-python-client>=2.0
 google-auth>=2.0
 # At least one city sent its 2024 return as .xlsx rather than a PDF.
 openpyxl>=3.1
+# Triage looks up whether an email sender is a candidate on file.
+psycopg2-binary>=2.9
