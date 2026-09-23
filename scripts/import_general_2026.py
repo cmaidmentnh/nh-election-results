@@ -212,8 +212,15 @@ def main():
             cur.execute("SELECT id FROM race_candidates WHERE race_id=? AND candidate_id=?",
                         (race_id, cand_id))
             existing = cur.fetchone()
+            # recruitment_filing_id: the primary filing when linked, else 0 - the
+            # scripts/add_ballot_candidate.py convention for a name printed on the
+            # ballot without a recruitment filing. Never NULL: place_races sorts on
+            # (recruitment_filing_id = -1), and NULL would sort ahead of the list.
             vals = (party, order, int(bool(link and link["is_incumbent"])),
-                    link["rcid"] if link else None, link["rfid"] if link else None)
+                    link["rcid"] if link else None, link["rfid"] if link else 0)
+            if not link:
+                notes["printed on the list, no 2026 primary filing (recruitment_filing_id=0)"].append(
+                    f"{label}: {p['name']} ({'/'.join(lines)})")
             if existing:
                 cur.execute("""UPDATE race_candidates SET party=?, ballot_order=?, is_incumbent=?,
                                recruitment_candidate_id=?, recruitment_filing_id=? WHERE id=?""",
