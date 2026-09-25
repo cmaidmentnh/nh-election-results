@@ -42,6 +42,10 @@ PORTAL_URL = os.environ.get("PORTAL_API_URL", "http://127.0.0.1:5008/portal/api"
 # Alerts Chris has said he does not want pinged about (9/23/26: "ses complaint rate
 # is fine the way it is").
 QUIET_ALERTS = re.compile(r'ALARM: "SES-|SES-(Complaint|Bounce)Rate', re.I)
+# Senders Chris has told us to stop flagging for good (9/24/26, WP Engine's Smart
+# Plugin Manager "could not connect" notices: "ignore and mark read. never flag
+# again"). Entries are a full address or a bare domain. These are marked read.
+MUTED_SENDERS = ("smart.plugin.manager@wpengine.com",)
 # Our own people and systems - never act on these.
 OWN_DOMAINS = ("electhouserepublicans.com", "maidmentnh.com", "winthehouse.gop", "nhcivicrm.com")
 
@@ -167,6 +171,12 @@ def is_automated(addr, headers):
     return bool(AUTOMATED_SENDER.match(addr or ""))
 
 
+def is_muted(addr):
+    """A sender Chris has told us never to flag: no ping, and mark it read."""
+    addr = (addr or "").lower()
+    return any(addr == m or addr.endswith("@" + m) for m in MUTED_SENDERS)
+
+
 def handle(sender, subject, body, notify, where="", headers=None, thread_id=None):
     """Triage one non-results email. Returns True if it may be marked read."""
     if MODE not in ("on", "shadow"):
@@ -174,6 +184,9 @@ def handle(sender, subject, body, notify, where="", headers=None, thread_id=None
     addr = _sender_email(sender)
     if not addr or _is_own(addr):
         return False
+    if is_muted(addr):
+        log.info("Triage: muted sender %s, marking read - %s", addr, (subject or "")[:80])
+        return MODE == "on"
     if is_automated(addr, headers):
         log.info("Triage: automated sender, no ping - %s", (subject or "")[:80])
         return False
