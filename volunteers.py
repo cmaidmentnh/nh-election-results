@@ -533,8 +533,15 @@ def _approved_volunteer_and_place(cur, token, municipality):
     return v, municipality
 
 
+def _token_key():
+    """Limit volunteer uploads per personal link, not per IP: on election night
+    many phones share one carrier-NAT address, and a per-IP cap would lock out
+    every volunteer behind it at once."""
+    return 'vtok:' + ((request.view_args or {}).get('token') or client_ip())
+
+
 @vol_bp.route('/v/<token>/photo', methods=['POST'])
-@limiter.limit("120 per hour")
+@limiter.limit("120 per hour", key_func=_token_key)
 def portal_photo(token):
     conn = get_db()
     cur = conn.cursor()
@@ -579,7 +586,7 @@ def portal_photo(token):
 
 
 @vol_bp.route('/v/<token>/send', methods=['POST'])
-@limiter.limit("40 per hour")
+@limiter.limit("40 per hour", key_func=_token_key)
 def portal_send(token):
     conn = get_db()
     cur = conn.cursor()
