@@ -391,3 +391,57 @@ table.pt thead th:first-child{z-index:3}
 .mapinfo .tr .v{font-family:var(--mono);font-weight:600;white-space:nowrap}
 @media(max-width:520px){.mapinfo{position:static;width:100%;margin-top:8px;
   max-height:none;box-shadow:none}}
+
+/* ---- general election ----------------------------------------------------
+   One ballot, every party: the colour belongs to the candidate, not to the
+   column, and always comes with the party's name beside it. */
+.ptag{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.1em;
+      text-transform:uppercase;margin-left:7px;vertical-align:1px}
+.row .nm .ptag{font-weight:600}
+.row.pv{grid-template-columns:1fr auto;margin-bottom:9px;padding-bottom:8px;
+        border-bottom:1px solid var(--hair)}
+.row.pv:last-of-type{border-bottom:0}
+.row.pv .ptag{margin-left:0}
+.sw{display:inline-block;width:8px;height:8px;margin-right:8px;vertical-align:1px}
+.col.G .colhead .rt{font-size:16px;font-weight:700;letter-spacing:-.02em;text-decoration:none}
+.col.G .colhead .rt:hover{text-decoration:underline}
+.gcols{padding:18px 0 4px;gap:26px 40px}
+.gcols .col{border-left:0;padding-left:0;border-top:0;padding-top:0}
+.gcols.ec{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+#races.gcols{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.col.sm .row .nm{font-size:13px}
+.col.sm .odds{font-size:12px}
+.col.sm .odds b{font-size:15px}
+.foot.swl{margin-top:4px;display:block}
+
+.chamber{padding:16px 0 18px;border-bottom:1px solid var(--hair)}
+.chamber:last-child{border-bottom:0}
+.chamber .ct{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+             flex-wrap:wrap;margin-bottom:9px}
+.chamber h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em}
+.chamber .cs{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+             color:var(--ink3)}
+.seatbar{position:relative;display:flex;height:26px;background:#eceef0}
+.seatbar i{display:block;height:100%;flex:none;transition:width .8s cubic-bezier(.2,.6,.3,1)}
+.seatbar .maj{position:absolute;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--rule)}
+.snums{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-size:13px;flex-wrap:wrap}
+.snums .sn b{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.snums .sn.R{color:var(--R)} .snums .sn.D{color:var(--D);text-align:right}
+.snums .sn.mid{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+               color:var(--ink2);align-self:center}
+.chamber .ck{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink3);margin-top:5px}
+@media(max-width:640px){
+  .snums .sn.mid{order:3;flex-basis:100%}
+  .snums .sn b{font-size:19px}
+}
+
+nav.sections a.evsw{margin-left:auto;margin-right:0;color:var(--ink3)}
+nav.sections a.evsw:hover{color:var(--ink)}
+@media(max-width:520px){nav.sections a.evsw{margin-left:0}}
+
+/* races page, general: a card's bars carry each candidate's party colour */
+.dist .pt2{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.08em;margin-left:6px}
+
+/* place pages, general: one card per race, kept to a readable width */
+#places .col.G{max-width:760px}
+.colhead .rx{font-family:var(--mono);font-size:11px;color:var(--ink3)}

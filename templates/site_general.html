@@ -1,0 +1,222 @@
+{% extends "site_base.html" %}
+{% set active = 'topline' %}
+{% block title %}New Hampshire General Election Results — {{ ev.date_label }}{% endblock %}
+{% block meta_description %}Live results for the New Hampshire general election: Governor, U.S. Senate, both U.S. House districts, Executive Council, and control of the State Senate and State House, town by town.{% endblock %}
+
+{% block content %}
+<main class="w">
+
+  <section class="lead">
+    <div>
+      <h1>{{ 'New Hampshire Election Results' if live_mode else 'New Hampshire General Election' }}</h1>
+      <p id="leadp">{% if live_mode %}One ballot, every party. Each race shows the vote counted so far,
+         the projected total, and how likely the current order is to hold; the chambers
+         are counted in seats.{% else %}Who is on the ballot on {{ ev.date_label }}. Results
+         start here when the polls close at 7:00 p.m.{% endif %}</p>
+    </div>
+    <div class="tally">
+      <span class="n" id="lead-n">{{ initial.places.reported }}<small>/{{ initial.places.total }}</small></span>
+      <div class="cap">Polling places reporting</div>
+      <div class="rulebar"><i id="lead-bar" style="width:{{ initial.places.pct }}%"></i></div>
+    </div>
+  </section>
+
+  <div class="head"><h2>Control</h2>
+    <span class="note">{{ 'Seats won and leading' if live_mode else 'Seats on the ballot' }}</span></div>
+  <div id="chambers"></div>
+
+  <div class="head"><h2>Statewide &amp; federal</h2>
+    <span class="note" id="upd">&nbsp;</span></div>
+  <div class="cols gcols" id="races"></div>
+
+  <div class="head"><h2>Executive Council</h2>
+    <span class="note">Five districts</span></div>
+  <div class="cols gcols ec" id="council"></div>
+
+  <a class="more" href="{{ link('/contested', demo) }}">
+    <span>Every race, town by town
+      <span class="k">State Senate · all 203 House districts · Executive Council · county offices</span></span>
+    <span>→</span>
+  </a>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DEMO = {{ 'true' if demo else 'false' }}, LIVE = {{ 'true' if live_mode else 'false' }};
+const EVQ = {{ evq|tojson }};
+const nf = new Intl.NumberFormat('en-US');
+const LABEL = {recount:'Recount', certified:'Certified', called:'Called', likely:'Likely', leaning:'Leaning',
+               too_close:'Too close', awaiting:'Awaiting', unopposed:'Unopposed'};
+/* Party colours. R and D are the validated pair in site.css; the minor
+   parties never carry a colour alone - the name always sits beside it. */
+const PN = {R:'Republican', D:'Democratic', L:'Libertarian', C:'Constitution', I:'Independent', O:'Other'};
+const PC = {R:'#c81e1e', D:'#1e4fc4', L:'#a8780a', C:'#6b4f9e', I:'#4f6170', O:'#8a8f96'};
+const POS = {R:0, D:1, L:2, C:3, I:4, O:5};
+const esc = t => String(t ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function tag(pj){
+  const st = (pj && pj.recount) ? 'recount'
+           : (pj && pj.certified) ? 'certified' : ((pj && pj.status) || 'awaiting');
+  const cls = (st === 'called' || st === 'certified') ? ' called'
+            : (st === 'too_close' ? ' close' : '');
+  return `<span class="tag${cls}">${LABEL[st] || st}</span>`;
+}
+
+function odds(pj){
+  if (!pj) return '';
+  if (pj.recount)
+    return `<div class="odds"><b>!</b><span>Recount scheduled — result not final</span></div>`;
+  if (pj.certified && (pj.winners||[]).length)
+    return `<div class="odds"><b>✓</b><span>Certified winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
+  if (pj.status === 'unopposed')
+    return `<div class="odds"><b>✓</b><span>Unopposed — <span class="who">${esc((pj.winners||[]).join(', '))}</span></span></div>`;
+  if (pj.status === 'called' && (pj.winners||[]).length)
+    return `<div class="odds"><b>✓</b><span>Projected winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
+  if (pj.win_prob == null)
+    return `<div class="odds"><span>Too early to estimate</span></div>`;
+  return `<div class="odds"><b>${Math.round(pj.win_prob*100)}%</b>
+    <span>chance <span class="who">${esc(pj.leader || (pj.winners||[])[0] || '')}</span> holds on</span></div>`;
+}
+
+/* The narrow council cards have room for the letter, not the word. */
+const ptag = (p, short) => `<span class="ptag" style="color:${PC[p]||PC.O}" title="${esc(PN[p]||'Other')}">${esc(short ? (p||'O') : (PN[p]||'Other'))}</span>`;
+
+/* Before the polls close there are no numbers to show, so a race is its
+   ballot: names in party order, nothing that looks like a count. */
+function previewRows(cands){
+  const named = cands.filter(c => c.name !== 'Write-in')
+                     .sort((a,b) => (POS[a.party]??9)-(POS[b.party]??9) || a.name.localeCompare(b.name));
+  return named.map(c => `<div class="row pv"><div class="nm"><i class="sw" style="background:${PC[c.party]||PC.O}"></i>${esc(c.name)}</div>
+      <div class="vt">${ptag(c.party)}</div></div>`).join('')
+    || '<div class="foot">No candidate on the ballot</div>';
+}
+
+function liveRows(cands, pj, small){
+  const top = Math.max(1, ...cands.map(c => Math.max(c.votes||0, c.projected||0)));
+  const done = pj.status === 'called' || pj.status === 'unopposed' || pj.certified;
+  const win = new Set(pj.winners || []);
+  return cands.map(c => {
+    const v = Math.round(100*(c.votes||0)/top), p = Math.round(100*(c.projected||0)/top);
+    const w = done && win.has(c.name), col = PC[c.party] || PC.O;
+    return `<div class="row ${w?'win':''}">
+      <div class="nm">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}${
+        c.name!=='Write-in'?ptag(c.party, small):''}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="vt"><b>${nf.format(c.votes||0)}</b> <span>${(c.pct ?? 0).toFixed(1)}%</span></div>
+      <div class="bar">${p>v?`<i style="width:${p}%;background:${col};opacity:.18"></i>`:''}<i style="width:${v}%;background:${col}"></i></div>
+    </div>`;
+  }).join('');
+}
+
+/* "Running 2.4 points ahead of 2024": the Republican share of the two-party
+   vote in the towns counted so far, against the same towns' 2024 governor
+   vote. It is what moves the projection, so say it in words. */
+function swingLine(b){
+  if (b.swing == null || !LIVE) return '';
+  const s = b.swing, a = Math.abs(s).toFixed(1);
+  if (Math.abs(s) < 0.05) return `<div class="foot swl">Republican share matching 2024 in towns counted</div>`;
+  return `<div class="foot swl">Republican share ${a} pts ${s>0?'above':'below'} 2024 in towns counted</div>`;
+}
+
+function block(b, small){
+  const pj = b.projection || {}, rep = b.reporting || {};
+  const cands = b.candidates || [];
+  const foot = !LIVE
+    ? `<div class="foot"><span>${b.seats>1?b.seats+' seats · ':''}Polls close 7:00 p.m.</span></div>`
+    : `<div class="foot">${pj.certified
+        ? `<span>Certified by the Secretary of State</span>`
+        : `<span>${rep.expected_in ?? 0}% of expected vote counted</span>${
+            rep.projected_total?`<span>~${nf.format(rep.projected_total)} total</span>`:''}`}</div>`;
+  return `<div class="col G${small?' sm':''}">
+    <div class="colhead"><a class="rt" href="${raceUrl(b)}">${esc(b.label)}</a>${LIVE?tag(pj):''}</div>
+    ${LIVE ? liveRows(cands, pj, small) + odds(pj) : previewRows(cands)}
+    ${foot}${small?'':swingLine(b)}
+  </div>`;
+}
+
+function raceUrl(b){
+  const office = b.key || 'exec-council';
+  return '/contested' + (DEMO||EVQ ? '?' + [DEMO?'demo=1':'', EVQ].filter(Boolean).join('&') : '') +
+    `#office=${office}&party=G&scope=all&code=${encodeURIComponent(b.code||'')}`;
+}
+
+/* One bar per chamber, Republicans from the left and Democrats from the
+   right, the way a chamber is read: solid is won, pale is leading, grey is
+   still to count. The tick is the majority line. */
+function chamber(c){
+  const S = c.seats || 1, pct = n => (100*n/S).toFixed(3)+'%';
+  const g = (d,k) => (d && d[k]) || 0;
+  let segs, nums, key;
+  if (LIVE){
+    const minors = ['L','C','I','O'].map(k => g(c.won,k)+g(c.leading,k)).reduce((a,b)=>a+b,0);
+    segs = [[g(c.won,'R'),PC.R,1],[g(c.leading,'R'),PC.R,.35],
+            [c.awaiting + c.open,'#e4e6e9',1],[minors,PC.O,.8],
+            [g(c.leading,'D'),PC.D,.35],[g(c.won,'D'),PC.D,1]];
+    const R = g(c.won,'R'), D = g(c.won,'D');
+    nums = `<span class="sn R"><b>${R}</b> won${g(c.leading,'R')?` · ${g(c.leading,'R')} leading`:''}</span>
+            <span class="sn mid">${c.majority} for majority</span>
+            <span class="sn D">${g(c.leading,'D')?`${g(c.leading,'D')} leading · `:''}<b>${D}</b> won</span>`;
+    key = `${c.races_in} of ${c.races} races reporting · ${c.awaiting} seats awaiting results${
+      minors?` · ${minors} other`:''}${c.open?` · ${c.open} with no candidate`:''}`;
+  } else {
+    const uR = g(c.unopposed,'R'), uD = g(c.unopposed,'D');
+    segs = [[uR,PC.R,.55],[S-uR-uD,'#e4e6e9',1],[uD,PC.D,.55]];
+    nums = `<span class="sn R">Republicans on the ballot for <b>${g(c.cover,'R')}</b> of ${S}</span>
+            <span class="sn mid">${c.majority} for majority</span>
+            <span class="sn D">Democrats for <b>${g(c.cover,'D')}</b> of ${S}</span>`;
+    key = (uR||uD) ? `Uncontested: ${uR} seat${uR==1?'':'s'} with only Republicans running, ${uD} with only Democrats`
+                   : 'Every seat is contested';
+  }
+  const bar = segs.filter(s=>s[0]>0).map(([n,col,o]) =>
+    `<i style="width:${pct(n)};background:${col};opacity:${o}"></i>`).join('');
+  return `<div class="chamber">
+    <div class="ct"><h3>${esc(c.office)}</h3><span class="cs">${S} seat${S==1?'':'s'}${
+      c.key==='state-house'?' · 203 districts':''}</span></div>
+    <div class="seatbar">${bar}<span class="maj" style="left:${pct(c.majority - .5)}"></span></div>
+    <div class="snums">${nums}</div>
+    <div class="ck">${key}</div>
+  </div>`;
+}
+
+function render(d){
+  document.getElementById('chambers').innerHTML = (d.chambers||[]).map(chamber).join('');
+  document.getElementById('races').innerHTML = (d.blocks||[]).map(b => block(b,false)).join('');
+  document.getElementById('council').innerHTML = (d.council||[]).map(b => block(b,true)).join('');
+
+  document.getElementById('lead-n').innerHTML =
+    `${nf.format(d.places.reported)}<small>/${nf.format(d.places.total)}</small>`;
+  document.getElementById('lead-bar').style.width = d.places.pct + '%';
+  document.getElementById('tk-count').textContent = nf.format(d.places.reported);
+  document.getElementById('tk-total').textContent = nf.format(d.places.total);
+  const when = d.places.reported
+    ? 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    : 'Polls close 7:00 p.m.';
+  document.getElementById('tk-when').textContent = when;
+  document.getElementById('upd').textContent = when;
+}
+
+render({{ initial | tojson }});
+
+let bad = 0;
+async function refresh(){
+  try {
+    const q = [DEMO?'demo=1':'', EVQ].filter(Boolean).join('&');
+    const r = await fetch('/api/topline' + (q?'?'+q:''), {cache:'no-store'});
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    // The first result flips the page from preview to live; the layout differs
+    // enough that a reload is cleaner than re-rendering in place.
+    if (d.live && !LIVE && !/[?&]preview=1/.test(location.search)) { location.reload(); return; }
+    render(d); bad = 0;
+  } catch(e) {
+    // Never blank the page on a failed poll — stale numbers beat no numbers.
+    if (++bad >= 2) document.getElementById('tk-when').textContent = 'Reconnecting…';
+  }
+}
+setInterval(refresh, LIVE ? 30000 : 120000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refresh();
+});
+</script>
+{% endblock %}

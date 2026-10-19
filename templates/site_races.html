@@ -1,7 +1,7 @@
 {% extends "site_base.html" %}
 {% set active = 'races' %}
-{% block title %}Every race, town by town — NH Primary 2026{% endblock %}
-{% block meta_description %}Every contested New Hampshire primary race by office, with precinct-by-precinct results, projections and win probabilities.{% endblock %}
+{% block title %}Every race, town by town — NH {{ 'Primary' if ev.is_primary else 'General Election' }} 2026{% endblock %}
+{% block meta_description %}Every New Hampshire {{ 'primary' if ev.is_primary else 'general election' }} race by office, with precinct-by-precinct results, projections and win probabilities.{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
@@ -13,9 +13,18 @@
   <section class="lead">
     <div>
       <h1>Every race, town by town</h1>
+      {% if ev.is_primary %}
       <p>Republican and Democratic primaries for every contested office. Each race shows
          the share of expected vote counted, the projected total, and how likely the
          current order is to hold.</p>
+      {% elif live_mode %}
+      <p>Every office on the November ballot, every party on one card. Each race shows
+         the share of expected vote counted and how likely the current order is to
+         hold; the map shades each district by the party leading it.</p>
+      {% else %}
+      <p>Every office on the {{ ev.date_label }} ballot and who is running for it.
+         Results fill in here, town by town, once the polls close at 7:00 p.m.</p>
+      {% endif %}
     </div>
   </section>
 
@@ -73,7 +82,13 @@
 <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
 <script>
 const DEMO = {{ 'true' if demo else 'false' }};
-const Q = DEMO ? '&demo=1' : '';
+/* GEN: a general election - one race per district with every party in it, so
+   there is no party toggle and colour belongs to each candidate. LIVE is false
+   before election day: the cards are then a ballot, not a count. */
+const GEN = {{ 'false' if ev.is_primary else 'true' }}, LIVE = {{ 'true' if live_mode else 'false' }};
+const EVQ = {{ evq|tojson }};
+const Q = (DEMO ? '&demo=1' : '') + (EVQ ? '&' + EVQ : '');
+const Q1 = Q ? '?' + Q.slice(1) : '';
 const nf = new Intl.NumberFormat('en-US');
 
 const OFFICES=[
@@ -91,8 +106,20 @@ const OFFICES=[
  {key:'probate',label:'Register of Probate',level:'county'},
  {key:'commissioner',label:'County Commissioner',level:'county-district'},
 ];
+// Convention delegates are elected in the primary only.
+if(GEN) OFFICES.splice(OFFICES.findIndex(o=>o.key==='delegate'),1);
 const BY={}; OFFICES.forEach(o=>BY[o.key]=o);
-const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'}};
+const PARTY={R:{n:'Republican',c:'#c81e1e'},D:{n:'Democratic',c:'#1e4fc4'},
+             G:{n:'All parties',c:'#111214'}};
+// Every party a general-election candidate can carry. Never colour alone: the
+// letter or name always sits beside it.
+const PN={R:'Republican',D:'Democratic',L:'Libertarian',C:'Constitution',I:'Independent',O:'Other'};
+const PC={R:'#c81e1e',D:'#1e4fc4',L:'#a8780a',C:'#6b4f9e',I:'#4f6170',O:'#8a8f96'};
+const SPLIT='#7b4fa0';
+const POS={R:0,D:1,L:2,C:3,I:4,O:5};
+// name -> party letter for the race currently being drawn (general only)
+let NP={};
+function partyOfName(r){ const m={}; (r.candidates||[]).forEach(c=>m[c.name]=c.party||'O'); return m; }
 const ST={recount:{l:'Recount',c:'#a3341f'},
           certified:{l:'Certified',c:'#146c43'},
           called:{l:'Called',c:'#146c43'},likely:{l:'Likely',c:'#111214'},
@@ -150,6 +177,16 @@ const OTHER_COLOR='#8a8f96', NOTIN_COLOR='#e4e6e9';
    everyone else folds into "Other" - past three, a categorical ramp stops
    being separable on a map. */
 function leaderScale(r){
+  if(GEN){
+    // A general map is read by party. Two Republicans sharing a four-seat
+    // district are one colour, and a town is "led" by the party with the most
+    // votes in it.
+    NP=partyOfName(r);
+    const pt={};
+    (r.precincts||[]).forEach(p=>{ if(!p.reported) return;
+      Object.entries(p.votes||{}).forEach(([n,v])=>{const k=NP[n]||'O';pt[k]=(pt[k]||0)+v;}); });
+    return {color:PC, ranked:Object.entries(pt).sort((a,b)=>b[1]-a[1]).map(([k])=>k), gen:true};
+  }
   const tot={};
   (r.precincts||[]).forEach(p=>{ if(!p.reported) return;
     Object.entries(p.votes||{}).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;}); });
@@ -168,6 +205,14 @@ function leaderLegend(elId, sc, features){
   features.forEach(f=>{const l=leaderOf(f.properties.members);
     if(!l){none++;return;} c[l]=(c[l]||0)+1;});
   const named=sc.ranked.slice(0,CAND_COLORS.length).filter(n=>c[n]);
+  if(sc.gen){
+    let g=Object.keys(c).sort((a,b)=>(POS[a]??9)-(POS[b]??9)).map(k=>
+      `<div class="r"><i style="background:${PC[k]||PC.O}"></i>${PN[k]||'Other'}<b>${c[k]}</b></div>`).join('');
+    if(none) g+=`<div class="r"><i style="background:${NOTIN_COLOR}"></i>Not yet in<b>${none}</b></div>`;
+    const el=document.getElementById(elId);
+    if(el) el.innerHTML=g+`<div class="r n">towns &amp; wards led · paler = closer</div>`;
+    return;
+  }
   let h=named.map(n=>`<div class="r"><i style="background:${sc.color[n]}"></i>${esc(n)}<b>${c[n]}</b></div>`).join('');
   const other=Object.keys(c).filter(n=>!named.includes(n)).reduce((s,n)=>s+c[n],0);
   if(other) h+=`<div class="r"><i style="background:${OTHER_COLOR}"></i>Other<b>${other}</b></div>`;
@@ -176,13 +221,30 @@ function leaderLegend(elId, sc, features){
   if(el) el.innerHTML=h+`<div class="r n">towns &amp; wards led</div>`;
 }
 function leaderStyle(f, sc, w){
+  if(sc.gen){
+    const t=partyTotals(f.properties.members);
+    if(!t) return {fillColor:NOTIN_COLOR,fillOpacity:.7,color:'#fff',weight:w};
+    const e=Object.entries(t).sort((a,b)=>b[1]-a[1]), sum=e.reduce((s,x)=>s+x[1],0)||1;
+    const m=(e[0][1]-((e[1]||[0,0])[1]))/sum;
+    // Shade by margin so a 51-49 town does not look like a 70-30 one.
+    return {fillColor:PC[e[0][0]]||PC.O, fillOpacity:m>=.2?.92:m>=.1?.72:m>=.04?.52:.32,
+            color:'#fff', weight:w};
+  }
   const lead=leaderOf(f.properties.members);
   if(!lead) return {fillColor:NOTIN_COLOR,fillOpacity:.7,color:'#fff',weight:w};
   const upset = sc.ranked.length>1 && lead!==sc.ranked[0];
   return {fillColor:sc.color[lead]||OTHER_COLOR,fillOpacity:.9,
           color:upset?'#20242a':'#fff',weight:upset?1.4:w};
 }
+function partyTotals(members){
+  const t={}; let any=false;
+  members.forEach(m=>{ if(!m.reported) return; any=true;
+    Object.entries(m.votes||{}).forEach(([n,v])=>{const k=NP[n]||'O';t[k]=(t[k]||0)+v;}); });
+  return any&&Object.values(t).some(v=>v>0) ? t : (any?{}:null);
+}
 function leaderOf(members){
+  if(GEN){ const t=partyTotals(members); if(!t) return null;
+    const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length?e[0][0]:null; }
   const tot={}; let any=false;
   members.forEach(m=>{ if(!m.reported) return; any=true;
     Object.entries(m.votes||{}).forEach(([n,v])=>{tot[n]=(tot[n]||0)+v;}); });
@@ -222,7 +284,7 @@ function watchMap(m){
    'moveend','zoomend'].forEach(ev=>m.on(ev,markTouch));
   return m;
 }
-let O=null, P='R', BASEV='Base', SCOPE='contested', data=null, board={}, timer=null, ctx=null;
+let O=null, P=GEN?'G':'R', BASEV='Base', SCOPE=GEN?'all':'contested', data=null, board={}, timer=null, ctx=null;
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);
@@ -280,6 +342,7 @@ function buildOffices(){
 }
 function buildParty(){
   const el=document.getElementById('party'); el.innerHTML='';
+  if(GEN){ P='G'; el.style.display='none'; return; }
   // Which parties have anything to show. Deciding this from the contested
   // races alone hid every Democratic result for Governor, Executive Council,
   // Sheriff, Register of Deeds, Register of Probate and County Commissioner -
@@ -313,7 +376,7 @@ function buildBase(){
 function selectOffice(o){
   O=o; ctx=null; document.getElementById('detail').classList.remove('show');
   buildOffices();
-  J('/api/contested/'+o.key).then(d=>{
+  J('/api/contested/'+o.key+Q1).then(d=>{
     if(o!==O)return; data=d; buildParty(); buildBase(); buildScope(); buildCounty();
     if(o.level==='house'&&!geoMap) J('/api/precinct-geo-map').then(m=>geoMap=m);
     load();
@@ -361,7 +424,7 @@ function refresh(){
   }).catch(()=>{});
 }
 function tick(){
-  fetch('/api/primary-topline'+(DEMO?'?demo=1':''),{cache:'no-store'})
+  fetch('/api/topline'+Q1,{cache:'no-store'})
     .then(r=>r.json()).then(d=>{
       if(!d.places)return;
       document.getElementById('tk-count').textContent=nf.format(d.places.reported);
@@ -377,6 +440,16 @@ function counts(){
   // Counting a one-candidate race as "in play" told readers there were 21
   // State Senate Republican primaries still going when 21 of them had a single
   // name on the ballot.
+  if(GEN && !LIVE){
+    const un=rs.filter(r=>statusKey(r)==='unopposed'||statusKey(r)==='writein').length;
+    const seats=rs.reduce((t,r)=>t+(r.seats||1),0);
+    document.getElementById('count').innerHTML=
+      `<div><span class="n">${rs.length}</span><span class="l">Races</span></div>
+       <div><span class="n">${seats}</span><span class="l">Seats</span></div>
+       <div class="close"><span class="n">${rs.length-un}</span><span class="l">Contested</span></div>
+       <div><span class="n">${un}</span><span class="l">Uncontested</span></div>`;
+    return;
+  }
   const c={called:0,close:0,settled:0};
   rs.forEach(r=>{const k=statusKey(r);
     if(SETTLED.has(k))c.settled++;
@@ -477,13 +550,19 @@ function card(r){
      solely in the weight of the names. An awaiting race has no winners to
      mark, so leave every bar in the party colour there. */
   const marked=win.size>0;
+  if(GEN && !LIVE) return previewCard(r, show);
   const rows=show.map(c=>{
     const w=win.has(c.name);
+    // General: each bar in its candidate's party colour, the projected losers
+    // paled rather than greyed so the party is still readable.
+    const col=GEN ? (PC[c.party]||PC.O) : PARTY[P].c;
+    const bg=GEN ? col : (!marked||w?col:'#cdd1d6');
+    const op=GEN && marked && !w ? .35 : 1;
     return `<div class="cr">
-      <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}</span>
+      <div class="crtop"><span class="n2 ${w?'w':''}">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}${
+        GEN&&c.name!=='Write-in'?`<span class="pt2" style="color:${col}">${c.party||'O'}</span>`:''}</span>
         <span class="v2">${nf.format(c.votes)} <span>${pctStr(c.votes,tot)}</span></span></div>
-      <div class="cb"><i style="width:${100*c.votes/max}%;background:${
-        !marked||w?PARTY[P].c:'#cdd1d6'}"></i></div></div>`;
+      <div class="cb"><i style="width:${100*c.votes/max}%;background:${bg};opacity:${op}"></i></div></div>`;
   }).join('');
   const s=statusOf(r);
   return `<button type="button" class="dist" data-code="${r.code}">
@@ -497,6 +576,22 @@ function card(r){
     ${rows}
     ${odds(r)}</button>`;
 }
+/* Before the polls close a general-election card is the ballot: names in
+   party order with the party spelled out, and nothing that looks like a count. */
+function previewCard(r, show){
+  const names=show.filter(c=>c.name!=='Write-in')
+    .sort((a,b)=>(POS[a.party]??9)-(POS[b.party]??9)||a.name.localeCompare(b.name));
+  const unopp=names.length<=r.seats;
+  const rows=names.map(c=>`<div class="cr"><div class="crtop">
+      <span class="n2"><i class="sw" style="background:${PC[c.party]||PC.O}"></i>${esc(c.name)}</span>
+      <span class="v2" style="color:${PC[c.party]||PC.O};font-size:10px;letter-spacing:.08em;text-transform:uppercase">${PN[c.party]||'Other'}</span></div></div>`).join('')
+    || '<div class="dm">No candidate on the ballot — a write-in decides it</div>';
+  return `<button type="button" class="dist" data-code="${r.code}">
+    <div class="t"><span class="dn">${esc(distName(O,r))}</span>
+      <span class="tag" style="color:${unopp?'#7d8894':'#111214'}">${unopp?'Uncontested':names.length+' running'}</span></div>
+    <div class="dm">${r.seats} seat${r.seats!=1?'s':''} · polls close 7:00 p.m.</div>
+    ${rows}</button>`;
+}
 function inView(code){
   if(O.level!=='house'||!floSet) return true;
   const isFlo=floSet.has(code);
@@ -509,8 +604,8 @@ function renderList(){
     ? rs.map(card).join('')
     : (Q2
       ? `<div class="dm" style="padding:26px 0">Nothing matching “${esc(Q2)}” in ${O.label}${
-          PARTY[P]?' · '+PARTY[P].n:''}. Try another office or clear the search.</div>`
-      : `<div class="dm" style="padding:26px 0">No ${SCOPE==='all'?'':'contested '}${PARTY[P].n} races for
+          PARTY[P]&&!GEN?' · '+PARTY[P].n:''}. Try another office or clear the search.</div>`
+      : `<div class="dm" style="padding:26px 0">No ${SCOPE==='all'?'':'contested '}${GEN?'':PARTY[P].n+' '}races for
         ${O.level==='house'?BASEV.toLowerCase()+' '+O.label.toLowerCase()+' districts':O.label}.${
         SCOPE!=='all'?' Switch to “All races” to see the uncontested ones.':''}</div>`);
   document.querySelectorAll('.dist').forEach(b=>
@@ -519,6 +614,15 @@ function renderList(){
 
 /* ---- map ---------------------------------------------------------------- */
 function legend(){
+  if(GEN){
+    const it = LIVE
+      ? [[PC.R,'Republican'],[PC.D,'Democratic'],[SPLIT,'Split seats'],['#c9ccd1','Awaiting']]
+      : [[PC.R,'Only Republicans running',.55],[PC.D,'Only Democrats running',.55],['#8a8f96','Contested'],['#eef0f2','No race']];
+    document.getElementById('legend').innerHTML = it.map(([c,l,o])=>
+      `<div class="r"><i style="background:${c};opacity:${o||1}"></i>${l}</div>`).join('')
+      + (LIVE?`<div class="r n">solid = called · paler = less certain</div>`:'');
+    return;
+  }
   document.getElementById('legend').innerHTML =
     Object.entries(ST).map(([k,v])=>`<div class="r"><i style="background:${v.c}"></i>${v.l}</div>`).join('')
     + `<div class="r"><i style="background:#eef0f2"></i>No race</div>`;
@@ -532,16 +636,39 @@ function styleOf(code){
   // with no race at all stay blank.
   if(!b && !contested(rec,P))
     return {fillColor:'#eef0f2',fillOpacity:.85,color:'#fff',weight:.6,interactive:false};
+  if(GEN) return genStyle(rec, b);
   const s=b?statusOf(b):ST.awaiting;
   return {fillColor:s.c,fillOpacity:.88,color:'#fff',weight:.8,interactive:true};
+}
+/* A general-election district is shaded by the party holding its seats on the
+   current count - solid once the desk calls it, paler the less certain - and
+   purple where a multi-seat district is splitting between parties. Before the
+   polls close it shows who is running instead. */
+function genStyle(rec, b){
+  const base={color:'#fff',weight:.8,interactive:true};
+  if(!LIVE){
+    const bp=(rec&&rec.by_party)||{};
+    const fill = bp.R&&bp.D ? ['#8a8f96',.8] : bp.R ? [PC.R,.5] : bp.D ? [PC.D,.5] : ['#eef0f2',.85];
+    return {...base,fillColor:fill[0],fillOpacity:fill[1]};
+  }
+  if(!b) return {...base,fillColor:'#c9ccd1',fillOpacity:.88};
+  const k=statusKey(b), pj=b.projection||{};
+  const counted=(b.candidates||[]).reduce((s,c)=>s+(c.votes||0),0);
+  if(k==='awaiting' || (!counted && k!=='unopposed')) return {...base,fillColor:'#c9ccd1',fillOpacity:.88};
+  const pm=partyOfName(b);
+  const ps=new Set((pj.winners||[]).map(w=>pm[w]||'O'));
+  const fill = ps.size===1 ? (PC[[...ps][0]]||PC.O) : SPLIT;
+  const op = {called:.95,certified:.95,unopposed:.95,recount:.6,likely:.72,leaning:.5,too_close:.3}[k] ?? .5;
+  return {...base,fillColor:fill,fillOpacity:op};
 }
 function tipFor(code){
   const rec=data.districts[code], b=board[code];
   if(!b) return `<div class="tn">${esc(distName(O,rec))}</div><div class="tm"><span>Awaiting results</span></div>`;
   const tot=b.candidates.reduce((s,c)=>s+c.votes,0)||0;
   const s=statusOf(b);
-  const rows=b.candidates.slice(0,5).map(c=>
-    `<div class="tr"><span>${esc(c.name)}</span><span class="v">${nf.format(c.votes)} ${pctStr(c.votes,tot)}</span></div>`).join('');
+  const rows=b.candidates.slice(0,GEN?8:5).map(c=>
+    `<div class="tr"><span>${esc(c.name)}${GEN&&c.name!=='Write-in'?` (${c.party||'O'})`:''}</span><span class="v">${
+      LIVE?nf.format(c.votes)+' '+pctStr(c.votes,tot):''}</span></div>`).join('');
   const k=statusKey(b);
   const p=(b.projection.win_prob!=null && k!=='called' && !SETTLED.has(k))
     ? `<div class="tr"><span>${Math.round(b.projection.win_prob*100)}% chance it holds</span><span></span></div>` : '';
@@ -551,7 +678,7 @@ function tipFor(code){
     }</span></div>${rows}${p}`;
 }
 function renderMap(){
-  const sig='dist|'+O.key+'|'+P+'|'+BASEV+'|'+SCOPE;
+  const sig='dist|'+O.key+'|'+P+'|'+BASEV+'|'+SCOPE+'|'+LIVE;
   const reuse = map && mapSig===sig;
   if(!reuse){
     if(map){try{map.remove();}catch(e){}map=null;layer=null;mapBase=null;}
@@ -659,7 +786,7 @@ function openDetail(o,code,p){
       const rec=data.districts[code]||{};
       document.getElementById('dtitle').textContent=distName(o,{...rec,district:r.district,county:r.county});
       document.getElementById('dsub').textContent=
-        `${PARTY[p].n} · ${r.seats} seat${r.seats!=1?'s':''} · ${
+        `${GEN?'':PARTY[p].n+' · '}${r.seats} seat${r.seats!=1?'s':''} · ${
           (r.projection&&r.projection.recount)
             ? 'recount '+RCDATE(r.projection.recount.date)+' at '+r.projection.recount.time+' — result not final'
             : (r.projection&&r.projection.certified)
@@ -677,7 +804,7 @@ function openDetail(o,code,p){
           ? `<span class="p">${Math.round(pj.win_prob*100)}% chance it holds</span>`:'');
       ptable(r); detailMap(r,p);
       document.getElementById('dparty').innerHTML='';
-      ['R','D'].forEach(x=>{const b=document.createElement('button');
+      if(!GEN) ['R','D'].forEach(x=>{const b=document.createElement('button');
         b.textContent=PARTY[x].n; b.className=(x===p?'on '+x:'');
         b.onclick=()=>openDetail(o,code,x); document.getElementById('dparty').appendChild(b);});
     });
@@ -698,7 +825,9 @@ function ptable(r){
     Object.keys(p.votes).forEach(n=>{ if(!known.has(n)) extra+=p.votes[n]||0; });
     if(extra&&wiCol>=0) p.votes['Write-in']=Math.max(p.votes['Write-in']||0, extra);
   });
-  let h=`<thead><tr><th>Precinct</th>${cn.map(n=>`<th>${esc(n)}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
+  const pm=GEN?partyOfName(r):{};
+  let h=`<thead><tr><th>Precinct</th>${cn.map(n=>`<th>${esc(n)}${
+    GEN&&n!=='Write-in'?` <span style="color:${PC[pm[n]]||PC.O}">${pm[n]||'O'}</span>`:''}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
   (r.precincts||[]).forEach(p=>{
     h+=`<tr><td>${esc(p.name)}</td>${cn.map(n=>`<td>${p.reported?nf.format(p.votes[n]||0):'—'}</td>`).join('')}`+
        `<td>${p.reported?'✓':'—'}</td></tr>`;});
@@ -818,7 +947,7 @@ addEventListener('resize', stickOffset);
 (function boot(){
   stickOffset();
   const st=readState();
-  if(st.party==='D'||st.party==='R') P=st.party;
+  if(!GEN && (st.party==='D'||st.party==='R')) P=st.party;
   if(st.scope) SCOPE=st.scope;
   if(st.base) BASEV=st.base;
   const o=BY[st.office]||BY['us-senate'];

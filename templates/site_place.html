@@ -1,14 +1,14 @@
 {% extends "site_base.html" %}
 {% set active = 'places' %}
-{% block title %}{{ name }} — 2026 NH Primary results{% endblock %}
-{% block meta_description %}Every 2026 New Hampshire state primary result for {{ name }}: Republican and Democratic figures for every office on the ballot.{% endblock %}
+{% block title %}{{ name }} — 2026 NH {{ 'Primary' if ev.is_primary else 'General Election' }} results{% endblock %}
+{% block meta_description %}Every 2026 New Hampshire {{ 'state primary' if ev.is_primary else 'general election' }} result for {{ name }}: every office on the ballot.{% endblock %}
 
 {% block content %}
 <main class="w">
   <section class="lead">
     <div>
       <h1 id="ttl">{{ name }}</h1>
-      <p id="sub">Every race on the 2026 state primary ballot here, both parties.</p>
+      <p id="sub">Every race on the 2026 {{ 'state primary ballot here, both parties' if ev.is_primary else 'general election ballot here' }}.</p>
     </div>
   </section>
 
@@ -25,6 +25,15 @@
 {% block scripts %}
 <script>
 const KIND = {{ kind|tojson }}, NAME = {{ name|tojson }};
+const GEN = {{ 'false' if ev.is_primary else 'true' }}, LIVE = {{ 'true' if live_mode else 'false' }};
+const DEMO = {{ 'true' if demo else 'false' }}, EVQ = {{ evq|tojson }};
+const QS = [DEMO?'demo=1':'', EVQ].filter(Boolean).join('&');
+const EVDATE = {{ ev.date_label|tojson }};
+const PN = {R:'Republican', D:'Democratic', L:'Libertarian', C:'Constitution', I:'Independent', O:'Other'};
+const PC = {R:'#c81e1e', D:'#1e4fc4', L:'#a8780a', C:'#6b4f9e', I:'#4f6170', O:'#8a8f96'};
+const POS = {R:0, D:1, L:2, C:3, I:4, O:5};
+const RS = {called:'Called', likely:'Likely', leaning:'Leaning', too_close:'Too close',
+            awaiting:'Awaiting', unopposed:'Unopposed'};
 const nf = new Intl.NumberFormat('en-US');
 const esc = t => String(t ?? '').replace(/[&<>"']/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -41,7 +50,49 @@ function tag(r){
   if(r.certified) return '<span class="tag called">Certified</span>';
   return '';
 }
+/* General: one card per race, every party on it. The figures are the votes
+   cast HERE; the tag and the line under them are the race-wide call, because
+   "who won" is the next thing anyone asks. Before the polls close the card is
+   the ballot. */
+function gcard(r){
+  const named = r.candidates.filter(c=>c.name!=='Write-in');
+  const link = r.office_key
+    ? `/contested${QS?'?'+QS:''}#office=${r.office_key}&party=G&scope=all&code=${encodeURIComponent(r.code)}` : '';
+  if(!LIVE){
+    const rows = named.slice().sort((a,b)=>(POS[a.party]??9)-(POS[b.party]??9)||a.name.localeCompare(b.name))
+      .map(c=>`<div class="row pv"><div class="nm"><i class="sw" style="background:${PC[c.party]||PC.O}"></i>${esc(c.name)}</div>
+        <div class="vt"><span class="ptag" style="color:${PC[c.party]||PC.O}">${PN[c.party]||'Other'}</span></div></div>`).join('')
+      || '<div class="foot">No candidate on the ballot</div>';
+    return `<div class="col G">${rows}<div class="foot"><span>${r.seats>1?r.seats+' seats':'1 seat'}</span>${
+      link?`<span><a href="${link}">the whole race →</a></span>`:''}</div></div>`;
+  }
+  const top = Math.max(1, ...r.candidates.map(c=>c.votes));
+  const win = new Set(r.race_winners||[]);
+  const settled = r.race_status==='called' || r.race_status==='unopposed' || r.certified;
+  const rows = r.candidates.map(c=>{
+    const w = settled && win.has(c.name), col = PC[c.party]||PC.O;
+    return `<div class="row ${w?'win':''}">
+      <div class="nm">${esc(c.name)}${c.writein?' <span class="wi">write-in</span>':''}${
+        c.name!=='Write-in'?`<span class="ptag" style="color:${col}">${c.party||'O'}</span>`:''}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="vt"><b>${nf.format(c.votes)}</b> <span>${
+        r.total ? (100*c.votes/r.total).toFixed(1) : '0.0'}%</span></div>
+      <div class="bar"><i class="v" style="width:${Math.round(100*c.votes/top)}%;background:${col}"></i></div>
+    </div>`;}).join('');
+  const st = r.recount ? '<span class="tag close">Recount</span>'
+           : r.certified ? '<span class="tag called">Certified</span>'
+           : `<span class="tag${r.race_status==='called'?' called':r.race_status==='too_close'?' close':''}">${RS[r.race_status]||'Awaiting'}</span>`;
+  const here = KIND==='town' ? 'here' : 'in the county';
+  return `<div class="col G">
+    <div class="colhead"><span class="pty">Race-wide</span>${st}<span class="rx">${r.race_expected_in||0}% of expected vote counted</span></div>
+    ${rows}
+    <div class="foot"><span>${nf.format(r.total)} votes ${here} · ${r.reported}/${r.precincts} reporting${
+      r.seats>1?` · ${r.seats} seats`:''}</span>${
+      link?`<span><a href="${link}">the whole race →</a></span>`:''}</div>
+  </div>`;
+}
+
 function card(r){
+  if(GEN) return gcard(r);
   const top = Math.max(1, ...r.candidates.map(c=>c.votes));
   const rows = r.candidates.map((c,i)=>{
     const w = i < r.seats && c.name !== 'Write-in';
@@ -85,6 +136,7 @@ function render(){
 }
 
 function buildParty(){
+  if(GEN){ document.getElementById('party').style.display='none'; return; }
   const have = [...new Set(RACES.map(r=>r.party))].sort();
   document.getElementById('party').innerHTML =
     [['','Both'],...have.map(p=>[p,PARTY[p]])]
@@ -93,12 +145,20 @@ function buildParty(){
     P=b.dataset.p; buildParty(); render();});
 }
 
-fetch(`/api/place/${KIND}/${encodeURIComponent(NAME)}`).then(r=>r.json()).then(d=>{
+fetch(`/api/place/${KIND}/${encodeURIComponent(NAME)}${QS?'?'+QS:''}`).then(r=>r.json()).then(d=>{
   RACES = d.races || [];
-  document.getElementById('sub').textContent =
-    `${RACES.length} race${RACES.length===1?'':'s'} on the 2026 state primary ballot here, both parties.`;
+  document.getElementById('sub').textContent = GEN
+    ? `${RACES.length} race${RACES.length===1?'':'s'} on the ${EVDATE} ballot ${
+        KIND==='town'?'here':'in '+NAME+' County'}${LIVE?', with the votes cast '+(KIND==='town'?'here':'in the county')+' and the race-wide call':''}.`
+    : `${RACES.length} race${RACES.length===1?'':'s'} on the 2026 state primary ballot here, both parties.`;
   buildParty(); render();
 });
 document.getElementById('q').addEventListener('input', e=>{Q=e.target.value.trim(); render();});
+// The ticker is in the page chrome; fill it from the topline like the other pages.
+fetch('/api/topline'+(QS?'?'+QS:''),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  if(!d.places) return;
+  document.getElementById('tk-count').textContent = nf.format(d.places.reported);
+  document.getElementById('tk-total').textContent = nf.format(d.places.total);
+}).catch(()=>{});
 </script>
 {% endblock %}
