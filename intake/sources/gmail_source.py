@@ -199,6 +199,52 @@ def _notify(text):
     signal_source.send(text, account=config.TRIAGE_SIGNAL_ACCOUNT or None)
 
 
+_RETURN_SUBJECT = re.compile(r"result|return|tally|tape|ballot|election|moderator|town clerk|unofficial|polls? clos", re.I)
+_FREE_MAIL = {"gmail.com", "yahoo.com", "comcast.net", "aol.com", "hotmail.com", "outlook.com",
+              "icloud.com", "me.com", "msn.com", "live.com", "myfairpoint.net", "metrocast.net",
+              "tds.net", "charter.net", "protonmail.com", "pm.me", "verizon.net", "att.net"}
+_clerk_cache = {"at": 0, "addrs": set(), "domains": set()}
+
+
+def _clerk_addresses():
+    """Every clerk address on the polling-place list, and their non-webmail domains."""
+    import time
+    if time.time() - _clerk_cache["at"] > 3600:
+        from intake import store
+        conn = store.connect()
+        try:
+            addrs = {(r["email"] or "").strip().lower()
+                     for r in conn.execute("SELECT email FROM polling_places WHERE email LIKE '%@%'")}
+        finally:
+            conn.close()
+        _clerk_cache.update(at=time.time(), addrs=addrs,
+                            domains={a.split("@", 1)[1] for a in addrs} - _FREE_MAIL)
+    return _clerk_cache["addrs"], _clerk_cache["domains"]
+
+
+def _plausible_return(hdrs):
+    """Could this email be a return, whatever Jev made of its text?
+
+    Gilford and Chichester sent returns as a bare "Attached" and as a reply to
+    our own results request, so an attachment from a clerk, to the results
+    address, or under a results-ish subject is still read. An invoice or a
+    newsletter with an image from anyone else is not.
+    """
+    m = re.search(r"[\w.+-]+@[\w.-]+", hdrs.get("from", "") or "")
+    sender = m.group(0).lower() if m else ""
+    try:
+        addrs, domains = _clerk_addresses()
+    except Exception:
+        log.exception("clerk address lookup failed; treating as plausible")
+        return True
+    if sender and (sender in addrs or sender.split("@", 1)[-1] in domains):
+        return True
+    rcpt = " ".join(hdrs.get(k, "") or "" for k in ("to", "cc", "delivered-to")).lower()
+    if config.GROUP_ADDRESS and config.GROUP_ADDRESS.lower() in rcpt:
+        return True
+    return bool(_RETURN_SUBJECT.search(hdrs.get("subject", "") or ""))
+
+
 def _mailbox_name(token_path):
     """The account a token belongs to, for telling Chris which inbox an email is in."""
     m = re.search(r"gmail-token-(.+@.+)\.json$", str(token_path))
@@ -230,7 +276,7 @@ def _fetch_mailbox(token_path):
         # returns. Ask Jev before downloading anything; see jev_gate for the rules.
         verdict = jev_gate.classify(hdrs.get("from", ""), hdrs.get("subject", ""),
                                     body, [f for f, _ in atts])
-        take, mark_read = jev_gate.decide(verdict, bool(atts))
+        take, mark_read = jev_gate.decide(verdict, bool(atts), _plausible_return(hdrs))
         if verdict is not None:
             log.info("Jev %s: %s %.2f take=%s read=%s - %s", jev_gate.MODE, verdict[0],
                      verdict[1], take, mark_read, (hdrs.get("subject") or "")[:80])

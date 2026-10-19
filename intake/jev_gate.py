@@ -116,11 +116,17 @@ def classify(sender, subject, body, attachment_names):
         return None
 
 
-def decide(verdict, has_attachments=False):
+def decide(verdict, has_attachments=False, plausible_return=True):
     """Map a classify() result to (take, mark_read).
 
     take=False: do not store it; only bookmark it with the label.
     mark_read=False: leave it UNREAD in the inbox.
+
+    plausible_return: the sender or subject could be a return (a clerk's
+    address or town domain, mail to the results address, or a subject about
+    results). Only then does an attachment override a confident "other" -
+    otherwise every invoice PDF and newsletter image in Chris's mailboxes was
+    parsed and pinged him as "a report with no identifiable town".
     """
     if MODE != "on":
         return (True, True)  # off/shadow: behaviour unchanged
@@ -131,6 +137,7 @@ def decide(verdict, has_attachments=False):
     if choice == "results" and conf >= MIN_CONFIDENCE:
         return (True, True)
     if choice == "other" and conf >= MIN_CONFIDENCE:
-        # An attachment may be a tape or a return whatever the text says.
-        return (True, False) if has_attachments else (False, False)
+        # An attachment may be a tape or a return whatever the text says -
+        # but only from someone who could plausibly be sending one.
+        return (True, False) if (has_attachments and plausible_return) else (False, False)
     return (True, False)
