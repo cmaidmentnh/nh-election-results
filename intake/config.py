@@ -21,6 +21,13 @@ ATTACH_DIR = Path(os.environ.get("INTAKE_ATTACH_DIR", str(BASE_DIR / "data" / "i
 # --- Anthropic ------------------------------------------------------------
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("INTAKE_MODEL", "claude-opus-5")
+# Which plan pays for the reads. "subscription" runs them through the Claude
+# Agent SDK on Chris's Claude plan (CLAUDE_CODE_OAUTH_TOKEN, from `claude
+# setup-token`); "api" bills ANTHROPIC_API_KEY. In subscription mode a read the
+# plan refuses (usage limit, outage) falls back to the API key, so a busy
+# election night never stalls - see parser._json_call.
+LLM_BACKEND = os.environ.get("INTAKE_LLM_BACKEND",
+                             "subscription" if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN") else "api").lower()
 
 # Collect the mail and the Signal photos, but do not read them with the model.
 # Every message is still stored, still attachment-for-attachment on disk, and

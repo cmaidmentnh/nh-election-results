@@ -18,6 +18,8 @@ import re
 import mimetypes
 from pathlib import Path
 
+import os
+
 import anthropic
 from pydantic import BaseModel, Field
 
@@ -27,12 +29,58 @@ log = logging.getLogger("intake.parser")
 
 _client = None
 
+if config.LLM_BACKEND == "subscription":
+    # Claude Code prefers ANTHROPIC_API_KEY over the plan's OAuth token, and the
+    # Agent SDK hands the whole process environment to it - so leaving the key
+    # in the environment would quietly bill the API for every "subscription"
+    # read. The key stays in config for the fallback client only.
+    os.environ.pop("ANTHROPIC_API_KEY", None)
+    os.environ.pop("ANTHROPIC_AUTH_TOKEN", None)
+
 
 def client():
     global _client
     if _client is None:
         _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY or None)
     return _client
+
+
+def _via_subscription(system, content, schema):
+    """One read on the Claude plan through the Agent SDK. Returns the parsed JSON."""
+    import asyncio
+    from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
+
+    async def prompt():
+        yield {"type": "user", "message": {"role": "user", "content": content},
+               "parent_tool_use_id": None, "session_id": ""}
+
+    async def run():
+        opts = ClaudeAgentOptions(
+            model=config.MODEL, system_prompt=system, tools=[], max_turns=4,
+            output_format={"type": "json_schema", "schema": schema},
+            setting_sources=[], cwd=str(config.ATTACH_DIR),
+        )
+        async for m in query(prompt=prompt(), options=opts):
+            if isinstance(m, ResultMessage):
+                if m.is_error or m.structured_output is None:
+                    raise RuntimeError(f"subscription read failed: {m.subtype} {str(m.result)[:200]}")
+                return m.structured_output
+        raise RuntimeError("subscription read returned no result")
+
+    return asyncio.run(run())
+
+
+def _json_call(system, content, model_cls, api_call):
+    """Run a read on the configured plan; fall back to the API key if the plan refuses."""
+    if config.LLM_BACKEND == "subscription":
+        try:
+            data = _via_subscription(system, content, _strict_schema(model_cls.model_json_schema()))
+            return model_cls.model_validate(data)
+        except Exception as exc:
+            if not config.ANTHROPIC_API_KEY:
+                raise
+            log.warning("subscription read failed (%s); using the API key for this one", str(exc)[:160])
+    return api_call()
 
 
 class TownGuess(BaseModel):
@@ -462,15 +510,17 @@ def identify_town(town_list, body, subject="", sender="", attachments=None):
             f"--- REPORT ---\nFrom: {sender}\nSubject: {subject}\n\n{body or '(no text; see image)'}"
         ),
     })
-    resp = client().messages.parse(
-        model=config.MODEL,
-        max_tokens=4000,
-        system=TOWN_SYSTEM,
-        messages=[{"role": "user", "content": content}],
-        output_format=TownGuess,
-        output_config={"effort": "low"},
-    )
-    return resp.parsed_output
+    def api_call():
+        resp = client().messages.parse(
+            model=config.MODEL,
+            max_tokens=4000,
+            system=TOWN_SYSTEM,
+            messages=[{"role": "user", "content": content}],
+            output_format=TownGuess,
+            output_config={"effort": "low"},
+        )
+        return resp.parsed_output
+    return _json_call(TOWN_SYSTEM, content, TownGuess, api_call)
 
 
 def extract(municipality, roster_text, body, subject="", sender="", attachments=None,
@@ -525,6 +575,11 @@ def _strict_schema(node):
 
 def _extract_streamed(content, max_tokens=None):
     """One extraction with a large output ceiling, which requires streaming."""
+    return _json_call(EXTRACT_SYSTEM, content, Extraction,
+                      lambda: _extract_streamed_api(content, max_tokens))
+
+
+def _extract_streamed_api(content, max_tokens=None):
     with client().messages.stream(
         model=config.MODEL,
         max_tokens=max_tokens or config.MAX_OUTPUT_TOKENS_RETRY,

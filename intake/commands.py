@@ -173,17 +173,20 @@ def handle(conn, text):
     if not pending:
         return "Nothing is waiting for review right now."
 
-    resp = parser.client().messages.parse(
-        model=config.MODEL,
-        max_tokens=8000,
-        system=SYSTEM,
-        messages=[{"role": "user", "content":
-                   f"PENDING ITEMS:\n{json.dumps(pending, indent=0)}\n\n"
-                   f"OPERATOR INSTRUCTION:\n{text}"}],
-        output_format=Plan,
-        output_config={"effort": "low"},
-    )
-    plan = resp.parsed_output
+    prompt_text = (f"PENDING ITEMS:\n{json.dumps(pending, indent=0)}\n\n"
+                   f"OPERATOR INSTRUCTION:\n{text}")
+
+    def api_call():
+        return parser.client().messages.parse(
+            model=config.MODEL,
+            max_tokens=8000,
+            system=SYSTEM,
+            messages=[{"role": "user", "content": prompt_text}],
+            output_format=Plan,
+            output_config={"effort": "low"},
+        ).parsed_output
+
+    plan = parser._json_call(SYSTEM, [{"type": "text", "text": prompt_text}], Plan, api_call)
     if not plan.understood or not plan.actions:
         return plan.reply or "I did not follow that - which town and race?"
 

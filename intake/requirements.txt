@@ -16,3 +16,4 @@ openpyxl>=3.1
 # Triage looks up whether an email sender is a candidate on file.
 psycopg2-binary>=2.9
 boto3>=1.28
+claude-agent-sdk==0.2.154
