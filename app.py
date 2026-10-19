@@ -7,8 +7,9 @@ Insight-driven web app for exploring NH election data
 import json
 import os
 import re
-from datetime import datetime
-from flask import Flask, render_template, jsonify, request, Response, make_response, redirect, url_for
+from datetime import datetime, date
+from flask import (Flask, render_template, jsonify, request, Response, make_response,
+                   redirect, url_for, has_request_context)
 import queries
 import analysis
 import census
@@ -812,21 +813,129 @@ def _decode_code(level, code):
     return "", code
 
 
-PRIMARY_DAY = datetime(2026, 9, 8).date()
+# --- Which election the public results pages show ---------------------------
+# Primary night and general night run on the same pages and the same engine.
+# What differs is which rows of `elections` they read and how a race is shaped:
+# a primary is two elections (one per party) and every race belongs to one of
+# them, so party is a property of the race; a general is ONE election whose
+# races carry every party's nominee, so party is a property of the candidate
+# (race_candidates.party) and the top `seats` vote-getters win outright.
+#
+# The public default is RESULTS_EVENT (env, default "general"). Every page and
+# API also takes ?event=primary, so the September results stay reachable at
+# the same URLs with one parameter added.
+EVENTS = {
+    'primary': {'key': 'primary', 'year': 2026, 'type': 'state_primary',
+                'is_primary': True, 'label': 'State Primary',
+                'date': date(2026, 9, 8), 'date_label': 'September 8, 2026'},
+    'general': {'key': 'general', 'year': 2026, 'type': 'general',
+                'is_primary': False, 'label': 'General Election',
+                'date': date(2026, 11, 3), 'date_label': 'November 3, 2026'},
+}
+DEFAULT_EVENT = os.environ.get('RESULTS_EVENT', 'general')
+if DEFAULT_EVENT not in EVENTS:
+    DEFAULT_EVENT = 'general'
+PRIMARY_DAY = EVENTS['primary']['date']
+
+# The server runs UTC. Election day is a New Hampshire date, and a UTC date
+# would flip the site into live mode at 8 p.m. the night before.
+try:
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    _NH_TZ = _ZoneInfo('America/New_York')
+except Exception:  # pragma: no cover - zoneinfo ships with 3.9+
+    _NH_TZ = None
+
+# One-letter party codes for the general-election JSON and pages. A primary
+# keeps its old R / D, which name the election rather than the candidate.
+PARTY_ABBR = {'Republican': 'R', 'Democratic': 'D', 'Libertarian': 'L',
+              'Constitution': 'C', 'Independent': 'I'}
+
+
+def _pabbr(party):
+    return PARTY_ABBR.get(party or '', 'O')
+
+
+def _event():
+    """The event this request is about: ?event= if it names one, else the default."""
+    k = request.args.get('event') if has_request_context() else None
+    return EVENTS.get(k) or EVENTS[DEFAULT_EVENT]
+
+
+def _ev_sql(ev, party_full=None, alias='e'):
+    """WHERE fragment + args selecting the event's election(s).
+
+    In a primary, passing a party narrows it to that party's election; leaving
+    it out reads both. A general has one election and ignores the party."""
+    sql = f"{alias}.year = ? AND {alias}.election_type = ?"
+    args = [ev['year'], ev['type']]
+    if ev['is_primary'] and party_full:
+        sql += f" AND {alias}.party = ?"
+        args.append(party_full)
+    return sql, args
+
+
+def _filed_sql(ev, alias='rc'):
+    """Who counts as printed on the ballot.
+
+    Primary rosters came from the filing period, so a filing id > 0 is a filed
+    candidate. The general roster also carries the nominees who won their
+    primary by write-in and the minor-party and independent nominees, none of
+    whom has a filing id (they are 0). Negative ids are write-ins added on the
+    night, in either event."""
+    if ev['is_primary']:
+        return f"{alias}.recruitment_filing_id > 0"
+    return f"IFNULL({alias}.recruitment_filing_id, 0) >= 0"
+
+
+def _nh_now():
+    return datetime.now(_NH_TZ) if _NH_TZ else datetime.now()
+
+
+def _has_results(ev):
+    conn = _contested_db()
+    sql, args = _ev_sql(ev)
+    try:
+        return conn.execute(f"""
+            SELECT 1 FROM results res JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            WHERE {sql} LIMIT 1""", args).fetchone() is not None
+    finally:
+        conn.close()
+
+
+def _is_live(ev, demo=False):
+    """Preview (who is running) until election day or the first result, then live.
+
+    ?preview=1 forces the preview, so it can still be checked on the day."""
+    if request.args.get('preview') == '1':
+        return False
+    return demo or _nh_now().date() >= ev['date'] or _has_results(ev)
+
+
+@app.context_processor
+def inject_event():
+    """`ev` and a link helper for the results pages, so every link and every
+    fetch keeps the reader on the event they came in on."""
+    if not has_request_context():
+        return {}
+    ev = _event()
+    evq = '' if ev['key'] == DEFAULT_EVENT else 'event=' + ev['key']
+
+    def link(path, demo=False):
+        q = '&'.join(x for x in (('demo=1' if demo else ''), evq) if x)
+        return path + ('?' + q if q else '')
+    other = 'primary' if ev['key'] == 'general' else 'general'
+    other_href = '/results' + ('' if other == DEFAULT_EVENT else '?event=' + other)
+    return {'ev': ev, 'evq': evq, 'link': link, 'ev_other_href': other_href}
 
 
 @app.route('/contested')
 def contested_map():
-    """Public 2026 primary portal. Preview mode (who's running) until results
-    start arriving on primary day, then it becomes live results + projections."""
-    conn = _contested_db()
-    has_results = conn.execute("""
-        SELECT 1 FROM results res JOIN races r ON res.race_id = r.id
-        JOIN elections e ON r.election_id = e.id
-        WHERE e.year = 2026 AND e.election_type = 'state_primary' LIMIT 1""").fetchone() is not None
-    conn.close()
+    """Public races portal. Preview mode (who's running) until results start
+    arriving on election day, then it becomes live results + projections."""
+    ev = _event()
     demo = request.args.get('demo') == '1'
-    live = demo or datetime.now().date() >= PRIMARY_DAY or has_results
+    live = _is_live(ev, demo)
     return render_template('site_races.html', live_mode=live, demo=demo)
 
 
@@ -843,12 +952,19 @@ def api_search():
     if len(q) < 2:
         return jsonify({'q': q, 'results': []})
     like = f"%{q}%"
+    ev = _event()
+    evs, evargs = _ev_sql(ev)
+    # Links keep the reader on this event; the hash is read by the races page.
+    evq = '' if ev['key'] == DEFAULT_EVENT else '?event=' + ev['key']
     conn = _contested_db()
     cur = conn.cursor()
     out = []
 
-    for r in cur.execute("""
-        SELECT DISTINCT c.name AS cand, o.name AS office, e.party AS party,
+    # In a primary the party is the election's; in a general it is the
+    # candidate's own line on the roster.
+    party_col = 'e.party' if ev['is_primary'] else 'rc.party'
+    for r in cur.execute(f"""
+        SELECT DISTINCT c.name AS cand, o.name AS office, {party_col} AS party,
                IFNULL(ra.county,'') AS county, IFNULL(ra.district,'') AS district,
                (SELECT SUM(res.votes) FROM results res
                  WHERE res.race_id = ra.id AND res.candidate_id = c.id) AS votes
@@ -857,19 +973,25 @@ def api_search():
           JOIN races ra ON ra.id = rc.race_id
           JOIN offices o ON o.id = ra.office_id
           JOIN elections e ON e.id = ra.election_id
-         WHERE e.year = 2026 AND e.election_type = 'state_primary'
+         WHERE {evs}
            AND c.name LIKE ? AND IFNULL(rc.recruitment_filing_id, 0) >= -2
          ORDER BY votes DESC NULLS LAST
-         LIMIT 12""", (like,)):
+         LIMIT 12""", (*evargs, like)):
         key = next((k for k, (nm, _lv) in CONTESTED_OFFICES.items() if nm == r['office']), '')
         level = CONTESTED_OFFICES.get(key, (None, 'house'))[1]
+        if ev['is_primary']:
+            pname = 'Republican' if r['party'] == 'Republican' else 'Democratic'
+            pkey = (r['party'] or 'R')[:1]
+        else:
+            pname = r['party'] or 'write-in'
+            pkey = 'G'
         out.append({
             'kind': 'candidate', 'label': r['cand'],
             'detail': f"{r['office']}{(' · ' + r['county'] + ' ' + r['district']).rstrip() if r['county'] or r['district'] else ''}"
-                      f" · {'Republican' if r['party'] == 'Republican' else 'Democratic'}"
+                      f" · {pname}"
                       + (f" · {r['votes']:,} votes" if r['votes'] else ''),
-            'url': (f"/contested#office={key}&party={r['party'][:1]}&scope=all"
-                    f"&code={_district_code(level, r['county'], r['district'])}") if key else '/contested',
+            'url': (f"/contested{evq}#office={key}&party={pkey}&scope=all"
+                    f"&code={_district_code(level, r['county'], r['district'])}") if key else '/contested' + evq,
         })
 
     for r in cur.execute("""SELECT DISTINCT municipality AS m, county
@@ -877,30 +999,32 @@ def api_search():
                              ORDER BY municipality LIMIT 8""", (like,)):
         out.append({'kind': 'town', 'label': r['m'],
                     'detail': f"{r['county']} County · every race on this ballot" if r['county'] else 'town',
-                    'url': f"/results/town/{r['m']}"})
+                    'url': f"/results/town/{r['m']}{evq}"})
 
     for r in cur.execute("""SELECT DISTINCT county FROM polling_places
                              WHERE county LIKE ? AND county != '' ORDER BY county LIMIT 5""",
                          (like,)):
         out.append({'kind': 'county', 'label': f"{r['county']} County",
                     'detail': 'county offices and every district in it',
-                    'url': f"/results/county/{r['county']}"})
+                    'url': f"/results/county/{r['county']}{evq}"})
     conn.close()
     return jsonify({'q': q, 'results': out[:25]})
 
 
 @app.route('/results/town/<path:name>')
 def site_town(name):
-    """Every 2026 primary result for one town."""
-    return render_template('site_place.html', kind='town', name=name,
-                           demo=request.args.get('demo') == '1')
+    """Every result for one town, in the event being shown."""
+    demo = request.args.get('demo') == '1'
+    return render_template('site_place.html', kind='town', name=name, demo=demo,
+                           live_mode=_is_live(_event(), demo))
 
 
 @app.route('/results/county/<path:name>')
 def site_county(name):
-    """Every 2026 primary result for one county."""
-    return render_template('site_place.html', kind='county', name=name,
-                           demo=request.args.get('demo') == '1')
+    """Every result for one county, in the event being shown."""
+    demo = request.args.get('demo') == '1'
+    return render_template('site_place.html', kind='county', name=name, demo=demo,
+                           live_mode=_is_live(_event(), demo))
 
 
 @app.route('/api/place/<kind>/<path:name>')
@@ -913,6 +1037,16 @@ def api_place(kind, name):
     """
     if kind not in ('town', 'county'):
         return jsonify({'error': 'unknown place'}), 404
+    ev = _event()
+    if not ev['is_primary']:
+        demo = request.args.get('demo') == '1'
+        conn = _contested_db()
+        try:
+            races = _place_general(conn.cursor(), ev, kind, name, demo)
+        finally:
+            conn.close()
+        return jsonify({'kind': kind, 'name': name, 'races': races})
+
     conn = _contested_db()
     cur = conn.cursor()
 
@@ -966,28 +1100,122 @@ def api_place(kind, name):
     return jsonify({'kind': kind, 'name': name, 'races': out})
 
 
+# Order the general-election place page reads in: top of the ticket first.
+_PLACE_ORDER = ['governor', 'us-senate', 'us-house', 'exec-council', 'state-senate',
+                'state-house', 'sheriff', 'cty-attorney', 'cty-treasurer', 'deeds',
+                'probate', 'commissioner']
+
+
+def _place_general(cur, ev, kind, name, demo=False):
+    """Every general-election race on the ballot in one town, or anywhere in
+    one county, with the votes cast THERE.
+
+    Built from the roster and the district map rather than from `results`, so
+    the page lists who is running before a single vote is in, and a town that
+    has not reported still shows its whole ballot. Each race also carries the
+    race-wide call, because "who won" is the next question after "how did we
+    vote"."""
+    if kind == 'town':
+        munis = {name}
+    else:
+        munis = {r['municipality'] for r in cur.execute(
+            "SELECT municipality FROM polling_places WHERE county = ?", (name,))}
+    if not munis:
+        return []
+    certified = _certified_races(cur)
+    out = []
+    for key in _PLACE_ORDER:
+        office_name, level = CONTESTED_OFFICES[key]
+        bulk = _board_bulk(cur, ev, office_name, None)
+        for (county, district) in sorted(bulk['races'],
+                                         key=lambda cd: (cd[0], _dnum(cd[1]))):
+            precs = _precincts_for(cur, office_name, level, county, district)
+            here = [p for p in precs if p in munis]
+            if not here:
+                continue
+            r = _compute_results(cur, office_name, level, county, district, None, 'G',
+                                 with_precincts=True, demo=demo, bulk=bulk, ev=ev)
+            if not r.get('exists'):
+                continue
+            pmap = {c['name']: c.get('party', 'O') for c in r['candidates']
+                    if c['name'] != 'Write-in'}
+            votes, reported = {}, 0
+            for p in r['precincts']:
+                if p['name'] not in munis:
+                    continue
+                reported += 1 if p['reported'] else 0
+                # Named write-ins arrive under their own names beside the
+                # sheet's aggregate line; the two state the same votes, so take
+                # the larger per town, as _compute_results does.
+                agg = named = 0
+                for n, v in p['votes'].items():
+                    if n in pmap:
+                        votes[n] = votes.get(n, 0) + v
+                    elif n.lower() in _AGG_WI_NAMES:
+                        agg += v
+                    else:
+                        named += v
+                if agg or named:
+                    votes['Write-in'] = votes.get('Write-in', 0) + max(agg, named)
+            cands = [{'name': c['name'], 'party': c.get('party', 'O'),
+                      'votes': votes.get(c['name'], 0),
+                      **({'writein': True} if c.get('writein') else {})}
+                     for c in r['candidates'] if c['name'] != 'Write-in']
+            if votes.get('Write-in'):
+                cands.append({'name': 'Write-in', 'party': 'O', 'votes': votes['Write-in']})
+            if not any(c['name'] != 'Write-in' for c in cands) and not sum(votes.values()):
+                continue  # a contest nobody is running in and nobody voted in
+            cands.sort(key=lambda c: (-c['votes'], c['name'] == 'Write-in', c['name']))
+            pj = r['projection']
+            out.append({
+                'office': office_name, 'county': county, 'district': district,
+                'party': 'G', 'seats': r['seats'],
+                'code': _district_code(level, county, district), 'office_key': key,
+                'certified': bool(pj.get('certified')), 'recount': pj.get('recount'),
+                'candidates': cands, 'total': sum(c['votes'] for c in cands),
+                'reported': reported, 'precincts': len(here),
+                'race_status': pj.get('status'), 'race_winners': pj.get('winners') or [],
+                'race_expected_in': r['reporting'].get('expected_in', 0),
+            })
+    return out
+
+
+def _dnum(d):
+    """Sort key for a district string: numbers in numeric order."""
+    try:
+        return (0, int(d))
+    except (TypeError, ValueError):
+        return (1, d or '')
+
+
 @app.route('/api/contested/<office_key>')
 def api_contested(office_key):
     """Per-district contested status for an office in the 2026 primary."""
     if office_key not in CONTESTED_OFFICES:
         return jsonify({'error': 'unknown office'}), 404
     office_name, level = CONTESTED_OFFICES[office_key]
+    ev = _event()
+    evs, evargs = _ev_sql(ev)
 
     conn = _contested_db()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT e.party, r.county AS county, r.district AS district, r.seats AS seats,
+    # Primary: one row per party's election. General: one row per party
+    # within the one race, summed back to the race below.
+    party_col = 'e.party' if ev['is_primary'] else 'rc.party'
+    cur.execute(f"""
+        SELECT {party_col} AS party, r.county AS county, r.district AS district,
+               r.seats AS seats,
                COUNT(rc.candidate_id) AS ncand,
                GROUP_CONCAT(c.name, '|') AS names
         FROM races r
         JOIN elections e   ON r.election_id = e.id
         JOIN offices o     ON r.office_id = o.id
         LEFT JOIN race_candidates rc
-               ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+               ON rc.race_id = r.id AND {_filed_sql(ev)}
         LEFT JOIN candidates c ON rc.candidate_id = c.id
-        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND o.name = ?
-        GROUP BY e.party, r.county, r.district, r.seats
-    """, (office_name,))
+        WHERE {evs} AND o.name = ?
+        GROUP BY {party_col}, r.county, r.district, r.seats
+    """, (*evargs, office_name))
 
     districts = {}
     for row in cur.fetchall():
@@ -996,11 +1224,26 @@ def api_contested(office_key):
             'code': code, 'county': row['county'] or '', 'district': row['district'] or '',
             'seats': row['seats'], 'parties': {}, 'candidates': {}, 'contested': False,
         })
-        party = (row['party'] or 'NP')[:1]  # R / D
-        d['parties'][party] = row['ncand']
-        d['candidates'][party] = row['names'].split('|') if row['names'] else []
-        if row['ncand'] > (row['seats'] or 1):
-            d['contested'] = True
+        names = row['names'].split('|') if row['names'] else []
+        if ev['is_primary']:
+            party = (row['party'] or 'NP')[:1]  # R / D
+            d['parties'][party] = row['ncand']
+            d['candidates'][party] = names
+            if row['ncand'] > (row['seats'] or 1):
+                d['contested'] = True
+        else:
+            # 'G' is the whole race - every party on one ballot - so the page's
+            # contested test (candidates > seats) reads the same as a primary's.
+            # by_party keeps the split for the preview map.
+            if not row['ncand']:
+                d['parties'].setdefault('G', 0)
+                d['candidates'].setdefault('G', [])
+                continue
+            d['parties']['G'] = d['parties'].get('G', 0) + row['ncand']
+            d['candidates'].setdefault('G', []).extend(names)
+            bp, pk = d.setdefault('by_party', {}), _pabbr(row['party'])
+            bp[pk] = bp.get(pk, 0) + row['ncand']
+            d['contested'] = d['parties']['G'] > (row['seats'] or 1)
 
     # The towns each district covers, so the page can be searched by place.
     # Reading them is nearly free now that the district table is held in
@@ -1107,20 +1350,23 @@ def api_contested_precincts(office_key):
     office_name, level = CONTESTED_OFFICES[office_key]
     code = request.args.get('code', '')
     county, district = _decode_code(level, code)
+    ev = _event()
+    evs, evargs = _ev_sql(ev)
+    party_col = 'e.party' if ev['is_primary'] else 'rc.party'
 
     conn = _contested_db()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT e.party, r.seats AS seats, c.name AS name
+    cur.execute(f"""
+        SELECT {party_col} AS party, r.seats AS seats, c.name AS name
         FROM races r
         JOIN elections e   ON r.election_id = e.id
         JOIN offices o     ON r.office_id = o.id
-        JOIN race_candidates rc ON rc.race_id = r.id AND rc.recruitment_filing_id > 0
+        JOIN race_candidates rc ON rc.race_id = r.id AND {_filed_sql(ev)}
         JOIN candidates c  ON rc.candidate_id = c.id
-        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND o.name = ?
+        WHERE {evs} AND o.name = ?
           AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
-        ORDER BY e.party, c.name
-    """, (office_name, county, district))
+        ORDER BY {party_col}, c.name
+    """, (*evargs, office_name, county, district))
     parties, seats = {}, 1
     for row in cur.fetchall():
         seats = row['seats']
@@ -1150,19 +1396,66 @@ def _precinct_weights(cur, party_full, names):
                 WHERE e.year = 2024 AND e.election_type = 'state_primary' AND e.party = ?
                 GROUP BY res.municipality""", (party_full,))}
 
-    def _genr():
-        return {r['m']: r['v'] for r in cur.execute(
-            """SELECT res.municipality AS m, SUM(res.votes) AS v
-                 FROM results res JOIN races r ON res.race_id = r.id
-                 JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
-                WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
-                GROUP BY res.municipality""")}
-
-    prim = _ref(('turnout24', party_full), _prim)
-    genr = _ref('gov24', _genr)
-    raw = {n: (prim.get(n) or genr.get(n) or 1) for n in names}
+    # A general has no party turnout to weight by - everyone votes on one
+    # ballot - so its baseline is the 2024 general itself.
+    prim = _ref(('turnout24', party_full), _prim) if party_full else {}
+    genr = _gov24(cur)
+    raw = {n: (prim.get(n) or genr.get(n) or genr.get(_norm_place(n)) or 1) for n in names}
     total = sum(raw.values()) or 1
     return {n: raw[n] / total for n in names}
+
+
+def _gov24(cur):
+    """Votes cast for Governor in the 2024 general, per municipality - the
+    turnout baseline. Keyed by the exact name and by _norm_place(name)."""
+    def build():
+        out = {}
+        for r in cur.execute(
+                """SELECT res.municipality AS m, SUM(res.votes) AS v
+                     FROM results res JOIN races r ON res.race_id = r.id
+                     JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                    WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
+                    GROUP BY res.municipality"""):
+            out[r['m']] = r['v']
+            out.setdefault(_norm_place(r['m']), r['v'])
+        return out
+    return _ref('gov24', build)
+
+
+def _norm_place(name):
+    """Loose key for a place name. The 2024 returns spell the unincorporated
+    places "Bean's Grant" and "Hart's Location"; polling_places has "Beans
+    Grant" and "Harts Location". Without this they weigh nothing."""
+    s = (name or '').lower().replace("'", '').replace('.', '').replace('&', 'and')
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def _gen_baseline(cur):
+    """Each town's 2024 Republican share of the two-party vote for Governor.
+
+    This is the general-election projection's prior: an outstanding town is
+    expected to vote like it did in 2024, moved by however much the towns
+    already counted IN THIS RACE have moved. The offset between this race and
+    the governor's race (a strong local candidate, a four-seat district with
+    three Republicans on the ballot) is part of that measured swing, so it
+    does not need modelling separately."""
+    def build():
+        out = {}
+        for r in cur.execute(
+                """SELECT res.municipality AS m,
+                          SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) AS rv,
+                          SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) AS dv
+                     FROM results res JOIN races r ON res.race_id = r.id
+                     JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                     JOIN candidates c ON c.id = res.candidate_id
+                    WHERE e.year = 2024 AND e.election_type = 'general' AND o.name = 'Governor'
+                    GROUP BY res.municipality"""):
+            if (r['rv'] or 0) + (r['dv'] or 0) > 0:
+                share = r['rv'] / (r['rv'] + r['dv'])
+                out[r['m']] = share
+                out.setdefault(_norm_place(r['m']), share)
+        return out
+    return _ref('base24', build)
 
 
 # Uncertainty band for the call: outstanding expected-vote share ×
@@ -1176,13 +1469,24 @@ PROJ_MIN_IN = 0.005
 
 
 import math as _math
+import time as _time
 
 PROJ_MIN_PRECINCTS = 3  # never CALL off fewer than this many reported precincts (unless math-clinched)
 PROJ_SAMPLE = 0.12      # sampling uncertainty term ~ PROJ_SAMPLE / sqrt(reported precincts)
 
 
+# A general night opens with the smallest places in the state - Dixville,
+# Millsfield, Hart's Location, the unincorporated grants - reporting a handful
+# of votes between them. Replaying 2024 with towns hidden at random, a district
+# whose only counted towns were those places was "called" off 0% of its
+# expected vote, because the existing floor below never applied to a call.
+# On a general nothing is called (short of every town being in) until this
+# share of the expected vote is counted.
+PROJ_MIN_IN_GENERAL = 0.02
+
+
 def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
-             n_reported=0, n_total=0):
+             n_reported=0, n_total=0, min_call_in=0.0):
     """Decision-desk call from region-aware projected totals, with sampling guards
     so a single unrepresentative precinct (e.g. a candidate's home stronghold) can't
     trigger a call. Statuses: called / likely / leaning / too_close (+ awaiting)."""
@@ -1222,6 +1526,8 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
     else:
         status = 'too_close'
     if reported_weight < PROJ_MIN_IN and status != 'called':
+        status = 'too_close'
+    if status == 'called' and reported_weight < min_call_in and outstanding >= 0.01:
         status = 'too_close'
 
     # Win probability. `band` already behaves like a standard error - it carries
@@ -1308,86 +1614,207 @@ def _demo_results(precs, cand_ids, race_id):
     return by_prec
 
 
-def _board_bulk(cur, office_name, party_full):
+def _demo_general(cur, precs, cand_party, race_id, seats):
+    """Simulated general-election returns, for ?demo=1 only - never stored.
+
+    The primary demo rotates an arbitrary leader, which in a general would
+    paint Nashua red and the North Country blue and make the maps look broken.
+    Here each town votes like it did in 2024 moved by an arbitrary per-race
+    swing, so the maps look like a real night - but the swing is a hash of the
+    race id, not a forecast, and ~65% of towns report, picked by hash too."""
+    import zlib
+    if not cand_party:
+        return {}
+    base = _gen_baseline(cur)
+    turn = _gov24(cur)
+    swing = (((race_id * 37) % 15) - 7) / 100.0
+    rs = [cid for cid, p in cand_party.items() if p == 'R']
+    ds = [cid for cid, p in cand_party.items() if p == 'D']
+    others = [cid for cid, p in cand_party.items() if p not in ('R', 'D')]
+    by_prec = {}
+    for p in precs:
+        h = zlib.crc32(f"{race_id}|{p}".encode())
+        if h % 100 >= 65:
+            continue
+        b = base.get(p, base.get(_norm_place(p), 0.5))
+        jitter = ((h >> 8) % 9 - 4) / 100.0
+        r_share = min(0.95, max(0.05, b + swing + jitter))
+        voters = max(20, int((turn.get(p) or turn.get(_norm_place(p)) or 300) * 0.9))
+        other_share = 0.035 if others else 0.0
+        row = {}
+        # Each voter can mark up to `seats` names; a party with fewer nominees
+        # than seats simply gets fewer votes, as on a real ballot.
+        for group, share in ((rs, r_share), (ds, 1 - r_share)):
+            for i, cid in enumerate(group[:seats]):
+                row[cid] = max(0, int(voters * (1 - other_share) * share * (1 - 0.03 * i)))
+            for cid in group[seats:]:
+                row[cid] = 0
+        for i, cid in enumerate(others):
+            row[cid] = max(0, int(voters * other_share / (i + 1)))
+        by_prec[p] = row
+    return by_prec
+
+
+def _board_bulk(cur, ev, office_name, party_full):
     """Every race for one office and party, with its roster and its votes.
 
     The board asks for four hundred districts at once and each one was looking
     up its own race, its own candidates and its own results - three queries a
     race, and the race lookup joins elections and offices, so it scanned. Three
     queries for the whole board instead.
+
+    In a general `party_full` is ignored (there is one election) and each
+    roster line's own party is carried in 'party', race id -> {cid: 'R'}.
     """
+    evs, evargs = _ev_sql(ev, party_full)
+    args = (*evargs, office_name)
     races, by_id = {}, {}
-    for r in cur.execute("""SELECT r.id, r.seats, COALESCE(r.county,'') AS county,
+    for r in cur.execute(f"""SELECT r.id, r.seats, COALESCE(r.county,'') AS county,
                                    COALESCE(r.district,'') AS district
                               FROM races r
                               JOIN elections e ON r.election_id = e.id
                               JOIN offices o   ON r.office_id = o.id
-                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
-                               AND e.party = ? AND o.name = ?""",
-                         (party_full, office_name)):
+                             WHERE {evs} AND o.name = ?""", args):
         races[(r['county'], r['district'])] = {'id': r['id'], 'seats': r['seats']}
         by_id[r['id']] = (r['county'], r['district'])
 
-    cands = {}
-    for r in cur.execute("""SELECT rc.race_id, c.id AS cid, c.name,
-                                   COALESCE(rc.ballot_order, 900) AS ord
+    cands, party, filed = {}, {}, {}
+    for r in cur.execute(f"""SELECT rc.race_id, c.id AS cid, c.name,
+                                   COALESCE(rc.ballot_order, 900) AS ord,
+                                   rc.party AS party,
+                                   ({_filed_sql(ev)}) AS on_ballot
                               FROM race_candidates rc
                               JOIN candidates c ON rc.candidate_id = c.id
                               JOIN races ra ON ra.id = rc.race_id
                               JOIN elections e ON ra.election_id = e.id
                               JOIN offices o ON ra.office_id = o.id
-                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
-                               AND e.party = ? AND o.name = ?""",
-                         (party_full, office_name)):
+                             WHERE {evs} AND o.name = ?""", args):
         cands.setdefault(r['race_id'], {})[r['cid']] = (r['name'], r['ord'])
+        if r['party']:
+            party.setdefault(r['race_id'], {})[r['cid']] = _pabbr(r['party'])
+        if r['on_ballot']:
+            filed[r['race_id']] = filed.get(r['race_id'], 0) + 1
 
     votes = {}
-    for r in cur.execute("""SELECT res.race_id, res.municipality, res.candidate_id,
+    for r in cur.execute(f"""SELECT res.race_id, res.municipality, res.candidate_id,
                                    res.votes, c.name
                               FROM results res
                               JOIN candidates c ON c.id = res.candidate_id
                               JOIN races ra ON ra.id = res.race_id
                               JOIN elections e ON ra.election_id = e.id
                               JOIN offices o ON ra.office_id = o.id
-                             WHERE e.year = 2026 AND e.election_type = 'state_primary'
-                               AND e.party = ? AND o.name = ?""",
-                         (party_full, office_name)):
+                             WHERE {evs} AND o.name = ?""", args):
         d = votes.setdefault(r['race_id'], {})
         d.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
         cands.setdefault(r['race_id'], {}).setdefault(r['candidate_id'], (r['name'], 950))
 
     named, cert_wi = {}, {}
-    for r in cur.execute("""SELECT rc.race_id, rc.candidate_id AS cid,
+    for r in cur.execute(f"""SELECT rc.race_id, rc.candidate_id AS cid,
                                    rc.recruitment_filing_id AS filed
                               FROM race_candidates rc
                               JOIN races ra ON ra.id = rc.race_id
                               JOIN elections e ON ra.election_id = e.id
                               JOIN offices o ON ra.office_id = o.id
                              WHERE rc.recruitment_filing_id IN (-1, -2)
-                               AND e.year = 2026 AND e.election_type = 'state_primary'
-                               AND e.party = ? AND o.name = ?""",
-                         (party_full, office_name)):
+                               AND {evs} AND o.name = ?""", args):
         if r['filed'] == -1:
             named.setdefault(r['race_id'], set()).add(r['cid'])
         else:
             cert_wi.setdefault(r['race_id'], set()).add(r['cid'])
     return {'races': races, 'cands': cands, 'votes': votes,
-            'named_wi': named, 'cert_wi': cert_wi}
+            'named_wi': named, 'cert_wi': cert_wi, 'party': party, 'filed': filed}
+
+
+# What a sheet calls its aggregate write-in line (lower-cased candidate names).
+_AGG_WI_NAMES = ('write-in', 'write in', 'writein', 'scattering')
+
+
+def _gen_swing(cur, name_by_id, party_by_id, by_prec, reported, weights, overall):
+    """Uniform-swing model for a general-election race.
+
+    Each counted town's Republican share of the two-party vote IN THIS RACE is
+    compared with its 2024 baseline (_gen_baseline); the turnout-weighted mean
+    of those differences is the swing, and an outstanding town is expected to
+    land at baseline + swing. Within each party the vote is split the way that
+    party's nominees have split it so far, and minor-party and independent
+    candidates keep their counted share. Returns None when the model has
+    nothing to stand on - no Republican or no Democrat on the ballot, or no
+    counted town with a baseline - and the caller falls back to the region
+    model the primary uses.
+
+    `spread` is the weighted standard deviation of the per-town departures:
+    how far towns disagree about the swing, which is the honest uncertainty."""
+    rids = [c for c in name_by_id if party_by_id.get(c) == 'R']
+    dids = [c for c in name_by_id if party_by_id.get(c) == 'D']
+    if not rids or not dids or not reported:
+        return None
+    r_tot = sum(overall.get(c, 0) for c in rids)
+    d_tot = sum(overall.get(c, 0) for c in dids)
+    total = sum(overall.values())
+    if r_tot <= 0 or d_tot <= 0 or total <= 0:
+        return None
+    base = _gen_baseline(cur)
+
+    def b_of(p):
+        return base.get(p, base.get(_norm_place(p)))
+
+    pts = []
+    for p in reported:
+        v = by_prec.get(p, {})
+        rv = sum(v.get(c, 0) for c in rids)
+        dv = sum(v.get(c, 0) for c in dids)
+        b = b_of(p)
+        if rv + dv > 0 and b is not None:
+            pts.append((weights.get(p, 0) or 1e-9, rv / (rv + dv) - b))
+    if not pts:
+        return None
+    wsum = sum(w for w, _ in pts)
+    swing = sum(w * x for w, x in pts) / wsum
+    spread = ((sum(w * (x - swing) ** 2 for w, x in pts) / wsum) ** 0.5
+              if len(pts) > 1 else None)
+
+    others = [c for c in name_by_id if c not in rids and c not in dids]
+    other_sh = {c: overall.get(c, 0) / total for c in others}
+    two_party = 1 - sum(other_sh.values())
+    r_split = {c: overall.get(c, 0) / r_tot for c in rids}
+    d_split = {c: overall.get(c, 0) / d_tot for c in dids}
+
+    def shares_for(p):
+        b = b_of(p)
+        if b is None:
+            return None
+        rs = min(0.98, max(0.02, b + swing))
+        out = dict(other_sh)
+        for c in rids:
+            out[c] = two_party * rs * r_split[c]
+        for c in dids:
+            out[c] = two_party * (1 - rs) * d_split[c]
+        return out
+
+    return {'swing': swing, 'spread': spread, 'shares_for': shares_for}
 
 
 def _compute_results(cur, office_name, level, county, district, party_full, party,
-                     with_precincts=True, demo=False, bulk=None):
-    """Full results + region-aware projection for one party's primary in a district."""
+                     with_precincts=True, demo=False, bulk=None, ev=None):
+    """Full results + projection for one race in a district.
+
+    Primary: one party's primary (party_full), projected region-aware.
+    General: the whole race, every party (party_full None, party 'G'); each
+    candidate carries their party, and outstanding towns are projected from
+    their 2024 baseline plus the swing measured in this race (_gen_swing)."""
+    ev = ev or _event()
+    general = not ev['is_primary']
     if bulk is not None:
         race = bulk['races'].get((county, district))
     else:
-        race = cur.execute("""
+        evs, evargs = _ev_sql(ev, party_full)
+        race = cur.execute(f"""
             SELECT r.id AS id, r.seats AS seats FROM races r
             JOIN elections e ON r.election_id = e.id
             JOIN offices o   ON r.office_id = o.id
-            WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ?
+            WHERE {evs}
               AND o.name = ? AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
-        """, (party_full, office_name, county, district)).fetchone()
+        """, (*evargs, office_name, county, district)).fetchone()
     if not race:
         return {'exists': False, 'office': office_name, 'party': party, 'candidates': [],
                 'precincts': [], 'towns': [], 'seats': 1,
@@ -1404,24 +1831,29 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
         pairs = sorted(bulk['cands'].get(race_id, {}).items(),
                        key=lambda kv: (kv[1][1], kv[1][0]))
         name_by_id = {cid: nm for cid, (nm, _o) in pairs}
+        party_by_id = dict(bulk.get('party', {}).get(race_id, {}))
     else:
-        cands = cur.execute("""SELECT cid, name, MIN(ord) AS ord FROM (
+        cands = cur.execute("""SELECT cid, name, MIN(ord) AS ord, MAX(party) AS party FROM (
                              SELECT c.id AS cid, c.name AS name,
-                                    COALESCE(rc.ballot_order, 900) AS ord
+                                    COALESCE(rc.ballot_order, 900) AS ord,
+                                    rc.party AS party
                                FROM race_candidates rc
                                JOIN candidates c ON rc.candidate_id = c.id
                               WHERE rc.race_id = ?
                              UNION
-                             SELECT c.id, c.name, 950
+                             SELECT c.id, c.name, 950, NULL
                                FROM results res
                                JOIN candidates c ON res.candidate_id = c.id
                               WHERE res.race_id = ?
                            ) GROUP BY cid, name
                            ORDER BY ord, name""", (race_id, race_id)).fetchall()
         name_by_id = {c['cid']: c['name'] for c in cands}
+        party_by_id = {c['cid']: _pabbr(c['party']) for c in cands if c['party']}
 
     precs = _precincts_for(cur, office_name, level, county, district)
-    if demo:
+    if demo and general:
+        by_prec = _demo_general(cur, precs, party_by_id, race_id, seats)
+    elif demo:
         by_prec = _demo_results(precs, list(name_by_id.keys()), race_id)
     elif bulk is not None:
         by_prec = bulk['votes'].get(race_id, {})
@@ -1465,18 +1897,26 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                 region_tot[rg] = region_tot.get(rg, 0) + val
     region_shares = {rg: _shares(rv, region_tot.get(rg, 0)) for rg, rv in region_votes.items()}
 
+    # General: where the race has a Republican and a Democrat with votes in,
+    # project from each town's 2024 lean plus this race's measured swing.
+    # Anything else (one-party races, nothing in yet) uses the region model.
+    gsw = _gen_swing(cur, name_by_id, party_by_id, by_prec, reported, weights,
+                     overall) if general else None
+
     # Projected totals: counted + each outstanding precinct's expected vote spread
     # by its region's reported shares (fallback district shares, then nothing).
     projected = {cid: overall[cid] for cid in name_by_id}
     for p in precincts:
-        ev = weights.get(p['name'], 0) * projected_total
-        p['expected'] = round(ev)
+        ev_votes = weights.get(p['name'], 0) * projected_total
+        p['expected'] = round(ev_votes)
         if p['name'] in reported:
             continue
-        rg = pcounty.get(p['name'], '')
-        sh = region_shares.get(rg) if region_tot.get(rg, 0) > 0 else dist_shares
+        sh = gsw['shares_for'](p['name']) if gsw else None
+        if sh is None:
+            rg = pcounty.get(p['name'], '')
+            sh = region_shares.get(rg) if region_tot.get(rg, 0) > 0 else dist_shares
         for cid in name_by_id:
-            projected[cid] += ev * sh[cid]
+            projected[cid] += ev_votes * sh[cid]
 
     # Collapse write-ins to one line. A hand-count town lists every name a voter
     # wrote, so a race can carry dozens of one-vote entries - the Democratic
@@ -1499,14 +1939,15 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
             (race_id,)).fetchall()}
     # the aggregate write-in ids never depended on the race at all
     agg_wi = _ref('aggregate_writeins', lambda: {r['cid'] for r in cur.execute(
-        """SELECT c.id AS cid FROM candidates c
-            WHERE lower(c.name) IN ('write-in', 'write in', 'writein', 'scattering')"""
-    ).fetchall()})
+        f"""SELECT c.id AS cid FROM candidates c
+            WHERE lower(c.name) IN ({','.join('?' * len(_AGG_WI_NAMES))})""",
+        tuple(_AGG_WI_NAMES)).fetchall()})
     writein_ids = named_wi | agg_wi
 
     cand_list = [{'name': name_by_id[cid], 'votes': overall[cid],
                   'projected': round(projected[cid]) if reported_weight > 0 else None,
-                  **({'writein': True} if cid in cert_wi else {})}
+                  **({'writein': True} if cid in cert_wi else {}),
+                  **({'party': party_by_id.get(cid, 'O')} if general else {})}
                  for cid in name_by_id if cid not in writein_ids]
 
     # A return of votes prints a WRITE-INS total and then the names beneath it,
@@ -1539,7 +1980,8 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     wi_proj = max(agg_proj, named_proj)
     if wi_votes or any(cid in writein_ids for cid in name_by_id):
         cand_list.append({'name': 'Write-in', 'votes': wi_votes,
-                          'projected': round(wi_proj) if reported_weight > 0 else None})
+                          'projected': round(wi_proj) if reported_weight > 0 else None,
+                          **({'party': 'O'} if general else {})})
     # Order by the votes actually counted, because that is the number next to
     # the name. Sorting by the projection put Maura Sullivan above Stefany
     # Shaheen while showing Sullivan the smaller percentage, which reads as a
@@ -1565,9 +2007,17 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
         if wsum > 0:
             mean = sum(w * m for w, m in diffs) / wsum
             volatility = (sum(w * (m - mean) ** 2 for w, m in diffs) / wsum) ** 0.5
+    # In a general the raw margin swings from +40 in one town to -40 in the
+    # next simply because towns differ, and treating that as noise would keep
+    # every race "too close" until the last town. What is uncertain is how far
+    # each town departs from its own baseline, so measure that instead - in
+    # margin points, which is twice the two-party share.
+    if gsw and gsw.get('spread') is not None:
+        volatility = 2 * gsw['spread']
 
     projection = _project(cand_list, seats, reported_weight, current_total, volatility,
-                          n_reported=reported_n, n_total=total)
+                          n_reported=reported_n, n_total=total,
+                          min_call_in=PROJ_MIN_IN_GENERAL if general else 0.0)
     if certified:
         projection = dict(projection)
         projection['certified'] = True
@@ -1595,10 +2045,13 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # unopposed. Reporting-by-precinct then reads as "101 towns have not
     # reported" for towns that plainly did, and the top of the ticket looks
     # broken. Say unopposed instead of pretending to wait for a result.
-    filed = cur.execute(
-        """SELECT COUNT(*) AS n FROM race_candidates
-            WHERE race_id = ? AND recruitment_filing_id > 0""",
-        (race_id,)).fetchone()['n']
+    if bulk is not None and 'filed' in bulk:
+        filed = bulk['filed'].get(race_id, 0)
+    else:
+        filed = cur.execute(
+            f"""SELECT COUNT(*) AS n FROM race_candidates rc
+                WHERE rc.race_id = ? AND {_filed_sql(ev)}""",
+            (race_id,)).fetchone()['n']
     if filed and filed <= seats:
         projection = dict(projection)
         projection['status'] = 'unopposed'
@@ -1613,6 +2066,10 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                          'expected_in': round(100 * reported_weight),
                          'projected_total': round(projected_total)},
            'projection': projection}
+    if gsw:
+        # Republican two-party share in the towns counted, against the same
+        # towns' 2024 governor vote, in points. Positive = running ahead of 2024.
+        out['swing'] = round(100 * gsw['swing'], 1)
     if with_precincts:
         out['precincts'] = precincts
         out['towns'] = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
@@ -1647,14 +2104,26 @@ def api_contested_results(office_key):
     if office_key not in CONTESTED_OFFICES:
         return jsonify({'error': 'unknown office'}), 404
     office_name, level = CONTESTED_OFFICES[office_key]
-    party = request.args.get('party', 'R')
-    party_full = 'Republican' if party == 'R' else 'Democratic'
+    ev = _event()
+    party, party_full = _party_arg(ev)
     county, district = _decode_code(level, request.args.get('code', ''))
     demo = request.args.get('demo') == '1'
     conn = _contested_db()
-    out = _compute_results(conn.cursor(), office_name, level, county, district, party_full, party, demo=demo)
+    out = _compute_results(conn.cursor(), office_name, level, county, district, party_full, party,
+                           demo=demo, ev=ev)
     conn.close()
     return jsonify(out)
+
+
+def _party_arg(ev):
+    """(party, party_full) for a request. A primary reads ?party=R|D; a general
+    has one race per district with every party in it, keyed 'G'."""
+    if not ev['is_primary']:
+        return 'G', None
+    party = request.args.get('party', 'R')
+    if party not in ('R', 'D'):
+        party = 'R'
+    return party, ('Republican' if party == 'R' else 'Democratic')
 
 
 # --- Election-night topline -------------------------------------------------
@@ -1670,7 +2139,10 @@ TOPLINE_RACES = [
 ]
 
 
-def _topline_payload(demo=False):
+def _topline_payload(demo=False, ev=None, live=True):
+    ev = ev or _event()
+    if not ev['is_primary']:
+        return _general_topline(ev, demo=demo, live=live)
     conn = _contested_db()
     cur = conn.cursor()
     try:
@@ -1680,7 +2152,8 @@ def _topline_payload(demo=False):
             sides = {}
             for party, party_full in (("R", "Republican"), ("D", "Democratic")):
                 r = _compute_results(cur, office_name, level, "", district,
-                                     party_full, party, with_precincts=False, demo=demo)
+                                     party_full, party, with_precincts=False, demo=demo,
+                                     ev=ev)
                 if r.get("exists"):
                     # _compute_results returns votes and a projected total, not a
                     # share, so work the percentage out here.
@@ -1751,11 +2224,155 @@ def _topline_payload(demo=False):
             "demo": bool(demo)}
 
 
+# --- General-election topline ------------------------------------------------
+# One ballot, every party. The four headline races, then the chambers as seat
+# counts - the question on general night is not "who leads Rockingham 13" but
+# "who holds the House" - built from the same board the races page draws, so a
+# seat counted here is the same call a reader finds on its district card.
+
+# (office key, label, seats, seats for a majority)
+GENERAL_CHAMBERS = [
+    ("state-house", "State House", 400, 201),
+    ("state-senate", "State Senate", 24, 13),
+    ("exec-council", "Executive Council", 5, 3),
+]
+
+# Every viewer of the front page asks for the same numbers, and the House
+# alone is 203 races. Hold the payload for a few seconds so a burst of
+# visitors costs one computation, not hundreds. Short enough that it never
+# matters against towns reporting minutes apart.
+_TOPLINE_CACHE = {}
+TOPLINE_TTL = 10
+
+
+def _seat_tally(board, seats_total, majority, live):
+    """Seats by party for one chamber, from its board.
+
+    won      called by the desk, certified, or (once it is election day)
+             unopposed - nobody can take a seat from the only name on the ballot
+    leading  votes counted, not yet called: the top `seats` names in each race
+    unopposed  before election day, the seats only one name is running for
+    open     seats nobody is on the ballot for (a write-in will fill them)
+    awaiting everything else - races with no vote in yet
+    Parties are the one-letter codes; 'O' is everyone else, write-ins included."""
+    won, lead, unopp, running, cover = {}, {}, {}, {}, {}
+    open_ = races_in = 0
+
+    def add(d, k, n=1):
+        d[k] = d.get(k, 0) + n
+
+    for r in board:
+        seats = r.get('seats') or 1
+        pj = r.get('projection') or {}
+        st = pj.get('status')
+        pof = {c['name']: c.get('party', 'O') for c in r['candidates']}
+        named = [c for c in r['candidates'] if c['name'] != 'Write-in']
+        per = {}
+        for c in named:
+            add(running, c.get('party', 'O'))
+            add(per, c.get('party', 'O'))
+        for k, n in per.items():
+            add(cover, k, min(seats, n))
+        counted = sum(c['votes'] or 0 for c in r['candidates'])
+        if counted > 0:
+            races_in += 1
+        winners = [w for w in (pj.get('winners') or [])][:seats]
+        if st == 'unopposed':
+            for w in winners:
+                add(won if live else unopp, pof.get(w, 'O'))
+            open_ += max(0, seats - len(winners))
+        elif counted <= 0:
+            continue
+        else:
+            bucket = won if (st == 'called' or pj.get('certified')) else lead
+            for w in winners:
+                add(bucket, pof.get(w, 'O'))
+            open_ += max(0, seats - len(winners))
+    assigned = sum(won.values()) + sum(lead.values()) + sum(unopp.values()) + open_
+    return {'seats': seats_total, 'majority': majority, 'races': len(board),
+            'races_in': races_in, 'won': won, 'leading': lead, 'unopposed': unopp,
+            'open': open_, 'awaiting': max(0, seats_total - assigned),
+            'running': running, 'cover': cover}
+
+
+def _slim(r, label=None):
+    """A race result cut down to what the topline draws."""
+    cands = r['candidates']
+    cast = sum(c.get('votes') or 0 for c in cands)
+    out = {'label': label, 'county': r.get('county', ''), 'district': r.get('district', ''),
+           'seats': r.get('seats', 1),
+           'candidates': [{'name': c['name'], 'party': c.get('party', 'O'),
+                           'votes': c.get('votes') or 0, 'projected': c.get('projected'),
+                           'pct': round(100 * (c.get('votes') or 0) / cast, 1) if cast else 0.0,
+                           **({'writein': True} if c.get('writein') else {})}
+                          for c in cands],
+           'projection': r['projection'], 'reporting': r['reporting']}
+    if 'swing' in r:
+        out['swing'] = r['swing']
+    return out
+
+
+def _general_topline(ev, demo=False, live=True):
+    key = (ev['key'], bool(demo), bool(live))
+    hit = _TOPLINE_CACHE.get(key)
+    if hit and hit[0] > _time.time():
+        return hit[1]
+    conn = _contested_db()
+    cur = conn.cursor()
+    try:
+        blocks = []
+        for okey, label, district in TOPLINE_RACES:
+            office_name, level = CONTESTED_OFFICES[okey]
+            r = _compute_results(cur, office_name, level, "", district, None, 'G',
+                                 with_precincts=False, demo=demo, ev=ev)
+            if r.get('exists'):
+                b = _slim(r, label)
+                b['key'] = okey
+                b['code'] = _district_code(level, '', district)
+                blocks.append(b)
+
+        chambers, council = [], []
+        for okey, name, seats, majority in GENERAL_CHAMBERS:
+            board = _office_board(cur, ev, okey, 'G', None, demo, scope_all=True)
+            t = _seat_tally(board, seats, majority, live)
+            t.update({'key': okey, 'office': name})
+            chambers.append(t)
+            if okey == 'exec-council':
+                for r in sorted(board, key=lambda x: _dnum(x.get('district'))):
+                    b = _slim(r, f"District {r.get('district')}")
+                    b['code'] = r.get('code')
+                    council.append(b)
+
+        reported = places = 0
+        for b in blocks:
+            rep = b.get('reporting') or {}
+            places = max(places, rep.get('total') or 0)
+            reported = max(reported, rep.get('reported') or 0)
+        if not places:
+            cur.execute("SELECT COUNT(*) AS n FROM polling_places")
+            places = cur.fetchone()["n"] or 0
+    finally:
+        conn.close()
+
+    out = {"event": ev['key'], "live": bool(live), "blocks": blocks,
+           "chambers": chambers, "council": council,
+           "places": {"reported": reported, "total": places,
+                      "pct": round(100 * reported / places) if places else 0},
+           "demo": bool(demo)}
+    _TOPLINE_CACHE[key] = (_time.time() + TOPLINE_TTL, out)
+    return out
+
+
+@app.route('/api/topline')
 @app.route('/api/primary-topline')
 def api_primary_topline():
-    """One small request for the whole topline, so the page can poll cheaply."""
+    """One small request for the whole topline, so the page can poll cheaply.
+
+    /api/primary-topline is the old name; pages loaded before a deploy still
+    poll it, so it stays."""
+    ev = _event()
     demo = request.args.get('demo') == '1'
-    resp = jsonify(_topline_payload(demo=demo))
+    resp = jsonify(_topline_payload(demo=demo, ev=ev, live=_is_live(ev, demo)))
     # Short edge cache: election night traffic is bursty and every viewer wants
     # the same bytes. 30s is well inside how fast towns actually report.
     resp.headers['Cache-Control'] = 'public, max-age=20, s-maxage=30'
@@ -1766,10 +2383,16 @@ def api_primary_topline():
 # results domain's nginx vhost maps its root here instead.
 @app.route('/results')
 def primary_night():
-    """Election-night front page: both primaries, topline first."""
+    """Election-night front page, topline first: both primaries side by side
+    in a primary, the one general ballot and the chambers in a general."""
+    ev = _event()
     demo = request.args.get('demo') == '1'
-    return render_template('site_topline.html', demo=demo,
-                           initial=_topline_payload(demo=demo))
+    live = _is_live(ev, demo)
+    initial = _topline_payload(demo=demo, ev=ev, live=live)
+    if not ev['is_primary']:
+        return render_template('site_general.html', demo=demo, live_mode=live,
+                               initial=initial)
+    return render_template('site_topline.html', demo=demo, initial=initial)
 
 
 @app.route('/api/contested/<office_key>/board')
@@ -1780,8 +2403,8 @@ def api_contested_board(office_key):
     if office_key not in CONTESTED_OFFICES:
         return jsonify({'error': 'unknown office'}), 404
     office_name, level = CONTESTED_OFFICES[office_key]
-    party = request.args.get('party', 'R')
-    party_full = 'Republican' if party == 'R' else 'Democratic'
+    ev = _event()
+    party, party_full = _party_arg(ev)
     demo = request.args.get('demo') == '1'
     # ?scope=all returns every race on the ballot, not only the contested ones.
     # Uncontested and write-in-only races still take votes and still need to be
@@ -1789,10 +2412,24 @@ def api_contested_board(office_key):
     scope_all = request.args.get('scope') == 'all'
 
     conn = _contested_db()
-    cur = conn.cursor()
+    try:
+        board = _office_board(conn.cursor(), ev, office_key, party, party_full, demo, scope_all)
+    finally:
+        conn.close()
+    # Sort: in-progress/too-close first, then awaiting, then clinched; by expected_in desc.
+    order = {'too_close': 0, 'leaning': 1, 'likely': 2, 'called': 3, 'awaiting': 4}
+    board.sort(key=lambda x: (order.get(x['projection']['status'], 3),
+                              -(x['reporting']['expected_in'])))
+    return jsonify({'office': office_name, 'party': party, 'level': level, 'races': board})
+
+
+def _office_board(cur, ev, office_key, party, party_full, demo=False, scope_all=False):
+    """Every race on the board for one office (and, in a primary, one party)."""
+    office_name, level = CONTESTED_OFFICES[office_key]
+    evs, evargs = _ev_sql(ev, party_full)
     rows = cur.execute(f"""
         SELECT r.county AS county, r.district AS district, r.seats AS seats,
-               COUNT(CASE WHEN rc.recruitment_filing_id > 0 THEN 1 END) AS ncand,
+               COUNT(CASE WHEN {_filed_sql(ev)} THEN 1 END) AS ncand,
                -- Every contest printed on a ballot has a race row, including the
                -- ones nobody filed for, so that a write-in has somewhere to land.
                -- Showing those before anyone votes in them fills the page with
@@ -1804,24 +2441,22 @@ def api_contested_board(office_key):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o   ON r.office_id = o.id
         LEFT JOIN race_candidates rc ON rc.race_id = r.id
-        WHERE e.year = 2026 AND e.election_type = 'state_primary' AND e.party = ? AND o.name = ?
+        WHERE {evs} AND o.name = ?
         GROUP BY r.id
         HAVING {'ncand > 0 OR nvotes > 0' if scope_all else 'ncand > r.seats'}
-    """, (party_full, office_name)).fetchall()
+    """, (*evargs, office_name)).fetchall()
 
-    bulk = None if demo else _board_bulk(cur, office_name, party_full)
+    # The primary demo never used the bulk read; the general one does, because
+    # its simulated votes need each candidate's party from the roster.
+    bulk = None if (demo and ev['is_primary']) else _board_bulk(cur, ev, office_name, party_full)
     board = []
     for row in rows:
         county, district = row['county'] or '', row['district'] or ''
-        r = _compute_results(cur, office_name, level, county, district, party_full, party, with_precincts=False, demo=demo, bulk=bulk)
+        r = _compute_results(cur, office_name, level, county, district, party_full, party,
+                             with_precincts=False, demo=demo, bulk=bulk, ev=ev)
         r['code'] = _district_code(level, county, district)
         board.append(r)
-    conn.close()
-    # Sort: in-progress/too-close first, then awaiting, then clinched; by expected_in desc.
-    order = {'too_close': 0, 'leaning': 1, 'likely': 2, 'called': 3, 'awaiting': 4}
-    board.sort(key=lambda x: (order.get(x['projection']['status'], 3),
-                              -(x['reporting']['expected_in'])))
-    return jsonify({'office': office_name, 'party': party, 'level': level, 'races': board})
+    return board
 
 
 @app.route('/api/export/<data_type>')

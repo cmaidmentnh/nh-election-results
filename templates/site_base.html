@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
 <link rel="preload" as="font" type="font/woff2" crossorigin
       href="{{ url_for('static', filename='vendor/plex/plex-sans-700.woff2') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=16">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=17">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -19,17 +19,17 @@
 <div class="ticker">
   <div class="w">
     <span><span class="live-dot"></span><b id="tk-count">—</b> <span class="dim">of</span> <b id="tk-total">320</b> <span class="dim">polling places reporting</span></span>
-    <span class="dim" id="tk-when">Polls close 7:00 p.m.</span>
+    <span class="dim" id="tk-when">Polls close 7:00 p.m.{% if not ev.is_primary %} · {{ ev.date_label }}{% endif %}</span>
   </div>
 </div>
 
 <header class="plate">
   <div class="w">
-    <a class="wordmark" href="/results{{ '?demo=1' if demo else '' }}">
+    <a class="wordmark" href="{{ link('/results', demo) }}">
       New Hampshire <span>Election Results</span>
     </a>
     <div class="meta">
-      State Primary<br>September 8, 2026
+      {{ ev.label }}<br>{{ ev.date_label }}
     </div>
   </div>
 </header>
@@ -41,8 +41,9 @@
 </div>
 <nav class="sections">
   <div class="w">
-    <a href="/results{{ '?demo=1' if demo else '' }}" class="{{ 'on' if active == 'topline' }}">Topline</a>
-    <a href="/contested{{ '?demo=1' if demo else '' }}" class="{{ 'on' if active == 'races' }}">All races &amp; maps</a>
+    <a href="{{ link('/results', demo) }}" class="{{ 'on' if active == 'topline' }}">Topline</a>
+    <a href="{{ link('/contested', demo) }}" class="{{ 'on' if active == 'races' }}">All races &amp; maps</a>
+    <a href="{{ ev_other_href }}" class="evsw">{{ 'General election results →' if ev.is_primary else 'September primary results' }}</a>
   </div>
 </nav>
 
@@ -78,7 +79,7 @@
     const q = box.value.trim();
     if(q.length < 2){ hide(); return; }
     const mine = ++seq;
-    fetch('/api/search?q=' + encodeURIComponent(q)).then(r=>r.json()).then(d=>{
+    fetch('/api/search?q=' + encodeURIComponent(q) + ({{ evq|tojson }} ? '&' + {{ evq|tojson }} : '')).then(r=>r.json()).then(d=>{
       if(mine !== seq) return;
       const rs = d.results || [];
       out.innerHTML = rs.length
