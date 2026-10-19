@@ -53,7 +53,7 @@ ELECTION_DAY = os.environ.get('VOLUNTEER_ELECTION_DAY', 'Tuesday, November 3')
 
 MAX_PLACES_PER_VOLUNTEER = 2
 MAX_VOLUNTEERS_PER_PLACE = 3
-MAX_PHOTO_BYTES = 8 * 1024 * 1024
+MAX_PHOTO_BYTES = 20 * 1024 * 1024   # nginx client_max_body_size is 25M for this site
 MAX_PHOTOS_PER_REPORT = 8
 
 TIER_LABELS = {1: 'Top priority', 2: 'Priority', 3: ''}
@@ -279,6 +279,7 @@ INSTRUCTIONS_STEPS = [
     "Stay outside the guardrail and do not interfere with the count. You are there to watch, not to help.",
     "When counting is done, the moderator announces the results and posts them, usually on a wall or the door. That is public.",
     "Take a clear photo of every page of the posted results, close up, with the whole sheet in the frame. One photo per page.",
+    "If your polling place uses more than one voting machine, there is a tape or sheet for each one. Photograph all of them and send them together. We add them up.",
     "Open your personal link and pick your polling place. Add the photos and tap Send. That's it.",
     "If something goes wrong, email the photos to results@electhouserepublicans.com with your town in the subject.",
 ]

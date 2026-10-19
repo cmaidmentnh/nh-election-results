@@ -1,122 +1,237 @@
 {% extends "volunteer/base.html" %}
 {% block robots %}index, follow{% endblock %}
-{% block title %}Report Results on Election Night{% endblock %}
+{% block title %}Be Our Eyes at the Polls · NH Election Night{% endblock %}
 {% block head %}{% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
+{% set covered = places|selectattr('approved')|list|length %}
+{% set signed = places|rejectattr('approved')|selectattr('pending')|list|length %}
+{% set total = places|length %}
+{% set top_open = places|selectattr('tier','equalto',1)|rejectattr('approved')|rejectattr('pending')|list|length %}
 {% block style %}
+.hero{background:radial-gradient(1200px 500px at 85% -10%,#1f6440 0%,rgba(31,100,64,0) 60%),linear-gradient(180deg,#0d3320 0%,#0f3a25 100%);color:#fff;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;mask-image:linear-gradient(180deg,#000 0%,transparent 85%);pointer-events:none}
+.hero .w{position:relative;z-index:1;display:grid;grid-template-columns:1.25fr .9fr;gap:48px;padding-top:64px;padding-bottom:72px;align-items:center}
+.hero .kick{color:var(--gold)}
+.hero h1{font-size:clamp(38px,6vw,64px);font-weight:700;margin:16px 0 18px;letter-spacing:-.035em}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero .lede{font-size:clamp(17px,2vw,19.5px);line-height:1.55;color:#d6e5da;max-width:560px;margin-bottom:28px}
+.hero .cta{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.hero .cta span{color:#a9c4b2;font-size:14px}
+.meter{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:26px;backdrop-filter:blur(4px)}
+.meter .big{font:700 clamp(52px,7vw,76px)/1 var(--sans);letter-spacing:-.04em}
+.meter .big small{font-size:.38em;color:#a9c4b2;font-weight:500;letter-spacing:-.01em;margin-left:6px}
+.meter .lbl{color:#cfe0d4;margin:8px 0 18px;font-size:15px}
+.bar{height:12px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar .c{background:var(--gold)} .bar .s{background:rgba(217,178,90,.45)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:#cfe0d4}
+.legend b{color:#fff}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.alert{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);display:flex;gap:10px;align-items:flex-start;font-size:14px;color:#f3e2b5}
+@media(max-width:860px){.hero .w{grid-template-columns:1fr;gap:30px;padding-top:40px;padding-bottom:48px}}
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:-34px;position:relative;z-index:2}
+.step{padding:22px 22px 20px}
+.step .n{font:600 12px/1 var(--mono);letter-spacing:.14em;color:var(--leaf)}
+.step h3{font-size:19px;margin:10px 0 6px}
+.step p{color:var(--ink2);font-size:15px;margin:0}
+.step .time{display:inline-block;margin-top:12px;font:600 12px/1 var(--mono);letter-spacing:.06em;color:var(--pine);background:var(--greent);padding:6px 9px;border-radius:7px}
+@media(max-width:860px){.steps{grid-template-columns:1fr;margin-top:-24px}}
+/* main grid */
+.main{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:44px;align-items:start}
+.main>*{min-width:0}
+.chip{min-width:0}
+@media(max-width:900px){.main{grid-template-columns:1fr}}
+.formcard{padding:30px}
+.formcard h2{font-size:28px}
+.formcard .sub{color:var(--ink2);margin:8px 0 6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}.formcard{padding:22px}}
+.sec{margin-top:26px;padding-top:22px;border-top:1px dashed var(--hair)}
+.sec .kick{color:var(--ink3)}
 .picker{position:relative}
-.res{border:1px solid var(--line);border-radius:8px;margin-top:6px;max-height:320px;overflow:auto;background:#fff}
-.res button{display:flex;width:100%;justify-content:space-between;gap:10px;align-items:center;text-align:left;border:0;border-bottom:1px solid #eef2ef;background:#fff;padding:11px 12px;font:inherit;cursor:pointer;color:var(--ink)}
+.picker input{padding-left:44px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235b665e' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 14px 50%}
+.res{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;border:1px solid var(--hair);border-radius:12px;max-height:340px;overflow:auto;background:#fff;box-shadow:0 18px 40px -16px rgba(13,51,32,.35)}
+.res button{display:flex;width:100%;justify-content:space-between;gap:12px;align-items:center;text-align:left;border:0;border-bottom:1px solid var(--hair2);background:#fff;padding:13px 14px;font:inherit;cursor:pointer;color:var(--ink)}
 .res button:last-child{border-bottom:0}
-.res button:hover{background:#f3f7f4}
+.res button:hover,.res button:focus{background:#f3f7f4;outline:0}
 .res button[disabled]{opacity:.45;cursor:not-allowed}
 .res .nm{font-weight:600}
-.res .loc{display:block;font-size:12.5px;color:var(--mut);font-weight:400}
-.chosen{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.chip{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--gl);border:1px solid #b9d5c0;border-radius:8px;padding:10px 12px}
-.chip b{display:block}
-.chip span{font-size:12.5px;color:var(--mut)}
-.chip button{border:0;background:none;color:var(--red);font:600 14px inherit;font-family:inherit;cursor:pointer;padding:6px}
-.how{margin:0;padding-left:20px}
-.how li{margin-bottom:6px}
-.stat{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;margin-top:4px}
+.res .loc{display:block;font-size:12.5px;color:var(--ink3);font-weight:400;margin-top:2px}
+.res .tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.chosen{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.chip{display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(180deg,#f2f8f4,#e9f3ec);border:1.5px solid #b9d9c4;border-radius:12px;padding:12px 14px}
+.chip .pin{flex:none;width:34px;height:34px;border-radius:9px;background:var(--pine);color:var(--gold);display:grid;place-items:center;font:700 14px var(--mono)}
+.chip .tx{flex:1;min-width:0}
+.chip b{display:block;font-size:16px}
+.chip span{font-size:12.5px;color:var(--ink2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip button{border:0;background:none;color:var(--red);font:600 13.5px var(--sans);cursor:pointer;padding:8px}
+.empty{border:1.5px dashed var(--hair);border-radius:12px;padding:14px;color:var(--ink3);font-size:14px;margin-top:12px;text-align:center}
+.submit{margin-top:24px}
+.fine{font-size:12.5px;color:var(--ink3);margin-top:12px;text-align:center}
+/* side */
+.side{display:flex;flex-direction:column;gap:18px;position:sticky;top:18px}
+@media(max-width:900px){.side{position:static}}
+.panel{padding:22px}
+.panel h3{font-size:17px;margin-bottom:4px}
+.panel .mut{font-size:14px;margin-bottom:14px}
+.cty{display:grid;grid-template-columns:96px 1fr 44px;gap:8px 10px;align-items:center;font-size:13.5px}
+.cty .nm{color:var(--ink);font-weight:500}
+.cty .tr{height:9px;border-radius:999px;background:var(--hair2);overflow:hidden;display:flex}
+.cty .tr i{display:block;height:100%}
+.cty .tr .c{background:var(--pine3)} .cty .tr .s{background:#9fcdb0}
+.cty .ct{font:500 12px var(--mono);color:var(--ink3);text-align:right}
+.faq details{border-top:1px solid var(--hair2);padding:13px 0}
+.faq details:first-of-type{border-top:0;padding-top:4px}
+.faq summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;gap:10px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:after{content:"+";font:600 18px/1 var(--mono);color:var(--leaf)}
+.faq details[open] summary:after{content:"–"}
+.faq p{color:var(--ink2);font-size:14.5px;margin:8px 0 0}
 {% endblock %}
 {% block content %}
-<div class="hero">
-  <h1>Report results from your polling place on Election Night</h1>
-  <p class="lead">On {{ election_day }}, results get posted at every polling place in New Hampshire after the polls close. We need one person at each to snap a photo and send it to us, so we know where every race stands, town by town, as the night goes on.</p>
-  <span class="stat"><b>{{ open_count }}</b> of {{ places|length }} polling places still need a volunteer</span>
-</div>
-
-<div class="card">
-  <b>What you'll do</b>
-  <ol class="how">
-    <li>Be at your polling place when the polls close at 7:00 p.m.</li>
-    <li>Wait for the moderator to announce and post the results.</li>
-    <li>Take a photo of the posted results and send it from your phone using the personal link we email you. It takes about a minute.</li>
-  </ol>
-  <p class="small mut" style="margin:10px 0 0">Your own town, or one on your way home, is perfect. We'll confirm your spot by email.</p>
-</div>
-
-{% if error %}<div class="err">{{ error }}</div>{% endif %}
-
-<form method="post" action="/volunteer" id="f" class="card" novalidate>
-  <label for="name">Full name</label>
-  <input type="text" id="name" name="name" autocomplete="name" required maxlength="100" value="{{ form.name or '' }}">
-
-  <label for="email">Email</label>
-  <input type="email" id="email" name="email" autocomplete="email" required maxlength="200" value="{{ form.email or '' }}">
-
-  <label for="phone">Cell phone <small>so we can reach you on election night</small></label>
-  <input type="tel" id="phone" name="phone" autocomplete="tel" required value="{{ form.phone or '' }}">
-
-  <label for="home_town">Your town</label>
-  <input type="text" id="home_town" name="home_town" autocomplete="address-level2" maxlength="120" value="{{ form.home_town or '' }}">
-
-  <label for="affiliation">Campaign or committee you're with <small>optional</small></label>
-  <input type="text" id="affiliation" name="affiliation" maxlength="120" placeholder="e.g. Smith for State Rep, Bedford Republicans" value="{{ form.affiliation or '' }}">
-
-  <div class="hp" aria-hidden="true"><label for="hp_ref">Leave this empty</label><input type="text" id="hp_ref" name="hp_ref" tabindex="-1" autocomplete="off"></div>
-
-  <label for="q">Polling place you'll cover <small>up to {{ max_places }}</small></label>
-  <div class="picker">
-    <input type="search" id="q" placeholder="Type your town or ward" autocomplete="off">
-    <div class="res" id="res" hidden></div>
+<section class="hero"><div class="w">
+  <div>
+    <span class="kick">New Hampshire · {{ election_day }}</span>
+    <h1>Be our eyes at <em>the&nbsp;polls.</em></h1>
+    <p class="lede">When the polls close, every town posts its results on the wall. We need one person at each of New Hampshire's {{ total }} polling places to snap a photo and send it in, so we know where every race stands, town by town, all night.</p>
+    <div class="cta"><a class="btn gold" href="#signup">Cover a polling place →</a><span>About 15 minutes. One photo.</span></div>
   </div>
-  <div class="chosen" id="chosen"></div>
-  <div id="hidden"></div>
+  <div class="meter">
+    <div class="big">{{ covered }}<small>/ {{ total }}</small></div>
+    <div class="lbl">polling places covered so far</div>
+    <div class="bar"><i class="c" style="width:{{ (100*covered/total)|round(1) if total else 0 }}%"></i><i class="s" style="width:{{ (100*signed/total)|round(1) if total else 0 }}%"></i></div>
+    <div class="legend"><span><i style="background:var(--gold)"></i><b>{{ covered }}</b> confirmed</span><span><i style="background:rgba(217,178,90,.45)"></i><b>{{ signed }}</b> signed up</span><span><b>{{ open_count }}</b> still open</span></div>
+    {% if top_open %}<div class="alert">★ <span><b>{{ top_open }}</b> top-priority polling places still need someone. They're marked in the search below.</span></div>{% endif %}
+  </div>
+</div></section>
 
-  {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" style="margin-top:18px"></div>{% endif %}
+<div class="w">
+  <div class="steps">
+    <div class="card step"><div class="n">01 · BE THERE</div><h3>Arrive by 7:00 p.m.</h3><p>Go to your polling place as the polls close. Your own town is perfect.</p><span class="time">7:00 PM</span></div>
+    <div class="card step"><div class="n">02 · WAIT FOR THE POST</div><h3>Results go on the wall</h3><p>After counting, the moderator announces and posts the results publicly.</p><span class="time">USUALLY 8–10 PM</span></div>
+    <div class="card step"><div class="n">03 · SNAP &amp; SEND</div><h3>Photo, then tap Send</h3><p>Use the personal link we email you. Every page or machine tape, one photo each.</p><span class="time">ABOUT 1 MINUTE</span></div>
+  </div>
 
-  <p style="margin-top:18px"><button class="btn block" type="submit" id="go">Sign me up</button></p>
-  <p class="small mut">We'll only use your information to coordinate election night.</p>
-</form>
+  <div class="main" id="signup">
+    <div>
+      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+      <form method="post" action="/volunteer#signup" id="f" class="card formcard" novalidate>
+        <span class="kick" style="color:var(--leaf)">Sign up</span>
+        <h2 style="margin-top:10px">Cover a polling place</h2>
+        <p class="sub">We'll confirm your spot by email and send you a personal link for election night.</p>
+
+        <div class="row2">
+          <div><label for="name">Full name</label>
+          <input type="text" id="name" name="name" autocomplete="name" required maxlength="100" value="{{ form.name or '' }}"></div>
+          <div><label for="phone">Cell phone</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" required placeholder="(603) 555-0123" value="{{ form.phone or '' }}"></div>
+        </div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required maxlength="200" value="{{ form.email or '' }}">
+        <div class="row2">
+          <div><label for="home_town">Your town</label>
+          <input type="text" id="home_town" name="home_town" autocomplete="address-level2" maxlength="120" value="{{ form.home_town or '' }}"></div>
+          <div><label for="affiliation">Campaign or committee <small>optional</small></label>
+          <input type="text" id="affiliation" name="affiliation" maxlength="120" placeholder="e.g. Bedford Republicans" value="{{ form.affiliation or '' }}"></div>
+        </div>
+
+        <div class="hp" aria-hidden="true"><label for="hp_ref">Leave this empty</label><input type="text" id="hp_ref" name="hp_ref" tabindex="-1" autocomplete="off"></div>
+
+        <div class="sec">
+          <span class="kick">Your polling place{{ 's' if max_places > 1 }}</span>
+          <label for="q" style="margin-top:12px">Where will you be at 7:00? <small>pick up to {{ max_places }}</small></label>
+          <div class="picker">
+            <input type="search" id="q" placeholder="Type your town or ward" autocomplete="off" aria-controls="res">
+            <div class="res" id="res" role="listbox" hidden></div>
+          </div>
+          <div class="chosen" id="chosen"></div>
+          <div class="empty" id="empty">No polling place picked yet</div>
+          <div id="hidden"></div>
+        </div>
+
+        {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" style="margin-top:22px"></div>{% endif %}
+        <div class="submit"><button class="btn block" type="submit" id="go">Sign me up</button></div>
+        <p class="fine">We only use your information to coordinate election night.</p>
+      </form>
+    </div>
+
+    <aside class="side">
+      <div class="card panel">
+        <h3>Coverage by county</h3>
+        <p class="mut">Confirmed volunteers, out of each county's polling places.</p>
+        <div class="cty">
+        {% for county, items in places|groupby('county') %}{% if county %}
+          {% set c = items|selectattr('approved')|list|length %}{% set s = items|rejectattr('approved')|selectattr('pending')|list|length %}{% set n = items|length %}
+          <span class="nm">{{ county }}</span>
+          <span class="tr"><i class="c" style="width:{{ (100*c/n)|round(1) }}%"></i><i class="s" style="width:{{ (100*s/n)|round(1) }}%"></i></span>
+          <span class="ct">{{ c }}/{{ n }}</span>
+        {% endif %}{% endfor %}
+        </div>
+      </div>
+      <div class="card panel faq">
+        <h3 style="margin-bottom:10px">Good to know</h3>
+        <details><summary>Do I need any experience?</summary><p>No. If you can take a photo with your phone, you can do this. We email you simple instructions before Election Day.</p></details>
+        <details><summary>What if my town has several voting machines?</summary><p>Photograph every tape or results sheet that's posted, one photo each, and send them all together. We add them up.</p></details>
+        <details><summary>What if results come in late?</summary><p>Small towns often post within an hour. Bigger towns and hand-count towns can take longer. Send them whenever they're posted.</p></details>
+        <details><summary>Can I cover more than one place?</summary><p>Yes, up to {{ max_places }}, if you can get to both before results are posted.</p></details>
+        <details><summary>Can I bring a friend?</summary><p>Please do, and have them sign up too. If one of you can't make it, the other can still send results.</p></details>
+      </div>
+    </aside>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}
 <script>
 (function(){
-  var PLACES = {{ places|map(attribute='municipality')|list|tojson }};
   var META = {{ places|tojson }};
   var MAX = {{ max_places }}, CAP = {{ max_per_place }};
   var byName = {}; META.forEach(function(p){ byName[p.municipality] = p; });
   var chosen = {{ (chosen or [])|tojson }}.filter(function(m){ return byName[m]; });
   var q = document.getElementById('q'), res = document.getElementById('res'),
-      box = document.getElementById('chosen'), hid = document.getElementById('hidden');
+      box = document.getElementById('chosen'), hid = document.getElementById('hidden'), empty = document.getElementById('empty');
 
   function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
   function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
-  function badge(p){
-    var n = p.approved + p.pending;
-    var t = p.tier===1 ? '<span class="tag t1">Top priority</span> ' : p.tier===2 ? '<span class="tag t2">Priority</span> ' : '';
-    var c = n===0 ? '<span class="tag open">Needs volunteer</span>' : (n>=CAP ? '<span class="tag cov">Full</span>' : '<span class="tag cov">Has '+n+'</span>');
-    return t + c;
+  function badges(p){
+    var n = p.approved + p.pending, out = '';
+    if (p.tier===1) out += '<span class="tag t1">★ Top priority</span>';
+    else if (p.tier===2) out += '<span class="tag t2">Priority</span>';
+    out += n===0 ? '<span class="tag open">Open</span>' : (n>=CAP ? '<span class="tag cov">Full</span>' : '<span class="tag cov">'+n+' signed up</span>');
+    return out;
   }
   function render(){
-    box.innerHTML = chosen.map(function(m){
+    box.innerHTML = chosen.map(function(m, i){
       var p = byName[m];
-      return '<div class="chip"><div><b>'+esc(m)+'</b><span>'+esc(p.location||p.county+' County')+'</span></div>'+
+      return '<div class="chip"><div class="pin">'+(i+1)+'</div><div class="tx"><b>'+esc(m)+'</b><span>'+esc(p.location||p.county+' County')+'</span></div>'+
              '<button type="button" data-rm="'+esc(m)+'">Remove</button></div>';
     }).join('');
     hid.innerHTML = chosen.map(function(m){ return '<input type="hidden" name="places" value="'+esc(m)+'">'; }).join('');
+    empty.hidden = chosen.length > 0;
     q.disabled = chosen.length >= MAX;
-    q.placeholder = chosen.length >= MAX ? 'You can pick up to '+MAX : (chosen.length ? 'Add another (optional)' : 'Type your town or ward');
+    q.placeholder = chosen.length >= MAX ? 'That\'s the max of '+MAX : (chosen.length ? 'Add a second place (optional)' : 'Type your town or ward');
   }
   function search(){
     var t = norm(q.value);
     if (!t){ res.hidden = true; return; }
     var hits = META.filter(function(p){
-      return norm(p.municipality).indexOf(t) === 0 || norm(p.municipality).indexOf(' '+t) >= 0 || norm(p.county).indexOf(t) === 0;
-    }).slice(0, 40);
-    if (!hits.length){ res.innerHTML = '<div style="padding:12px" class="mut small">No polling place matches.</div>'; res.hidden = false; return; }
+      var n = norm(p.municipality);
+      return n.indexOf(t) === 0 || n.indexOf(' '+t) >= 0 || norm(p.county).indexOf(t) === 0;
+    }).sort(function(a,b){ return (norm(a.municipality).indexOf(t)===0?0:1)-(norm(b.municipality).indexOf(t)===0?0:1) || a.tier-b.tier; }).slice(0, 40);
+    if (!hits.length){ res.innerHTML = '<div style="padding:14px" class="mut small">No polling place matches “'+esc(q.value)+'”.</div>'; res.hidden = false; return; }
     res.innerHTML = hits.map(function(p){
       var full = (p.approved + p.pending) >= CAP, picked = chosen.indexOf(p.municipality) >= 0;
-      return '<button type="button" data-add="'+esc(p.municipality)+'"'+(full||picked?' disabled':'')+'>'+
+      return '<button type="button" role="option" data-add="'+esc(p.municipality)+'"'+(full||picked?' disabled':'')+'>'+
              '<span><span class="nm">'+esc(p.municipality)+'</span><span class="loc">'+esc(p.location || (p.county+' County'))+'</span></span>'+
-             '<span style="white-space:nowrap">'+badge(p)+'</span></button>';
+             '<span class="tags">'+badges(p)+'</span></button>';
     }).join('');
     res.hidden = false;
   }
   q.addEventListener('input', search);
   q.addEventListener('focus', search);
+  q.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); var b = res.querySelector('button[data-add]:not([disabled])'); if (b) b.click(); }
+    if (e.key === 'Escape'){ res.hidden = true; }
+  });
   res.addEventListener('click', function(e){
     var b = e.target.closest('button[data-add]'); if (!b || b.disabled) return;
     var m = b.getAttribute('data-add');
@@ -129,8 +244,8 @@
   });
   document.addEventListener('click', function(e){ if (!e.target.closest('.picker')) res.hidden = true; });
   document.getElementById('f').addEventListener('submit', function(e){
-    if (!chosen.length){ e.preventDefault(); alert('Please pick the polling place you will cover.'); q.focus(); return; }
-    document.getElementById('go').disabled = true; document.getElementById('go').textContent = 'Sending…';
+    if (!chosen.length){ e.preventDefault(); empty.textContent = 'Pick the polling place you will cover'; empty.style.borderColor = 'var(--red)'; empty.style.color = 'var(--red)'; q.focus(); return; }
+    var g = document.getElementById('go'); g.disabled = true; g.textContent = 'Signing you up…';
   });
   render();
 })();

@@ -2,58 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0d3320">
 <meta name="robots" content="{% block robots %}noindex, nofollow{% endblock %}">
 <title>{% block title %}Election Night Volunteers{% endblock %}</title>
+<meta property="og:title" content="{% block og_title %}Be our eyes at the polls on Election Night{% endblock %}">
+<meta property="og:description" content="Cover one New Hampshire polling place on November 3 and send us the results from your phone.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/static/vendor/plex/plex-sans-700.woff2">
 <style>
-:root{--g:#1f5a32;--g2:#174426;--gl:#e8f1ea;--ink:#1d2a22;--mut:#5b6b60;--line:#d9e2db;--gold:#b08d3c;--red:#b3261e;--bg:#f6f8f6}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-600.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-700.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"PM";src:url("/static/vendor/plex/plex-mono-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"PM";src:url("/static/vendor/plex/plex-mono-600.woff2") format("woff2");font-weight:600;font-display:swap}
+:root{
+  --pine:#0d3320; --pine2:#164a2f; --pine3:#1f6440; --leaf:#2f8a57;
+  --gold:#d9b25a; --gold2:#f3e2b5;
+  --paper:#f6f4ee; --card:#ffffff; --ink:#111512; --ink2:#4b544e; --ink3:#87908a;
+  --hair:#dfe3dc; --hair2:#eceee8;
+  --red:#b42318; --redt:#fdecea; --amber:#9a6200; --ambert:#fff4dc; --greent:#e6f2ea;
+  --sans:"PS",ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"PM",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:14px;
+}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
-a{color:var(--g)}
-.top{background:var(--g);color:#fff}
-.top .w{display:flex;align-items:center;justify-content:space-between;padding:14px 16px}
-.top b{font-size:15px;letter-spacing:.02em}
-.top span{font-size:13px;opacity:.85}
-.w{max-width:760px;margin:0 auto;padding:0 16px}
-.hero{padding:28px 0 8px}
-h1{font-size:28px;line-height:1.2;margin:0 0 10px}
-h2{font-size:19px;margin:28px 0 10px}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+a{color:var(--pine3)}
+.w{max-width:1120px;margin:0 auto;padding:0 20px}
+@media(max-width:640px){.w{padding:0 16px}}
+.kick{font:600 11.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase}
+/* top strip */
+.strip{background:var(--pine);color:#cfe0d4;border-bottom:1px solid rgba(255,255,255,.08)}
+.strip .w{display:flex;justify-content:space-between;align-items:center;height:42px;gap:12px}
+.strip b{color:#fff;font-weight:600}
+.strip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px;vertical-align:1px;box-shadow:0 0 0 4px rgba(217,178,90,.18)}
+@media(max-width:560px){.strip .hide-sm{display:none}}
+/* generic */
+h1,h2,h3{letter-spacing:-.02em;line-height:1.08;margin:0}
 p{margin:0 0 12px}
-.lead{font-size:17px;color:#33433a}
-.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin:16px 0}
-label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
-label small{font-weight:400;color:var(--mut)}
-input[type=text],input[type=email],input[type=tel],input[type=search],textarea,select{width:100%;padding:12px;border:1px solid #bfcbc2;border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
-input:focus,textarea:focus,select:focus{outline:2px solid var(--g);outline-offset:1px;border-color:var(--g)}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r);box-shadow:0 1px 0 rgba(17,21,18,.03),0 10px 30px -18px rgba(13,51,32,.25)}
+label{display:block;font-weight:600;font-size:14px;margin:18px 0 7px;color:var(--ink)}
+label small{font-weight:400;color:var(--ink3);margin-left:4px}
+input[type=text],input[type=email],input[type=tel],input[type=search],textarea,select{
+  width:100%;padding:14px 14px;border:1.5px solid #cdd4cd;border-radius:10px;font:400 16px/1.3 var(--sans);background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+input::placeholder,textarea::placeholder{color:#9aa39c}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--pine3);box-shadow:0 0 0 4px rgba(47,138,87,.15)}
 textarea{min-height:110px;resize:vertical}
-.btn{display:inline-block;background:var(--g);color:#fff;border:0;border-radius:8px;padding:14px 20px;font:600 16px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none;text-align:center}
-.btn:hover{background:var(--g2)}
-.btn.block{display:block;width:100%}
-.btn.sec{background:#fff;color:var(--g);border:1px solid var(--g)}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
-.err{background:#fdecea;border:1px solid #f3b8b3;color:#7a1610;border-radius:8px;padding:12px 14px;margin:14px 0}
-.ok{background:var(--gl);border:1px solid #b9d5c0;color:#14381f;border-radius:8px;padding:12px 14px;margin:14px 0}
-.mut{color:var(--mut)}
-.small{font-size:13px}
-.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;vertical-align:middle}
-.tag.t1{background:#fbeed2;color:#7a5a12}
-.tag.t2{background:#eef3fb;color:#24456e}
-.tag.open{background:#fdecea;color:#8a1c14}
-.tag.cov{background:var(--gl);color:#14381f}
-.foot{padding:30px 0 40px;font-size:12px;color:var(--mut)}
+select{background-image:linear-gradient(45deg,transparent 50%,#5b665e 50%),linear-gradient(135deg,#5b665e 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--pine);color:#fff;border:0;border-radius:12px;padding:17px 22px;font:600 17px/1 var(--sans);cursor:pointer;text-decoration:none;transition:background .15s,transform .05s;letter-spacing:-.01em}
+.btn:hover{background:var(--pine2)}
+.btn:active{transform:translateY(1px)}
+.btn.block{display:flex;width:100%}
+.btn.gold{background:var(--gold);color:var(--pine)}
+.btn.gold:hover{background:#e6c271}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.err,.ok{border-radius:12px;padding:14px 16px;margin:16px 0;font-size:15px}
+.err{background:var(--redt);border:1px solid #f5c2bd;color:#7a1610}
+.ok{background:var(--greent);border:1px solid #b9d9c4;color:#11391f}
+.mut{color:var(--ink2)} .small{font-size:13.5px}
+.tag{display:inline-flex;align-items:center;gap:5px;font:600 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.tag.t1{background:var(--ambert);color:var(--amber)}
+.tag.t2{background:#eaf0fb;color:#24456e}
+.tag.open{background:var(--redt);color:var(--red)}
+.tag.cov{background:var(--greent);color:var(--pine3)}
 .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+.foot{border-top:1px solid var(--hair);margin-top:56px;padding:26px 0 44px;font-size:13px;color:var(--ink3)}
+.foot .w{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.foot a{color:var(--ink2)}
 {% block style %}{% endblock %}
 </style>
 {% block head %}{% endblock %}
 </head>
 <body>
-<div class="top"><div class="w"><b>ELECTION NIGHT {{ election_day.split(',')[-1].strip() if election_day else '' }}</b><span>Results Team</span></div></div>
-<div class="w">
+<div class="strip"><div class="w">
+  <span class="kick"><span class="dot"></span><b>Election Night</b> · {{ election_day.split(',')[-1].strip() if election_day else '' }}, 2026</span>
+  <span class="kick hide-sm">NH Results Desk</span>
+</div></div>
 {% block content %}{% endblock %}
-<div class="foot">Committee to Elect House Republicans · Questions: <a href="mailto:chris@electhouserepublicans.com">chris@electhouserepublicans.com</a></div>
-</div>
+<footer class="foot"><div class="w">
+  <span>Committee to Elect House Republicans</span>
+  <span>Questions? <a href="mailto:chris@electhouserepublicans.com">chris@electhouserepublicans.com</a></span>
+</div></footer>
 {% block scripts %}{% endblock %}
 </body>
 </html>

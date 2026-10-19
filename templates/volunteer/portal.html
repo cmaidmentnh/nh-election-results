@@ -1,56 +1,95 @@
 {% extends "volunteer/base.html" %}
 {% block title %}My Election Night Page{% endblock %}
 {% block style %}
-.place{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eef2ef}
-.place:last-child{border-bottom:0}
-.place b{display:block}
-.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
-.th{position:relative;border-radius:8px;overflow:hidden;background:#e9eee9;aspect-ratio:3/4}
-.th img{width:100%;height:100%;object-fit:cover;display:block}
-.th .st{position:absolute;left:0;right:0;bottom:0;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px}
-.th .st.ok{background:rgba(31,90,50,.85)}
-.th .st.bad{background:rgba(179,38,30,.9)}
-.th .x{position:absolute;top:4px;right:4px;border:0;border-radius:999px;width:26px;height:26px;background:rgba(0,0,0,.6);color:#fff;font-size:15px;cursor:pointer}
-.pick{display:block;border:2px dashed #9fb7a6;border-radius:10px;padding:22px 12px;text-align:center;background:#fbfdfb;cursor:pointer;font-weight:600;color:var(--g)}
-.pick small{display:block;font-weight:400;color:var(--mut);margin-top:4px}
+.ph{background:linear-gradient(180deg,#0d3320,#123f28);color:#fff}
+.ph .w{padding-top:28px;padding-bottom:30px}
+.ph .kick{color:var(--gold)}
+.ph h1{font-size:clamp(30px,6vw,42px);margin:10px 0 8px}
+.ph p{color:#cfe0d4;margin:0;max-width:560px}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+.stack{display:flex;flex-direction:column;gap:16px;margin-top:-14px;position:relative}
+.place{display:flex;gap:14px;align-items:flex-start;padding:18px}
+.place .pin{flex:none;width:44px;height:44px;border-radius:12px;background:var(--pine);display:grid;place-items:center}
+.place b{display:block;font-size:19px;letter-spacing:-.01em}
+.place .meta{font-size:14px;color:var(--ink2);margin-top:2px}
+.place .hrs{display:inline-block;margin-top:8px;font:600 11.5px/1 var(--mono);letter-spacing:.05em;color:var(--pine);background:var(--greent);padding:6px 8px;border-radius:7px}
+.send{padding:22px}
+.send h2{font-size:24px}
+.send .for{margin-top:6px;color:var(--ink2);font-size:14.5px}
+.pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed #9fc3ab;border-radius:16px;padding:30px 14px;text-align:center;background:linear-gradient(180deg,#f7fbf8,#eef6f1);cursor:pointer;margin-top:18px;transition:border-color .15s,background .15s}
+.pick:hover{border-color:var(--leaf)}
+.pick .cam{width:60px;height:60px;border-radius:50%;background:var(--pine);display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(13,51,32,.6)}
+.pick b{font-size:18px;color:var(--pine)}
+.pick small{color:var(--ink2);font-size:13.5px}
 .pick input{display:none}
-.sub{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #eef2ef;font-size:14px}
-.sub:last-child{border-bottom:0}
-.steps{padding-left:20px;margin:0}
-.steps li{margin-bottom:8px}
-details summary{cursor:pointer;font-weight:600}
+.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.tips span{font-size:12px;color:var(--ink2);background:var(--paper);border-radius:9px;padding:8px;text-align:center;line-height:1.3}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.th{position:relative;border-radius:12px;overflow:hidden;background:#e9eee9;aspect-ratio:3/4;border:1px solid var(--hair)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .st{position:absolute;left:6px;right:6px;bottom:6px;font:600 10.5px/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(17,21,18,.7);padding:6px 7px;border-radius:7px;text-align:center}
+.th .st.ok{background:rgba(31,100,64,.92)}
+.th .st.bad{background:rgba(180,35,24,.94)}
+.th .x{position:absolute;top:6px;right:6px;border:0;border-radius:999px;width:28px;height:28px;background:rgba(17,21,18,.65);color:#fff;font-size:14px;cursor:pointer}
+.count{font:600 12px var(--mono);color:var(--ink3);margin-top:10px;letter-spacing:.04em}
+.sendbar{margin-top:20px}
+.help{font-size:13px;color:var(--ink2);margin-top:12px;text-align:center}
+.subs{padding:18px 20px}
+.subs h3{font-size:16px;margin-bottom:6px}
+.sub{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--hair2);font-size:14.5px}
+.sub .when{font:500 12px var(--mono);color:var(--ink3)}
+.state{font:600 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:6px 8px;border-radius:999px;white-space:nowrap}
+.state.posted{background:var(--greent);color:var(--pine3)}
+.state.checking{background:var(--ambert);color:var(--amber)}
+.state.received{background:#eef1ee;color:var(--ink2)}
+.state.none{background:var(--redt);color:var(--red)}
+.guide{padding:18px 20px}
+.guide summary{cursor:pointer;font-weight:600;font-size:16px;list-style:none;display:flex;justify-content:space-between}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary:after{content:"+";font:600 20px/1 var(--mono);color:var(--leaf)}
+.guide details[open] summary:after{content:"–"}
+.guide ol{counter-reset:s;list-style:none;padding:0;margin:14px 0 0}
+.guide li{counter-increment:s;display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--hair2);font-size:15px;color:var(--ink)}
+.guide li:before{content:counter(s);flex:none;width:26px;height:26px;border-radius:8px;background:var(--pine);color:var(--gold);display:grid;place-items:center;font:600 12px var(--mono)}
+.pending{padding:24px;text-align:center}
+.priv{font-size:12.5px;color:var(--ink3);text-align:center;margin-top:4px}
 {% endblock %}
 {% block content %}
-<div class="hero">
-  <h1>Hi {{ v.name.split()[0] }}</h1>
-  {% if v.status != 'approved' %}
-    <p class="lead">Thanks for signing up. We're still confirming your polling place. You'll get an email as soon as you're confirmed, and this page will let you send results.</p>
-  {% else %}
-    <p class="lead">This is your page for election night. When the results are posted at your polling place, take a photo and send it here.</p>
-  {% endif %}
-</div>
+<section class="ph"><div class="w wrap" style="padding-left:16px;padding-right:16px">
+  <span class="kick">Your election night page</span>
+  <h1>Hi {{ v.name.split()[0] }}.</h1>
+  {% if v.status != 'approved' %}<p>Thanks for signing up. We're confirming your polling place now.</p>
+  {% else %}<p>When results are posted at your polling place, photograph them and send them here.</p>{% endif %}
+</div></section>
 
+<div class="wrap"><div class="stack">
 {% with msgs = get_flashed_messages(with_categories=true) %}
-  {% for cat, m in msgs %}<div class="{{ 'err' if cat == 'error' else 'ok' }}">{{ m }}</div>{% endfor %}
+  {% for cat, m in msgs %}<div class="{{ 'err' if cat == 'error' else 'ok' }}" style="margin:0">{{ m }}</div>{% endfor %}
 {% endwith %}
-{% if sent %}<div class="ok"><b>Got it, thank you!</b> Your results were received. If you have more pages or a correction, send them the same way.</div>{% endif %}
+{% if sent %}<div class="ok" style="margin:0"><b>Got it, thank you!</b> Your results were received. Have more pages or tapes, or a correction? Send them the same way.</div>{% endif %}
 
-<div class="card">
-  <b>Your polling place{{ 's' if places|length != 1 }}</b>
-  {% for p in places %}
-  <div class="place"><div>
+{% for p in places %}
+<div class="card place">
+  <div class="pin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d9b25a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
+  <div>
     <b>{{ p.municipality }}</b>
-    {% if p.location %}<span class="small mut">{{ p.location }}</span><br>{% endif %}
-    {% if p.polling_hours and 'applicable' not in p.polling_hours|lower %}<span class="small mut">Polls open {{ p.polling_hours }}</span>{% endif %}
-  </div></div>
-  {% else %}
-  <p class="mut small" style="margin:8px 0 0">No polling place yet. Reply to your confirmation email and we'll set one up.</p>
-  {% endfor %}
+    {% if p.location %}<div class="meta">{{ p.location }}</div>{% endif %}
+    {% if p.polling_hours and 'applicable' not in p.polling_hours|lower %}<span class="hrs">POLLS {{ p.polling_hours|upper }}</span>{% endif %}
+  </div>
 </div>
+{% else %}
+<div class="card pending"><b>No polling place yet.</b><p class="mut small" style="margin:6px 0 0">Reply to your confirmation email and we'll set one up.</p></div>
+{% endfor %}
 
-{% if v.status == 'approved' and places %}
-<form class="card" id="sendf" method="post" action="{{ url_for('vol.portal_send', token=v.token) }}">
-  <b style="font-size:18px">Send results</b>
+{% if v.status != 'approved' %}
+<div class="card pending">
+  <b>Your link turns on once you're confirmed.</b>
+  <p class="mut small" style="margin:6px 0 0">You'll get an email from us. Nothing to do until then.</p>
+</div>
+{% elif places %}
+<form class="card send" id="sendf" method="post" action="{{ url_for('vol.portal_send', token=v.token) }}">
+  <span class="kick" style="color:var(--leaf)">Send results</span>
+  <h2 style="margin-top:8px">Photograph the posted results</h2>
   {% if places|length > 1 %}
   <label for="muni">Which polling place?</label>
   <select id="muni" name="municipality" required>
@@ -59,38 +98,46 @@ details summary{cursor:pointer;font-weight:600}
   </select>
   {% else %}
   <input type="hidden" id="muni" name="municipality" value="{{ places[0].municipality }}">
-  <p class="small mut" style="margin:6px 0 0">For <b>{{ places[0].municipality }}</b></p>
+  <div class="for">For <b>{{ places[0].municipality }}</b></div>
   {% endif %}
 
-  <label>Photos of the posted results <small>one per page, up to {{ max_photos }}</small></label>
-  <label class="pick" for="cam">📷 Take or choose a photo<small>Close up, whole sheet in the frame</small><input type="file" id="cam" accept="image/*,application/pdf" multiple></label>
+  <label class="pick" for="cam">
+    <span class="cam"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+    <b>Take or add a photo</b>
+    <small>Every page and every machine tape · up to {{ max_photos }}</small>
+    <input type="file" id="cam" accept="image/*,application/pdf" multiple>
+  </label>
+  <div class="tips"><span>Close up, whole sheet in frame</span><span>One photo per page or tape</span><span>Hold steady, no flash glare</span></div>
   <div class="thumbs" id="thumbs"></div>
+  <div class="count" id="count"></div>
 
-  <label for="note">Or type the results <small>optional: anything else we should know</small></label>
+  <label for="note">Or type the results <small>optional</small></label>
   <textarea id="note" name="note" maxlength="4000" placeholder="e.g. State Rep: Smith 812, Jones 640…"></textarea>
 
   <input type="hidden" name="upload_ids" id="upload_ids">
-  <p style="margin-top:16px"><button class="btn block" type="submit" id="send">Send results</button></p>
-  <p class="small mut" id="hint" style="margin:0">If this page gives you trouble, email the photos to <a href="mailto:results@electhouserepublicans.com">results@electhouserepublicans.com</a> with your town in the subject.</p>
+  <div class="sendbar"><button class="btn block" type="submit" id="send">Send results</button></div>
+  <p class="help">Trouble? Email the photos to <a href="mailto:results@electhouserepublicans.com">results@electhouserepublicans.com</a> with your town in the subject.</p>
 </form>
 {% endif %}
 
 {% if subs %}
-<div class="card">
-  <b>What you've sent</b>
+<div class="card subs">
+  <h3>What you've sent</h3>
   {% for s in subs %}
-  <div class="sub"><span>{{ s.municipality }} · {{ s.n_photos }} photo{{ 's' if s.n_photos != 1 }}{% if s.note %} + note{% endif %}<br><span class="small mut">{{ s.created_at }}</span></span><span class="small"><b>{{ s.state|capitalize }}</b></span></div>
+  {% set cls = 'posted' if s.state == 'posted' else ('checking' if s.state == 'being checked' else ('none' if s.state == 'no results found' else 'received')) %}
+  <div class="sub"><span>{{ s.municipality }} · {{ s.n_photos }} photo{{ 's' if s.n_photos != 1 }}{% if s.note %} + note{% endif %}<br><span class="when">{{ s.created_at[5:16] }}</span></span><span class="state {{ cls }}">{{ s.state }}</span></div>
   {% endfor %}
 </div>
 {% endif %}
 
-<div class="card">
+<div class="card guide">
   <details {% if v.status == 'approved' and not subs %}open{% endif %}>
     <summary>Election night, step by step</summary>
-    <ol class="steps" style="margin-top:10px">{% for s in steps %}<li>{{ s }}</li>{% endfor %}</ol>
+    <ol>{% for s in steps %}<li>{{ s }}</li>{% endfor %}</ol>
   </details>
 </div>
-<p class="small mut">This page is just for you. Please don't share the link.</p>
+<p class="priv">This page is just for you. Please don't share the link.</p>
+</div></div>
 {% endblock %}
 {% block scripts %}
 {% if v.status == 'approved' and places %}
@@ -109,24 +156,30 @@ details summary{cursor:pointer;font-weight:600}
     idsEl.value = items.filter(function(i){ return i.state === 'ok'; }).map(function(i){ return i.id; }).join(',');
     send.disabled = pending();
     send.textContent = pending() ? 'Uploading photos…' : 'Send results';
+    var n = items.filter(function(i){ return i.state === 'ok'; }).length;
+    var c = document.getElementById('count'); if (c) c.textContent = n ? (n + ' photo' + (n===1?'':'s') + ' ready to send') : '';
   }
 
-  // Shrink phone photos before upload: faster on a weak signal, and still sharp
-  // enough to read a results sheet. Falls back to the original file.
+  // Send photos at full resolution: tally tapes are long and the print is small,
+  // and the parser tiles a tall tape at high resolution - downscaling a 12MP
+  // phone photo can make a tape unreadable. Only an unusually large file
+  // (panorama, ProRAW export) is scaled down, and never below 4800px.
+  var KEEP = 12*1024*1024;
   function shrink(file){
     return new Promise(function(resolve){
+      if (file.size <= KEEP) { resolve(file); return; }
       if (!/^image\/(jpeg|png|webp)$/.test(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) { resolve(file); return; }
       var img = new Image(), url = URL.createObjectURL(file);
       img.onload = function(){
-        var max = 2200, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, max / Math.max(w, h));
+        var max = 4800, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, max / Math.max(w, h));
         var c = document.createElement('canvas'); c.width = Math.round(w*s); c.height = Math.round(h*s);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        var q = 0.85;
+        var q = 0.9;
         (function attempt(){
           c.toBlob(function(b){
             if (!b) { resolve(file); return; }
-            if (b.size > 900*1024 && q > 0.5) { q -= 0.1; attempt(); return; }
+            if (b.size > KEEP && q > 0.5) { q -= 0.1; attempt(); return; }
             resolve(new File([b], 'photo.jpg', {type:'image/jpeg'}));
           }, 'image/jpeg', q);
         })();
@@ -138,7 +191,7 @@ details summary{cursor:pointer;font-weight:600}
 
   function upload(item, file, tries){
     var fd = new FormData(); fd.append('municipality', muni.value); fd.append('photo', file);
-    var xhr = new XMLHttpRequest(); xhr.open('POST', UP); xhr.timeout = 90000;
+    var xhr = new XMLHttpRequest(); xhr.open('POST', UP); xhr.timeout = 180000;
     xhr.onload = function(){
       var ok = false, data = {};
       try { data = JSON.parse(xhr.responseText); ok = xhr.status === 200 && data.ok; } catch(e){}

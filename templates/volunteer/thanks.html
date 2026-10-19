@@ -1,10 +1,40 @@
 {% extends "volunteer/base.html" %}
-{% block title %}Thank You{% endblock %}
+{% block title %}You're Signed Up · NH Election Night{% endblock %}
+{% block style %}
+.done{max-width:640px;margin:56px auto 0;padding:40px 34px;text-align:center}
+.check{width:72px;height:72px;border-radius:50%;background:var(--greent);display:grid;place-items:center;margin:0 auto 20px}
+.done h1{font-size:clamp(30px,5vw,40px)}
+.done p.lede{color:var(--ink2);font-size:17px;margin:14px auto 0;max-width:500px}
+.next{text-align:left;margin:30px 0 0;padding:0;list-style:none;border-top:1px solid var(--hair2)}
+.next li{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--hair2);font-size:15px}
+.next li b{flex:none;width:28px;height:28px;border-radius:8px;background:var(--pine);color:var(--gold);display:grid;place-items:center;font:600 12px var(--mono)}
+.share{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+@media(max-width:560px){.done{margin-top:24px;padding:28px 20px}}
+{% endblock %}
 {% block content %}
-<div class="hero">
-  <h1>Thank you for signing up</h1>
-  <p class="lead">Check your email for a confirmation. Once we confirm your polling place, we'll email you a personal link. That's how you'll send the results on election night.</p>
-  {% if full %}<div class="err">{{ full|join(', ') }} already had enough volunteers, so {{ 'it was' if full|length == 1 else 'they were' }} not added. Your other pick was saved.</div>{% endif %}
-  <p>Know someone else who could cover a polling place? Send them to <a href="/volunteer">elections.nhhouse.gop/volunteer</a>.</p>
+<div class="w">
+  <div class="card done">
+    <div class="check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1f6440" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h1>You're signed up. Thank you.</h1>
+    <p class="lede">Check your email for a confirmation. Here's what happens next:</p>
+    {% if full %}<div class="err" style="text-align:left">{{ full|join(', ') }} already had enough volunteers, so {{ 'it was' if full|length == 1 else 'they were' }} not added. Your other pick was saved.</div>{% endif %}
+    <ul class="next">
+      <li><b>1</b><span>We confirm your polling place and email you a <strong>personal link</strong>. Keep that email.</span></li>
+      <li><b>2</b><span>Before Election Day we send short, step-by-step instructions.</span></li>
+      <li><b>3</b><span>On {{ election_day }}, open your link at the polls, photograph the posted results and tap Send.</span></li>
+    </ul>
+    <div class="share">
+      <button class="btn" type="button" id="sh">Invite a friend to cover a town</button>
+    </div>
+  </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('sh').addEventListener('click', function(){
+  var url = location.origin + '/volunteer', t = 'Can you cover a polling place on Election Night? It takes 15 minutes and one photo.';
+  if (navigator.share) { navigator.share({title: 'Election Night volunteers', text: t, url: url}).catch(function(){}); }
+  else if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function(){ document.getElementById('sh').textContent = 'Link copied: ' + url; }); }
+});
+</script>
 {% endblock %}
