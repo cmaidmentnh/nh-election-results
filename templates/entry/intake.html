@@ -33,8 +33,18 @@
                 {% if m.received_at %} · {{ m.received_at }}{% endif %}
             </div>
         </div>
-        <button class="i-toggle" type="button">
-            {% if g.attachments %}Hide original{% else %}Show original{% endif %}</button>
+        <div class="i-bulk">
+            {% if g['items']|selectattr('old_votes', 'ne', none)|list %}
+            <button class="i-btn i-add i-bulk-btn" type="button" data-bulk="add"
+                title="This is another machine's tape: add every line to what is already recorded">Add whole tape</button>
+            {% endif %}
+            <button class="i-btn i-accept i-bulk-btn" type="button" data-bulk="accept"
+                title="Publish every line as read">Accept all</button>
+            <button class="i-btn i-reject i-bulk-btn" type="button" data-bulk="reject"
+                title="Throw out this whole report">Reject all</button>
+            <button class="i-toggle" type="button">
+                {% if g.attachments %}Hide original{% else %}Show original{% endif %}</button>
+        </div>
     </header>
 
     <div class="i-original{% if not g.attachments %} hidden{% endif %}">
@@ -160,6 +170,7 @@
 .i-conf{display:inline-block;margin-left:.4rem;color:#6b7280;font-size:.75rem}
 .i-unmatched{color:#b91c1c}
 .i-actions{white-space:nowrap;text-align:right}
+.i-bulk{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .i-btn{border:1px solid #cbd2d9;background:#fff;border-radius:6px;padding:.3rem .7rem;
        font-size:.8rem;cursor:pointer;margin-left:.3rem}
 .i-accept{border-color:#15803d;color:#15803d}
@@ -223,13 +234,34 @@ async function resolve(row, action) {
     }
 }
 
-document.querySelectorAll('.i-accept').forEach(b =>
+document.querySelectorAll('.i-bulk-btn').forEach(b => b.addEventListener('click', async () => {
+    const card = b.closest('.i-card'), action = b.dataset.bulk;
+    const label = {add: 'Add every line of this report to what is already recorded (another machine\'s tape)?',
+                   accept: 'Publish every line of this report as read?',
+                   reject: 'Reject this whole report?'}[action];
+    if (!confirm(label)) return;
+    card.style.opacity = .5;
+    try {
+        const res = await fetch(`/entry/intake/message/${card.dataset.message}/bulk/${action}`, {method: 'POST'});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'failed');
+        card.style.opacity = 1;
+        card.querySelector('.i-bulk').innerHTML = `<b>${action === 'reject' ? 'Rejected' : 'Done'}: ${data.done} line(s)` +
+            (data.skipped ? `, ${data.skipped} need a human` : '') + '</b> · reloading…';
+        setTimeout(() => location.reload(), 900);
+    } catch (err) {
+        card.style.opacity = 1;
+        alert('Could not save: ' + err.message);
+    }
+}));
+
+document.querySelectorAll('tr .i-accept').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'accept')));
-document.querySelectorAll('.i-add').forEach(b =>
+document.querySelectorAll('tr .i-add').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'add')));
-document.querySelectorAll('.i-writein').forEach(b =>
+document.querySelectorAll('tr .i-writein').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'writein')));
-document.querySelectorAll('.i-reject').forEach(b =>
+document.querySelectorAll('tr .i-reject').forEach(b =>
     b.addEventListener('click', () => resolve(b.closest('tr'), 'reject')));
 </script>
 {% endblock %}
