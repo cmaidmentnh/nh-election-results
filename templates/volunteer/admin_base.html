@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}Volunteers{% endblock %} · Election Night Desk</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
+<style>
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-600.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"PS";src:url("/static/vendor/plex/plex-sans-700.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"PM";src:url("/static/vendor/plex/plex-mono-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"PM";src:url("/static/vendor/plex/plex-mono-600.woff2") format("woff2");font-weight:600;font-display:swap}
+:root{--pine:#0d3320;--pine2:#164a2f;--pine3:#1f6440;--leaf:#2f8a57;--gold:#d9b25a;
+  --paper:#f4f3ee;--card:#fff;--ink:#111512;--ink2:#4b544e;--ink3:#87908a;--hair:#e1e4de;--hair2:#eef0ea;
+  --red:#b42318;--redt:#fdecea;--amber:#9a6200;--ambert:#fff4dc;--greent:#e6f2ea;--blue:#24456e;--bluet:#eaf0fb;
+  --sans:"PS",ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--mono:"PM",ui-monospace,SFMono-Regular,Menlo,monospace}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 14.5px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--pine3)}
+.top{background:var(--pine);color:#cfe0d4}
+.top .w{display:flex;align-items:center;gap:22px;height:56px}
+.brand{color:#fff;font-weight:700;letter-spacing:-.01em;text-decoration:none;display:flex;align-items:center;gap:9px;white-space:nowrap}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(217,178,90,.2)}
+.nav{display:flex;gap:4px;overflow-x:auto;flex:1}
+.nav a{color:#cfe0d4;text-decoration:none;font-weight:500;padding:7px 11px;border-radius:8px;white-space:nowrap}
+.nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav a.on{background:rgba(255,255,255,.12);color:#fff}
+.who{font:500 12px var(--mono);color:#a9c4b2;white-space:nowrap}
+.who a{color:#cfe0d4}
+.w{max-width:1280px;margin:0 auto;padding:0 22px}
+.page{padding:26px 0 60px}
+.kick{font:600 11px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--leaf)}
+h1{font-size:30px;letter-spacing:-.025em;margin:8px 0 0;line-height:1.1}
+.sub{color:var(--ink2);margin-top:6px}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:14px;box-shadow:0 1px 0 rgba(17,21,18,.03),0 10px 28px -20px rgba(13,51,32,.3)}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--hair);background:#fff;color:var(--ink);border-radius:9px;padding:8px 12px;font:600 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:#c6ccc4;background:#fafbf8}
+.btn.pri{background:var(--pine);border-color:var(--pine);color:#fff}.btn.pri:hover{background:var(--pine2)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--pine)}
+.btn.dan{color:var(--red)}.btn.dan:hover{background:var(--redt);border-color:#f5c2bd}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:7px}
+.pill{display:inline-flex;align-items:center;gap:5px;font:600 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.pill.pending{background:var(--ambert);color:var(--amber)}.pill.approved{background:var(--greent);color:var(--pine3)}.pill.rejected{background:#eef0ec;color:var(--ink3)}
+.pill.t1{background:var(--ambert);color:var(--amber)}.pill.t2{background:var(--bluet);color:var(--blue)}
+.pill.open{background:var(--redt);color:var(--red)}.pill.in{background:var(--greent);color:var(--pine3)}
+.flash{border-radius:10px;padding:11px 14px;margin:0 0 16px;font-weight:500}
+.flash.success{background:var(--greent);color:#11391f;border:1px solid #b9d9c4}.flash.error{background:var(--redt);color:#7a1610;border:1px solid #f5c2bd}
+input[type=search],input[type=text],input:not([type]){font:inherit;border:1.5px solid #cdd4cd;border-radius:9px;padding:9px 12px;background:#fff;color:var(--ink)}
+input:focus{outline:0;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(47,138,87,.15)}
+.mono{font-family:var(--mono)}.mut{color:var(--ink2)}.dim{color:var(--ink3)}
+{% block style %}{% endblock %}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top"><div class="w">
+  <a class="brand" href="{{ url_for('vol.admin_list') }}"><i></i>Election Night Desk</a>
+  <nav class="nav">
+    <a href="{{ url_for('vol.admin_list') }}" class="{{ 'on' if active == 'vols' }}">Volunteers</a>
+    <a href="{{ url_for('vol.admin_board') }}" class="{{ 'on' if active == 'board' }}">Election Night</a>
+    <a href="/entry/intake">Review queue</a>
+    <a href="{{ url_for('entry.index') }}">Enter results</a>
+    <a href="/results" target="_blank">Public results ↗</a>
+    <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+  </nav>
+  <span class="who">{{ current_user.username }} · <a href="{{ url_for('auth.logout') }}">log out</a></span>
+</div></header>
+<main class="w page">
+{% with messages = get_flashed_messages(with_categories=true) %}{% for c, m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endwith %}
+{% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

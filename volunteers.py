@@ -685,9 +685,12 @@ def admin_list():
     by_tier = {t: cov([p for p in places if p['tier'] == t]) for t in (1, 2, 3)}
     counties = sorted({p['county'] or 'Other' for p in places})
     by_county = {c: cov([p for p in places if (p['county'] or 'Other') == c]) for c in counties}
+    open_top = sorted([p for p in places if p['tier'] == 1 and not p['approved'] and not p['pending']],
+                      key=lambda p: (p['county'] or '', p['municipality']))
     return render_template('volunteer/admin.html', vols=vols, counts=counts, status=status,
                            total=cov(places), by_tier=by_tier, by_county=by_county,
-                           tier_labels=TIER_LABELS, all_place_names=[p['municipality'] for p in places])
+                           tier_labels=TIER_LABELS, all_place_names=[p['municipality'] for p in places],
+                           open_top=open_top, active='vols', signup_url=PUBLIC_BASE_URL + '/volunteer')
 
 
 @vol_bp.route('/volunteers/admin/<int:vid>/<action>', methods=['POST'])
@@ -848,6 +851,8 @@ def admin_board():
         p['races_in'] = reported.get(p['municipality'], 0)
         p['sub'] = subs.get(p['municipality'])
     n_total = len(places)
+    n_covered = sum(1 for p in places if p['approved'])
+    n_waiting = sum(1 for p in places if p['approved'] and not p['races_in'])
     show = request.args.get('show', 'all')
     if show == 'missing':
         places = [p for p in places if not p['races_in']]
@@ -856,4 +861,5 @@ def admin_board():
     places.sort(key=lambda p: (p['races_in'] > 0, p['tier'], p['county'] or '', p['municipality']))
     return render_template('volunteer/board.html', places=places, show=show, queue=queue,
                            tier_labels=TIER_LABELS, n_reported=sum(1 for v in reported.values() if v),
-                           n_total=n_total)
+                           n_total=n_total, n_covered=n_covered, n_waiting=n_waiting, active='board',
+                           now=datetime.now().strftime('%-I:%M %p'))

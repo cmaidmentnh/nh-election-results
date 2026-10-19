@@ -1,93 +1,187 @@
-{% extends "admin/base.html" %}
+{% extends "volunteer/admin_base.html" %}
 {% block title %}Volunteers{% endblock %}
-{% block head %}
-<style>
-.vstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
-.vstat{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px}
-.vstat b{display:block;font-size:26px;line-height:1.1}
-.vstat span{font-size:13px;color:#6b7280}
-.vt{width:100%;border-collapse:collapse;font-size:14px}
-.vt th,.vt td{padding:8px 10px;border-bottom:1px solid #eef0f2;text-align:left;vertical-align:top}
-.vt th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;background:#fafafa}
-.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase}
-.p-pending{background:#fef3c7;color:#92400e}.p-approved{background:#dcfce7;color:#166534}.p-rejected{background:#f3f4f6;color:#6b7280}
-.inl{display:inline}
-.inl button{margin:2px 0}
-.tabs a{margin-right:14px;font-weight:600;text-decoration:none}
-.tabs a.on{text-decoration:underline}
-.pl{display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:6px;padding:2px 6px;margin:2px 4px 2px 0;font-size:13px}
-.pl button{border:0;background:none;color:#b91c1c;cursor:pointer;padding:0 2px;font-size:13px}
-.cty{width:100%;border-collapse:collapse;font-size:13px}
-.cty td,.cty th{padding:5px 8px;border-bottom:1px solid #f0f0f0;text-align:right}
-.cty td:first-child,.cty th:first-child{text-align:left}
-</style>
+{% block style %}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.head .acts{display:flex;gap:8px;flex-wrap:wrap}
+.hero{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:0;overflow:hidden;margin-bottom:22px}
+.hero>div{padding:20px 22px;border-left:1px solid var(--hair2)}
+.hero>div:first-child{border-left:0;background:linear-gradient(160deg,#0d3320,#164a2f);color:#fff}
+.big{font:700 44px/1 var(--sans);letter-spacing:-.04em}
+.big small{font-size:.42em;font-weight:500;color:#a9c4b2;margin-left:4px;letter-spacing:-.01em}
+.hero .lbl{font-size:13px;color:var(--ink2);margin-top:6px}
+.hero>div:first-child .lbl{color:#cfe0d4}
+.bar{height:9px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden;display:flex;margin-top:14px}
+.bar i{display:block;height:100%}
+.leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:#cfe0d4}
+.leg b{color:#fff}.leg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.mid{font:700 30px/1 var(--sans);letter-spacing:-.03em}
+.mid small{font-size:.5em;color:var(--ink3);font-weight:500}
+.mini{height:6px;border-radius:999px;background:var(--hair2);overflow:hidden;margin-top:12px}
+.mini i{display:block;height:100%;background:var(--pine3)}
+@media(max-width:980px){.hero{grid-template-columns:1fr 1fr}.hero>div:nth-child(3){border-left:0}}
+@media(max-width:560px){.hero{grid-template-columns:1fr}.hero>div{border-left:0;border-top:1px solid var(--hair2)}}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}}
+.listhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--hair2)}
+.tabs{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:10px}
+.tabs a{text-decoration:none;color:var(--ink2);font-weight:600;font-size:13px;padding:6px 11px;border-radius:7px}
+.tabs a.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs a b{font:600 11px var(--mono);color:var(--ink3);margin-left:3px}
+#q{width:260px;max-width:100%}
+.vrow{display:grid;grid-template-columns:28px minmax(0,1.3fr) minmax(0,1.2fr) 150px;gap:14px;padding:15px 18px;border-bottom:1px solid var(--hair2);align-items:start}
+.vrow:last-child{border-bottom:0}
+.vrow:hover{background:#fbfcfa}
+.vrow.pending{box-shadow:inset 3px 0 0 var(--gold)}
+@media(max-width:760px){.vrow{grid-template-columns:24px 1fr}.vrow .c3,.vrow .c4{grid-column:2}}
+.nm{font-weight:600;font-size:15px}
+.ct{font-size:13px;color:var(--ink2);line-height:1.6}
+.ct a{color:var(--ink2);text-decoration:none}.ct a:hover{color:var(--pine3);text-decoration:underline}
+.meta{font:500 11.5px var(--mono);color:var(--ink3);margin-top:4px}
+.note{font-size:12.5px;background:var(--ambert);color:#6b4600;border-radius:7px;padding:4px 8px;margin-top:6px;display:inline-block}
+.places{display:flex;flex-wrap:wrap;gap:6px}
+.place{display:inline-flex;align-items:center;gap:4px;background:var(--paper);border:1px solid var(--hair);border-radius:8px;padding:4px 4px 4px 9px;font-weight:500;font-size:13px}
+.place form{display:inline}
+.place button{border:0;background:none;color:var(--ink3);cursor:pointer;font-size:14px;line-height:1;padding:2px 5px;border-radius:5px}
+.place button:hover{background:var(--redt);color:var(--red)}
+.addp{display:flex;gap:6px;margin-top:8px}
+.addp input{padding:5px 9px;font-size:12.5px;width:150px;border-width:1px}
+.c4{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.c4 form{display:contents}
+.c4 .btn{justify-content:center}
+.more{display:flex;gap:6px}
+.more .btn{flex:1}
+.notein{width:100%;padding:5px 8px!important;font-size:12px!important;border-width:1px!important}
+.empty{padding:40px;text-align:center;color:var(--ink3)}
+.bulk{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#fbf8ef;border-top:1px solid var(--hair2);border-radius:0 0 14px 14px}
+.side{display:flex;flex-direction:column;gap:18px;position:sticky;top:18px}
+@media(max-width:1100px){.side{position:static}}
+.panel{padding:18px}
+.panel h3{margin:0 0 4px;font-size:15px}
+.cty{display:grid;grid-template-columns:92px 1fr 46px;gap:7px 10px;align-items:center;font-size:13px;margin-top:12px}
+.cty .tr{height:8px;border-radius:999px;background:var(--hair2);overflow:hidden;display:flex}
+.cty .tr i{display:block;height:100%}
+.cty .n{font:500 11.5px var(--mono);color:var(--ink3);text-align:right}
+.openlist{margin:10px 0 0;padding:0;list-style:none;max-height:340px;overflow:auto}
+.openlist li{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--hair2);font-size:13px}
+.openlist li span{color:var(--ink3);font-size:12px}
 {% endblock %}
 {% block content %}
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <h3 style="margin:0">Election night coverage</h3>
-    <div>
-      <a class="btn btn-small" href="/volunteer" target="_blank">Public sign-up page ↗</a>
-      <a class="btn btn-small" href="{{ url_for('vol.admin_board') }}">Election night board</a>
-      <a class="btn btn-small" href="{{ url_for('vol.admin_export') }}">Export CSV</a>
-    </div>
+<div class="head">
+  <div><span class="kick">Election Night · Nov 3</span><h1>Volunteers &amp; coverage</h1>
+  <div class="sub">Approve sign-ups, assign polling places, and see where we still need people.</div></div>
+  <div class="acts">
+    <button class="btn" type="button" id="copy">Copy sign-up link</button>
+    <a class="btn" href="/volunteer" target="_blank">Sign-up page ↗</a>
+    <a class="btn" href="{{ url_for('vol.admin_export') }}">Export CSV</a>
+    <a class="btn pri" href="{{ url_for('vol.admin_board') }}">Election night board →</a>
   </div>
-  <div class="vstats" style="margin-top:14px">
-    <div class="vstat"><b>{{ total.covered }}</b><span>of {{ total.total }} places covered (approved)</span></div>
-    <div class="vstat"><b>{{ total.pending }}</b><span>places with only pending sign-ups</span></div>
-    <div class="vstat"><b>{{ total.open }}</b><span>places with nobody</span></div>
-    {% for t in (1,2) %}<div class="vstat"><b>{{ by_tier[t].covered }}/{{ by_tier[t].total }}</b><span>{{ tier_labels[t] }} places covered</span></div>{% endfor %}
-    <div class="vstat"><b>{{ counts.get('approved',0) }}</b><span>approved volunteers · {{ counts.get('pending',0) }} pending</span></div>
-  </div>
-  <details>
-    <summary class="text-small" style="cursor:pointer">By county</summary>
-    <table class="cty" style="margin-top:8px">
-      <tr><th>County</th><th>Places</th><th>Covered</th><th>Pending only</th><th>Open</th></tr>
-      {% for c, x in by_county.items() %}<tr><td>{{ c }}</td><td>{{ x.total }}</td><td>{{ x.covered }}</td><td>{{ x.pending }}</td><td>{{ x.open }}</td></tr>{% endfor %}
-    </table>
-  </details>
 </div>
 
-<div class="card">
-  <div class="tabs" style="margin-bottom:12px">
-    <a href="{{ url_for('vol.admin_list') }}" class="{{ 'on' if not status }}">All</a>
-    <a href="{{ url_for('vol.admin_list', status='pending') }}" class="{{ 'on' if status=='pending' }}">Pending ({{ counts.get('pending',0) }})</a>
-    <a href="{{ url_for('vol.admin_list', status='approved') }}" class="{{ 'on' if status=='approved' }}">Approved ({{ counts.get('approved',0) }})</a>
-    <a href="{{ url_for('vol.admin_list', status='rejected') }}" class="{{ 'on' if status=='rejected' }}">Removed ({{ counts.get('rejected',0) }})</a>
+<div class="card hero">
+  <div>
+    <div class="big">{{ total.covered }}<small>/ {{ total.total }}</small></div>
+    <div class="lbl">polling places covered by an approved volunteer</div>
+    <div class="bar"><i style="width:{{ (100*total.covered/total.total)|round(1) }}%;background:var(--gold)"></i><i style="width:{{ (100*total.pending/total.total)|round(1) }}%;background:rgba(217,178,90,.45)"></i></div>
+    <div class="leg"><span><i style="background:var(--gold)"></i><b>{{ total.covered }}</b> covered</span><span><i style="background:rgba(217,178,90,.45)"></i><b>{{ total.pending }}</b> pending only</span><span><b>{{ total.open }}</b> open</span></div>
   </div>
-  <datalist id="allplaces">{% for m in all_place_names %}<option value="{{ m }}">{% endfor %}</datalist>
-  {% if not vols %}<p class="text-muted">Nobody here yet.</p>{% else %}
-  <form id="bulk" method="post" action="{{ url_for('vol.admin_approve_bulk') }}"></form>
-  <table class="vt">
-    <tr><th></th><th>Volunteer</th><th>Polling places</th><th>Status</th><th>Actions</th></tr>
-    {% for v in vols %}
-    <tr>
-      <td>{% if v.status == 'pending' %}<input type="checkbox" name="ids" value="{{ v.id }}" form="bulk">{% endif %}</td>
-      <td><b>{{ v.name }}</b><br>
-        <a href="mailto:{{ v.email }}">{{ v.email }}</a><br>
-        {% if v.phone %}<a href="tel:{{ v.phone }}">{{ v.phone }}</a><br>{% endif %}
-        <span class="text-small text-muted">{{ v.home_town or '' }}{% if v.affiliation %} · {{ v.affiliation }}{% endif %}<br>Signed up {{ (v.created_at or '')[:16] }}{% if v.n_reports %} · {{ v.n_reports }} report{{ 's' if v.n_reports != 1 }}{% endif %}</span>
-        {% if v.admin_note %}<br><span class="text-small">📝 {{ v.admin_note }}</span>{% endif %}
-      </td>
-      <td>
-        {% for m in v.place_list %}<span class="pl">{{ m }}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='removeplace') }}"><input type="hidden" name="municipality" value="{{ m }}"><button title="Remove" onclick="return confirm({{ ('Remove ' ~ m ~ ' from ' ~ v.name ~ '?')|tojson|forceescape }})">✕</button></form></span>{% endfor %}
-        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='addplace') }}" style="display:block;margin-top:4px">
-          <input name="municipality" list="allplaces" placeholder="Add place" style="width:150px;padding:3px 6px;font-size:13px"><button class="btn btn-small">Add</button>
-        </form>
-      </td>
-      <td><span class="pill p-{{ v.status }}">{{ v.status }}</span>{% if v.link_sent_at %}<br><span class="text-small text-muted">link sent {{ v.link_sent_at[5:16] }}</span>{% endif %}</td>
-      <td style="white-space:nowrap">
-        {% if v.status != 'approved' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='approve') }}"><button class="btn btn-small btn-primary">Approve</button></form>{% endif %}
-        {% if v.status == 'approved' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='resend') }}"><button class="btn btn-small">Resend link</button></form>{% endif %}
-        {% if v.status != 'rejected' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='reject') }}"><button class="btn btn-small btn-danger" onclick="return confirm({{ ('Remove ' ~ v.name ~ '? Their link stops working.')|tojson|forceescape }})">Remove</button></form>{% endif %}
-        <br>
-        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='newlink') }}"><button class="btn btn-small" onclick="return confirm('Kill this volunteer\'s current link and make a new one?')">New link</button></form>
-        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='note') }}"><input name="note" value="{{ v.admin_note or '' }}" placeholder="note" style="width:110px;padding:3px 6px;font-size:13px"></form>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-  {% if counts.get('pending',0) %}<p style="margin-top:12px"><button class="btn btn-primary" form="bulk" onclick="return confirm('Approve the checked volunteers and email each their link?')">Approve checked</button></p>{% endif %}
-  {% endif %}
+  {% for t in (1,2) %}{% set x = by_tier[t] %}
+  <div><span class="pill t{{ t }}">{{ '★ ' if t == 1 }}{{ tier_labels[t] }}</span>
+    <div class="mid" style="margin-top:12px">{{ x.covered }}<small> / {{ x.total }}</small></div>
+    <div class="lbl">covered · {{ x.open }} with nobody</div>
+    <div class="mini"><i style="width:{{ (100*x.covered/x.total)|round(1) if x.total else 0 }}%"></i></div></div>
+  {% endfor %}
+  <div><span class="pill approved">People</span>
+    <div class="mid" style="margin-top:12px">{{ counts.get('approved',0) }}<small> approved</small></div>
+    <div class="lbl">{% if counts.get('pending',0) %}<a href="{{ url_for('vol.admin_list', status='pending') }}"><b>{{ counts.get('pending',0) }} waiting for approval →</b></a>{% else %}nobody waiting for approval{% endif %}</div></div>
 </div>
+
+<div class="grid">
+  <div class="card">
+    <div class="listhead">
+      <div class="tabs">
+        <a href="{{ url_for('vol.admin_list') }}" class="{{ 'on' if not status }}">All<b>{{ counts.values()|sum }}</b></a>
+        <a href="{{ url_for('vol.admin_list', status='pending') }}" class="{{ 'on' if status=='pending' }}">Pending<b>{{ counts.get('pending',0) }}</b></a>
+        <a href="{{ url_for('vol.admin_list', status='approved') }}" class="{{ 'on' if status=='approved' }}">Approved<b>{{ counts.get('approved',0) }}</b></a>
+        <a href="{{ url_for('vol.admin_list', status='rejected') }}" class="{{ 'on' if status=='rejected' }}">Removed<b>{{ counts.get('rejected',0) }}</b></a>
+      </div>
+      <input type="search" id="q" placeholder="Search name, email, town, place…">
+    </div>
+    <datalist id="allplaces">{% for m in all_place_names %}<option value="{{ m }}">{% endfor %}</datalist>
+    {% if not vols %}<div class="empty">Nobody here yet. Share the sign-up link to get started.</div>{% else %}
+    <form id="bulk" method="post" action="{{ url_for('vol.admin_approve_bulk') }}"></form>
+    <div id="rows">
+    {% for v in vols %}
+    <div class="vrow {{ v.status }}" data-s="{{ (v.name ~ ' ' ~ v.email ~ ' ' ~ (v.phone or '') ~ ' ' ~ (v.home_town or '') ~ ' ' ~ (v.affiliation or '') ~ ' ' ~ v.place_list|join(' '))|lower }}">
+      <div>{% if v.status == 'pending' %}<input type="checkbox" name="ids" value="{{ v.id }}" form="bulk" class="ck" aria-label="Select {{ v.name }}">{% endif %}</div>
+      <div>
+        <div class="nm">{{ v.name }}</div>
+        <div class="ct"><a href="mailto:{{ v.email }}">{{ v.email }}</a>{% if v.phone %} · <a href="tel:{{ v.phone }}">{{ v.phone }}</a>{% endif %}<br>
+          {{ v.home_town or '' }}{% if v.affiliation %}{{ ' · ' if v.home_town }}{{ v.affiliation }}{% endif %}</div>
+        <div class="meta">signed up {{ (v.created_at or '')[5:16] }}{% if v.n_reports %} · {{ v.n_reports }} report{{ 's' if v.n_reports != 1 }} sent{% endif %}{% if v.link_sent_at %} · link sent {{ v.link_sent_at[5:16] }}{% endif %}</div>
+        {% if v.admin_note %}<div class="note">{{ v.admin_note }}</div>{% endif %}
+      </div>
+      <div class="c3">
+        <div class="places">
+          {% for m in v.place_list %}<span class="place">{{ m }}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='removeplace') }}"><input type="hidden" name="municipality" value="{{ m }}"><button title="Remove {{ m }}" onclick="return confirm({{ ('Remove ' ~ m ~ ' from ' ~ v.name ~ '?')|tojson|forceescape }})">×</button></form></span>{% else %}<span class="dim">No polling place</span>{% endfor %}
+        </div>
+        <form class="addp" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='addplace') }}">
+          <input name="municipality" list="allplaces" placeholder="Add a place…" aria-label="Add a polling place"><button class="btn sm">Add</button>
+        </form>
+      </div>
+      <div class="c4">
+        <span class="pill {{ v.status }}" style="align-self:flex-start">{{ v.status }}</span>
+        {% if v.status != 'approved' %}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='approve') }}"><button class="btn sm pri">Approve &amp; send link</button></form>{% endif %}
+        {% if v.status == 'approved' %}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='resend') }}"><button class="btn sm">Resend link</button></form>{% endif %}
+        <div class="more">
+          <form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='newlink') }}"><button class="btn sm" title="Kill the current link and make a new one" onclick="return confirm('Kill this volunteer\'s current link and make a new one?')">New link</button></form>
+          {% if v.status != 'rejected' %}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='reject') }}"><button class="btn sm dan" onclick="return confirm({{ ('Remove ' ~ v.name ~ '? Their link stops working.')|tojson|forceescape }})">Remove</button></form>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='note') }}"><input class="notein" name="note" value="{{ v.admin_note or '' }}" placeholder="Private note (Enter to save)"></form>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% if counts.get('pending',0) %}
+    <div class="bulk"><label style="display:flex;gap:7px;align-items:center;font-size:13px;font-weight:600"><input type="checkbox" id="all"> Select all pending</label>
+      <button class="btn pri" form="bulk" onclick="return confirm('Approve the checked volunteers and email each their link?')">Approve checked</button></div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <aside class="side">
+    <div class="card panel">
+      <h3>Coverage by county</h3>
+      <div class="dim" style="font-size:12.5px">Covered · pending only · open</div>
+      <div class="cty">
+      {% for c, x in by_county.items() %}
+        <span>{{ c }}</span>
+        <span class="tr"><i style="width:{{ (100*x.covered/x.total)|round(1) }}%;background:var(--pine3)"></i><i style="width:{{ (100*x.pending/x.total)|round(1) }}%;background:#9fcdb0"></i></span>
+        <span class="n">{{ x.covered }}/{{ x.total }}</span>
+      {% endfor %}
+      </div>
+    </div>
+    <div class="card panel">
+      <h3>★ Top priority, nobody yet <span class="mono dim" style="font-size:12px">{{ open_top|length }}</span></h3>
+      <div class="dim" style="font-size:12.5px">Swing and lean House districts vote here.</div>
+      <ul class="openlist">{% for p in open_top %}<li><b>{{ p.municipality }}</b><span>{{ p.county }}</span></li>{% else %}<li>Every top-priority place has someone. 🎉</li>{% endfor %}</ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var q = document.getElementById('q'), rows = document.querySelectorAll('.vrow');
+  if (q) q.addEventListener('input', function(){
+    var t = q.value.toLowerCase().trim();
+    rows.forEach(function(r){ r.style.display = !t || r.dataset.s.indexOf(t) >= 0 ? '' : 'none'; });
+  });
+  var all = document.getElementById('all');
+  if (all) all.addEventListener('change', function(){ document.querySelectorAll('.ck').forEach(function(c){ if (c.closest('.vrow').style.display !== 'none') c.checked = all.checked; }); });
+  document.getElementById('copy').addEventListener('click', function(){
+    var u = {{ signup_url|tojson }}, b = this;
+    navigator.clipboard.writeText(u).then(function(){ b.textContent = 'Copied ✓'; setTimeout(function(){ b.textContent = 'Copy sign-up link'; }, 1600); });
+  });
+})();
+</script>
 {% endblock %}
