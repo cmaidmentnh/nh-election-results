@@ -133,6 +133,27 @@ def split_locations(raw):
     return out
 
 
+# Towns with several polling locations that still post ONE combined result, at one
+# of them, once every location's tapes are in. A volunteer there stands at the
+# posting site and photographs a town total, not a partial tape.
+#   Hudson: posts at Memorial after Alvirne's tapes arrive (Ted Trost, primary 2026).
+#   Merrimack: posts at the first location (Kevin Southwick).
+COMBINED_POSTING = {
+    "Hudson": "Hudson Memorial School",
+    "Merrimack": "Merrimack High School",
+}
+
+
+def locations_for(municipality, raw):
+    """The locations a volunteer can stand at: every polling location, or just the
+    posting site in a COMBINED_POSTING town."""
+    locs = split_locations(raw)
+    site = COMBINED_POSTING.get(municipality)
+    if site:
+        locs = [l for l in locs if l.startswith(site)] or locs[:1]
+    return locs
+
+
 def close_time(hours):
     """'7:00 AM - 8:00 PM' -> '8:00 p.m.'. Polls close at 7:00 in most towns, 7:30 or
     8:00 in about thirty (Derry, Nashua, Hudson, Londonderry...)."""
@@ -177,7 +198,7 @@ def all_places(cur):
         d['approved'] = d['approved'] or 0
         d['pending'] = d['pending'] or 0
         d['tier'] = tiers.get(d['municipality'], 3)
-        d['locations'] = split_locations(d['polling_place'])
+        d['locations'] = locations_for(d['municipality'], d['polling_place'])
         d['location'] = d['locations'][0] if len(d['locations']) == 1 else (
             f"{len(d['locations'])} polling locations" if d['locations'] else '')
         d['cap'] = MAX_VOLUNTEERS_PER_PLACE * max(1, len(d['locations']))
@@ -212,7 +233,7 @@ def assignments_for(cur, volunteer_id):
     """, (volunteer_id,))
     rows = [dict(r) for r in cur.fetchall()]
     for r in rows:
-        locs = split_locations(r['polling_place'])
+        locs = locations_for(r['municipality'], r['polling_place'])
         r['locations'] = locs
         r['multi'] = len(locs) > 1
         r['location'] = r['chosen'] or (locs[0] if len(locs) == 1 else ' or '.join(locs))
@@ -662,7 +683,7 @@ def portal_send(token):
                      JOIN polling_places p ON p.municipality = a.municipality
                     WHERE a.volunteer_id = ? AND a.municipality = ?""", (v['id'], muni))
     lr = cur.fetchone()
-    n_locs = len(split_locations(lr['polling_place'])) if lr else 1
+    n_locs = len(locations_for(muni, lr['polling_place'])) if lr else 1
     if n_locs > 1:
         # One of several locations whose tapes add up to the town total. Say so,
         # so the reader marks it a partial (machine) report and the reviewer
