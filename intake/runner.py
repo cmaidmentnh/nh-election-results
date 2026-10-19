@@ -17,7 +17,7 @@ from pathlib import Path
 from intake import apply as apply_mod
 from intake import commands
 from intake import config, parser, roster, store
-from intake.sources import email_source, gmail_source, signal_source
+from intake.sources import email_source, gmail_source, ses_source, signal_source
 
 logging.basicConfig(
     level=logging.INFO,
@@ -343,6 +343,20 @@ def email_loop(stop):
         stop.wait(config.EMAIL_POLL_SECONDS)
 
 
+def results_inbox_loop(stop):
+    """results@nhhouse.gop (SES -> S3): the dedicated results inbox."""
+    if not ses_source.available():
+        log.warning("Results inbox idle: INTAKE_S3_BUCKET is not set")
+        return
+    while not stop.is_set():
+        try:
+            for msg in ses_source.fetch_new():
+                _pool.submit(_handle, msg)
+        except Exception:
+            log.exception("results inbox poll failed")
+        stop.wait(config.S3_POLL_SECONDS)
+
+
 def signal_loop(stop):
     def on_message(msg):
         _pool.submit(_handle, msg)
@@ -517,6 +531,7 @@ def main():
         threading.Thread(target=email_loop, args=(stop,), daemon=True, name="email"),
         threading.Thread(target=signal_loop, args=(stop,), daemon=True, name="signal"),
         threading.Thread(target=web_loop, args=(stop,), daemon=True, name="web"),
+        threading.Thread(target=results_inbox_loop, args=(stop,), daemon=True, name="inbox"),
     ]
     # The stranded sweeper exists to re-read messages the parser dropped.  With
     # the parser switched off there is nothing for it to rescue, and running it

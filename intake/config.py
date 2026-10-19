@@ -80,6 +80,14 @@ IMAP_FOLDER = os.environ.get("INTAKE_IMAP_FOLDER", "INBOX")
 # mailbox is ignored outright - the service never parses unrelated mail.
 GROUP_ADDRESS = os.environ.get("INTAKE_GROUP_ADDRESS", "results@electhouserepublicans.com")
 
+# The dedicated results inbox, results@nhhouse.gop: SES receives it into S3 and
+# sources/ses_source.py reads it. Separate from Chris's own Gmail on purpose.
+RESULTS_INBOX = os.environ.get("INTAKE_RESULTS_INBOX", "results@nhhouse.gop")
+S3_BUCKET = os.environ.get("INTAKE_S3_BUCKET", "")
+S3_PREFIX = os.environ.get("INTAKE_S3_PREFIX", "results/")
+S3_REGION = os.environ.get("INTAKE_S3_REGION", "us-east-1")
+S3_POLL_SECONDS = int(os.environ.get("INTAKE_S3_POLL", "10"))
+
 # Clerks send results wherever they already have an address for us. Concord's
 # clerk mailed four wards' returns straight to chris@ on primary night and every
 # one of them was dropped, because the filter only accepted the group address.
