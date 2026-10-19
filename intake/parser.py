@@ -60,12 +60,17 @@ def _via_subscription(system, content, schema):
             output_format={"type": "json_schema", "schema": schema},
             setting_sources=[], cwd=str(config.ATTACH_DIR),
         )
+        result = None
+        # Drain the stream rather than returning from inside it: leaving the
+        # generator mid-iteration makes the SDK log a close error every read.
         async for m in query(prompt=prompt(), options=opts):
             if isinstance(m, ResultMessage):
-                if m.is_error or m.structured_output is None:
-                    raise RuntimeError(f"subscription read failed: {m.subtype} {str(m.result)[:200]}")
-                return m.structured_output
-        raise RuntimeError("subscription read returned no result")
+                result = m
+        if result is None:
+            raise RuntimeError("subscription read returned no result")
+        if result.is_error or result.structured_output is None:
+            raise RuntimeError(f"subscription read failed: {result.subtype} {str(result.result)[:200]}")
+        return result.structured_output
 
     return asyncio.run(run())
 
