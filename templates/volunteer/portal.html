@@ -74,7 +74,8 @@
   <div>
     <b>{{ p.municipality }}</b>
     {% if p.location %}<div class="meta">{{ p.location }}</div>{% endif %}
-    {% if p.polling_hours and 'applicable' not in p.polling_hours|lower %}<span class="hrs">POLLS {{ p.polling_hours|upper }}</span>{% endif %}
+    <span class="hrs">POLLS CLOSE {{ p.closes|upper }}</span>
+    {% if p.multi and not p.chosen %}<div class="meta" style="margin-top:6px">{{ p.municipality }} votes at {{ p.locations|length }} places. Reply to your confirmation email to tell us which one you'll be at.</div>{% endif %}
   </div>
 </div>
 {% else %}
@@ -94,11 +95,11 @@
   <label for="muni">Which polling place?</label>
   <select id="muni" name="municipality" required>
     <option value="">Choose…</option>
-    {% for p in places %}<option value="{{ p.municipality }}">{{ p.municipality }}</option>{% endfor %}
+    {% for p in places %}<option value="{{ p.municipality }}">{{ p.label }}</option>{% endfor %}
   </select>
   {% else %}
   <input type="hidden" id="muni" name="municipality" value="{{ places[0].municipality }}">
-  <div class="for">For <b>{{ places[0].municipality }}</b></div>
+  <div class="for">For <b>{{ places[0].label }}</b></div>
   {% endif %}
 
   <label class="pick" for="cam">

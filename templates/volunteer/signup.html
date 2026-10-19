@@ -64,6 +64,9 @@
 .chip .tx{flex:1;min-width:0}
 .chip b{display:block;font-size:16px}
 .chip span{font-size:12.5px;color:var(--ink2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .closes{font:600 11px var(--mono);color:var(--pine3);margin-top:3px;letter-spacing:.03em}
+.chip select{width:100%;margin-top:6px;padding:9px 34px 9px 10px;font-size:14px;border-radius:8px}
+.chip.multi{align-items:flex-start}
 .chip button{border:0;background:none;color:var(--red);font:600 13.5px var(--sans);cursor:pointer;padding:8px}
 .empty{border:1.5px dashed var(--hair);border-radius:12px;padding:14px;color:var(--ink3);font-size:14px;margin-top:12px;text-align:center}
 .submit{margin-top:24px}
@@ -93,7 +96,7 @@
   <div>
     <span class="kick">New Hampshire · {{ election_day }}</span>
     <h1>Be our eyes at <em>the&nbsp;polls.</em></h1>
-    <p class="lede">When the polls close, every town posts its results on the wall. We need one person at each of New Hampshire's {{ total }} polling places to snap a photo and send it in, so we know where every race stands, town by town, all night.</p>
+    <p class="lede">When the polls close, every polling place posts its results on the wall. We need one person at each of New Hampshire's {{ total }} polling places to snap a photo and send it in, so we know where every race stands, town by town, all night.</p>
     <div class="cta"><a class="btn gold" href="#signup">Cover a polling place →</a><span>About 15 minutes. One photo.</span></div>
   </div>
   <div class="meter">
@@ -107,7 +110,7 @@
 
 <div class="w">
   <div class="steps">
-    <div class="card step"><div class="n">01 · BE THERE</div><h3>Arrive by 7:00 p.m.</h3><p>Go to your polling place as the polls close. Your own town is perfect.</p><span class="time">7:00 PM</span></div>
+    <div class="card step"><div class="n">01 · BE THERE</div><h3>Be there when polls close</h3><p>7:00 p.m. in most towns, 8:00 in some. We'll show yours. Your own town is perfect.</p><span class="time">7:00 OR 8:00 PM</span></div>
     <div class="card step"><div class="n">02 · WAIT FOR THE POST</div><h3>Results go on the wall</h3><p>After counting, the moderator announces and posts the results publicly.</p><span class="time">USUALLY 8–10 PM</span></div>
     <div class="card step"><div class="n">03 · SNAP &amp; SEND</div><h3>Photo, then tap Send</h3><p>Use the personal link we email you. Every page or machine tape, one photo each.</p><span class="time">ABOUT 1 MINUTE</span></div>
   </div>
@@ -139,7 +142,7 @@
 
         <div class="sec">
           <span class="kick">Your polling place{{ 's' if max_places > 1 }}</span>
-          <label for="q" style="margin-top:12px">Where will you be at 7:00? <small>pick up to {{ max_places }}</small></label>
+          <label for="q" style="margin-top:12px">Where will you be when polls close? <small>pick up to {{ max_places }}</small></label>
           <div class="picker">
             <input type="search" id="q" placeholder="Type your town or ward" autocomplete="off" aria-controls="res">
             <div class="res" id="res" role="listbox" hidden></div>
@@ -172,6 +175,7 @@
         <h3 style="margin-bottom:10px">Good to know</h3>
         <details><summary>Do I need any experience?</summary><p>No. If you can take a photo with your phone, you can do this. We email you simple instructions before Election Day.</p></details>
         <details><summary>What if my town has several voting machines?</summary><p>Photograph every tape or results sheet that's posted, one photo each, and send them all together. We add them up.</p></details>
+        <details><summary>My town votes in more than one place.</summary><p>Towns like Goffstown, Salem, Hudson, Derry and Merrimack have several polling locations. Pick your town, then choose the location you'll be at. Each location needs its own volunteer.</p></details>
         <details><summary>What if results come in late?</summary><p>Small towns often post within an hour. Bigger towns and hand-count towns can take longer. Send them whenever they're posted.</p></details>
         <details><summary>Can I cover more than one place?</summary><p>Yes, up to {{ max_places }}, if you can get to both before results are posted.</p></details>
         <details><summary>Can I bring a friend?</summary><p>Please do, and have them sign up too. If one of you can't make it, the other can still send results.</p></details>
@@ -184,16 +188,17 @@
 <script>
 (function(){
   var META = {{ places|tojson }};
-  var MAX = {{ max_places }}, CAP = {{ max_per_place }};
+  var MAX = {{ max_places }};
   var byName = {}; META.forEach(function(p){ byName[p.municipality] = p; });
   var chosen = {{ (chosen or [])|tojson }}.filter(function(m){ return byName[m]; });
+  var locs = {};
   var q = document.getElementById('q'), res = document.getElementById('res'),
       box = document.getElementById('chosen'), hid = document.getElementById('hidden'), empty = document.getElementById('empty');
 
   function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
   function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
   function badges(p){
-    var n = p.approved + p.pending, out = '';
+    var n = p.approved + p.pending, out = '', CAP = p.cap;
     if (p.tier===1) out += '<span class="tag t1">★ Top priority</span>';
     else if (p.tier===2) out += '<span class="tag t2">Priority</span>';
     out += n===0 ? '<span class="tag open">Open</span>' : (n>=CAP ? '<span class="tag cov">Full</span>' : '<span class="tag cov">'+n+' signed up</span>');
@@ -201,11 +206,17 @@
   }
   function render(){
     box.innerHTML = chosen.map(function(m, i){
-      var p = byName[m];
-      return '<div class="chip"><div class="pin">'+(i+1)+'</div><div class="tx"><b>'+esc(m)+'</b><span>'+esc(p.location||p.county+' County')+'</span></div>'+
+      var p = byName[m], multi = p.locations.length > 1;
+      var sel = multi ? '<select class="locsel" data-loc="'+esc(m)+'" aria-label="Which polling location in '+esc(m)+'">'+
+          '<option value="">Which location? ('+p.locations.length+' in '+esc(m)+')</option>'+
+          p.locations.map(function(l){ return '<option value="'+esc(l)+'"'+(locs[m]===l?' selected':'')+'>'+esc(l.replace(/\s+\d.*$/, ''))+'</option>'; }).join('')+
+          '</select>' : '';
+      return '<div class="chip'+(multi?' multi':'')+'"><div class="pin">'+(i+1)+'</div><div class="tx"><b>'+esc(m)+'</b>'+
+             (multi ? sel : '<span>'+esc(p.location||p.county+' County')+'</span>')+
+             '<span class="closes">Polls close '+esc(p.closes)+'</span></div>'+
              '<button type="button" data-rm="'+esc(m)+'">Remove</button></div>';
     }).join('');
-    hid.innerHTML = chosen.map(function(m){ return '<input type="hidden" name="places" value="'+esc(m)+'">'; }).join('');
+    hid.innerHTML = chosen.map(function(m){ return '<input type="hidden" name="places" value="'+esc(m)+'"><input type="hidden" name="place_locs" value="'+esc(locs[m]||'')+'">'; }).join('');
     empty.hidden = chosen.length > 0;
     q.disabled = chosen.length >= MAX;
     q.placeholder = chosen.length >= MAX ? 'That\'s the max of '+MAX : (chosen.length ? 'Add a second place (optional)' : 'Type your town or ward');
@@ -215,11 +226,12 @@
     if (!t){ res.hidden = true; return; }
     var hits = META.filter(function(p){
       var n = norm(p.municipality);
-      return n.indexOf(t) === 0 || n.indexOf(' '+t) >= 0 || norm(p.county).indexOf(t) === 0;
+      return n.indexOf(t) === 0 || n.indexOf(' '+t) >= 0 || norm(p.county).indexOf(t) === 0 ||
+             (t.length > 3 && p.locations.some(function(l){ return norm(l).indexOf(t) >= 0; }));
     }).sort(function(a,b){ return (norm(a.municipality).indexOf(t)===0?0:1)-(norm(b.municipality).indexOf(t)===0?0:1) || a.tier-b.tier; }).slice(0, 40);
     if (!hits.length){ res.innerHTML = '<div style="padding:14px" class="mut small">No polling place matches “'+esc(q.value)+'”.</div>'; res.hidden = false; return; }
     res.innerHTML = hits.map(function(p){
-      var full = (p.approved + p.pending) >= CAP, picked = chosen.indexOf(p.municipality) >= 0;
+      var full = (p.approved + p.pending) >= p.cap, picked = chosen.indexOf(p.municipality) >= 0;
       return '<button type="button" role="option" data-add="'+esc(p.municipality)+'"'+(full||picked?' disabled':'')+'>'+
              '<span><span class="nm">'+esc(p.municipality)+'</span><span class="loc">'+esc(p.location || (p.county+' County'))+'</span></span>'+
              '<span class="tags">'+badges(p)+'</span></button>';
@@ -238,6 +250,10 @@
     if (chosen.indexOf(m) < 0 && chosen.length < MAX) chosen.push(m);
     q.value = ''; res.hidden = true; render();
   });
+  box.addEventListener('change', function(e){
+    var s = e.target.closest('select.locsel'); if (!s) return;
+    locs[s.getAttribute('data-loc')] = s.value; render();
+  });
   box.addEventListener('click', function(e){
     var b = e.target.closest('button[data-rm]'); if (!b) return;
     var m = b.getAttribute('data-rm'); chosen = chosen.filter(function(x){ return x !== m; }); render();
@@ -245,6 +261,8 @@
   document.addEventListener('click', function(e){ if (!e.target.closest('.picker')) res.hidden = true; });
   document.getElementById('f').addEventListener('submit', function(e){
     if (!chosen.length){ e.preventDefault(); empty.textContent = 'Pick the polling place you will cover'; empty.style.borderColor = 'var(--red)'; empty.style.color = 'var(--red)'; q.focus(); return; }
+    var miss = chosen.filter(function(m){ return byName[m].locations.length > 1 && !locs[m]; });
+    if (miss.length){ e.preventDefault(); var s = box.querySelector('select.locsel'); if (s){ s.focus(); s.style.borderColor = 'var(--red)'; } return; }
     var g = document.getElementById('go'); g.disabled = true; g.textContent = 'Signing you up…';
   });
   render();

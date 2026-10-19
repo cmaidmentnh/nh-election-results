@@ -115,7 +115,31 @@ def get_db():
 
 def ensure_schema(conn):
     conn.executescript((BASE_DIR / "migrations" / "005_volunteers.sql").read_text())
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(volunteer_assignments)")}
+    if "location" not in cols:
+        # Towns like Goffstown vote at more than one place but report one total;
+        # this is which of their locations the volunteer will stand at.
+        conn.execute("ALTER TABLE volunteer_assignments ADD COLUMN location TEXT")
     conn.commit()
+
+
+def split_locations(raw):
+    """'GOFFSTOWN HIGH SCHOOL ... | BARTLETT ELEMENTARY ...' -> ['Goffstown High School ...', ...]."""
+    out = []
+    for part in (raw or "").split("|"):
+        loc = pretty_location(part)
+        if loc and loc not in out:
+            out.append(loc)
+    return out
+
+
+def close_time(hours):
+    """'7:00 AM - 8:00 PM' -> '8:00 p.m.'. Polls close at 7:00 in most towns, 7:30 or
+    8:00 in about thirty (Derry, Nashua, Hudson, Londonderry...)."""
+    m = re.search(r"-\s*0?(\d{1,2})(?::(\d{2}))?\s*([AP])\.?\s*M", (hours or "").upper())
+    if not m:
+        return "7:00 p.m."
+    return f"{int(m.group(1))}:{m.group(2) or '00'} {m.group(3).lower()}.m."
 
 
 def place_tiers(cur):
@@ -153,7 +177,11 @@ def all_places(cur):
         d['approved'] = d['approved'] or 0
         d['pending'] = d['pending'] or 0
         d['tier'] = tiers.get(d['municipality'], 3)
-        d['location'] = pretty_location(d['polling_place'])
+        d['locations'] = split_locations(d['polling_place'])
+        d['location'] = d['locations'][0] if len(d['locations']) == 1 else (
+            f"{len(d['locations'])} polling locations" if d['locations'] else '')
+        d['cap'] = MAX_VOLUNTEERS_PER_PLACE * max(1, len(d['locations']))
+        d['closes'] = close_time(d['polling_hours'])
         out.append(d)
     return out
 
@@ -177,14 +205,19 @@ def volunteer_by_token(cur, token):
 
 def assignments_for(cur, volunteer_id):
     cur.execute("""
-        SELECT a.municipality, p.county, p.polling_place, p.polling_hours
+        SELECT a.municipality, a.location AS chosen, p.county, p.polling_place, p.polling_hours
           FROM volunteer_assignments a
           LEFT JOIN polling_places p ON p.municipality = a.municipality
          WHERE a.volunteer_id = ? ORDER BY a.id
     """, (volunteer_id,))
     rows = [dict(r) for r in cur.fetchall()]
     for r in rows:
-        r['location'] = pretty_location(r['polling_place'])
+        locs = split_locations(r['polling_place'])
+        r['locations'] = locs
+        r['multi'] = len(locs) > 1
+        r['location'] = r['chosen'] or (locs[0] if len(locs) == 1 else ' or '.join(locs))
+        r['closes'] = close_time(r['polling_hours'])
+        r['label'] = r['municipality'] + (f" ({r['chosen']})" if r['chosen'] and r['multi'] else '')
     return rows
 
 
@@ -214,7 +247,7 @@ def portal_url(token):
 
 
 def _places_text(places):
-    return ", ".join(p['municipality'] for p in places) or "(none yet)"
+    return ", ".join(p.get('label') or p['municipality'] for p in places) or "(none yet)"
 
 
 def _wrap_html(inner):
@@ -230,7 +263,7 @@ def _button(href, label):
 
 def email_signup_received(v, places):
     first = v['name'].split()[0]
-    places_list = "".join(f"<li>{p['municipality']}</li>" for p in places)
+    places_list = "".join(f"<li>{p['label']}</li>" for p in places)
     html = _wrap_html(f"""
 <p>Hi {first},</p>
 <p>Thank you for signing up to report election results on {ELECTION_DAY}. You asked to cover:</p>
@@ -253,7 +286,7 @@ def email_approved(v, places):
     rows = "".join(
         f"<li><b>{p['municipality']}</b>"
         + (f"<br><span style='color:#555'>{p['location']}</span>" if p.get('location') else "")
-        + (f"<br><span style='color:#555'>Polls open {p['polling_hours']}</span>" if p.get('polling_hours') and 'applicable' not in p['polling_hours'].lower() else "")
+        + (f"<br><span style='color:#555'>Polls close at <b>{p['closes']}</b></span>" if p.get('closes') else "")
         + "</li>" for p in places)
     html = _wrap_html(f"""
 <p>Hi {first},</p>
@@ -275,7 +308,7 @@ link on your phone, take a photo of the posted results, and tap Send.</p>
 
 
 INSTRUCTIONS_STEPS = [
-    "Polls close at 7:00 p.m. Plan to be at your polling place by 7:00 so you are there when counting finishes.",
+    "Be at your polling place by the time polls close (7:00 p.m. in most towns; 7:30 or 8:00 in some - yours is shown above) so you are there when counting finishes.",
     "Stay outside the guardrail and do not interfere with the count. You are there to watch, not to help.",
     "When counting is done, the moderator announces the results and posts them, usually on a wall or the door. That is public.",
     "Take a clear photo of every page of the posted results, close up, with the whole sheet in the frame. One photo per page.",
@@ -290,9 +323,10 @@ def email_instructions(v, places, reminder=False):
     url = portal_url(v['token'])
     steps_html = "".join(f"<li style='margin-bottom:8px'>{s}</li>" for s in INSTRUCTIONS_STEPS)
     steps_text = "\n".join(f"{i}. {s}" for i, s in enumerate(INSTRUCTIONS_STEPS, 1))
-    lead = (f"Today is Election Day. Thank you for covering {_places_text(places)} tonight."
+    closes = "; ".join(f"{p['municipality']} polls close at {p['closes']}" for p in places)
+    lead = (f"Today is Election Day. Thank you for covering {_places_text(places)} tonight. {closes}."
             if reminder else
-            f"Here is everything you need for election night, {ELECTION_DAY}. You are covering {_places_text(places)}.")
+            f"Here is everything you need for election night, {ELECTION_DAY}. You are covering {_places_text(places)}. {closes}.")
     html = _wrap_html(f"""
 <p>Hi {first},</p>
 <p>{lead}</p>
@@ -374,6 +408,7 @@ def signup_post():
     f = request.form
     form = {k: (f.get(k) or '').strip() for k in ('name', 'email', 'phone', 'home_town', 'affiliation')}
     chosen = [m.strip() for m in f.getlist('places') if m.strip()]
+    chosen_locs = dict(zip([m.strip() for m in f.getlist('places')], [l.strip() for l in f.getlist('place_locs')]))
 
     def fail(msg, code=400):
         conn = get_db()
@@ -443,11 +478,14 @@ def signup_post():
         if len(have) >= MAX_PLACES_PER_VOLUNTEER:
             break
         p = places[m]
-        if p['approved'] + p['pending'] >= MAX_VOLUNTEERS_PER_PLACE:
+        if p['approved'] + p['pending'] >= p['cap']:
             full.append(m)
             continue
-        cur.execute("INSERT OR IGNORE INTO volunteer_assignments (volunteer_id, municipality) VALUES (?,?)",
-                    (vid, m))
+        loc = chosen_locs.get(m) or None
+        if loc not in p['locations']:
+            loc = None
+        cur.execute("INSERT OR IGNORE INTO volunteer_assignments (volunteer_id, municipality, location) VALUES (?,?,?)",
+                    (vid, m, loc))
         have.append(m)
     conn.commit()
 
@@ -620,6 +658,18 @@ def portal_send(token):
         flash("Add a photo of the results, or type the numbers, before sending.", 'error')
         return redirect(url_for('vol.portal', token=token))
 
+    cur.execute("""SELECT a.location, p.polling_place FROM volunteer_assignments a
+                     JOIN polling_places p ON p.municipality = a.municipality
+                    WHERE a.volunteer_id = ? AND a.municipality = ?""", (v['id'], muni))
+    lr = cur.fetchone()
+    n_locs = len(split_locations(lr['polling_place'])) if lr else 1
+    if n_locs > 1:
+        # One of several locations whose tapes add up to the town total. Say so,
+        # so the reader marks it a partial (machine) report and the reviewer
+        # knows to Add it rather than Replace.
+        where = lr['location'] or 'one of its locations'
+        note = (f"[Volunteer report from {where} - one of {muni}'s {n_locs} polling locations. "
+                f"These tapes are part of the town total, not the whole town.]\n" + note).strip()
     now = datetime.now().isoformat(timespec='seconds')
     cur.execute("""INSERT INTO volunteer_submissions (volunteer_id, municipality, note, attachments)
                    VALUES (?,?,?,?)""", (v['id'], muni, note, json.dumps(paths)))
@@ -643,7 +693,8 @@ def portal_send(token):
 # ── Admin ────────────────────────────────────────────────────────────────────
 
 def _volunteer_rows(cur, status=None):
-    sql = """SELECT v.*, GROUP_CONCAT(a.municipality, '|') AS places,
+    sql = """SELECT v.*, GROUP_CONCAT(a.municipality || CASE WHEN a.location IS NOT NULL THEN ' (' || a.location || ')' ELSE '' END, '|') AS places,
+                    GROUP_CONCAT(a.municipality, '|') AS place_keys,
                     (SELECT COUNT(*) FROM volunteer_submissions s WHERE s.volunteer_id = v.id) AS n_reports
                FROM volunteers v
                LEFT JOIN volunteer_assignments a ON a.volunteer_id = v.id"""
@@ -657,6 +708,7 @@ def _volunteer_rows(cur, status=None):
     for r in cur.fetchall():
         d = dict(r)
         d['place_list'] = [p for p in (d['places'] or '').split('|') if p]
+        d['place_keys'] = [p for p in (d['place_keys'] or '').split('|') if p]
         rows.append(d)
     return rows
 
@@ -832,7 +884,7 @@ def admin_board():
                          WHERE r.election_id IN ({q}) GROUP BY res.municipality""", eids)
         reported = {r['municipality']: r['n'] for r in cur.fetchall()}
 
-    cur.execute("""SELECT a.municipality, v.id, v.name, v.phone, v.email, v.status
+    cur.execute("""SELECT a.municipality, a.location, v.id, v.name, v.phone, v.email, v.status
                      FROM volunteer_assignments a JOIN volunteers v ON v.id = a.volunteer_id
                     WHERE v.status IN ('approved','pending') ORDER BY v.status, v.name""")
     vols = {}

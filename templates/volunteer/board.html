@@ -73,7 +73,7 @@ tr.nobody td:first-child{box-shadow:inset 3px 0 0 var(--red)}
     <tr class="{{ cls }}" data-s="{{ (p.municipality ~ ' ' ~ (p.county or '') ~ ' ' ~ p.vols|map(attribute='name')|join(' '))|lower }}">
       <td><div class="pn">{{ p.municipality }}</div><div class="cn">{{ p.county }}</div></td>
       <td class="hide-sm">{% if p.tier == 1 %}<span class="pill t1">★ Top</span>{% elif p.tier == 2 %}<span class="pill t2">Priority</span>{% endif %}</td>
-      <td>{% for v in p.vols %}<div class="vol">{{ v.name }}{% if v.status != 'approved' %} <span class="dim">(pending)</span>{% endif %}{% if v.phone %} · <a href="tel:{{ v.phone }}">{{ v.phone }}</a>{% endif %}</div>{% else %}<span class="pill open">Nobody</span>{% endfor %}</td>
+      <td>{% for v in p.vols %}<div class="vol">{{ v.name }}{% if v.location %} <span class="dim">@ {{ v.location.split(' ')[:3]|join(' ') }}</span>{% endif %}{% if v.status != 'approved' %} <span class="dim">(pending)</span>{% endif %}{% if v.phone %} · <a href="tel:{{ v.phone }}">{{ v.phone }}</a>{% endif %}</div>{% else %}<span class="pill open">Nobody</span>{% endfor %}</td>
       <td class="hide-sm">{% if p.sub %}<span class="mono">{{ p.sub.n }}</span> <span class="dim">· last {{ p.sub.last[11:16] }}</span>{% else %}<span class="dim">—</span>{% endif %}</td>
       <td>{% if p.races_in %}<span class="pill in">✓ {{ p.races_in }} races</span>{% elif p.approved %}<span class="pill pending">Waiting</span>{% else %}<span class="dim">—</span>{% endif %}</td>
     </tr>

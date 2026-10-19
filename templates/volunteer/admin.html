@@ -122,7 +122,7 @@
       </div>
       <div class="c3">
         <div class="places">
-          {% for m in v.place_list %}<span class="place">{{ m }}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='removeplace') }}"><input type="hidden" name="municipality" value="{{ m }}"><button title="Remove {{ m }}" onclick="return confirm({{ ('Remove ' ~ m ~ ' from ' ~ v.name ~ '?')|tojson|forceescape }})">×</button></form></span>{% else %}<span class="dim">No polling place</span>{% endfor %}
+          {% for m in v.place_list %}{% set key = v.place_keys[loop.index0] %}<span class="place">{{ m }}<form method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='removeplace') }}"><input type="hidden" name="municipality" value="{{ key }}"><button title="Remove {{ m }}" onclick="return confirm({{ ('Remove ' ~ m ~ ' from ' ~ v.name ~ '?')|tojson|forceescape }})">×</button></form></span>{% else %}<span class="dim">No polling place</span>{% endfor %}
         </div>
         <form class="addp" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='addplace') }}">
           <input name="municipality" list="allplaces" placeholder="Add a place…" aria-label="Add a polling place"><button class="btn sm">Add</button>
