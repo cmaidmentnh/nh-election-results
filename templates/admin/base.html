@@ -156,6 +156,10 @@
             <a href="{{ url_for('admin.elections') }}">Elections</a>
             <a href="{{ url_for('entry.index') }}">Enter Results</a>
             {% if current_user.is_admin() %}
+            <a href="{{ url_for('vol.admin_list') }}">Volunteers</a>
+            <a href="{{ url_for('vol.admin_board') }}">Election Night</a>
+            {% endif %}
+            {% if current_user.is_admin() %}
             <a href="{{ url_for('admin.users') }}">Users</a>
             {% endif %}
             <a href="{{ url_for('admin.results_overview') }}">Audit Log</a>

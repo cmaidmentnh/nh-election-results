@@ -1,0 +1,10 @@
+{% extends "volunteer/base.html" %}
+{% block title %}Thank You{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Thank you for signing up</h1>
+  <p class="lead">Check your email for a confirmation. Once we confirm your polling place, we'll email you a personal link. That's how you'll send the results on election night.</p>
+  {% if full %}<div class="err">{{ full|join(', ') }} already had enough volunteers, so {{ 'it was' if full|length == 1 else 'they were' }} not added. Your other pick was saved.</div>{% endif %}
+  <p>Know someone else who could cover a polling place? Send them to <a href="/volunteer">elections.nhhouse.gop/volunteer</a>.</p>
+</div>
+{% endblock %}

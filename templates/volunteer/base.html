@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="{% block robots %}noindex, nofollow{% endblock %}">
+<title>{% block title %}Election Night Volunteers{% endblock %}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='84'>🗳</text></svg>">
+<style>
+:root{--g:#1f5a32;--g2:#174426;--gl:#e8f1ea;--ink:#1d2a22;--mut:#5b6b60;--line:#d9e2db;--gold:#b08d3c;--red:#b3261e;--bg:#f6f8f6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--g)}
+.top{background:var(--g);color:#fff}
+.top .w{display:flex;align-items:center;justify-content:space-between;padding:14px 16px}
+.top b{font-size:15px;letter-spacing:.02em}
+.top span{font-size:13px;opacity:.85}
+.w{max-width:760px;margin:0 auto;padding:0 16px}
+.hero{padding:28px 0 8px}
+h1{font-size:28px;line-height:1.2;margin:0 0 10px}
+h2{font-size:19px;margin:28px 0 10px}
+p{margin:0 0 12px}
+.lead{font-size:17px;color:#33433a}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin:16px 0}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+label small{font-weight:400;color:var(--mut)}
+input[type=text],input[type=email],input[type=tel],input[type=search],textarea,select{width:100%;padding:12px;border:1px solid #bfcbc2;border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--g);outline-offset:1px;border-color:var(--g)}
+textarea{min-height:110px;resize:vertical}
+.btn{display:inline-block;background:var(--g);color:#fff;border:0;border-radius:8px;padding:14px 20px;font:600 16px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none;text-align:center}
+.btn:hover{background:var(--g2)}
+.btn.block{display:block;width:100%}
+.btn.sec{background:#fff;color:var(--g);border:1px solid var(--g)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.err{background:#fdecea;border:1px solid #f3b8b3;color:#7a1610;border-radius:8px;padding:12px 14px;margin:14px 0}
+.ok{background:var(--gl);border:1px solid #b9d5c0;color:#14381f;border-radius:8px;padding:12px 14px;margin:14px 0}
+.mut{color:var(--mut)}
+.small{font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;vertical-align:middle}
+.tag.t1{background:#fbeed2;color:#7a5a12}
+.tag.t2{background:#eef3fb;color:#24456e}
+.tag.open{background:#fdecea;color:#8a1c14}
+.tag.cov{background:var(--gl);color:#14381f}
+.foot{padding:30px 0 40px;font-size:12px;color:var(--mut)}
+.hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+{% block style %}{% endblock %}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="top"><div class="w"><b>ELECTION NIGHT {{ election_day.split(',')[-1].strip() if election_day else '' }}</b><span>Results Team</span></div></div>
+<div class="w">
+{% block content %}{% endblock %}
+<div class="foot">Committee to Elect House Republicans · Questions: <a href="mailto:chris@electhouserepublicans.com">chris@electhouserepublicans.com</a></div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

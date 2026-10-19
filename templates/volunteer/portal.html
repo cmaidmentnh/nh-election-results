@@ -1,0 +1,192 @@
+{% extends "volunteer/base.html" %}
+{% block title %}My Election Night Page{% endblock %}
+{% block style %}
+.place{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eef2ef}
+.place:last-child{border-bottom:0}
+.place b{display:block}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
+.th{position:relative;border-radius:8px;overflow:hidden;background:#e9eee9;aspect-ratio:3/4}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .st{position:absolute;left:0;right:0;bottom:0;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px}
+.th .st.ok{background:rgba(31,90,50,.85)}
+.th .st.bad{background:rgba(179,38,30,.9)}
+.th .x{position:absolute;top:4px;right:4px;border:0;border-radius:999px;width:26px;height:26px;background:rgba(0,0,0,.6);color:#fff;font-size:15px;cursor:pointer}
+.pick{display:block;border:2px dashed #9fb7a6;border-radius:10px;padding:22px 12px;text-align:center;background:#fbfdfb;cursor:pointer;font-weight:600;color:var(--g)}
+.pick small{display:block;font-weight:400;color:var(--mut);margin-top:4px}
+.pick input{display:none}
+.sub{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #eef2ef;font-size:14px}
+.sub:last-child{border-bottom:0}
+.steps{padding-left:20px;margin:0}
+.steps li{margin-bottom:8px}
+details summary{cursor:pointer;font-weight:600}
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Hi {{ v.name.split()[0] }}</h1>
+  {% if v.status != 'approved' %}
+    <p class="lead">Thanks for signing up. We're still confirming your polling place. You'll get an email as soon as you're confirmed, and this page will let you send results.</p>
+  {% else %}
+    <p class="lead">This is your page for election night. When the results are posted at your polling place, take a photo and send it here.</p>
+  {% endif %}
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, m in msgs %}<div class="{{ 'err' if cat == 'error' else 'ok' }}">{{ m }}</div>{% endfor %}
+{% endwith %}
+{% if sent %}<div class="ok"><b>Got it, thank you!</b> Your results were received. If you have more pages or a correction, send them the same way.</div>{% endif %}
+
+<div class="card">
+  <b>Your polling place{{ 's' if places|length != 1 }}</b>
+  {% for p in places %}
+  <div class="place"><div>
+    <b>{{ p.municipality }}</b>
+    {% if p.location %}<span class="small mut">{{ p.location }}</span><br>{% endif %}
+    {% if p.polling_hours and 'applicable' not in p.polling_hours|lower %}<span class="small mut">Polls open {{ p.polling_hours }}</span>{% endif %}
+  </div></div>
+  {% else %}
+  <p class="mut small" style="margin:8px 0 0">No polling place yet. Reply to your confirmation email and we'll set one up.</p>
+  {% endfor %}
+</div>
+
+{% if v.status == 'approved' and places %}
+<form class="card" id="sendf" method="post" action="{{ url_for('vol.portal_send', token=v.token) }}">
+  <b style="font-size:18px">Send results</b>
+  {% if places|length > 1 %}
+  <label for="muni">Which polling place?</label>
+  <select id="muni" name="municipality" required>
+    <option value="">Choose…</option>
+    {% for p in places %}<option value="{{ p.municipality }}">{{ p.municipality }}</option>{% endfor %}
+  </select>
+  {% else %}
+  <input type="hidden" id="muni" name="municipality" value="{{ places[0].municipality }}">
+  <p class="small mut" style="margin:6px 0 0">For <b>{{ places[0].municipality }}</b></p>
+  {% endif %}
+
+  <label>Photos of the posted results <small>one per page, up to {{ max_photos }}</small></label>
+  <label class="pick" for="cam">📷 Take or choose a photo<small>Close up, whole sheet in the frame</small><input type="file" id="cam" accept="image/*,application/pdf" multiple></label>
+  <div class="thumbs" id="thumbs"></div>
+
+  <label for="note">Or type the results <small>optional: anything else we should know</small></label>
+  <textarea id="note" name="note" maxlength="4000" placeholder="e.g. State Rep: Smith 812, Jones 640…"></textarea>
+
+  <input type="hidden" name="upload_ids" id="upload_ids">
+  <p style="margin-top:16px"><button class="btn block" type="submit" id="send">Send results</button></p>
+  <p class="small mut" id="hint" style="margin:0">If this page gives you trouble, email the photos to <a href="mailto:results@electhouserepublicans.com">results@electhouserepublicans.com</a> with your town in the subject.</p>
+</form>
+{% endif %}
+
+{% if subs %}
+<div class="card">
+  <b>What you've sent</b>
+  {% for s in subs %}
+  <div class="sub"><span>{{ s.municipality }} · {{ s.n_photos }} photo{{ 's' if s.n_photos != 1 }}{% if s.note %} + note{% endif %}<br><span class="small mut">{{ s.created_at }}</span></span><span class="small"><b>{{ s.state|capitalize }}</b></span></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <details {% if v.status == 'approved' and not subs %}open{% endif %}>
+    <summary>Election night, step by step</summary>
+    <ol class="steps" style="margin-top:10px">{% for s in steps %}<li>{{ s }}</li>{% endfor %}</ol>
+  </details>
+</div>
+<p class="small mut">This page is just for you. Please don't share the link.</p>
+{% endblock %}
+{% block scripts %}
+{% if v.status == 'approved' and places %}
+<script>
+(function(){
+  var UP = {{ url_for('vol.portal_photo', token=v.token)|tojson }};
+  var MAXN = {{ max_photos }};
+  var cam = document.getElementById('cam'), thumbs = document.getElementById('thumbs'),
+      muni = document.getElementById('muni'), send = document.getElementById('send'),
+      idsEl = document.getElementById('upload_ids'), form = document.getElementById('sendf');
+  var items = []; // {id, state, el}
+  var lockedMuni = null;
+
+  function pending(){ return items.some(function(i){ return i.state === 'up'; }); }
+  function refresh(){
+    idsEl.value = items.filter(function(i){ return i.state === 'ok'; }).map(function(i){ return i.id; }).join(',');
+    send.disabled = pending();
+    send.textContent = pending() ? 'Uploading photos…' : 'Send results';
+  }
+
+  // Shrink phone photos before upload: faster on a weak signal, and still sharp
+  // enough to read a results sheet. Falls back to the original file.
+  function shrink(file){
+    return new Promise(function(resolve){
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) { resolve(file); return; }
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function(){
+        var max = 2200, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.round(w*s); c.height = Math.round(h*s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        var q = 0.85;
+        (function attempt(){
+          c.toBlob(function(b){
+            if (!b) { resolve(file); return; }
+            if (b.size > 900*1024 && q > 0.5) { q -= 0.1; attempt(); return; }
+            resolve(new File([b], 'photo.jpg', {type:'image/jpeg'}));
+          }, 'image/jpeg', q);
+        })();
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
+  function upload(item, file, tries){
+    var fd = new FormData(); fd.append('municipality', muni.value); fd.append('photo', file);
+    var xhr = new XMLHttpRequest(); xhr.open('POST', UP); xhr.timeout = 90000;
+    xhr.onload = function(){
+      var ok = false, data = {};
+      try { data = JSON.parse(xhr.responseText); ok = xhr.status === 200 && data.ok; } catch(e){}
+      if (ok) { item.id = data.id; item.state = 'ok'; setSt(item, 'Ready', 'ok'); refresh(); return; }
+      if (xhr.status === 413) { item.state = 'bad'; setSt(item, 'Too large - email it instead', 'bad'); refresh(); return; }
+      if (xhr.status >= 500 && tries < 3) { setTimeout(function(){ upload(item, file, tries+1); }, 2000*(tries+1)); return; }
+      item.state = 'bad'; setSt(item, (data && data.error) || 'Failed - tap ✕ and retry', 'bad'); refresh();
+    };
+    var retry = function(){
+      if (tries < 4) { setSt(item, 'Retrying…', ''); setTimeout(function(){ upload(item, file, tries+1); }, 2500*(tries+1)); }
+      else { item.state = 'bad'; setSt(item, 'No signal - tap ✕ and retry', 'bad'); refresh(); }
+    };
+    xhr.onerror = retry; xhr.ontimeout = retry;
+    xhr.send(fd);
+  }
+  function setSt(item, text, cls){ var s = item.el.querySelector('.st'); s.textContent = text; s.className = 'st ' + cls; }
+
+  cam.addEventListener('change', function(){
+    if (!muni.value) { alert('Choose your polling place first.'); cam.value=''; return; }
+    if (lockedMuni && lockedMuni !== muni.value) { alert('Send these photos first, then do the other polling place.'); cam.value=''; return; }
+    lockedMuni = muni.value; if (muni.tagName === 'SELECT') muni.setAttribute('disabled-look','1');
+    Array.prototype.slice.call(cam.files).forEach(function(f){
+      if (items.filter(function(i){ return i.state !== 'gone'; }).length >= MAXN) return;
+      var el = document.createElement('div'); el.className = 'th';
+      el.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#555">' + (/pdf/i.test(f.type)?'PDF':'…') + '</div><span class="st">Preparing…</span><button type="button" class="x" aria-label="Remove">✕</button>';
+      thumbs.appendChild(el);
+      var item = {id:null, state:'up', el:el};
+      items.push(item); refresh();
+      el.querySelector('.x').onclick = function(){ item.state = 'gone'; el.remove(); refresh(); };
+      if (/^image\//.test(f.type)) { var u = URL.createObjectURL(f); el.firstChild.outerHTML = '<img alt="" src="'+u+'">'; }
+      shrink(f).then(function(file){ setSt(item, 'Uploading…', ''); upload(item, file, 0); });
+    });
+    cam.value = '';
+  });
+  if (muni.tagName === 'SELECT') muni.addEventListener('change', function(){
+    if (lockedMuni && muni.value !== lockedMuni && items.some(function(i){ return i.state==='ok'||i.state==='up'; })) {
+      alert('These photos are for ' + lockedMuni + '. Send them first, then do the other polling place.'); muni.value = lockedMuni;
+    }
+  });
+  form.addEventListener('submit', function(e){
+    if (pending()) { e.preventDefault(); return; }
+    var hasPhoto = items.some(function(i){ return i.state === 'ok'; });
+    var note = document.getElementById('note').value;
+    if (!muni.value) { e.preventDefault(); alert('Choose your polling place.'); return; }
+    if (!hasPhoto && !/\d/.test(note)) { e.preventDefault(); alert('Add a photo of the results, or type the numbers.'); return; }
+    send.disabled = true; send.textContent = 'Sending…';
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

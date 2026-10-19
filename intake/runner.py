@@ -402,6 +402,47 @@ def replay(message_id):
     conn.close()
 
 
+def web_loop(stop):
+    """Pick up reports sent from volunteers' personal pages (volunteers.py).
+
+    The web app stores each one as an intake_messages row with status 'web'.
+    Claim it (status -> 'claimed', so a second pass cannot take it too) and
+    re-run it through process() via replay(), exactly like a stored email.
+    """
+    while not stop.is_set():
+        stop.wait(config.WEB_POLL_SECONDS)
+        if stop.is_set():
+            return
+        try:
+            conn = store.connect()
+            try:
+                rows = conn.execute(
+                    "SELECT id FROM intake_messages WHERE source = 'web' AND status = 'web' "
+                    "ORDER BY id LIMIT 20").fetchall()
+                claimed = []
+                for row in rows:
+                    cur = conn.execute(
+                        "UPDATE intake_messages SET status = 'claimed' WHERE id = ? AND status = 'web'",
+                        (row["id"],))
+                    if cur.rowcount:
+                        claimed.append(row["id"])
+                conn.commit()
+            finally:
+                conn.close()
+            for mid in claimed:
+                log.info("volunteer web report %s claimed", mid)
+                _pool.submit(_replay_safely, mid)
+        except Exception:
+            log.exception("web loop failed")
+
+
+def _replay_safely(message_id):
+    try:
+        replay(message_id)
+    except Exception:
+        log.exception("could not process web report %s", message_id)
+
+
 def stranded_loop(stop):
     """Re-parse messages left at 'new' or 'error'.
 
@@ -429,7 +470,7 @@ def stranded_loop(stop):
                     """SELECT id FROM intake_messages
                         WHERE (status IN ('new','error')
                                    AND created_at < datetime('now', ?))
-                           OR (status = 'splitting'
+                           OR (status IN ('splitting','claimed')
                                    AND created_at < datetime('now', ?))
                         ORDER BY id LIMIT 20""",
                     (f"-{config.STRANDED_AFTER_SECONDS} seconds",
@@ -475,6 +516,7 @@ def main():
     threads = [
         threading.Thread(target=email_loop, args=(stop,), daemon=True, name="email"),
         threading.Thread(target=signal_loop, args=(stop,), daemon=True, name="signal"),
+        threading.Thread(target=web_loop, args=(stop,), daemon=True, name="web"),
     ]
     # The stranded sweeper exists to re-read messages the parser dropped.  With
     # the parser switched off there is nothing for it to rescue, and running it

@@ -152,6 +152,8 @@ MAX_READS = int(os.environ.get("INTAKE_MAX_READS", "5"))
 # before it counts as stranded rather than simply still being worked on.
 STRANDED_SWEEP_SECONDS = int(os.environ.get("INTAKE_STRANDED_SWEEP", "60"))
 STRANDED_AFTER_SECONDS = int(os.environ.get("INTAKE_STRANDED_AFTER", "300"))
+# Volunteer reports from the web page are picked up this often.
+WEB_POLL_SECONDS = int(os.environ.get("INTAKE_WEB_POLL", "5"))
 
 BOT_USERNAME = os.environ.get("INTAKE_BOT_USER", "intake-bot")
 

@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}Election Night{% endblock %}
+{% block head %}
+<meta http-equiv="refresh" content="60">
+<style>
+.bt{width:100%;border-collapse:collapse;font-size:14px}
+.bt th,.bt td{padding:7px 9px;border-bottom:1px solid #eef0f2;text-align:left;vertical-align:top}
+.bt th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;background:#fafafa;position:sticky;top:0}
+.r-in{background:#f0fdf4}
+.tg{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px}
+.t1{background:#fef3c7;color:#92400e}.t2{background:#e0ecff;color:#1e3a8a}
+.none{color:#b91c1c;font-weight:600}
+.tabs a{margin-right:14px;font-weight:600;text-decoration:none}
+.tabs a.on{text-decoration:underline}
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+    <h3 style="margin:0">Election night board · {{ n_reported }} of {{ n_total }} places have results in</h3>
+    <div><a class="btn btn-small" href="/entry/intake">Review queue ({{ queue }})</a>
+         <a class="btn btn-small" href="{{ url_for('vol.admin_list') }}">Volunteers</a></div>
+  </div>
+  <p class="text-small text-muted" style="margin:6px 0 10px">Refreshes every minute. Places with no results sort first, then by priority.</p>
+  <div class="tabs">
+    <a href="?show=all" class="{{ 'on' if show=='all' }}">All</a>
+    <a href="?show=missing" class="{{ 'on' if show=='missing' }}">No results yet</a>
+    <a href="?show=uncovered" class="{{ 'on' if show=='uncovered' }}">No approved volunteer</a>
+  </div>
+</div>
+<div class="card" style="padding:0;overflow:auto">
+<table class="bt">
+  <tr><th>Polling place</th><th>Priority</th><th>Volunteer</th><th>Volunteer reports</th><th>Races in</th></tr>
+  {% for p in places %}
+  <tr class="{{ 'r-in' if p.races_in }}">
+    <td><b>{{ p.municipality }}</b><br><span class="text-small text-muted">{{ p.county }}</span></td>
+    <td>{% if p.tier == 1 %}<span class="tg t1">Top</span>{% elif p.tier == 2 %}<span class="tg t2">Priority</span>{% endif %}</td>
+    <td>{% for v in p.vols %}{{ v.name }}{% if v.status != 'approved' %} <span class="text-small text-muted">(pending)</span>{% endif %}{% if v.phone %} · <a href="tel:{{ v.phone }}">{{ v.phone }}</a>{% endif %}<br>{% else %}<span class="none">nobody</span>{% endfor %}</td>
+    <td>{% if p.sub %}{{ p.sub.n }} · last {{ p.sub.last[11:16] }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+    <td>{{ p.races_in or '' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

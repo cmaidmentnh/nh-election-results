@@ -69,6 +69,9 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(entry_bp)
 app.register_blueprint(intake_bp)
 
+import volunteers
+volunteers.init_app(app)
+
 
 @app.route('/google5dd33fe4f5c62882.html')
 def google_verification():

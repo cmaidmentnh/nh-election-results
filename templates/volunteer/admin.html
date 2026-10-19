@@ -1,0 +1,93 @@
+{% extends "admin/base.html" %}
+{% block title %}Volunteers{% endblock %}
+{% block head %}
+<style>
+.vstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.vstat{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px}
+.vstat b{display:block;font-size:26px;line-height:1.1}
+.vstat span{font-size:13px;color:#6b7280}
+.vt{width:100%;border-collapse:collapse;font-size:14px}
+.vt th,.vt td{padding:8px 10px;border-bottom:1px solid #eef0f2;text-align:left;vertical-align:top}
+.vt th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;background:#fafafa}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase}
+.p-pending{background:#fef3c7;color:#92400e}.p-approved{background:#dcfce7;color:#166534}.p-rejected{background:#f3f4f6;color:#6b7280}
+.inl{display:inline}
+.inl button{margin:2px 0}
+.tabs a{margin-right:14px;font-weight:600;text-decoration:none}
+.tabs a.on{text-decoration:underline}
+.pl{display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:6px;padding:2px 6px;margin:2px 4px 2px 0;font-size:13px}
+.pl button{border:0;background:none;color:#b91c1c;cursor:pointer;padding:0 2px;font-size:13px}
+.cty{width:100%;border-collapse:collapse;font-size:13px}
+.cty td,.cty th{padding:5px 8px;border-bottom:1px solid #f0f0f0;text-align:right}
+.cty td:first-child,.cty th:first-child{text-align:left}
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <h3 style="margin:0">Election night coverage</h3>
+    <div>
+      <a class="btn btn-small" href="/volunteer" target="_blank">Public sign-up page ↗</a>
+      <a class="btn btn-small" href="{{ url_for('vol.admin_board') }}">Election night board</a>
+      <a class="btn btn-small" href="{{ url_for('vol.admin_export') }}">Export CSV</a>
+    </div>
+  </div>
+  <div class="vstats" style="margin-top:14px">
+    <div class="vstat"><b>{{ total.covered }}</b><span>of {{ total.total }} places covered (approved)</span></div>
+    <div class="vstat"><b>{{ total.pending }}</b><span>places with only pending sign-ups</span></div>
+    <div class="vstat"><b>{{ total.open }}</b><span>places with nobody</span></div>
+    {% for t in (1,2) %}<div class="vstat"><b>{{ by_tier[t].covered }}/{{ by_tier[t].total }}</b><span>{{ tier_labels[t] }} places covered</span></div>{% endfor %}
+    <div class="vstat"><b>{{ counts.get('approved',0) }}</b><span>approved volunteers · {{ counts.get('pending',0) }} pending</span></div>
+  </div>
+  <details>
+    <summary class="text-small" style="cursor:pointer">By county</summary>
+    <table class="cty" style="margin-top:8px">
+      <tr><th>County</th><th>Places</th><th>Covered</th><th>Pending only</th><th>Open</th></tr>
+      {% for c, x in by_county.items() %}<tr><td>{{ c }}</td><td>{{ x.total }}</td><td>{{ x.covered }}</td><td>{{ x.pending }}</td><td>{{ x.open }}</td></tr>{% endfor %}
+    </table>
+  </details>
+</div>
+
+<div class="card">
+  <div class="tabs" style="margin-bottom:12px">
+    <a href="{{ url_for('vol.admin_list') }}" class="{{ 'on' if not status }}">All</a>
+    <a href="{{ url_for('vol.admin_list', status='pending') }}" class="{{ 'on' if status=='pending' }}">Pending ({{ counts.get('pending',0) }})</a>
+    <a href="{{ url_for('vol.admin_list', status='approved') }}" class="{{ 'on' if status=='approved' }}">Approved ({{ counts.get('approved',0) }})</a>
+    <a href="{{ url_for('vol.admin_list', status='rejected') }}" class="{{ 'on' if status=='rejected' }}">Removed ({{ counts.get('rejected',0) }})</a>
+  </div>
+  <datalist id="allplaces">{% for m in all_place_names %}<option value="{{ m }}">{% endfor %}</datalist>
+  {% if not vols %}<p class="text-muted">Nobody here yet.</p>{% else %}
+  <form id="bulk" method="post" action="{{ url_for('vol.admin_approve_bulk') }}"></form>
+  <table class="vt">
+    <tr><th></th><th>Volunteer</th><th>Polling places</th><th>Status</th><th>Actions</th></tr>
+    {% for v in vols %}
+    <tr>
+      <td>{% if v.status == 'pending' %}<input type="checkbox" name="ids" value="{{ v.id }}" form="bulk">{% endif %}</td>
+      <td><b>{{ v.name }}</b><br>
+        <a href="mailto:{{ v.email }}">{{ v.email }}</a><br>
+        {% if v.phone %}<a href="tel:{{ v.phone }}">{{ v.phone }}</a><br>{% endif %}
+        <span class="text-small text-muted">{{ v.home_town or '' }}{% if v.affiliation %} · {{ v.affiliation }}{% endif %}<br>Signed up {{ (v.created_at or '')[:16] }}{% if v.n_reports %} · {{ v.n_reports }} report{{ 's' if v.n_reports != 1 }}{% endif %}</span>
+        {% if v.admin_note %}<br><span class="text-small">📝 {{ v.admin_note }}</span>{% endif %}
+      </td>
+      <td>
+        {% for m in v.place_list %}<span class="pl">{{ m }}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='removeplace') }}"><input type="hidden" name="municipality" value="{{ m }}"><button title="Remove" onclick="return confirm({{ ('Remove ' ~ m ~ ' from ' ~ v.name ~ '?')|tojson|forceescape }})">✕</button></form></span>{% endfor %}
+        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='addplace') }}" style="display:block;margin-top:4px">
+          <input name="municipality" list="allplaces" placeholder="Add place" style="width:150px;padding:3px 6px;font-size:13px"><button class="btn btn-small">Add</button>
+        </form>
+      </td>
+      <td><span class="pill p-{{ v.status }}">{{ v.status }}</span>{% if v.link_sent_at %}<br><span class="text-small text-muted">link sent {{ v.link_sent_at[5:16] }}</span>{% endif %}</td>
+      <td style="white-space:nowrap">
+        {% if v.status != 'approved' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='approve') }}"><button class="btn btn-small btn-primary">Approve</button></form>{% endif %}
+        {% if v.status == 'approved' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='resend') }}"><button class="btn btn-small">Resend link</button></form>{% endif %}
+        {% if v.status != 'rejected' %}<form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='reject') }}"><button class="btn btn-small btn-danger" onclick="return confirm({{ ('Remove ' ~ v.name ~ '? Their link stops working.')|tojson|forceescape }})">Remove</button></form>{% endif %}
+        <br>
+        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='newlink') }}"><button class="btn btn-small" onclick="return confirm('Kill this volunteer\'s current link and make a new one?')">New link</button></form>
+        <form class="inl" method="post" action="{{ url_for('vol.admin_action', vid=v.id, action='note') }}"><input name="note" value="{{ v.admin_note or '' }}" placeholder="note" style="width:110px;padding:3px 6px;font-size:13px"></form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if counts.get('pending',0) %}<p style="margin-top:12px"><button class="btn btn-primary" form="bulk" onclick="return confirm('Approve the checked volunteers and email each their link?')">Approve checked</button></p>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

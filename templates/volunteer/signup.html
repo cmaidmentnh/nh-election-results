@@ -1,0 +1,138 @@
+{% extends "volunteer/base.html" %}
+{% block robots %}index, follow{% endblock %}
+{% block title %}Report Results on Election Night{% endblock %}
+{% block head %}{% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
+{% block style %}
+.picker{position:relative}
+.res{border:1px solid var(--line);border-radius:8px;margin-top:6px;max-height:320px;overflow:auto;background:#fff}
+.res button{display:flex;width:100%;justify-content:space-between;gap:10px;align-items:center;text-align:left;border:0;border-bottom:1px solid #eef2ef;background:#fff;padding:11px 12px;font:inherit;cursor:pointer;color:var(--ink)}
+.res button:last-child{border-bottom:0}
+.res button:hover{background:#f3f7f4}
+.res button[disabled]{opacity:.45;cursor:not-allowed}
+.res .nm{font-weight:600}
+.res .loc{display:block;font-size:12.5px;color:var(--mut);font-weight:400}
+.chosen{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.chip{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--gl);border:1px solid #b9d5c0;border-radius:8px;padding:10px 12px}
+.chip b{display:block}
+.chip span{font-size:12.5px;color:var(--mut)}
+.chip button{border:0;background:none;color:var(--red);font:600 14px inherit;font-family:inherit;cursor:pointer;padding:6px}
+.how{margin:0;padding-left:20px}
+.how li{margin-bottom:6px}
+.stat{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;margin-top:4px}
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Report results from your polling place on Election Night</h1>
+  <p class="lead">On {{ election_day }}, results get posted at every polling place in New Hampshire after the polls close. We need one person at each to snap a photo and send it to us, so we know where every race stands, town by town, as the night goes on.</p>
+  <span class="stat"><b>{{ open_count }}</b> of {{ places|length }} polling places still need a volunteer</span>
+</div>
+
+<div class="card">
+  <b>What you'll do</b>
+  <ol class="how">
+    <li>Be at your polling place when the polls close at 7:00 p.m.</li>
+    <li>Wait for the moderator to announce and post the results.</li>
+    <li>Take a photo of the posted results and send it from your phone using the personal link we email you. It takes about a minute.</li>
+  </ol>
+  <p class="small mut" style="margin:10px 0 0">Your own town, or one on your way home, is perfect. We'll confirm your spot by email.</p>
+</div>
+
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+<form method="post" action="/volunteer" id="f" class="card" novalidate>
+  <label for="name">Full name</label>
+  <input type="text" id="name" name="name" autocomplete="name" required maxlength="100" value="{{ form.name or '' }}">
+
+  <label for="email">Email</label>
+  <input type="email" id="email" name="email" autocomplete="email" required maxlength="200" value="{{ form.email or '' }}">
+
+  <label for="phone">Cell phone <small>so we can reach you on election night</small></label>
+  <input type="tel" id="phone" name="phone" autocomplete="tel" required value="{{ form.phone or '' }}">
+
+  <label for="home_town">Your town</label>
+  <input type="text" id="home_town" name="home_town" autocomplete="address-level2" maxlength="120" value="{{ form.home_town or '' }}">
+
+  <label for="affiliation">Campaign or committee you're with <small>optional</small></label>
+  <input type="text" id="affiliation" name="affiliation" maxlength="120" placeholder="e.g. Smith for State Rep, Bedford Republicans" value="{{ form.affiliation or '' }}">
+
+  <div class="hp" aria-hidden="true"><label for="hp_ref">Leave this empty</label><input type="text" id="hp_ref" name="hp_ref" tabindex="-1" autocomplete="off"></div>
+
+  <label for="q">Polling place you'll cover <small>up to {{ max_places }}</small></label>
+  <div class="picker">
+    <input type="search" id="q" placeholder="Type your town or ward" autocomplete="off">
+    <div class="res" id="res" hidden></div>
+  </div>
+  <div class="chosen" id="chosen"></div>
+  <div id="hidden"></div>
+
+  {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" style="margin-top:18px"></div>{% endif %}
+
+  <p style="margin-top:18px"><button class="btn block" type="submit" id="go">Sign me up</button></p>
+  <p class="small mut">We'll only use your information to coordinate election night.</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var PLACES = {{ places|map(attribute='municipality')|list|tojson }};
+  var META = {{ places|tojson }};
+  var MAX = {{ max_places }}, CAP = {{ max_per_place }};
+  var byName = {}; META.forEach(function(p){ byName[p.municipality] = p; });
+  var chosen = {{ (chosen or [])|tojson }}.filter(function(m){ return byName[m]; });
+  var q = document.getElementById('q'), res = document.getElementById('res'),
+      box = document.getElementById('chosen'), hid = document.getElementById('hidden');
+
+  function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+  function badge(p){
+    var n = p.approved + p.pending;
+    var t = p.tier===1 ? '<span class="tag t1">Top priority</span> ' : p.tier===2 ? '<span class="tag t2">Priority</span> ' : '';
+    var c = n===0 ? '<span class="tag open">Needs volunteer</span>' : (n>=CAP ? '<span class="tag cov">Full</span>' : '<span class="tag cov">Has '+n+'</span>');
+    return t + c;
+  }
+  function render(){
+    box.innerHTML = chosen.map(function(m){
+      var p = byName[m];
+      return '<div class="chip"><div><b>'+esc(m)+'</b><span>'+esc(p.location||p.county+' County')+'</span></div>'+
+             '<button type="button" data-rm="'+esc(m)+'">Remove</button></div>';
+    }).join('');
+    hid.innerHTML = chosen.map(function(m){ return '<input type="hidden" name="places" value="'+esc(m)+'">'; }).join('');
+    q.disabled = chosen.length >= MAX;
+    q.placeholder = chosen.length >= MAX ? 'You can pick up to '+MAX : (chosen.length ? 'Add another (optional)' : 'Type your town or ward');
+  }
+  function search(){
+    var t = norm(q.value);
+    if (!t){ res.hidden = true; return; }
+    var hits = META.filter(function(p){
+      return norm(p.municipality).indexOf(t) === 0 || norm(p.municipality).indexOf(' '+t) >= 0 || norm(p.county).indexOf(t) === 0;
+    }).slice(0, 40);
+    if (!hits.length){ res.innerHTML = '<div style="padding:12px" class="mut small">No polling place matches.</div>'; res.hidden = false; return; }
+    res.innerHTML = hits.map(function(p){
+      var full = (p.approved + p.pending) >= CAP, picked = chosen.indexOf(p.municipality) >= 0;
+      return '<button type="button" data-add="'+esc(p.municipality)+'"'+(full||picked?' disabled':'')+'>'+
+             '<span><span class="nm">'+esc(p.municipality)+'</span><span class="loc">'+esc(p.location || (p.county+' County'))+'</span></span>'+
+             '<span style="white-space:nowrap">'+badge(p)+'</span></button>';
+    }).join('');
+    res.hidden = false;
+  }
+  q.addEventListener('input', search);
+  q.addEventListener('focus', search);
+  res.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-add]'); if (!b || b.disabled) return;
+    var m = b.getAttribute('data-add');
+    if (chosen.indexOf(m) < 0 && chosen.length < MAX) chosen.push(m);
+    q.value = ''; res.hidden = true; render();
+  });
+  box.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-rm]'); if (!b) return;
+    var m = b.getAttribute('data-rm'); chosen = chosen.filter(function(x){ return x !== m; }); render();
+  });
+  document.addEventListener('click', function(e){ if (!e.target.closest('.picker')) res.hidden = true; });
+  document.getElementById('f').addEventListener('submit', function(e){
+    if (!chosen.length){ e.preventDefault(); alert('Please pick the polling place you will cover.'); q.focus(); return; }
+    document.getElementById('go').disabled = true; document.getElementById('go').textContent = 'Sending…';
+  });
+  render();
+})();
+</script>
+{% endblock %}
