@@ -43,7 +43,7 @@ TURNSTILE_SITE_KEY = os.environ.get('VOLUNTEER_TURNSTILE_SITE_KEY', '')
 TURNSTILE_SECRET_KEY = os.environ.get('VOLUNTEER_TURNSTILE_SECRET_KEY', '')
 
 MAIL_FROM = os.environ.get('VOLUNTEER_MAIL_FROM',
-                           '"NH House Republicans Election Night" <results@electhouserepublicans.com>')
+                           '"NH House Republicans Election Night" <results@nhhouse.gop>')
 MAIL_REPLY_TO = os.environ.get('VOLUNTEER_REPLY_TO', 'chris@electhouserepublicans.com')
 REVIEW_EMAIL = os.environ.get('VOLUNTEER_REVIEW_EMAIL', 'chris@electhouserepublicans.com')
 
@@ -281,7 +281,7 @@ INSTRUCTIONS_STEPS = [
     "Take a clear photo of every page of the posted results, close up, with the whole sheet in the frame. One photo per page.",
     "If your polling place uses more than one voting machine, there is a tape or sheet for each one. Photograph all of them and send them together. We add them up.",
     "Open your personal link and pick your polling place. Add the photos and tap Send. That's it.",
-    "If something goes wrong, email the photos to results@electhouserepublicans.com with your town in the subject.",
+    "If something goes wrong, email the photos to results@nhhouse.gop with your town in the subject.",
 ]
 
 
