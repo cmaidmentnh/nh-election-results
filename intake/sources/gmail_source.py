@@ -204,6 +204,8 @@ _FREE_MAIL = {"gmail.com", "yahoo.com", "comcast.net", "aol.com", "hotmail.com",
               "icloud.com", "me.com", "msn.com", "live.com", "myfairpoint.net", "metrocast.net",
               "tds.net", "charter.net", "protonmail.com", "pm.me", "verizon.net", "att.net"}
 _clerk_cache = {"at": 0, "addrs": set(), "domains": set()}
+# Town and city government mail: grotonnh.gov, townofdorchester.org, *.nh.us.
+_TOWN_DOMAIN = re.compile(r"(nh\.gov|nh\.us|^townof|^cityof|nh\.org$)")
 
 
 def _clerk_addresses():
@@ -215,8 +217,19 @@ def _clerk_addresses():
         try:
             addrs = {(r["email"] or "").strip().lower()
                      for r in conn.execute("SELECT email FROM polling_places WHERE email LIKE '%@%'")}
+            # Anyone whose email has already filed a real return. 12 of the 94
+            # addresses that sent primary-night returns are not on the clerk
+            # list (Groton's clerk mails from a different address; deputies and
+            # moderators use their own), and the history knows them.
+            for r in conn.execute("""SELECT DISTINCT m.sender FROM intake_messages m
+                                      JOIN intake_items i ON i.message_id = m.id
+                                     WHERE m.source = 'email' AND i.status = 'applied'"""):
+                mm = re.search(r"[\w.+-]+@[\w.-]+", r["sender"] or "")
+                if mm:
+                    addrs.add(mm.group(0).lower())
         finally:
             conn.close()
+        addrs -= {a.lower() for a in config.ACCEPT_ADDRESSES} | {"chris@maidmentnh.com"}
         _clerk_cache.update(at=time.time(), addrs=addrs,
                             domains={a.split("@", 1)[1] for a in addrs} - _FREE_MAIL)
     return _clerk_cache["addrs"], _clerk_cache["domains"]
@@ -243,6 +256,22 @@ def _plausible_return(hdrs):
     if config.GROUP_ADDRESS and config.GROUP_ADDRESS.lower() in rcpt:
         return True
     return bool(_RETURN_SUBJECT.search(hdrs.get("subject", "") or ""))
+
+
+def _from_clerk_or_results_list(hdrs):
+    """A town clerk's listed address or town domain, or mail sent to the results group."""
+    m = re.search(r"[\w.+-]+@[\w.-]+", hdrs.get("from", "") or "")
+    sender = m.group(0).lower() if m else ""
+    try:
+        addrs, domains = _clerk_addresses()
+    except Exception:
+        log.exception("clerk address lookup failed; treating as a clerk")
+        return True
+    if sender and (sender in addrs or sender.split("@", 1)[-1] in domains
+                   or _TOWN_DOMAIN.search(sender.split("@", 1)[-1])):
+        return True
+    rcpt = " ".join(hdrs.get(k, "") or "" for k in ("to", "cc", "delivered-to", "list-id")).lower()
+    return bool(config.GROUP_ADDRESS and config.GROUP_ADDRESS.lower() in rcpt)
 
 
 def _mailbox_name(token_path):
@@ -276,7 +305,15 @@ def _fetch_mailbox(token_path):
         # returns. Ask Jev before downloading anything; see jev_gate for the rules.
         verdict = jev_gate.classify(hdrs.get("from", ""), hdrs.get("subject", ""),
                                     body, [f for f, _ in atts])
+        from_clerk = _from_clerk_or_results_list(hdrs)
         take, mark_read = jev_gate.decide(verdict, bool(atts), _plausible_return(hdrs))
+        if not from_clerk:
+            # These are Chris's own mailboxes. Volunteers now report through
+            # their personal link, Signal or results@nhhouse.gop; the only
+            # returns still arriving here are clerks replying to our request,
+            # or the results list. Anything else stays his - his own mail about
+            # Danville's tax rate was being read as Danville's returns.
+            take = False
         if verdict is not None:
             log.info("Jev %s: %s %.2f take=%s read=%s - %s", jev_gate.MODE, verdict[0],
                      verdict[1], take, mark_read, (hdrs.get("subject") or "")[:80])
