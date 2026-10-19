@@ -54,7 +54,7 @@ ELECTION_DAY = os.environ.get('VOLUNTEER_ELECTION_DAY', 'Tuesday, November 3')
 MAX_PLACES_PER_VOLUNTEER = 2
 MAX_VOLUNTEERS_PER_PLACE = 3
 MAX_PHOTO_BYTES = 20 * 1024 * 1024   # nginx client_max_body_size is 25M for this site
-MAX_PHOTOS_PER_REPORT = 8
+MAX_PHOTOS_PER_REPORT = 20
 
 TIER_LABELS = {1: 'Top priority', 2: 'Priority', 3: ''}
 
