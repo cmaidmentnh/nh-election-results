@@ -826,11 +826,19 @@ function ptable(r){
     if(extra&&wiCol>=0) p.votes['Write-in']=Math.max(p.votes['Write-in']||0, extra);
   });
   const pm=GEN?partyOfName(r):{};
+  // Compared to 2024 / 2022: the R-minus-D margin's move since the same race
+  // in that town, in points. Only years the race was an R-vs-D contest.
+  const vy=(GEN&&r.vs_years)||[];
+  const sw=x=>x==null?'—':`<span style="color:${x>0?PC.R:x<0?PC.D:'inherit'}">${x>0?'R+':x<0?'D+':''}${Math.abs(x).toFixed(1)}</span>`;
   let h=`<thead><tr><th>Precinct</th>${cn.map(n=>`<th>${esc(n)}${
-    GEN&&n!=='Write-in'?` <span style="color:${PC[pm[n]]||PC.O}">${pm[n]||'O'}</span>`:''}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
+    GEN&&n!=='Write-in'?` <span style="color:${PC[pm[n]]||PC.O}">${pm[n]||'O'}</span>`:''}</th>`).join('')}${
+    vy.map(y=>`<th title="Change in the R-D margin since this race in ${y}">vs ${y}</th>`).join('')}<th>In</th></tr></thead><tbody>`;
   (r.precincts||[]).forEach(p=>{
     h+=`<tr><td>${esc(p.name)}</td>${cn.map(n=>`<td>${p.reported?nf.format(p.votes[n]||0):'—'}</td>`).join('')}`+
+       vy.map(y=>`<td>${p.reported?sw((p.vs||{})[y]):'—'}</td>`).join('')+
        `<td>${p.reported?'✓':'—'}</td></tr>`;});
+  if(vy.length&&r.vs) h+=`<tr style="font-weight:700"><td>Counted towns</td>${cn.map(()=>'<td></td>').join('')}${
+    vy.map(y=>`<td>${sw(r.vs[y])}</td>`).join('')}<td></td></tr>`;
   document.getElementById('ptable').innerHTML=h+'</tbody>';
 }
 /* A ward gets its own polygon only where it is its own House district. Dover

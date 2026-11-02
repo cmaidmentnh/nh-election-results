@@ -1474,6 +1474,29 @@ def _norm_place(name):
     return re.sub(r'\s+', ' ', s).strip()
 
 
+def _prior_margins(cur, office_name, county, district, year):
+    """The same race in an earlier general: each place's R-minus-D margin in
+    points of the two-party vote, keyed by _norm_place, plus the raw R and D
+    votes so a set of towns can be totalled. Empty when that year had no such
+    race or it was not an R-vs-D contest. The 2022 lines are this decade's, so
+    a district in 2022 and 2024 is the same ground as in 2026."""
+    out = {}
+    for r in cur.execute(
+            """SELECT res.municipality AS m,
+                      SUM(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) AS rv,
+                      SUM(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) AS dv
+                 FROM results res JOIN races r ON res.race_id = r.id
+                 JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                 JOIN candidates c ON c.id = res.candidate_id
+                WHERE e.year = ? AND e.election_type = 'general' AND o.name = ?
+                  AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
+                GROUP BY res.municipality""", (year, office_name, county, district)):
+        rv, dv = r['rv'] or 0, r['dv'] or 0
+        if rv > 0 and dv > 0:
+            out[_norm_place(r['m'])] = (rv, dv)
+    return out
+
+
 def _gen_baseline(cur):
     """Each town's 2024 Republican share of the two-party vote for Governor.
 
@@ -2114,6 +2137,37 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
         # Republican two-party share in the towns counted, against the same
         # towns' 2024 governor vote, in points. Positive = running ahead of 2024.
         out['swing'] = round(100 * gsw['swing'], 1)
+    if with_precincts and general and not demo:
+        # "Compared to 2024 / 2022": each counted town's R-minus-D margin in
+        # this race against the same race in that town two and four years ago,
+        # in points. Positive = moved toward the Republicans. The race-level
+        # figure compares the same set of counted towns, so it is like for like.
+        rids = [c for c in name_by_id if party_by_id.get(c) == 'R']
+        dids = [c for c in name_by_id if party_by_id.get(c) == 'D']
+        vs_years = []
+        if rids and dids:
+            for yr in (2024, 2022):
+                prior = _prior_margins(cur, office_name, county, district, yr)
+                if not prior:
+                    continue
+                vs_years.append(yr)
+                now_r = now_d = was_r = was_d = 0
+                for p in precincts:
+                    if not p['reported']:
+                        continue
+                    v = by_prec.get(p['name'], {})
+                    rv = sum(v.get(c, 0) for c in rids)
+                    dv = sum(v.get(c, 0) for c in dids)
+                    was = prior.get(_norm_place(p['name']))
+                    if rv + dv <= 0 or not was:
+                        continue
+                    shift = 100 * ((rv - dv) / (rv + dv) - (was[0] - was[1]) / (was[0] + was[1]))
+                    p.setdefault('vs', {})[str(yr)] = round(shift, 1)
+                    now_r, now_d, was_r, was_d = now_r + rv, now_d + dv, was_r + was[0], was_d + was[1]
+                if now_r + now_d and was_r + was_d:
+                    out.setdefault('vs', {})[str(yr)] = round(100 * (
+                        (now_r - now_d) / (now_r + now_d) - (was_r - was_d) / (was_r + was_d)), 1)
+        out['vs_years'] = vs_years
     if with_precincts:
         out['precincts'] = precincts
         out['towns'] = sorted({re.sub(r'\s+Ward\s+\d+\*?$', '', p['name']).strip() for p in precincts})
