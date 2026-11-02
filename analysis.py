@@ -85,7 +85,7 @@ def get_town_summary(town):
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND o.name = 'State Representative'
             GROUP BY r.id
         ),
@@ -133,7 +133,7 @@ def get_town_summary(town):
         JOIN offices o ON r.office_id = o.id
         WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND o.name != 'State Representative'
         ORDER BY e.year, o.name, res.votes DESC
@@ -325,7 +325,7 @@ def get_town_race_details(town, year):
         WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.year = ?
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         ORDER BY o.name, r.district, res.votes DESC
     """, (town, town, year))
@@ -454,7 +454,7 @@ def get_statewide_trends():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.id, c.id
         ORDER BY e.year, r.id, total_votes DESC
@@ -550,7 +550,7 @@ def get_party_control(year):
             JOIN offices o ON r.office_id = o.id
             WHERE e.year = ?
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor')
             GROUP BY r.id, c.id
@@ -617,7 +617,7 @@ def get_closest_races(year, limit=10):
             JOIN offices o ON r.office_id = o.id
             WHERE e.year = ?
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.id
         )
@@ -675,7 +675,7 @@ def get_biggest_shifts(year1, year2, limit=10):
             JOIN offices o ON r.office_id = o.id
             WHERE e.year IN (?, ?)
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.id
         ),
@@ -768,7 +768,7 @@ def get_county_summary(county):
         JOIN offices o ON r.office_id = o.id
         WHERE res.municipality IN ({placeholders})
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, o.name, r.district
         ORDER BY e.year DESC, o.name, r.district
@@ -826,7 +826,7 @@ def get_county_summary(county):
             JOIN offices o ON r.office_id = o.id
             WHERE res.municipality IN ({placeholders})
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.id, c.id
         )
@@ -863,7 +863,7 @@ def get_county_summary(county):
         JOIN elections e ON r.election_id = e.id
         WHERE res.municipality IN ({placeholders})
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year
         ORDER BY e.year
@@ -951,7 +951,7 @@ def get_statewide_baseline(year=None):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         {year_filter}
         GROUP BY e.year, r.id
@@ -1161,7 +1161,7 @@ def get_town_pvi(town):
         JOIN offices o ON r.office_id = o.id
         WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, r.id
     """, (town, town))
@@ -1355,7 +1355,7 @@ def get_district_pvi(office, district, county=None):
             JOIN elections e ON r.election_id = e.id
             WHERE res.municipality IN ({placeholders})
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.id, res.municipality
         ),
@@ -1384,7 +1384,7 @@ def get_district_pvi(office, district, county=None):
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
             WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.id
             HAVING r > 0 AND d > 0
@@ -1480,7 +1480,7 @@ def get_district_topline_races(office, district, county=None):
         JOIN offices o ON r.office_id = o.id
         WHERE res.municipality IN ({placeholders})
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name IN ('President of the United States', 'Governor')
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY e.year, o.name
@@ -1529,7 +1529,7 @@ def get_town_key_races(town):
         JOIN offices o ON r.office_id = o.id
         WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY e.year, o.name, c.name, c.party
@@ -1720,7 +1720,7 @@ def get_redistricting_impact():
         JOIN offices o ON r.office_id = o.id
         WHERE e.year = 2020
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name = 'State Representative'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.county, r.district
@@ -1749,7 +1749,7 @@ def get_redistricting_impact():
         JOIN offices o ON r.office_id = o.id
         WHERE e.year = 2024
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name = 'State Representative'
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         GROUP BY r.county, r.district
@@ -2015,7 +2015,7 @@ def get_incumbent_analysis():
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Governor')
             GROUP BY c.name, c.party, e.year, o.name, r.id, r.district, r.county, r.seats
@@ -2276,7 +2276,7 @@ def get_districts_map_data(year=None, metric='margin'):
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = 'State Representative'
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             AND c.party IN ('Republican', 'Democratic')
@@ -2381,7 +2381,7 @@ def get_districts_map_data(year=None, metric='margin'):
             WHERE o.name = 'State Representative'
             AND {year_clause}
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         """)
         district_seats = {}
         for county, district, seats in cursor.fetchall():
@@ -2404,7 +2404,7 @@ def get_districts_map_data(year=None, metric='margin'):
             WHERE o.name = 'State Representative'
             AND {year_clause}
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.county, r.district, c.name, c.party
             ORDER BY r.county, r.district, votes DESC
@@ -2522,7 +2522,7 @@ def get_districts_map_data(year=None, metric='margin'):
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = 'State Senator'
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             GROUP BY res.municipality
@@ -2569,7 +2569,7 @@ def get_districts_map_data(year=None, metric='margin'):
             WHERE o.name = 'State Senator'
             AND {year_clause}
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.district, c.name, c.party
             ORDER BY r.district, votes DESC
@@ -2634,7 +2634,7 @@ def get_districts_map_data(year=None, metric='margin'):
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = 'Executive Councilor'
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             GROUP BY res.municipality
@@ -2681,7 +2681,7 @@ def get_districts_map_data(year=None, metric='margin'):
             WHERE o.name = 'Executive Councilor'
             AND {year_clause}
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.district, c.name, c.party
             ORDER BY r.district, votes DESC
@@ -2744,7 +2744,7 @@ def get_districts_map_data(year=None, metric='margin'):
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = 'Representative in Congress'
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             GROUP BY res.municipality
@@ -2790,7 +2790,7 @@ def get_districts_map_data(year=None, metric='margin'):
             WHERE o.name = 'Representative in Congress'
             AND {year_clause}
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY r.district, c.name, c.party
             ORDER BY r.district, votes DESC
@@ -2838,7 +2838,7 @@ def get_districts_map_data(year=None, metric='margin'):
         JOIN elections e ON r.election_id = e.id
         WHERE {year_clause}
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
@@ -2932,7 +2932,7 @@ def get_map_data(year, metric='pvi'):
             JOIN elections e ON r.election_id = e.id
             WHERE e.year = ?
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality NOT GLOB '[0-9]*'
             AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
@@ -2958,7 +2958,7 @@ def get_map_data(year, metric='pvi'):
             JOIN offices o ON r.office_id = o.id
             WHERE e.year = ?
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND o.name = 'President of the United States'
             AND res.municipality NOT GLOB '[0-9]*'
             AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
@@ -2994,7 +2994,7 @@ def export_town_data(year=None):
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS')
@@ -3044,7 +3044,7 @@ def export_district_data(year=None):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         {year_filter}
         GROUP BY o.name, r.county, r.district, e.year
@@ -3095,7 +3095,7 @@ def export_race_data(year=None):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         {year_filter}
         GROUP BY e.year, r.id, c.id
@@ -3130,7 +3130,7 @@ def export_candidate_data(year=None):
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         {year_filter}
         GROUP BY c.name, e.year, r.id
@@ -3163,7 +3163,7 @@ def get_all_districts_with_pvi(office):
             JOIN elections e ON r.election_id = e.id
             WHERE e.year IN (2022, 2024)
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.id
             HAVING r > 0 AND d > 0  -- contested only
@@ -3192,7 +3192,7 @@ def get_all_districts_with_pvi(office):
             WHERE o.name = ?
             AND e.year = 2024
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         """, (office,))
 
         district_towns = defaultdict(set)
@@ -3214,7 +3214,7 @@ def get_all_districts_with_pvi(office):
                 JOIN elections e ON r.election_id = e.id
                 WHERE e.year IN (2022, 2024)
                 AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
                 AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
                 GROUP BY e.year, r.id, res.municipality
             ),
@@ -3244,7 +3244,7 @@ def get_all_districts_with_pvi(office):
             WHERE o.name = ?
             AND e.year IN (2022, 2024)
             AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND c.party IN ('Republican', 'Democratic')
             GROUP BY e.year, r.county, r.district, c.id
@@ -3349,7 +3349,7 @@ def get_all_districts_with_pvi(office):
                 JOIN elections e ON r.election_id = e.id
                 WHERE e.year IN (2022, 2024)
                 AND e.election_type = 'general'
-                AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)
+                AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')
                 AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
                 GROUP BY e.year, r.id, res.municipality
             ),
@@ -3475,7 +3475,7 @@ def get_undervote_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
@@ -3683,7 +3683,7 @@ def get_ticket_splitting_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.party IN ('Republican', 'Democratic')
         AND res.municipality IS NOT NULL
         AND res.municipality != ''
@@ -3818,7 +3818,7 @@ def get_bellwether_analysis():
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND o.name = 'State Representative'
             AND c.party IN ('Republican', 'Democratic')
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
@@ -3851,7 +3851,7 @@ def get_bellwether_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name = 'State Representative'
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY e.year, c.party
@@ -3881,7 +3881,7 @@ def get_bellwether_analysis():
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND o.name = 'State Representative'
             GROUP BY r.id
         ),
@@ -3999,7 +3999,7 @@ def get_swing_analysis():
         WHERE o.name = 'State Representative'
         AND e.year IN (2020, 2022, 2024)
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY e.year, r.county, r.district, c.name, c.party
@@ -4137,7 +4137,7 @@ def get_multi_seat_analysis():
         AND r.seats > 1
         AND e.year = 2024
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
     """)
 
     districts = []
@@ -4264,7 +4264,7 @@ def get_correlation_analysis():
         JOIN offices o ON r.office_id = o.id
         WHERE e.year = 2024
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY res.municipality, o.name, c.party
@@ -4336,7 +4336,7 @@ def get_long_term_trends():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         AND r.county IS NOT NULL
@@ -4427,7 +4427,7 @@ def get_trump_comparison():
         JOIN offices o ON r.office_id = o.id
         WHERE e.year = 2024
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name = 'President of the United States'
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY res.municipality
@@ -4456,7 +4456,7 @@ def get_trump_comparison():
         JOIN offices o ON r.office_id = o.id
         WHERE e.year = 2024
         AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13)  -- exclude county offices from cross-office stats
+            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND o.name = 'State Representative'
         AND c.party IN ('Republican', 'Democratic')
         ORDER BY r.county, r.district, res.municipality, c.party

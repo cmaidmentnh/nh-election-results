@@ -91,7 +91,43 @@ function gcard(r){
   </div>`;
 }
 
+/* A ballot question: Yes / No, no parties. The figures are the votes cast
+   here; the tag is what decides it - the town (or the whole city) for the
+   property tax cap, the state for a constitutional amendment. */
+const QCOL = {Yes:'#2f7d4f', No:'#8a8f96'};
+const QST = {adopted:'Adopted', rejected:'Rejected', passing:'Passing', failing:'Short',
+             awaiting:'Awaiting'};
+function qcard(r){
+  const sum = `<div class="foot" style="margin:0 0 10px"><span>${esc(r.summary)}</span></div>`;
+  const need = `Needs ${r.threshold_label} Yes (${r.threshold_pct}%) · ${
+    r.decided_by==='town'?'each town decides for itself':'decided statewide'}`;
+  if(!LIVE){
+    return `<div class="col G">${sum}${['Yes','No'].map(n=>`<div class="row pv"><div class="nm">
+      <i class="sw" style="background:${QCOL[n]}"></i>${n}</div></div>`).join('')}
+      <div class="foot"><span>${need}</span><span><a href="/results/questions${QS?'?'+QS:''}">every town →</a></span></div></div>`;
+  }
+  const top = Math.max(1, ...r.candidates.map(c=>c.votes));
+  const rows = r.candidates.map(c=>{
+    const w = (r.outcome==='adopted' && c.name==='Yes') || (r.outcome==='rejected' && c.name==='No');
+    return `<div class="row ${w?'win':''}">
+      <div class="nm">${c.name}${w?' <span class="w-">✓</span>':''}</div>
+      <div class="vt"><b>${nf.format(c.votes)}</b> <span>${
+        r.total ? (100*c.votes/r.total).toFixed(1) : '0.0'}%</span></div>
+      <div class="bar"><i class="v" style="width:${Math.round(100*c.votes/top)}%;background:${QCOL[c.name]}"></i></div>
+    </div>`;}).join('');
+  const st = r.certified ? '<span class="tag called">Certified</span>'
+    : r.outcome ? `<span class="tag${r.outcome==='adopted'||r.outcome==='rejected'?' called':''}">${QST[r.outcome]}</span>` : '';
+  const here = KIND==='town' ? 'here' : 'in the county';
+  return `<div class="col G">
+    <div class="colhead"><span class="pty">Result</span>${st}<span class="rx">${esc(r.outcome_label||'')}</span></div>
+    ${sum}${rows}
+    <div class="foot"><span>${nf.format(r.total)} votes ${here} · ${r.reported}/${r.precincts} reporting · ${need}</span>
+      <span><a href="/results/questions${QS?'?'+QS:''}">every town →</a></span></div>
+  </div>`;
+}
+
 function card(r){
+  if(r.question) return qcard(r);
   if(GEN) return gcard(r);
   const top = Math.max(1, ...r.candidates.map(c=>c.votes));
   const rows = r.candidates.map((c,i)=>{

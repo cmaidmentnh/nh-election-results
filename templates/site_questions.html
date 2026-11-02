@@ -1,0 +1,110 @@
+{% extends "site_base.html" %}
+{% set active = 'questions' %}
+{% block title %}Ballot questions — 2026 NH General Election results{% endblock %}
+{% block meta_description %}New Hampshire's November 3, 2026 ballot questions: the property tax cap (HB 1300), town by town, and Question 1, the constitutional amendment, statewide.{% endblock %}
+
+{% block content %}
+<main class="w">
+  <section class="lead">
+    <div>
+      <h1>Ballot questions</h1>
+      <p id="sub">The questions on the back of the {{ ev.date_label }} ballot.</p>
+    </div>
+  </section>
+  <div id="qs"></div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const LIVE = {{ 'true' if live_mode else 'false' }};
+const DEMO = {{ 'true' if demo else 'false' }}, EVQ = {{ evq|tojson }};
+const QS = [DEMO?'demo=1':'', EVQ].filter(Boolean).join('&');
+const nf = new Intl.NumberFormat('en-US');
+const esc = t => String(t ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const QCOL = {Yes:'#2f7d4f', No:'#8a8f96'};
+const QST = {adopted:'Adopted', rejected:'Rejected', passing:'Passing', failing:'Short', awaiting:'Awaiting'};
+const filt = {};
+
+function bars(yes, no){
+  const tot = yes + no, top = Math.max(1, yes, no);
+  return [['Yes', yes], ['No', no]].map(([n, v]) => `<div class="row">
+    <div class="nm">${n}</div>
+    <div class="vt"><b>${nf.format(v)}</b> <span>${tot ? (100*v/tot).toFixed(1) : '0.0'}%</span></div>
+    <div class="bar"><i class="v" style="width:${Math.round(100*v/top)}%;background:${QCOL[n]}"></i></div>
+  </div>`).join('');
+}
+function tag(s){
+  return s ? `<span class="tag${s==='adopted'||s==='rejected'?' called':''}">${QST[s]}</span>` : '';
+}
+function townTable(q){
+  const f = (filt[q.key] || '').toLowerCase();
+  const rows = q.towns.filter(t => !f || t.town.toLowerCase().includes(f)).map(t => `<tr>
+      <td><a href="/results/town/${encodeURIComponent(t.wards.length ? t.wards[0] : t.town)}${QS?'?'+QS:''}">${esc(t.town)}</a>${
+        t.wards.length ? ` <span class="dm">${t.reported}/${t.precincts} wards</span>` : ''}</td>
+      <td style="text-align:right">${nf.format(t.yes)}</td>
+      <td style="text-align:right">${nf.format(t.no)}</td>
+      <td style="text-align:right">${t.pct_yes == null ? '–' : t.pct_yes.toFixed(1) + '%'}</td>
+      <td>${tag(t.status)}</td></tr>`).join('');
+  return `<table class="qt" style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead><tr><th style="text-align:left">Town</th><th style="text-align:right">Yes</th>
+      <th style="text-align:right">No</th><th style="text-align:right">Yes %</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="5" class="dm">No town matches.</td></tr>'}</tbody></table>`;
+}
+function block(q){
+  const s = q.statewide;
+  const need = `Needs ${q.threshold_label} Yes (${q.threshold_pct}%) · ${
+    q.decided_by==='town' ? 'each town decides for itself; city wards add up to the city' : 'decided statewide'}`;
+  let head = '';
+  if(q.decided_by === 'town'){
+    const c = q.town_count;
+    head = `<span class="rx">Adopted in ${c.adopted} · rejected in ${c.rejected} · ${
+      c.passing + c.failing} partly counted · ${c.awaiting} awaiting · ${c.total} towns</span>`;
+  } else {
+    head = tag(s.status);
+  }
+  const total = q.decided_by === 'town' ? 'All towns combined' : 'Statewide';
+  return `<section class="race" id="${q.key}">
+    <h2 class="rh">${esc(q.title)}</h2>
+    <div class="foot" style="margin:0 0 12px"><span>${esc(q.summary)}</span></div>
+    <div class="cols">
+      <div class="col G">
+        <div class="colhead"><span class="pty">${total}</span>${head}</div>
+        ${LIVE ? bars(s.yes, s.no) : ''}
+        <div class="foot"><span>${LIVE ? nf.format(s.total) + ' votes · ' : ''}${s.reported}/${s.precincts} reporting · ${need}</span></div>
+      </div>
+      <div class="col G">
+        <div class="colhead"><span class="pty">Town by town</span>
+          <input type="search" class="srch" data-q="${q.key}" placeholder="Find a town" autocomplete="off"
+                 value="${esc(filt[q.key]||'')}" style="max-width:220px"></div>
+        <div class="qtw" style="max-height:520px;overflow:auto">${townTable(q)}</div>
+      </div>
+    </div>
+  </section>`;
+}
+let DATA = [];
+function render(){
+  document.getElementById('qs').innerHTML = DATA.length ? DATA.map(block).join('')
+    : '<div class="dm" style="padding:26px 0">No ballot questions for this event.</div>';
+  document.querySelectorAll('input[data-q]').forEach(inp => inp.oninput = e => {
+    filt[inp.dataset.q] = e.target.value.trim();
+    const q = DATA.find(x => x.key === inp.dataset.q);
+    inp.closest('.col').querySelector('.qtw').innerHTML = townTable(q);
+  });
+}
+function load(){
+  fetch('/api/questions' + (QS ? '?' + QS : ''), {cache: 'no-store'}).then(r => r.json()).then(d => {
+    DATA = d.questions || [];
+    if(!document.activeElement || !document.activeElement.dataset || !document.activeElement.dataset.q) render();
+  }).catch(() => {});
+}
+load();
+if(LIVE) setInterval(load, 30000);
+fetch('/api/topline'+(QS?'?'+QS:''),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  if(!d.places) return;
+  document.getElementById('tk-count').textContent = nf.format(d.places.reported);
+  document.getElementById('tk-total').textContent = nf.format(d.places.total);
+}).catch(()=>{});
+</script>
+{% endblock %}

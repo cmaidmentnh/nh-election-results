@@ -1048,7 +1048,7 @@ def api_search():
           JOIN races ra ON ra.id = rc.race_id
           JOIN offices o ON o.id = ra.office_id
           JOIN elections e ON e.id = ra.election_id
-         WHERE {evs}
+         WHERE {evs} AND o.level != 'question'
            AND c.name LIKE ? AND IFNULL(rc.recruitment_filing_id, 0) >= -2
          ORDER BY votes DESC NULLS LAST
          LIMIT 12""", (*evargs, like)):
@@ -1253,7 +1253,207 @@ def _place_general(cur, ev, kind, name, demo=False):
                 'race_status': pj.get('status'), 'race_winners': pj.get('winners') or [],
                 'race_expected_in': r['reporting'].get('expected_in', 0),
             })
+    # The questions printed on the back of the ballot, last, as they are there.
+    out.extend(_place_questions(cur, ev, munis))
     return out
+
+
+# --- Ballot questions --------------------------------------------------------
+# The two questions on the back of the Nov 3, 2026 ballot are races whose
+# roster is Yes and No (scripts/add_ballot_questions_2026.py). They are kept
+# OUT of CONTESTED_OFFICES on purpose: everything that reads that table - the
+# chamber tallies, the topline, swing and the projections - is about parties
+# and seats, and a question has neither. They are read here instead.
+#
+# Question 1 is decided statewide (two-thirds of those voting on it). Question
+# 2, the property tax cap, is decided town by town: each town adopts it for
+# itself by three-fifths of its own voters, so a city's wards add up to the
+# city before the threshold is applied. Statewide Yes / No for Q2 is a total
+# of those town votes, shown as context, not an outcome.
+BALLOT_QUESTIONS = [
+    {'key': 'q1', 'number': 1, 'office': 'Question 1: Constitutional Amendment (CACR 13)',
+     'title': 'Question 1: Constitutional Amendment',
+     'summary': 'Eliminate the office of register of probate (CACR 13).',
+     'threshold': 2 / 3, 'threshold_label': 'two-thirds', 'decided_by': 'state'},
+    {'key': 'q2', 'number': 2, 'office': 'Question 2: Property Tax Cap (HB 1300)',
+     'title': 'Question 2: Property Tax Cap',
+     'summary': 'The property tax cap (HB 1300): limits property tax growth to '
+                'inflation. Each town adopts it for itself.',
+     'threshold': 3 / 5, 'threshold_label': 'three-fifths', 'decided_by': 'town'},
+]
+_QUESTION_OFFICES = {q['office'] for q in BALLOT_QUESTIONS}
+_WARD_RE = re.compile(r'\s+Ward\s+\d+$', re.I)
+
+
+def _base_town(muni):
+    """'Manchester Ward 5' -> 'Manchester'. Q2 is the city's question, not the ward's."""
+    return _WARD_RE.sub('', muni or '')
+
+
+def _q_status(yes, no, threshold, reported, expected, certified=False):
+    """Outcome against the question's own threshold of those voting on it."""
+    if not reported:
+        return 'awaiting'
+    passing = (yes + no) > 0 and yes >= threshold * (yes + no)
+    if certified or reported >= expected:
+        return 'adopted' if passing else 'rejected'
+    return 'passing' if passing else 'failing'
+
+
+def _question_rows(cur, ev, q):
+    """(race_id, polling places it is on, {municipality: {'Yes': n, 'No': n}}) or None."""
+    evs, evargs = _ev_sql(ev)
+    race = cur.execute(f"""
+        SELECT r.id, r.office_id, IFNULL(r.district,'') AS district
+          FROM races r JOIN offices o ON o.id = r.office_id
+          JOIN elections e ON e.id = r.election_id
+         WHERE {evs} AND o.name = ?""", (*evargs, q['office'])).fetchone()
+    if not race:
+        return None
+    if race['district']:
+        precs = [r['municipality'] for r in cur.execute(
+            """SELECT DISTINCT municipality FROM municipality_districts
+                WHERE office_id = ? AND county = '' AND district = ?
+                ORDER BY municipality""", (race['office_id'], race['district']))]
+    else:
+        precs = list(_all_precincts(cur))
+    votes = {}
+    for r in cur.execute("""
+            SELECT res.municipality AS m, c.name AS cand, SUM(res.votes) AS v
+              FROM results res JOIN candidates c ON c.id = res.candidate_id
+             WHERE res.race_id = ? AND c.name IN ('Yes', 'No')
+             GROUP BY res.municipality, c.name""", (race['id'],)):
+        votes.setdefault(r['m'], {'Yes': 0, 'No': 0})[r['cand']] = r['v'] or 0
+    return race['id'], precs, votes
+
+
+def _question_payload(cur, ev, munis=None):
+    """Every ballot question: statewide Yes / No, and per town (wards summed).
+
+    `munis` narrows the town list (and the totals) to those polling places -
+    one town's page, or one county's."""
+    certified = _certified_races(cur)
+    out = []
+    for q in BALLOT_QUESTIONS:
+        got = _question_rows(cur, ev, q)
+        if not got:
+            continue
+        race_id, precs, votes = got
+        if munis is not None:
+            precs = [p for p in precs if p in munis]
+            if not precs:
+                continue
+        is_cert = race_id in certified
+        towns = {}
+        for p in precs:
+            t = towns.setdefault(_base_town(p), {'town': _base_town(p), 'yes': 0, 'no': 0,
+                                                  'reported': 0, 'precincts': 0, 'wards': []})
+            t['precincts'] += 1
+            if p != t['town']:
+                t['wards'].append(p)
+            if p in votes:
+                t['reported'] += 1
+                t['yes'] += votes[p]['Yes']
+                t['no'] += votes[p]['No']
+        for t in towns.values():
+            n = t['yes'] + t['no']
+            t['total'] = n
+            t['pct_yes'] = round(100 * t['yes'] / n, 1) if n else None
+            # A town's own outcome only means something where the town decides.
+            t['status'] = (_q_status(t['yes'], t['no'], q['threshold'], t['reported'],
+                                     t['precincts'], is_cert)
+                           if q['decided_by'] == 'town' else None)
+        yes = sum(t['yes'] for t in towns.values())
+        no = sum(t['no'] for t in towns.values())
+        reported = sum(t['reported'] for t in towns.values())
+        state = {'yes': yes, 'no': no, 'total': yes + no,
+                 'pct_yes': round(100 * yes / (yes + no), 1) if yes + no else None,
+                 'reported': reported, 'precincts': len(precs),
+                 'status': _q_status(yes, no, q['threshold'], reported, len(precs), is_cert)
+                           if q['decided_by'] == 'state' else None}
+        tl = sorted(towns.values(), key=lambda t: t['town'])
+        item = {k: q[k] for k in ('key', 'number', 'office', 'title', 'summary',
+                                  'threshold_label', 'decided_by')}
+        item.update({'threshold_pct': round(100 * q['threshold'], 1), 'race_id': race_id,
+                     'certified': is_cert, 'statewide': state, 'towns': tl})
+        if q['decided_by'] == 'town':
+            item['town_count'] = {s: sum(1 for t in tl if t['status'] == s)
+                                  for s in ('adopted', 'rejected', 'passing', 'failing', 'awaiting')}
+            item['town_count']['total'] = len(tl)
+        out.append(item)
+    return out
+
+
+def _place_questions(cur, ev, munis):
+    """Question cards for a town or county page, in the shape gcard() reads,
+    flagged question=True so the page draws Yes / No instead of parties.
+
+    The votes are the ones cast in this place. The outcome is the one that
+    decides it: the whole city for Q2 (a ward page shows Manchester's result,
+    not the ward's), the whole state for Q1."""
+    full = {q['key']: q for q in _question_payload(cur, ev)}
+    cards = []
+    for q in _question_payload(cur, ev, munis):
+        s, whole = q['statewide'], full[q['key']]
+        if q['decided_by'] == 'town':
+            here = sorted({t['town'] for t in q['towns']})
+            ft = {t['town']: t for t in whole['towns']}
+            if len(here) == 1:
+                t = ft[here[0]]
+                outcome = t['status']
+                outcome_label = (f"{t['town']}, all {t['precincts']} wards: "
+                                 f"{t['reported']}/{t['precincts']} reporting"
+                                 if t['wards'] else f"decided in {t['town']}")
+                if t['wards'] and t['pct_yes'] is not None:
+                    outcome_label += f", {t['pct_yes']}% Yes"
+            else:
+                done = [ft[n] for n in here]
+                outcome = None
+                outcome_label = (f"adopted in {sum(1 for t in done if t['status'] == 'adopted')}"
+                                 f" of {len(done)} towns here"
+                                 f" ({sum(1 for t in done if t['status'] in ('awaiting', 'passing', 'failing'))}"
+                                 f" not final)")
+        else:
+            ws = whole['statewide']
+            outcome = ws['status']
+            outcome_label = ('statewide: ' + (f"{ws['pct_yes']}% Yes, " if ws['pct_yes'] is not None else '')
+                             + f"{ws['reported']}/{ws['precincts']} reporting")
+        cards.append({
+            'question': True, 'key': q['key'], 'office': q['title'], 'summary': q['summary'],
+            'county': '', 'district': '', 'party': 'G', 'seats': 1, 'code': q['key'],
+            'office_key': '', 'certified': q['certified'], 'recount': None,
+            'candidates': [{'name': 'Yes', 'party': 'Y', 'votes': s['yes']},
+                           {'name': 'No', 'party': 'N', 'votes': s['no']}],
+            'total': s['total'], 'pct_yes': s['pct_yes'],
+            'reported': s['reported'], 'precincts': s['precincts'],
+            'threshold_pct': q['threshold_pct'], 'threshold_label': q['threshold_label'],
+            'decided_by': q['decided_by'], 'outcome': outcome, 'outcome_label': outcome_label,
+            'race_status': None, 'race_winners': [], 'race_expected_in': 0,
+        })
+    return cards
+
+
+@app.route('/api/questions')
+@_micro_cache(10)
+def api_questions():
+    """The ballot questions: statewide Yes / No and every town's vote."""
+    ev = _event()
+    if ev['is_primary']:
+        return jsonify({'event': ev['key'], 'questions': []})
+    conn = _contested_db()
+    try:
+        qs = _question_payload(conn.cursor(), ev)
+    finally:
+        conn.close()
+    return jsonify({'event': ev['key'], 'questions': qs})
+
+
+@app.route('/results/questions')
+def site_questions():
+    """Ballot questions page: statewide totals, then the town-by-town vote."""
+    demo = request.args.get('demo') == '1'
+    return render_template('site_questions.html', demo=demo,
+                           live_mode=_is_live(_event(), demo))
 
 
 def _dnum(d):

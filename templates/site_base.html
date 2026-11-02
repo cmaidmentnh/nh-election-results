@@ -43,6 +43,7 @@
   <div class="w">
     <a href="{{ link('/results', demo) }}" class="{{ 'on' if active == 'topline' }}">Topline</a>
     <a href="{{ link('/contested', demo) }}" class="{{ 'on' if active == 'races' }}">All races &amp; maps</a>
+    {% if not ev.is_primary %}<a href="{{ link('/results/questions', demo) }}" class="{{ 'on' if active == 'questions' }}">Ballot questions</a>{% endif %}
     <a href="{{ ev_other_href }}" class="evsw">{{ 'General election results →' if ev.is_primary else 'September primary results' }}</a>
   </div>
 </nav>
