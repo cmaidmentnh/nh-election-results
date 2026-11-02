@@ -280,15 +280,19 @@ function markTouch(){ lastTouch=Date.now(); }
 function userBusy(){ return Date.now()-lastTouch<TOUCH_QUIET_MS; }
 function watchMap(m){
   if(!m) return m;
-  ['movestart','zoomstart','dragstart','mousedown','wheel','touchstart',
-   'moveend','zoomend'].forEach(ev=>m.on(ev,markTouch));
+  // Only real hands on the map. move/zoom events also fire when the page
+  // itself fits the map, and counting those as the reader made every office
+  // switch wait out the 20 s quiet period (up to a full 30 s refresh) before
+  // its races appeared.
+  ['dragstart','mousedown','wheel','touchstart','dblclick','keydown'].forEach(ev=>m.on(ev,markTouch));
   return m;
 }
 let O=null, P=GEN?'G':'R', BASEV='Base', SCOPE=GEN?'all':'contested', data=null, board={}, timer=null, ctx=null;
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const J=u=>jc[u]?Promise.resolve(jc[u]):fetch(u).then(r=>r.json()).then(d=>jc[u]=d);
-const G=f=>geo[f]?Promise.resolve(geo[f]):fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d);
+const gp={};
+const G=f=>geo[f]?Promise.resolve(geo[f]):(gp[f]||(gp[f]=fetch('/static/data/'+f).then(r=>r.json()).then(d=>geo[f]=d)));
 const contested=(rec,p)=>rec&&rec.parties&&rec.parties[p]>rec.seats;
 
 /* Hover content goes in a panel pinned inside the map box. */
@@ -376,6 +380,9 @@ function buildBase(){
 function selectOffice(o){
   O=o; ctx=null; document.getElementById('detail').classList.remove('show');
   buildOffices();
+  // Fetch the map file alongside the data rather than after it.
+  if(o.file) G(o.file).catch(()=>{});
+  if(o.level==='house'){ G(HBASE.file).catch(()=>{}); G(HFLOT.file).catch(()=>{}); }
   J('/api/contested/'+o.key+Q1).then(d=>{
     if(o!==O)return; data=d; buildParty(); buildBase(); buildScope(); buildCounty();
     if(o.level==='house'&&!geoMap) J('/api/precinct-geo-map').then(m=>geoMap=m);
@@ -408,9 +415,9 @@ function load(){
   // The filter bar is built from the API response, so its height is only real
   // by the time we get here; at boot it is an empty 3px box.
   stickOffset();
-  refresh(); timer=setInterval(refresh,30000);
+  refresh(true); timer=setInterval(refresh,30000);
 }
-function refresh(){
+function refresh(force){
   const o=O,p=P;
   fetch('/api/contested/'+o.key+'/board?party='+p+(SCOPE==='all'?'&scope=all':'')+Q).then(r=>r.json()).then(b=>{
     if(o!==O||p!==P)return;
@@ -419,7 +426,8 @@ function refresh(){
     // Mid-pan or mid-zoom a redraw would yank the map out from under the
     // reader; the next tick is 30 seconds away and the counts above are
     // already current.
-    if(!userBusy()){ if(ctx) openDetail(ctx.o,ctx.code,ctx.p); else paint(); }
+    // A tab the reader just clicked always draws; only the timed refresh waits.
+    if(force===true || !userBusy()){ if(ctx) openDetail(ctx.o,ctx.code,ctx.p); else paint(); }
     tick();
   }).catch(()=>{});
 }
@@ -678,11 +686,11 @@ function tipFor(code){
     }</span></div>${rows}${p}`;
 }
 function renderMap(){
-  const sig='dist|'+O.key+'|'+P+'|'+BASEV+'|'+SCOPE+'|'+LIVE;
+  const sig='dist|'+LIVE;
   const reuse = map && mapSig===sig;
   if(!reuse){
     if(map){try{map.remove();}catch(e){}map=null;layer=null;mapBase=null;}
-    map=watchMap(L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+    map=watchMap(L.map('nhmap',{preferCanvas:true,attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
     G('nh-towns.geojson').then(g=>{
       mapBase=L.geoJSON(g,{style:{fillColor:'#f4f4f2',fillOpacity:1,color:'#fff',weight:.6,interactive:false}})
         .addTo(map);
@@ -734,7 +742,7 @@ function stateMap(){
   const reuse = map && mapSig===sig;
   if(!reuse){
     if(map){try{map.remove();}catch(e){}map=null;layer=null;mapBase=null;}
-    map=watchMap(L.map('nhmap',{attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+    map=watchMap(L.map('nhmap',{preferCanvas:true,attributionControl:false,scrollWheelZoom:false,zoomControl:true,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
     document.getElementById('legend').innerHTML='';
   }
   Promise.all([
@@ -881,7 +889,7 @@ function detailMap(r,p){
   const reuse = dmap && detSig===sig;   // same race: keep the map and its zoom
   if(!reuse){
     if(dmap){try{dmap.remove();}catch(e){}dmap=null;dlayer=null;}
-    dmap=watchMap(L.map('detmap',{attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
+    dmap=watchMap(L.map('detmap',{preferCanvas:true,attributionControl:false,scrollWheelZoom:false,zoomSnap:0,zoomDelta:.5}).fitBounds(NH));
   }
   Promise.all([geoMap?Promise.resolve(geoMap):J('/api/precinct-geo-map').then(d=>geoMap=d),
                G(HBASE.file), G('nh-towns.geojson')]).then(()=>{
@@ -961,6 +969,8 @@ addEventListener('resize', stickOffset);
   const o=BY[st.office]||BY['us-senate'];
   selectOffice(o);
   if(st.code) setTimeout(()=>{ try{ openDetail(o,st.code,P); }catch(e){} },900);
+  setTimeout(()=>{ ['nh-towns.geojson',HBASE.file,HFLOT.file]
+    .concat(OFFICES.map(x=>x.file).filter(Boolean)).forEach(f=>G(f).catch(()=>{})); },1500);
 })();
 </script>
 {% endblock %}
