@@ -31,6 +31,24 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 1 day cache for static files
 
 
+@app.after_request
+def _gzip_json(resp):
+    """Compress JSON. nginx here only gzips text/html, so the race boards (the
+    House board is 110 KB, polled every 30 s by every reader) went out raw."""
+    import gzip as _gz
+    if (resp.mimetype != 'application/json' or resp.direct_passthrough
+            or resp.status_code != 200 or 'Content-Encoding' in resp.headers
+            or 'gzip' not in (request.headers.get('Accept-Encoding') or '')):
+        return resp
+    body = resp.get_data()
+    if len(body) < 1024:
+        return resp
+    resp.set_data(_gz.compress(body, 5))
+    resp.headers['Content-Encoding'] = 'gzip'
+    resp.headers['Vary'] = 'Accept-Encoding'
+    return resp
+
+
 # ── Unlisted 2026 projection maps ─────────────────────────────────────────────
 # Reachable only by the full path below: nothing links to it, it is kept out of
 # the sitemap, and the noindex header stops it being picked up if the URL is
