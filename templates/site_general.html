@@ -165,7 +165,7 @@ function chamber(c){
     nums = `<span class="sn R">Republicans on the ballot for <b>${g(c.cover,'R')}</b> of ${S}</span>
             <span class="sn mid">${c.majority} for majority</span>
             <span class="sn D">Democrats for <b>${g(c.cover,'D')}</b> of ${S}</span>`;
-    key = (uR||uD) ? `Uncontested: ${uR} seat${uR==1?'':'s'} with only Republicans running, ${uD} with only Democrats`
+    key = (uR||uD) ? `Already decided: ${uR} seat${uR==1?'':'s'} Republicans can't lose, ${uD} Democrats can't (unopposed, or more seats than the other side has candidates)`
                    : 'Every seat is contested';
   }
   const bar = segs.filter(s=>s[0]>0).map(([n,col,o]) =>

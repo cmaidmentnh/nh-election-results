@@ -2277,7 +2277,9 @@ def _seat_tally(board, seats_total, majority, live):
     won      called by the desk, certified, or (once it is election day)
              unopposed - nobody can take a seat from the only name on the ballot
     leading  votes counted, not yet called: the top `seats` names in each race
-    unopposed  before election day, the seats only one name is running for
+    unopposed  before election day, the seats a party cannot lose: only one
+               name running, or fewer opponents than seats (3 seats, 3 D,
+               1 R = 2 D seats decided)
     open     seats nobody is on the ballot for (a write-in will fill them)
     awaiting everything else - races with no vote in yet
     Parties are the one-letter codes; 'O' is everyone else, write-ins included."""
@@ -2299,6 +2301,9 @@ def _seat_tally(board, seats_total, majority, live):
             add(per, c.get('party', 'O'))
         for k, n in per.items():
             add(cover, k, min(seats, n))
+        # Seats a party takes whatever the count says: with 3 seats, 3 D and
+        # 1 R on the ballot, the R can win at most one, so 2 are already D's.
+        locked = {k: min(n, max(0, seats - (len(named) - n))) for k, n in per.items()}
         counted = sum(c['votes'] or 0 for c in r['candidates'])
         if counted > 0:
             races_in += 1
@@ -2308,11 +2313,19 @@ def _seat_tally(board, seats_total, majority, live):
                 add(won if live else unopp, pof.get(w, 'O'))
             open_ += max(0, seats - len(winners))
         elif counted <= 0:
-            continue
+            for k, n in locked.items():
+                if n:
+                    add(won if live else unopp, k, n)
         else:
-            bucket = won if (st == 'called' or pj.get('certified')) else lead
+            called = st == 'called' or pj.get('certified')
+            left = dict(locked)
             for w in winners:
-                add(bucket, pof.get(w, 'O'))
+                k = pof.get(w, 'O')
+                if not called and left.get(k):
+                    left[k] -= 1
+                    add(won if live else unopp, k)
+                else:
+                    add(won if called else lead, k)
             open_ += max(0, seats - len(winners))
     assigned = sum(won.values()) + sum(lead.values()) + sum(unopp.values()) + open_
     return {'seats': seats_total, 'majority': majority, 'races': len(board),
