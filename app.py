@@ -821,6 +821,37 @@ CONTESTED_OFFICES = {
 }
 
 
+# Every reader polls the same few JSON answers every 30 s, and each one is a
+# full recount of the race from SQLite - the State House board took a second
+# and two sync workers served 18 a second. Hold each answer for a few seconds
+# per worker, keyed on the path and the query parameters these endpoints read,
+# so a crowd costs one computation. Results land minutes apart; 10 s is unseen.
+_API_CACHE = {}
+_API_CACHE_KEYS = ("party", "code", "scope", "event", "demo", "preview")
+
+
+def _micro_cache(ttl=10):
+    from functools import wraps
+
+    def deco(f):
+        @wraps(f)
+        def w(*a, **k):
+            key = (request.path,) + tuple(request.args.get(x, "") for x in _API_CACHE_KEYS)
+            now = _time.time()
+            hit = _API_CACHE.get(key)
+            if hit and hit[0] > now:
+                resp = app.response_class(hit[1], mimetype="application/json")
+            else:
+                resp = make_response(f(*a, **k))
+                if resp.status_code == 200:
+                    if len(_API_CACHE) > 4000:
+                        _API_CACHE.clear()
+                    _API_CACHE[key] = (now + ttl, resp.get_data())
+            return resp
+        return w
+    return deco
+
+
 def _contested_db():
     conn = _sqlite3.connect('nh_elections.db')
     conn.row_factory = _sqlite3.Row
@@ -1072,6 +1103,7 @@ def site_county(name):
 
 
 @app.route('/api/place/<kind>/<path:name>')
+@_micro_cache(10)
 def api_place(kind, name):
     """Every 2026 primary result for one town, or one county.
 
@@ -1233,6 +1265,7 @@ def _dnum(d):
 
 
 @app.route('/api/contested/<office_key>')
+@_micro_cache(10)
 def api_contested(office_key):
     """Per-district contested status for an office in the 2026 primary."""
     if office_key not in CONTESTED_OFFICES:
@@ -2197,6 +2230,7 @@ def api_precinct_geo_map():
 
 
 @app.route('/api/contested/<office_key>/results')
+@_micro_cache(10)
 def api_contested_results(office_key):
     """Overall + precinct-by-precinct results + projection for one district."""
     if office_key not in CONTESTED_OFFICES:
@@ -2507,6 +2541,7 @@ def primary_night():
 
 
 @app.route('/api/contested/<office_key>/board')
+@_micro_cache(10)
 def api_contested_board(office_key):
     """Results board: every contested district for a party, with current leader,
     % of expected vote counted, and called / too-close / awaiting status. The
