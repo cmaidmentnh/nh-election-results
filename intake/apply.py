@@ -435,10 +435,16 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
                            reason=f"Conflicts with {existing:,} ballots already on file; {hint}")
             queued += 1
         elif b.election_id:
+            # Shut gate: hold it for the same reason the vote lines are held,
+            # not as a ballot we could not identify.
+            if b.election_id in valid_ids and b.ballots_cast is not None and not gate_open:
+                reason = f"Held until polls close ({config.OPEN_AFTER})"
+            else:
+                reason = "Could not tell which ballot these are for"
             store.add_item(conn, message_id, kind="ballots", municipality=municipality,
                            election_id=b.election_id, votes=b.ballots_cast,
                            confidence=b.confidence, status="pending",
-                           reason="Could not tell which ballot these are for")
+                           reason=reason)
             queued += 1
 
     conn.commit()

@@ -20,6 +20,10 @@
         .results-table th:first-child, .results-table td:first-child { min-width: 100px; }
         h2 { font-size: 1.1rem; }
     }
+    .results-table input.conflict { border-color: #b91c1c; background: #fef2f2; }
+    .clear-town { background: none; border: 1px solid #e5b4b4; color: #b91c1c; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 11px; cursor: pointer; }
+    .save-now { margin-left: 0.75rem; border: 1px solid #1e3a5f; background: #1e3a5f; color: #fff; border-radius: 4px; padding: 0.3rem 0.8rem; cursor: pointer; }
+    .save-now[disabled] { opacity: .45; cursor: not-allowed; }
 </style>
 <p><a href="{{ url_for('entry.index') }}">&larr; Back to Entry</a></p>
 
@@ -53,14 +57,16 @@
             <tr data-candidate="{{ c.id }}">
                 <td><strong>{{ c.name }}</strong></td>
                 {% for town in towns %}
+                {% set v = results.get(town, {}).get(c.id) %}
                 <td style="text-align: center;">
                     <input type="number"
                            class="vote-input"
                            data-town="{{ town }}"
                            data-candidate="{{ c.id }}"
                            data-party="{{ party }}"
-                           value="{{ results.get(town, {}).get(c.id, 0) }}"
-                           min="0">
+                           value="{{ v if v is not none else '' }}"
+                           data-orig="{{ v if v is not none else '' }}"
+                           min="0" step="1">
                 </td>
                 {% endfor %}
                 <td class="row-total" data-candidate="{{ c.id }}" style="text-align: center; font-weight: 600;">0</td>
@@ -75,6 +81,16 @@
                 {% endfor %}
                 <td class="party-total" data-party="{{ party }}" style="text-align: center;">0</td>
             </tr>
+            <tr>
+                <td class="text-muted" style="font-size: 12px;">Un-report</td>
+                {% for town in towns %}
+                <td style="text-align: center;">
+                    <button type="button" class="clear-town" data-town="{{ town }}"
+                            title="Delete every result for {{ town }} in this race">Clear</button>
+                </td>
+                {% endfor %}
+                <td></td>
+            </tr>
         </tfoot>
     </table>
     </div>
@@ -82,8 +98,9 @@
 {% endfor %}
 
 <div class="card">
-    <div id="save-status" style="padding: 0.5rem; text-align: center;">
-        <span class="text-muted">Changes save automatically</span>
+    <div style="padding: 0.5rem; text-align: center;">
+        <span id="save-status"><span class="text-muted">A town saves once every candidate has a number</span></span>
+        <button type="button" id="save-now" class="save-now">Save now</button>
     </div>
 </div>
 
@@ -128,36 +145,95 @@ function updateTotals() {
     });
 }
 
-function saveResults() {
-    const results = [];
-    document.querySelectorAll('.vote-input').forEach(input => {
-        results.push({
-            town: input.dataset.town,
-            candidate_id: parseInt(input.dataset.candidate),
-            votes: parseInt(input.value) || 0
-        });
-    });
+const IDLE = '<span class="text-muted">A town saves once every candidate has a number</span>';
+let conflicted = false, inFlight = false, again = false;
 
-    document.getElementById('save-status').innerHTML = '<span style="color: #666;">Saving...</span>';
+function setStatus(html) { document.getElementById('save-status').innerHTML = html; }
+
+// A town autosaves only once every candidate has a number in it - the grid
+// used to save 1 s after any keystroke, and sent 0 for every blank town, so
+// one number marked every town reported.
+function townComplete(town) {
+    return [...document.querySelectorAll('.vote-input')]
+        .filter(i => i.dataset.town === town)
+        .every(i => i.value.trim() !== '');
+}
+
+// Only changed, non-blank boxes go up, with the value the page loaded with.
+function collect(onlyComplete) {
+    const results = [], sent = [], bad = [], done = {};
+    document.querySelectorAll('.vote-input').forEach(input => {
+        const v = input.value.trim(), o = input.dataset.orig || '';
+        if (v === '' || v === o) return;
+        const town = input.dataset.town;
+        if (onlyComplete) {
+            if (!(town in done)) done[town] = townComplete(town);
+            if (!done[town]) return;
+        }
+        if (!/^\d+$/.test(v)) { bad.push(input); return; }
+        sent.push([input, v]);
+        results.push({ town, candidate_id: parseInt(input.dataset.candidate),
+                       votes: parseInt(v, 10), orig: o === '' ? null : parseInt(o, 10) });
+    });
+    return { results, sent, bad };
+}
+
+function saveResults(onlyComplete) {
+    if (conflicted) return;
+    if (inFlight) { again = again || (onlyComplete ? 'auto' : 'all'); return; }
+    const { results, sent, bad } = collect(onlyComplete);
+    document.querySelectorAll('.vote-input.conflict').forEach(i => { if (!i.title) i.classList.remove('conflict'); });
+    if (bad.length) {
+        bad.forEach(i => i.classList.add('conflict'));
+        setStatus('<span style="color: #8b0000;">Counts must be whole numbers, 0 or more</span>');
+        return;
+    }
+    if (!results.length) {
+        setStatus(onlyComplete ? '<span class="text-muted">Waiting for every candidate in the town — or press Save now</span>'
+                               : '<span class="text-muted">Nothing new to save</span>');
+        return;
+    }
+    inFlight = true;
+    setStatus('<span style="color: #666;">Saving...</span>');
 
     fetch(`/entry/race/${raceId}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ results: results })
     })
-    .then(r => r.json())
-    .then(data => {
+    .then(r => r.json().then(d => [r.status, d]))
+    .then(([status, data]) => {
+        if (status === 409) {
+            conflicted = true;
+            clearTimeout(saveTimeout);
+            (data.conflicts || []).forEach(c => {
+                document.querySelectorAll(`.vote-input[data-candidate="${c.candidate_id}"]`).forEach(i => {
+                    if (i.dataset.town === c.municipality) {
+                        i.classList.add('conflict');
+                        i.title = 'Now ' + (c.stored === null ? 'blank' : c.stored) + ' on file';
+                    }
+                });
+            });
+            document.getElementById('save-now').disabled = true;
+            setStatus('<span style="color: #8b0000; font-weight: 600;">' +
+                (data.stale ? 'This page is out of date.' : 'Someone else changed this since you opened the page — nothing was saved.') +
+                ' <a href="" onclick="location.reload();return false;">Reload</a> to see their numbers.</span>');
+            return;
+        }
         if (data.success) {
-            document.getElementById('save-status').innerHTML = '<span style="color: #166534;">Saved!</span>';
-            setTimeout(() => {
-                document.getElementById('save-status').innerHTML = '<span class="text-muted">Changes save automatically</span>';
-            }, 2000);
+            sent.forEach(([i, v]) => { i.dataset.orig = v; });
+            setStatus('<span style="color: #166534;">Saved!</span>');
+            setTimeout(() => { if (!conflicted) setStatus(IDLE); }, 2000);
         } else {
-            document.getElementById('save-status').innerHTML = '<span style="color: #8b0000;">Error saving</span>';
+            setStatus('<span style="color: #8b0000;">Error saving: ' + (data.error || status) + '</span>');
         }
     })
     .catch(err => {
-        document.getElementById('save-status').innerHTML = '<span style="color: #8b0000;">Error: ' + err + '</span>';
+        setStatus('<span style="color: #8b0000;">Error: ' + err + '</span>');
+    })
+    .finally(() => {
+        inFlight = false;
+        if (again) { const a = again; again = false; saveResults(a === 'auto'); }
     });
 }
 
@@ -165,9 +241,31 @@ document.querySelectorAll('.vote-input').forEach(input => {
     input.addEventListener('input', () => {
         updateTotals();
         clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveResults, 1000);
+        saveTimeout = setTimeout(() => saveResults(true), 1000);
     });
 });
+
+document.getElementById('save-now').addEventListener('click', () => { clearTimeout(saveTimeout); saveResults(false); });
+
+document.querySelectorAll('.clear-town').forEach(btn => btn.addEventListener('click', () => {
+    const town = btn.dataset.town;
+    if (!confirm(`Delete every result for ${town} in this race? The town goes back to not reported.`)) return;
+    btn.disabled = true;
+    fetch(`/entry/race/${raceId}/clear`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ town })
+    })
+    .then(r => r.json().then(d => [r.ok, d]))
+    .then(([ok, d]) => {
+        btn.disabled = false;
+        if (!ok) { setStatus('<span style="color: #8b0000;">Could not clear: ' + (d.error || 'failed') + '</span>'); return; }
+        document.querySelectorAll('.vote-input').forEach(i => {
+            if (i.dataset.town === town) { i.value = ''; i.dataset.orig = ''; }
+        });
+        updateTotals();
+        setStatus(`<span style="color: #166534;">Cleared ${d.cleared} result(s) for ${town}</span>`);
+    })
+    .catch(err => { btn.disabled = false; setStatus('<span style="color: #8b0000;">Error: ' + err + '</span>'); });
+}));
 
 // Initial totals
 updateTotals();

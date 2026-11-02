@@ -13,7 +13,9 @@ login_manager = LoginManager()
 DATABASE = 'nh_elections.db'
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    # Wait out another writer (intake, a second reviewer) instead of failing
+    # with 'database is locked' the moment two requests overlap.
+    conn = sqlite3.connect(DATABASE, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 

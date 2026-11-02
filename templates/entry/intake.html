@@ -92,7 +92,7 @@
                     {% else %}<span class="i-unmatched">{{ it.candidate_text or '?' }}</span>{% endif %}
                 </td>
                 <td class="i-num">
-                    <input type="number" class="i-votes" value="{{ it.votes if it.votes is not none else '' }}" min="0">
+                    <input type="number" class="i-votes" value="{{ it.votes if it.votes is not none else '' }}" min="0" step="1">
                     {% if it.old_votes is not none %}<div class="i-old">was {{ '{:,}'.format(it.old_votes) }}</div>{% endif %}
                 </td>
                 <td class="i-reason">
@@ -207,11 +207,33 @@ document.querySelectorAll('.i-toggle').forEach(btn => {
     });
 });
 
+// One request per row/report at a time: a double click (or two reviewers on
+// one screen) used to send the same Add twice.
+function setBusy(scope, busy) {
+    scope.querySelectorAll('button').forEach(b => {
+        if (b.classList.contains('i-toggle')) return;
+        b.disabled = busy;
+    });
+    scope.style.opacity = busy ? .5 : 1;
+}
+
 async function resolve(row, action) {
+    if (row.dataset.busy) return;
     const id = row.dataset.item;
     const votesEl = row.querySelector('.i-votes');
-    const body = action === 'accept' && votesEl ? {votes: Number(votesEl.value)} : {};
-    row.style.opacity = .5;
+    let body = {};
+    if (action === 'accept' && votesEl) {
+        // Number('') is 0, so an emptied box used to publish a zero.
+        const raw = votesEl.value.trim();
+        if (!/^\d+$/.test(raw)) {
+            alert('Enter the count as a whole number, 0 or more.');
+            votesEl.focus();
+            return;
+        }
+        body = {votes: parseInt(raw, 10)};
+    }
+    row.dataset.busy = '1';
+    setBusy(row, true);
     try {
         const res = await fetch(`/entry/intake/item/${id}/${action}`, {
             method: 'POST',
@@ -229,18 +251,21 @@ async function resolve(row, action) {
         row.style.opacity = 1;
         row.style.background = action === 'reject' ? '#fef2f2' : '#f0fdf4';
     } catch (err) {
-        row.style.opacity = 1;
+        delete row.dataset.busy;
+        setBusy(row, false);
         alert('Could not save: ' + err.message);
     }
 }
 
 document.querySelectorAll('.i-bulk-btn').forEach(b => b.addEventListener('click', async () => {
     const card = b.closest('.i-card'), action = b.dataset.bulk;
+    if (card.dataset.busy) return;
     const label = {add: 'Add every line of this report to what is already recorded (another machine\'s tape)?',
                    accept: 'Publish every line of this report as read?',
                    reject: 'Reject this whole report?'}[action];
     if (!confirm(label)) return;
-    card.style.opacity = .5;
+    card.dataset.busy = '1';
+    setBusy(card, true);
     try {
         const res = await fetch(`/entry/intake/message/${card.dataset.message}/bulk/${action}`, {method: 'POST'});
         const data = await res.json();
@@ -250,7 +275,8 @@ document.querySelectorAll('.i-bulk-btn').forEach(b => b.addEventListener('click'
             (data.skipped ? `, ${data.skipped} need a human` : '') + '</b> · reloading…';
         setTimeout(() => location.reload(), 900);
     } catch (err) {
-        card.style.opacity = 1;
+        delete card.dataset.busy;
+        setBusy(card, false);
         alert('Could not save: ' + err.message);
     }
 }));

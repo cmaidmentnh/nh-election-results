@@ -40,7 +40,8 @@
     <div class="e-ballots-cast">
         <label for="ballots-{{ eid }}"><b>{{ party }} ballots cast</b> {{ municipality }}</label>
         <input type="number" min="0" inputmode="numeric" id="ballots-{{ eid }}" class="e-ballots-input"
-               data-election="{{ eid }}" value="{{ ballots[eid] if ballots[eid] is not none else '' }}" placeholder="0">
+               data-election="{{ eid }}" value="{{ ballots[eid] if ballots[eid] is not none else '' }}"
+               data-orig="{{ ballots[eid] if ballots[eid] is not none else '' }}" placeholder="0">
     </div>
     {% endif %}
 
@@ -62,8 +63,9 @@
                     {{ c.name }}{% if c.is_writein %} <span class="e-pill">write-in</span>{% endif %}
                 </span>
                 <input type="number" min="0" inputmode="numeric" class="e-vote"
-                       data-race="{{ race.id }}" data-candidate="{{ c.candidate_id }}"
-                       value="{{ c.votes if c.votes is not none else '' }}" placeholder="0">
+                       data-race="{{ race.id }}" data-candidate="{{ c.candidate_id }}"{% if c.is_writein %} data-optional="1"{% endif %}
+                       value="{{ c.votes if c.votes is not none else '' }}"
+                       data-orig="{{ c.votes if c.votes is not none else '' }}" placeholder="0">
             </div>
             {% endfor %}
 
@@ -71,8 +73,9 @@
             <div class="e-cand">
                 <span class="e-cand-name is-special">Write-in (total)</span>
                 <input type="number" min="0" inputmode="numeric" class="e-vote"
-                       data-race="{{ race.id }}" data-candidate="{{ race.writein_id }}"
-                       value="{{ race.writein_votes if race.writein_votes is not none else '' }}" placeholder="0">
+                       data-race="{{ race.id }}" data-candidate="{{ race.writein_id }}" data-optional="1"
+                       value="{{ race.writein_votes if race.writein_votes is not none else '' }}"
+                       data-orig="{{ race.writein_votes if race.writein_votes is not none else '' }}" placeholder="0">
             </div>
 
             {# named write-in adder — emphasized where candidates < seats #}
@@ -83,6 +86,8 @@
 
         <div class="e-race-foot">
             <span class="e-race-total">Total: <b data-race-total="{{ race.id }}">0</b></span>
+            <button type="button" class="e-clear-race" data-race="{{ race.id }}"
+                    title="Delete this race's results for {{ municipality }} (un-report the town)">Clear</button>
         </div>
     </div>
     {% endfor %}
@@ -91,7 +96,8 @@
 {% endfor %}
 
 <div class="e-savebar">
-    <span class="e-save-status" id="save-status"><span class="e-dot"></span>Changes save automatically</span>
+    <span class="e-save-status" id="save-status"><span class="e-dot"></span>A race saves once every candidate has a number</span>
+    <button type="button" class="e-save-now" id="save-now">Save now</button>
     <span class="e-kbd-hint"><kbd>Enter</kbd> next field · <kbd>↑</kbd><kbd>↓</kbd> move</span>
 </div>
 
@@ -102,10 +108,20 @@
   .e-add-writein[data-hint] { border-color: var(--e-amber); color: var(--e-amber); background: var(--e-amber-soft); font-weight: 600; }
   .e-writein-row { display: flex; gap: .5rem; align-items: center; padding: .35rem .9rem; }
   .e-writein-row input.wn { flex: 1; padding: .4rem .55rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: .9rem; }
+  .e-clear-race { margin-left: auto; background: none; border: 1px solid #e5b4b4; color: #b91c1c; border-radius: 6px;
+                  padding: .2rem .55rem; font-size: .75rem; cursor: pointer; }
+  .e-save-now { margin-left: .75rem; border: 1px solid var(--e-navy); background: var(--e-navy); color: #fff;
+                border-radius: 6px; padding: .35rem .8rem; font-size: .85rem; cursor: pointer; }
+  .e-save-now[disabled] { opacity: .45; cursor: not-allowed; }
+  .e-vote.conflict, .e-ballots-input.conflict, .wv.conflict { border-color: #b91c1c !important; background: #fef2f2; }
+  .e-save-status.conflict { color: #b91c1c; font-weight: 600; }
+  .e-save-status.conflict a { color: #b91c1c; }
 </style>
 
 <script>
-const SAVE_URL = "{{ url_for('entry.place_save', year=year, election_type=election_type, municipality=municipality) }}";
+// tojson rather than a quoted string: autoescaping turned the & in "Atkinson & Gilmanton
+// Academy Grant" into &amp; inside the URL, so that place could never save.
+const SAVE_URL = {{ url_for('entry.place_save', year=year, election_type=election_type, municipality=municipality)|tojson }};
 const TOTAL_RACES = {{ total_races }};
 let saveTimeout = null;
 
@@ -127,39 +143,129 @@ function updateOverall() {
     document.getElementById('overall-bar').style.width = (TOTAL_RACES ? 100*entered/TOTAL_RACES : 0) + '%';
 }
 
-function collect() {
-    const results = [], writeins = [], ballots = [];
+const CLEAR_URL = {{ url_for('entry.place_clear', year=year, election_type=election_type, municipality=municipality)|tojson }};
+const IDLE_MSG = 'A race saves once every candidate has a number';
+let conflicted = false, inFlight = false, again = false;
+
+function setStatus(cls, html) {
+    const s = document.getElementById('save-status');
+    s.className = 'e-save-status ' + cls; s.innerHTML = '<span class="e-dot"></span>' + html;
+}
+
+// A race autosaves only once every candidate in it has a number: saving after
+// a 900 ms pause published half-typed races. The total write-in line and named
+// write-in rows are optional. "Save now" saves whatever has been typed.
+function raceComplete(raceId) {
+    return [...document.querySelectorAll(`.e-vote[data-race="${raceId}"]:not([data-optional])`)]
+        .every(i => i.value.trim() !== '');
+}
+
+function origOf(i) { const o = i.dataset.orig || ''; return o === '' ? null : parseInt(o, 10); }
+
+// Only boxes the editor changed are sent, each with the value the page loaded
+// with, so the server can refuse to overwrite someone else's newer number.
+// Blank boxes are never sent (blank is not zero); use Clear to un-report.
+function collect(onlyComplete) {
+    const results = [], writeins = [], ballots = [], sent = [], bad = [];
+    const take = (i, raceId) => {
+        const v = i.value.trim();
+        if (v === '' || v === (i.dataset.orig || '')) return null;
+        if (onlyComplete && raceId && !raceComplete(raceId)) return null;
+        if (!/^\d+$/.test(v)) { bad.push(i); return null; }
+        sent.push([i, v]);
+        return parseInt(v, 10);
+    };
     document.querySelectorAll('.e-vote').forEach(i => {
-        if (i.value === '') return;
-        results.push({ race_id: +i.dataset.race, candidate_id: +i.dataset.candidate, votes: parseInt(i.value)||0 });
+        const votes = take(i, i.dataset.race);
+        if (votes === null) return;
+        results.push({ race_id: +i.dataset.race, candidate_id: +i.dataset.candidate, votes, orig: origOf(i) });
     });
     document.querySelectorAll('.e-writein-row').forEach(row => {
         const name = row.querySelector('.wn').value.trim();
-        const votes = row.querySelector('.wv').value;
-        if (name === '' || votes === '') return;
-        writeins.push({ race_id: +row.dataset.race, name, votes: parseInt(votes)||0 });
+        const wv = row.querySelector('.wv');
+        if (name === '') return;
+        const votes = take(wv, row.dataset.race);
+        if (votes === null) return;
+        writeins.push({ race_id: +row.dataset.race, name, votes, orig: origOf(wv) });
     });
     document.querySelectorAll('.e-ballots-input').forEach(i => {
-        if (i.value === '') return;
-        ballots.push({ election_id: +i.dataset.election, ballots_cast: parseInt(i.value)||0 });
+        const n = take(i, null);
+        if (n === null) return;
+        ballots.push({ election_id: +i.dataset.election, ballots_cast: n, orig: origOf(i) });
     });
-    return { results, writeins, ballots };
+    return { body: { results, writeins, ballots }, sent, bad };
 }
 
-function save() {
-    const s = document.getElementById('save-status');
-    s.className = 'e-save-status saving'; s.innerHTML = '<span class="e-dot"></span>Saving…';
-    fetch(SAVE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collect()) })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) { s.className='e-save-status saved'; s.innerHTML='<span class="e-dot"></span>Saved';
-                setTimeout(()=>{ s.className='e-save-status'; s.innerHTML='<span class="e-dot"></span>Changes save automatically'; }, 2500); }
-            else { s.className='e-save-status error'; s.innerHTML='<span class="e-dot"></span>Error saving'; }
+function showConflict(d) {
+    conflicted = true;
+    clearTimeout(saveTimeout);
+    (d.conflicts || []).forEach(c => {
+        const sel = c.candidate_id
+            ? `.e-vote[data-race="${c.race_id}"][data-candidate="${c.candidate_id}"]`
+            : `.e-ballots-input[data-election="${c.election_id}"]`;
+        const el = document.querySelector(sel);
+        if (el) { el.classList.add('conflict'); el.title = 'Now ' + (c.stored === null ? 'blank' : c.stored) + ' on file'; }
+    });
+    setStatus('conflict', (d.stale ? 'This page is out of date.' : 'Someone else changed this since you opened the page — nothing was saved.')
+        + ' <a href="" onclick="location.reload();return false;">Reload</a> to see their numbers.');
+    document.getElementById('save-now').disabled = true;
+}
+
+function save(onlyComplete) {
+    if (conflicted) return;
+    if (inFlight) { again = again || (onlyComplete ? 'auto' : 'all'); return; }
+    const { body, sent, bad } = collect(onlyComplete);
+    document.querySelectorAll('.e-vote.bad, .wv.bad, .e-ballots-input.bad').forEach(i => i.classList.remove('bad', 'conflict'));
+    if (bad.length) {
+        bad.forEach(i => i.classList.add('bad', 'conflict'));
+        setStatus('error', 'Counts must be whole numbers, 0 or more');
+        return;
+    }
+    if (!sent.length) {
+        if (!onlyComplete) setStatus('saved', 'Nothing new to save');
+        else setStatus('', 'Waiting for every candidate in the race — or press Save now');
+        return;
+    }
+    inFlight = true;
+    setStatus('saving', 'Saving…');
+    fetch(SAVE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        .then(r => r.json().then(d => [r.status, d]))
+        .then(([status, d]) => {
+            if (status === 409) { showConflict(d); return; }
+            if (d.success) {
+                sent.forEach(([i, v]) => { i.dataset.orig = v; });  // what is on file now
+                setStatus('saved', 'Saved');
+                setTimeout(() => { if (!conflicted) setStatus('', IDLE_MSG); }, 2500);
+            } else { setStatus('error', 'Error saving: ' + (d.error || status)); }
         })
-        .catch(e => { s.className='e-save-status error'; s.innerHTML='<span class="e-dot"></span>Error: '+e; });
+        .catch(e => setStatus('error', 'Error: ' + e))
+        .finally(() => {
+            inFlight = false;
+            if (again) { const a = again; again = false; save(a === 'auto'); }
+        });
 }
 
-function scheduleSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(save, 900); }
+function scheduleSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(() => save(true), 900); }
+
+document.getElementById('save-now').addEventListener('click', () => { clearTimeout(saveTimeout); save(false); });
+
+document.querySelectorAll('.e-clear-race').forEach(btn => btn.addEventListener('click', () => {
+    const raceId = btn.dataset.race;
+    const card = btn.closest('.e-race');
+    const what = card.querySelector('.e-race-office').textContent + ' ' + (card.querySelector('.e-race-sub')?.textContent || '');
+    if (!confirm(`Delete every result for ${what.trim()} in this town? The town goes back to not reported.`)) return;
+    btn.disabled = true;
+    fetch(CLEAR_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ race_id: +raceId }) })
+        .then(r => r.json().then(d => [r.ok, d]))
+        .then(([ok, d]) => {
+            btn.disabled = false;
+            if (!ok) { setStatus('error', 'Could not clear: ' + (d.error || 'failed')); return; }
+            card.querySelectorAll('.e-vote, .wv').forEach(i => { i.value = ''; i.dataset.orig = ''; i.classList.remove('filled'); });
+            recalcRace(raceId); updateOverall();
+            setStatus('saved', `Cleared ${d.cleared} result(s)`);
+        })
+        .catch(e => { btn.disabled = false; setStatus('error', 'Error: ' + e); });
+}));
 
 function wireInput(i) {
     i.addEventListener('input', () => {
@@ -193,6 +299,7 @@ document.querySelectorAll('.e-add-writein').forEach(btn => {
         document.querySelector(`.e-writein-adder[data-race="${raceId}"]`).appendChild(row);
         const wv = row.querySelector('.wv'); wv.dataset.race = raceId;
         wireInput(wv);
+        wv.dataset.orig = '';
         row.querySelector('.wn').addEventListener('input', scheduleSave);
         row.querySelector('.wn').focus();
     });

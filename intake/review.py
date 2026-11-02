@@ -13,9 +13,11 @@ from flask import Blueprint, abort, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 
 from auth import get_db
-from entry import log_audit, normalize_name
+from entry import log_audit, normalize_name, whole_count
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/entry/intake")
+
+HEIC_BRANDS = (b"heic", b"heix", b"mif1", b"msf1", b"hevc", b"heim", b"heis")
 
 
 def _attachments_for(cursor, message_id):
@@ -45,7 +47,9 @@ def _sniff(path):
         return "image/webp"
     if head[:5] == b"%PDF-":
         return "application/pdf"
-    if head[4:8] == b"ftyp":
+    # ftyp alone is any ISO-BMFF file - an MP4 or MOV video too. Only the
+    # HEIF/HEIC brands are photos.
+    if head[4:8] == b"ftyp" and head[8:12] in HEIC_BRANDS:
         return "image/heic"
     return mimetypes.guess_type(str(path))[0]
 
@@ -124,10 +128,16 @@ def _apply_item(cursor, item, action, data, user_id):
         )
         return "rejected", None
 
-    votes = data.get("votes", item["votes"])
+    if "votes" in data:
+        votes = whole_count(data["votes"])
+        if votes is None:
+            return None, "the count must be a whole number, 0 or more"
+    else:
+        votes = item["votes"]
+        if votes is not None and whole_count(votes) is None:
+            return None, "the queued count is not a whole number, 0 or more - edit it"
     race_id = data.get("race_id", item["race_id"])
     candidate_id = data.get("candidate_id", item["candidate_id"])
-    votes = int(votes) if votes is not None else None
 
     # A town with several machines sends several tapes. "add" sums this
     # reading with what is recorded NOW, not with old_votes (the value when the
@@ -242,17 +252,26 @@ def resolve(item_id, action):
     conn = get_db()
     cursor = conn.cursor()
     try:
+        # Take the write lock BEFORE reading 'pending': two reviewers pressing
+        # the same button at once both saw the line pending and both applied
+        # it, and an Add counted the tape twice.
+        cursor.execute("BEGIN IMMEDIATE")
         cursor.execute("SELECT * FROM intake_items WHERE id = ?", (item_id,))
         item = cursor.fetchone()
         if not item or item["status"] != "pending":
+            conn.rollback()
             return jsonify({"error": "not pending"}), 404
         status, result = _apply_item(cursor, item, action, data, current_user.id)
         if status is None:
+            conn.rollback()
             return jsonify({"error": result}), 400
         conn.commit()
         if status == "rejected":
             return jsonify({"success": True, "status": "rejected"})
         return jsonify({"success": True, "status": "applied", "votes": result})
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -275,6 +294,9 @@ def resolve_message(message_id, action):
     conn = get_db()
     cursor = conn.cursor()
     try:
+        # Same race as resolve(): read 'pending' under the write lock, or two
+        # clicks of "Add whole tape" add every line twice.
+        cursor.execute("BEGIN IMMEDIATE")
         cursor.execute("SELECT * FROM intake_items WHERE message_id = ? AND status = 'pending' ORDER BY id",
                        (message_id,))
         items = cursor.fetchall()
@@ -288,6 +310,9 @@ def resolve_message(message_id, action):
                 done += 1
         conn.commit()
         return jsonify({"success": True, "done": done, "skipped": skipped})
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

@@ -35,6 +35,9 @@ log = logging.getLogger(__name__)
 vol_bp = Blueprint('vol', __name__)
 
 DATABASE = 'nh_elections.db'
+# HEIF/HEIC major brands (bytes 8:12 of the ftyp box). Anything else with an
+# ftyp box - MP4, MOV, M4A - is not a photo.
+HEIC_BRANDS = (b'heic', b'heix', b'mif1', b'msf1', b'hevc', b'heim', b'heis')
 BASE_DIR = Path(__file__).resolve().parent
 ATTACH_DIR = Path(os.environ.get("INTAKE_ATTACH_DIR", str(BASE_DIR / "data" / "intake_attachments")))
 PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://elections.nhhouse.gop').rstrip('/')
@@ -624,7 +627,8 @@ def portal_photo(token):
         ext = 'png'
     elif data[:4] == b'%PDF':
         ext = 'pdf'
-    elif data[4:8] == b'ftyp':
+    elif data[4:8] == b'ftyp' and data[8:12] in HEIC_BRANDS:
+        # ftyp alone is any ISO-BMFF file - MP4 and MOV videos too.
         ext = 'heic'
     elif data[:4] == b'RIFF' and data[8:12] == b'WEBP':
         ext = 'webp'

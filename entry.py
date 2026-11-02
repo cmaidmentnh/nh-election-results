@@ -65,6 +65,129 @@ def log_audit(cursor, user_id, race_id, municipality, candidate_id, action, old_
           json.dumps(new_values) if new_values else None))
 
 
+def whole_count(value):
+    """A vote or ballot count as a non-negative int, or None if it is not one."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        return int(value) if value.is_integer() and value >= 0 else None
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
+
+
+def _blank(value):
+    return value is None or (isinstance(value, str) and value.strip() == '')
+
+
+class _Reject(Exception):
+    """Abort a save: roll back everything and answer with this status."""
+
+    def __init__(self, status, payload):
+        super().__init__(payload.get('error'))
+        self.status = status
+        self.payload = payload
+
+
+STALE_PAGE = {'error': 'This page is out of date. Reload it before saving.', 'stale': True}
+
+
+def _cell(entry, key='votes'):
+    """(votes, orig) from one posted cell; votes None means 'blank - skip it'.
+
+    A blank box is not a zero: the race grid used to send 0 for every empty
+    town, which marked them all reported. `orig` is the value the page showed
+    when it loaded (None = blank); a page that does not send it predates the
+    lost-update check and is refused rather than allowed to overwrite.
+    """
+    raw = entry.get(key)
+    if _blank(raw):
+        return None, None
+    votes = whole_count(raw)
+    if votes is None:
+        raise _Reject(400, {'error': f'"{raw}" is not a whole number of 0 or more.'})
+    if 'orig' not in entry:
+        raise _Reject(409, STALE_PAGE)
+    orig = entry.get('orig')
+    if _blank(orig):
+        orig = None
+    else:
+        orig = whole_count(orig)
+        if orig is None:
+            raise _Reject(400, {'error': 'Bad original value.'})
+    return votes, orig
+
+
+def _write_result(cursor, user_id, race_id, municipality, candidate_id, votes, orig, conflicts):
+    """Record one candidate's votes in one town, through result_audit.
+
+    Only written if what is stored is still what the editor's page showed
+    (`orig`); otherwise someone else has changed it since, and saving would
+    silently revert their correction - so it is reported as a conflict.
+    Returns 1 if a row changed.
+    """
+    cursor.execute("""SELECT votes FROM results
+                      WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                   (race_id, candidate_id, municipality))
+    old = cursor.fetchone()
+    stored = old['votes'] if old else None
+    if stored == votes:
+        return 0
+    if stored != orig:
+        conflicts.append({'race_id': race_id, 'candidate_id': candidate_id,
+                          'municipality': municipality, 'stored': stored, 'orig': orig})
+        return 0
+    if old:
+        cursor.execute("""UPDATE results SET votes = ?
+                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                       (votes, race_id, candidate_id, municipality))
+        log_audit(cursor, user_id, race_id, municipality, candidate_id,
+                  'update', {'votes': old['votes']}, {'votes': votes})
+    else:
+        cursor.execute("""INSERT INTO results (race_id, candidate_id, municipality, votes)
+                          VALUES (?, ?, ?, ?)""", (race_id, candidate_id, municipality, votes))
+        log_audit(cursor, user_id, race_id, municipality, candidate_id,
+                  'create', None, {'votes': votes})
+    return 1
+
+
+def _clear_town(cursor, user_id, race_id, municipality):
+    """Un-report one town in one race: delete its rows, each one audited."""
+    cursor.execute("""SELECT candidate_id, votes FROM results
+                      WHERE race_id = ? AND municipality = ?""", (race_id, municipality))
+    rows = cursor.fetchall()
+    for r in rows:
+        cursor.execute("""DELETE FROM results
+                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
+                       (race_id, r['candidate_id'], municipality))
+        log_audit(cursor, user_id, race_id, municipality, r['candidate_id'],
+                  'delete', {'votes': r['votes']}, None)
+    return len(rows)
+
+
+def _conflict_response(conflicts):
+    return {'error': 'Someone else changed this since you opened the page. '
+                     'Reload to see their numbers - nothing was saved.',
+            'conflict': True, 'conflicts': conflicts}
+
+
+def race_towns(cursor, race):
+    """Towns that vote in `race`, from the municipality_districts map."""
+    cursor.execute("""
+        SELECT DISTINCT md.municipality
+        FROM municipality_districts md
+        WHERE md.office_id = ? AND md.county = ? AND md.district = ?
+        ORDER BY md.municipality
+    """, (race['office_id'], race['county'] or '', race['district'] or ''))
+    towns = [r['municipality'] for r in cursor.fetchall()]
+    if not towns:  # statewide
+        cursor.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
+        towns = [r['municipality'] for r in cursor.fetchall()]
+    return towns
+
+
 def event_elections(cursor, year, election_type):
     """All party elections that make up one entry event (primary => R + D)."""
     cursor.execute(
@@ -282,7 +405,13 @@ def place(year, election_type, municipality):
 @entry_bp.route('/event/<int:year>/<election_type>/place/<path:municipality>/save', methods=['POST'])
 @login_required
 def place_save(year, election_type, municipality):
-    """Save all results (and ballots cast) for one polling place."""
+    """Save results (and ballots cast) for one polling place.
+
+    The page sends only the boxes the editor changed, each with the value it
+    showed when it loaded. If any of those no longer matches what is stored,
+    another editor got there first: nothing is saved and the page is told to
+    reload (409), instead of quietly putting the old number back.
+    """
     conn = get_db()
     cursor = conn.cursor()
 
@@ -292,112 +421,128 @@ def place_save(year, election_type, municipality):
         return jsonify({'error': 'Event not found'}), 404
     valid_election_ids = {e['id'] for e in elections}
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     updated = 0
+    conflicts = []
 
-    # Guard: only accept races that belong to this event.
-    for entry in data.get('results', []):
-        race_id = entry.get('race_id')
-        candidate_id = entry.get('candidate_id')
-        votes = entry.get('votes', 0) or 0
-        if not race_id or not candidate_id:
-            continue
-        cursor.execute("SELECT election_id FROM races WHERE id = ?", (race_id,))
-        rr = cursor.fetchone()
-        if not rr or rr['election_id'] not in valid_election_ids:
-            continue
+    try:
+        cursor.execute("BEGIN IMMEDIATE")  # the orig check and the write are one step
 
-        cursor.execute("""SELECT votes FROM results
-                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                       (race_id, candidate_id, municipality))
-        old = cursor.fetchone()
-        if old:
-            if old['votes'] != votes:
-                cursor.execute("""UPDATE results SET votes = ?
-                                  WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                               (votes, race_id, candidate_id, municipality))
-                log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
-                          'update', {'votes': old['votes']}, {'votes': votes})
-                updated += 1
-        else:
-            cursor.execute("""INSERT INTO results (race_id, candidate_id, municipality, votes)
-                              VALUES (?, ?, ?, ?)""", (race_id, candidate_id, municipality, votes))
-            log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
-                      'create', None, {'votes': votes})
-            updated += 1
+        # Guard: only accept races that belong to this event.
+        for entry in data.get('results', []):
+            race_id = entry.get('race_id')
+            candidate_id = entry.get('candidate_id')
+            if not race_id or not candidate_id:
+                continue
+            votes, orig = _cell(entry)
+            if votes is None:
+                continue
+            cursor.execute("SELECT election_id FROM races WHERE id = ?", (race_id,))
+            rr = cursor.fetchone()
+            if not rr or rr['election_id'] not in valid_election_ids:
+                continue
+            updated += _write_result(cursor, current_user.id, race_id, municipality,
+                                     candidate_id, votes, orig, conflicts)
 
-    # Named write-ins: create the candidate + roster row, then record the votes.
-    for entry in data.get('writeins', []):
-        race_id = entry.get('race_id')
-        name = (entry.get('name') or '').strip()
-        votes = entry.get('votes', 0) or 0
-        if not race_id or not name:
-            continue
-        cursor.execute("""SELECT r.election_id, e.party FROM races r
-                          JOIN elections e ON r.election_id = e.id WHERE r.id = ?""", (race_id,))
-        rr = cursor.fetchone()
-        if not rr or rr['election_id'] not in valid_election_ids:
-            continue
-        norm = normalize_name(name)
-        party = rr['party']
-        cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
-                       (norm, party))
-        crow = cursor.fetchone()
-        if crow:
-            candidate_id = crow['id']
-        else:
-            cursor.execute("INSERT INTO candidates (name, name_normalized, party) VALUES (?,?,?)",
-                           (name, norm, party))
-            candidate_id = cursor.lastrowid
-        # Roster row flagged as a write-in (recruitment_filing_id = -1).
-        cursor.execute("""INSERT OR IGNORE INTO race_candidates
-                          (race_id, candidate_id, party, ballot_order, is_incumbent,
-                           recruitment_candidate_id, recruitment_filing_id)
-                          VALUES (?, ?, ?, 900, 0, NULL, -1)""", (race_id, candidate_id, party))
-        cursor.execute("""SELECT votes FROM results
-                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                       (race_id, candidate_id, municipality))
-        old = cursor.fetchone()
-        if old:
-            if old['votes'] != votes:
-                cursor.execute("""UPDATE results SET votes = ?
-                                  WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                               (votes, race_id, candidate_id, municipality))
-                log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
-                          'update', {'votes': old['votes']}, {'votes': votes})
-                updated += 1
-        else:
-            cursor.execute("""INSERT INTO results (race_id, candidate_id, municipality, votes)
-                              VALUES (?, ?, ?, ?)""", (race_id, candidate_id, municipality, votes))
-            log_audit(cursor, current_user.id, race_id, municipality, candidate_id,
-                      'create', None, {'votes': votes})
-            updated += 1
+        # Named write-ins: create the candidate + roster row, then record the votes.
+        for entry in data.get('writeins', []):
+            race_id = entry.get('race_id')
+            name = (entry.get('name') or '').strip()
+            if not race_id or not name:
+                continue
+            votes, orig = _cell(entry)
+            if votes is None:
+                continue
+            cursor.execute("""SELECT r.election_id, e.party FROM races r
+                              JOIN elections e ON r.election_id = e.id WHERE r.id = ?""", (race_id,))
+            rr = cursor.fetchone()
+            if not rr or rr['election_id'] not in valid_election_ids:
+                continue
+            norm = normalize_name(name)
+            party = rr['party']
+            cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                           (norm, party))
+            crow = cursor.fetchone()
+            if crow:
+                candidate_id = crow['id']
+            else:
+                cursor.execute("INSERT INTO candidates (name, name_normalized, party) VALUES (?,?,?)",
+                               (name, norm, party))
+                candidate_id = cursor.lastrowid
+            # Roster row flagged as a write-in (recruitment_filing_id = -1).
+            cursor.execute("""INSERT OR IGNORE INTO race_candidates
+                              (race_id, candidate_id, party, ballot_order, is_incumbent,
+                               recruitment_candidate_id, recruitment_filing_id)
+                              VALUES (?, ?, ?, 900, 0, NULL, -1)""", (race_id, candidate_id, party))
+            updated += _write_result(cursor, current_user.id, race_id, municipality,
+                                     candidate_id, votes, orig, conflicts)
 
-    for entry in data.get('ballots', []):
-        election_id = entry.get('election_id')
-        ballots_cast = entry.get('ballots_cast')
-        if election_id not in valid_election_ids or ballots_cast is None:
-            continue
-        cursor.execute("""SELECT id, ballots_cast FROM voter_registration
-                          WHERE election_id = ? AND municipality = ?""", (election_id, municipality))
-        existing = cursor.fetchone()
-        if existing:
-            if existing['ballots_cast'] != ballots_cast:
+        for entry in data.get('ballots', []):
+            election_id = entry.get('election_id')
+            if election_id not in valid_election_ids:
+                continue
+            ballots_cast, orig = _cell(entry, 'ballots_cast')
+            if ballots_cast is None:
+                continue
+            cursor.execute("""SELECT id, ballots_cast FROM voter_registration
+                              WHERE election_id = ? AND municipality = ?""", (election_id, municipality))
+            existing = cursor.fetchone()
+            stored = existing['ballots_cast'] if existing else None
+            if stored == ballots_cast:
+                continue
+            if stored != orig:
+                conflicts.append({'election_id': election_id, 'municipality': municipality,
+                                  'stored': stored, 'orig': orig})
+                continue
+            if existing:
                 cursor.execute("UPDATE voter_registration SET ballots_cast = ? WHERE id = ?",
                                (ballots_cast, existing['id']))
-                updated += 1
-        else:
-            # county is NOT NULL in voter_registration; fill from polling_places.
-            cursor.execute("SELECT county FROM polling_places WHERE municipality = ?", (municipality,))
-            cr = cursor.fetchone()
-            cursor.execute("""INSERT INTO voter_registration (election_id, county, municipality, ballots_cast)
-                              VALUES (?, ?, ?, ?)""",
-                           (election_id, (cr['county'] if cr else '') or '', municipality, ballots_cast))
+            else:
+                # county is NOT NULL in voter_registration; fill from polling_places.
+                cursor.execute("SELECT county FROM polling_places WHERE municipality = ?", (municipality,))
+                cr = cursor.fetchone()
+                cursor.execute("""INSERT INTO voter_registration (election_id, county, municipality, ballots_cast)
+                                  VALUES (?, ?, ?, ?)""",
+                               (election_id, (cr['county'] if cr else '') or '', municipality, ballots_cast))
             updated += 1
 
-    conn.commit()
-    conn.close()
+        if conflicts:
+            raise _Reject(409, _conflict_response(conflicts))
+        conn.commit()
+    except _Reject as r:
+        conn.rollback()
+        return jsonify(r.payload), r.status
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return jsonify({'success': True, 'updated': updated})
+
+
+@entry_bp.route('/event/<int:year>/<election_type>/place/<path:municipality>/clear', methods=['POST'])
+@login_required
+def place_clear(year, election_type, municipality):
+    """Un-report one race in this town (a result entered against the wrong town)."""
+    data = request.get_json(silent=True) or {}
+    race_id = data.get('race_id')
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        elections = event_elections(cursor, year, election_type)
+        cursor.execute("SELECT election_id FROM races WHERE id = ?", (race_id,))
+        rr = cursor.fetchone()
+        if not rr or rr['election_id'] not in {e['id'] for e in elections}:
+            return jsonify({'error': 'Race not found for this event'}), 404
+        cursor.execute("BEGIN IMMEDIATE")
+        cleared = _clear_town(cursor, current_user.id, race_id, municipality)
+        conn.commit()
+        return jsonify({'success': True, 'cleared': cleared})
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -432,16 +577,7 @@ def race_entry(race_id):
     candidates = cursor.fetchall()
 
     # Towns that vote in this race, from the municipality_districts map.
-    cursor.execute("""
-        SELECT DISTINCT md.municipality
-        FROM municipality_districts md
-        WHERE md.office_id = ? AND md.county = ? AND md.district = ?
-        ORDER BY md.municipality
-    """, (race['office_id'], race['county'] or '', race['district'] or ''))
-    towns = [r['municipality'] for r in cursor.fetchall()]
-    if not towns:  # statewide
-        cursor.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")
-        towns = [r['municipality'] for r in cursor.fetchall()]
+    towns = race_towns(cursor, race)
 
     cursor.execute("SELECT municipality, candidate_id, votes FROM results WHERE race_id = ?", (race_id,))
     results = {}
@@ -456,44 +592,83 @@ def race_entry(race_id):
 @entry_bp.route('/race/<int:race_id>/save', methods=['POST'])
 @login_required
 def save_results(race_id):
+    """Save the race grid.
+
+    A blank box is skipped, never written as 0; the town must be one that
+    votes in this race and the candidate one on its roster; and, as on the
+    polling-place screen, a box someone else has changed since the page loaded
+    is a 409, not an overwrite.
+    """
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM races WHERE id = ?", (race_id,))
-    if not cursor.fetchone():
+    cursor.execute("SELECT id, office_id, county, district FROM races WHERE id = ?", (race_id,))
+    race = cursor.fetchone()
+    if not race:
         conn.close()
         return jsonify({'error': 'Race not found'}), 404
 
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data or 'results' not in data:
         conn.close()
         return jsonify({'error': 'No results data'}), 400
 
-    updated = 0
-    for entry in data['results']:
-        town = entry.get('town')
-        candidate_id = entry.get('candidate_id')
-        votes = entry.get('votes', 0) or 0
-        if not town or not candidate_id:
-            continue
-        cursor.execute("""SELECT votes FROM results
-                          WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                       (race_id, candidate_id, town))
-        old_row = cursor.fetchone()
-        if old_row:
-            if old_row['votes'] != votes:
-                cursor.execute("""UPDATE results SET votes = ?
-                                  WHERE race_id = ? AND candidate_id = ? AND municipality = ?""",
-                               (votes, race_id, candidate_id, town))
-                log_audit(cursor, current_user.id, race_id, town, candidate_id, 'update',
-                          {'votes': old_row['votes']}, {'votes': votes})
-                updated += 1
-        else:
-            cursor.execute("""INSERT INTO results (race_id, candidate_id, municipality, votes)
-                              VALUES (?, ?, ?, ?)""", (race_id, candidate_id, town, votes))
-            log_audit(cursor, current_user.id, race_id, town, candidate_id, 'create',
-                      None, {'votes': votes})
-            updated += 1
+    towns = set(race_towns(cursor, race))
+    cursor.execute("SELECT candidate_id FROM race_candidates WHERE race_id = ?", (race_id,))
+    roster = {r['candidate_id'] for r in cursor.fetchall()}
 
-    conn.commit()
-    conn.close()
+    updated = 0
+    conflicts = []
+    try:
+        cursor.execute("BEGIN IMMEDIATE")
+        for entry in data['results']:
+            town = entry.get('town')
+            candidate_id = entry.get('candidate_id')
+            if not town or not candidate_id:
+                continue
+            votes, orig = _cell(entry)
+            if votes is None:
+                continue
+            if town not in towns:
+                raise _Reject(400, {'error': f'"{town}" does not vote in this race.'})
+            if candidate_id not in roster:
+                raise _Reject(400, {'error': f'Candidate {candidate_id} is not on this race.'})
+            updated += _write_result(cursor, current_user.id, race_id, town,
+                                     candidate_id, votes, orig, conflicts)
+        if conflicts:
+            raise _Reject(409, _conflict_response(conflicts))
+        conn.commit()
+    except _Reject as r:
+        conn.rollback()
+        return jsonify(r.payload), r.status
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return jsonify({'success': True, 'updated': updated})
+
+
+@entry_bp.route('/race/<int:race_id>/clear', methods=['POST'])
+@login_required
+def race_clear(race_id):
+    """Un-report one town in this race."""
+    data = request.get_json(silent=True) or {}
+    town = data.get('town')
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, office_id, county, district FROM races WHERE id = ?", (race_id,))
+        race = cursor.fetchone()
+        if not race:
+            return jsonify({'error': 'Race not found'}), 404
+        if not town or town not in set(race_towns(cursor, race)):
+            return jsonify({'error': 'That town does not vote in this race.'}), 400
+        cursor.execute("BEGIN IMMEDIATE")
+        cleared = _clear_town(cursor, current_user.id, race_id, town)
+        conn.commit()
+        return jsonify({'success': True, 'cleared': cleared})
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
