@@ -546,7 +546,33 @@ def statewide_district(office, district):
     # Get town-level results for map coloring
     town_results = queries.get_statewide_district_town_results(office, district)
 
+    # The same numbers as a table: every town, and a city's wards under one
+    # rolled-up line for the city ("Manchester" above "Manchester Ward 1".."12").
+    town_year = queries.last_general_year()
+    by_place = {}
+    for name, v in town_results.items():
+        m = re.match(r'^(.*?) Ward (\d+)$', name)
+        city, ward = (m.group(1), int(m.group(2))) if m else (name, None)
+        place = by_place.setdefault(city, {'name': city, 'r': 0, 'd': 0, 'wards': []})
+        place['r'] += v['r']
+        place['d'] += v['d']
+        if ward is not None:
+            place['wards'].append({'name': name, 'ward': ward, **v})
+    town_rows = sorted(by_place.values(), key=lambda p: p['name'])
+    for p in town_rows:
+        p['wards'].sort(key=lambda w: w['ward'])
+        total = p['r'] + p['d']
+        p['margin'] = round((p['r'] - p['d']) / total * 100, 1) if total else 0
+    year_data = by_year.get(town_year, {})
+    def _top(party):
+        names = [c['name'] for c in year_data.get('candidates', []) if c['party'] == party]
+        return names[0] if len(names) == 1 else party
+    town_heads = {'r': _top('Republican'), 'd': _top('Democratic')}
+
     return render_template('statewide_district.html',
+                         town_rows=town_rows,
+                         town_year=town_year,
+                         town_heads=town_heads,
                          info=info,
                          by_year=by_year,
                          pvi=pvi,

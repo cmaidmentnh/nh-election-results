@@ -8,6 +8,13 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "nh_elections.db"
 
+# The last general election that is over. A general's elections row exists
+# months before its votes do (2026's was created in September), so a bare
+# MAX(year) pointed every district page at an empty year: 0 towns, blank map.
+# History pages want the last finished general, i.e. one before this year.
+LAST_GENERAL_YEAR_SQL = ("(SELECT MAX(year) FROM elections WHERE election_type = 'general'"
+                         " AND year < CAST(strftime('%Y', 'now') AS INTEGER))")
+
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -146,7 +153,8 @@ def get_towns_in_statewide_district(office, district):
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = ?
         AND r.district = ?
-        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
+        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general'
+                      AND year < CAST(strftime('%Y', 'now') AS INTEGER))
         AND e.election_type = 'general'
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
@@ -445,7 +453,8 @@ def get_district_towns(county, district, office='State Representative'):
         WHERE r.county = ?
         AND r.district = ?
         AND o.name = ?
-        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general')
+        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general'
+                      AND year < CAST(strftime('%Y', 'now') AS INTEGER))
         AND e.election_type = 'general'
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
@@ -727,7 +736,7 @@ def get_district_town_results(county, district, office='State Representative', y
 
     # Use most recent general election year if not specified
     if year is None:
-        cursor.execute("SELECT MAX(year) FROM elections WHERE election_type = 'general'")
+        cursor.execute(f"SELECT {LAST_GENERAL_YEAR_SQL}")
         year = cursor.fetchone()[0]
 
     cursor.execute("""
@@ -771,6 +780,14 @@ def get_district_town_results(county, district, office='State Representative', y
     return town_results
 
 
+def last_general_year():
+    """The last finished general election's year (see LAST_GENERAL_YEAR_SQL)."""
+    conn = get_connection()
+    year = conn.execute(f"SELECT {LAST_GENERAL_YEAR_SQL}").fetchone()[0]
+    conn.close()
+    return year
+
+
 def get_statewide_district_town_results(office, district, year=None):
     """Get town-level R/D margins for a statewide district.
 
@@ -782,7 +799,7 @@ def get_statewide_district_town_results(office, district, year=None):
 
     # Use most recent general election year if not specified
     if year is None:
-        cursor.execute("SELECT MAX(year) FROM elections WHERE election_type = 'general'")
+        cursor.execute(f"SELECT {LAST_GENERAL_YEAR_SQL}")
         year = cursor.fetchone()[0]
 
     cursor.execute("""

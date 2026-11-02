@@ -84,6 +84,55 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if town_rows %}
+        <div class="section" id="by-town">
+            <h2>{{ town_year }} Results by Town</h2>
+            <style>
+                .town-results { width: 100%; border-collapse: collapse; font-size: 14px; }
+                .town-results th, .town-results td { padding: 6px 8px; border-bottom: 1px solid #e5e5e5; }
+                .town-results th { text-align: left; font-size: 12px; text-transform: uppercase; color: #666; }
+                .town-results .num { text-align: right; font-variant-numeric: tabular-nums; }
+                .town-results tr.ward td:first-child { padding-left: 24px; color: #555; }
+                .town-results tr.total td { font-weight: 700; border-top: 2px solid #333; }
+            </style>
+            <table class="town-results">
+                <thead>
+                    <tr>
+                        <th>Town</th>
+                        <th class="num r">{{ town_heads.r }}</th>
+                        <th class="num d">{{ town_heads.d }}</th>
+                        <th class="num">Margin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in town_rows %}
+                    <tr{% if p.wards|length > 1 %} style="font-weight:600"{% endif %}>
+                        <td><a href="{{ url_for('town', name=p.name) }}">{{ p.name }}</a></td>
+                        <td class="num">{{ "{:,}".format(p.r) }}</td>
+                        <td class="num">{{ "{:,}".format(p.d) }}</td>
+                        <td class="num {% if p.margin > 0 %}r{% elif p.margin < 0 %}d{% endif %}">{% if p.margin > 0 %}R+{% elif p.margin < 0 %}D+{% endif %}{{ "%.1f"|format(p.margin|abs) }}</td>
+                    </tr>
+                    {% for w in (p.wards if p.wards|length > 1 else []) %}
+                    <tr class="ward">
+                        <td>Ward {{ w.ward }}</td>
+                        <td class="num">{{ "{:,}".format(w.r) }}</td>
+                        <td class="num">{{ "{:,}".format(w.d) }}</td>
+                        <td class="num {% if w.margin > 0 %}r{% elif w.margin < 0 %}d{% endif %}">{% if w.margin > 0 %}R+{% elif w.margin < 0 %}D+{% endif %}{{ "%.1f"|format(w.margin|abs) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                    {% set tr = town_rows|sum(attribute='r') %}{% set td = town_rows|sum(attribute='d') %}
+                    <tr class="total">
+                        <td>District total</td>
+                        <td class="num">{{ "{:,}".format(tr) }}</td>
+                        <td class="num">{{ "{:,}".format(td) }}</td>
+                        <td class="num">{% if tr + td %}{% set m = (tr - td) / (tr + td) * 100 %}{% if m > 0 %}R+{% elif m < 0 %}D+{% endif %}{{ "%.1f"|format(m|abs) }}{% endif %}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
     </div>
 
     <aside class="sidebar">
