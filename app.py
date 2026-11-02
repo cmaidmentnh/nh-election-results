@@ -1572,6 +1572,10 @@ import math as _math
 import time as _time
 
 PROJ_MIN_PRECINCTS = 3  # never CALL off fewer than this many reported precincts (unless math-clinched)
+# Fully-counted races closer than this many votes (or this share of the vote
+# cast) are shown as too close to call rather than called.
+PROJ_CLOSE_VOTES = 25
+PROJ_CLOSE_SHARE = 0.005
 PROJ_SAMPLE = 0.12      # sampling uncertainty term ~ PROJ_SAMPLE / sqrt(reported precincts)
 
 
@@ -1613,7 +1617,12 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
     z = margin / band if band > 0 else 99
     enough = n_reported >= PROJ_MIN_PRECINCTS
 
-    if gap_votes > out_votes:               # mathematically out of reach — always call
+    # A handful of votes is a recount, not a result: a 5-vote gap with every
+    # town in was being called. Below this the race stays "too close".
+    close_gap = gap_votes <= max(PROJ_CLOSE_VOTES, PROJ_CLOSE_SHARE * current_total / max(1, seats))
+    if close_gap and (gap_votes > out_votes or outstanding < 0.01):
+        status = 'too_close'
+    elif gap_votes > out_votes:             # mathematically out of reach — always call
         status = 'called'
     elif outstanding < 0.01 and margin > 0:  # effectively all counted with a clear margin
         status = 'called'
