@@ -114,6 +114,24 @@ def index():
             for i, p in enumerate(paths)
         ]
 
+    # The entry-screen link has to open the event these lines belong to - it
+    # was hard-coded to the primary, which on general night opens a ballot with
+    # none of the races on it. Taken from the queued items' own election.
+    conn = get_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, year, election_type FROM elections")
+        ev_of = {r["id"]: (r["year"], r["election_type"]) for r in cursor.fetchall()}
+        cursor.execute("SELECT year, election_type FROM elections ORDER BY year DESC, id DESC LIMIT 1")
+        latest = cursor.fetchone()
+    finally:
+        conn.close()
+    fallback = (latest["year"], latest["election_type"]) if latest else (2026, "general")
+    for g in groups.values():
+        ev = next((ev_of[i["election_id"]] for i in g["items"]
+                   if i.get("election_id") in ev_of), fallback)
+        g["event_year"], g["event_type"] = ev
+
     return render_template("entry/intake.html", groups=list(groups.values()),
                            counts=counts, recent=recent)
 

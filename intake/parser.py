@@ -28,6 +28,13 @@ from intake import config
 log = logging.getLogger("intake.parser")
 
 _client = None
+READ_TIMEOUT_SUBSCRIPTION = float(os.environ.get("INTAKE_READ_TIMEOUT", "240"))
+# Every subscription read is its own Claude Code CLI process (~230 MB). WORKERS
+# x MAX_READS could start 50+ at once, and the box ran out of memory during the
+# dry runs. Cap the reads in flight across the whole service.
+import threading as _threading
+_READ_SLOTS = _threading.BoundedSemaphore(int(os.environ.get("INTAKE_MAX_CONCURRENT_READS", "10")))
+READ_TIMEOUT_API = float(os.environ.get("INTAKE_API_TIMEOUT", "300"))
 
 if config.LLM_BACKEND == "subscription":
     # Claude Code prefers ANTHROPIC_API_KEY over the plan's OAuth token, and the
@@ -41,7 +48,11 @@ if config.LLM_BACKEND == "subscription":
 def client():
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY or None)
+        # A read that never returns held a worker forever; with 16 workers a
+        # handful of hung reads stops the whole night. One retry, then fail
+        # loudly to the review queue (runner.process).
+        _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY or None,
+                                      timeout=READ_TIMEOUT_API, max_retries=1)
     return _client
 
 
@@ -72,20 +83,28 @@ def _via_subscription(system, content, schema):
             raise RuntimeError(f"subscription read failed: {result.subtype} {str(result.result)[:200]}")
         return result.structured_output
 
-    return asyncio.run(run())
+    async def bounded():
+        return await asyncio.wait_for(run(), timeout=READ_TIMEOUT_SUBSCRIPTION)
+
+    try:
+        return asyncio.run(bounded())
+    except asyncio.TimeoutError:
+        raise RuntimeError(f"subscription read timed out after {READ_TIMEOUT_SUBSCRIPTION:.0f}s")
 
 
 def _json_call(system, content, model_cls, api_call):
     """Run a read on the configured plan; fall back to the API key if the plan refuses."""
-    if config.LLM_BACKEND == "subscription":
-        try:
-            data = _via_subscription(system, content, _strict_schema(model_cls.model_json_schema()))
-            return model_cls.model_validate(data)
-        except Exception as exc:
-            if not config.ANTHROPIC_API_KEY:
-                raise
-            log.warning("subscription read failed (%s); using the API key for this one", str(exc)[:160])
-    return api_call()
+    with _READ_SLOTS:
+        if config.LLM_BACKEND == "subscription":
+            try:
+                data = _via_subscription(system, content, _strict_schema(model_cls.model_json_schema()))
+                return model_cls.model_validate(data)
+            except Exception as exc:
+                if not config.ANTHROPIC_API_KEY:
+                    raise
+                log.warning("subscription read failed (%s); using the API key for this one",
+                            str(exc)[:160])
+        return api_call()
 
 
 class TownGuess(BaseModel):
@@ -131,6 +150,22 @@ class Extraction(BaseModel):
         description="Any machine/device/tape identifier printed on the report "
                     "(e.g. 'Machine 1 of 2', 'AccuVote #3', 'District 2 tape'), "
                     "empty string if none. Never invent one.")
+    header_place: str = Field(
+        default="",
+        description="The town, city and/or ward printed ON THE SHEET ITSELF (tape header, "
+                    "form title), copied exactly. Never taken from the email subject, the "
+                    "message text or the polling place you were told. Empty if the sheet "
+                    "names no place.")
+    election_header: str = Field(
+        default="",
+        description="The election name and date printed on the sheet, copied exactly "
+                    "(e.g. 'STATE GENERAL ELECTION NOVEMBER 3, 2026', 'State Primary "
+                    "Election September 8, 2026', 'REPUBLICAN BALLOT'). Empty if none.")
+    tapes_not_entered: int = Field(
+        default=0,
+        description="How many OTHER machine tapes or tally sheets for this polling place "
+                    "appear in the attachments but were NOT entered in lines (because only "
+                    "one tape is entered per report). 0 if every tape shown was entered.")
     lines: list[VoteLine]
     ballots: list[BallotsLine]
     checks: list[RaceCheck] = Field(
@@ -228,6 +263,10 @@ not print it.
 is ambiguous, or when the name match was a stretch.
 - If the message contains no vote totals at all (a question, a greeting, "on my way"), \
 set contains_results=false and return no lines.
+- When the attachments show more than one machine tape, enter one and set \
+tapes_not_entered to how many others you left out.
+- header_place is the place printed on the sheet itself and election_header the \
+election printed on it - copy both from the sheet only, never from the message.
 REPORTS ARRIVE IN TWO SHAPES, AND WHICH ONE MATTERS.
 A town may send each machine's tape first and a combined town total afterwards.
 Set report_scope to 'machine_tape' when the sheet is one device's output (it
@@ -263,6 +302,13 @@ downstream, and a name you tidied up cannot be matched to the same name read off
 another line. Leave candidate_id=0 unless the name is already listed for that \
 race - including one tagged "(write-in)", which an earlier town in the same \
 district has already reported - in which case use that candidate_id.
+- A VotingWorks "Write-In Adjudication Report" is a breakdown of the tally, not \
+extra votes. A name it lists under "Official Candidates" is ALREADY counted in that \
+candidate's own line on the Tally Report - do not return it at all. Names under \
+"Write-In Candidates" break down that race's Write-In line; return them as write-ins.
+- On a hand-count sheet, a vote written in for a candidate who is also printed on \
+the ballot is a separate line; return it as its own is_writein=true line and never \
+add it into the printed line yourself.
 - Set is_writein=false on every line that is not a write-in.
 - Multi-seat State Representative races list many candidates at once; report every \
 one you can read.
@@ -287,7 +333,17 @@ EXTRACT_SYSTEM = (EXTRACT_SYSTEM
 # columns of small digits, so send at that ceiling rather than downscaling
 # further - and no larger, which would only cost tokens.
 MAX_EDGE = 2576
-MAX_ATTACHMENTS = 12
+# Primary night: one Hudson report carried 29 tape photos and the old cap of 12
+# dropped 17 of them without a word. 30 covers a busy town; past that the rest
+# are listed for a human (runner queues a note) instead of vanishing.
+MAX_ATTACHMENTS = 30
+# The API takes at most 100 images a request, and above 20 every image must be
+# within 2000px. Past BIG_REQUEST_IMAGES the tiles are cut at 2000px instead.
+MAX_IMAGES = 100
+BIG_REQUEST_IMAGES = 20
+BIG_REQUEST_EDGE = 2000
+# Whole request stays well under the 32MB request ceiling.
+MAX_REQUEST_BYTES = 24 * 1024 * 1024
 # A long tape becomes several tiles; cap the total so one photo cannot
 # swamp a request.
 MAX_TILES = 6
@@ -320,7 +376,7 @@ def _sniff(data):
     return None
 
 
-def _prepare_image(data, media_type):
+def _prepare_image(data, media_type, max_edge=None):
     """Re-encode to JPEG within the model's resolution ceiling.
 
     Returns a LIST of images: a long tally tape shrunk to fit 2576px on its
@@ -342,25 +398,41 @@ def _prepare_image(data, media_type):
             if media_type == "image/heic":
                 return []
 
+        from PIL import ImageOps
         img = Image.open(io.BytesIO(data))
         img.load()
+        # Phones store a portrait photo sideways with an Orientation tag; the
+        # model is sent pixels, not tags, so turn it upright first.
+        img = ImageOps.exif_transpose(img)
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
 
         # Scale by WIDTH so text keeps its size, then tile down the length.
-        if img.width > MAX_EDGE:
-            ratio = MAX_EDGE / img.width
-            img = img.resize((MAX_EDGE, max(1, int(img.height * ratio))), Image.LANCZOS)
+        edge = max_edge or MAX_EDGE
+        if img.width > edge:
+            ratio = edge / img.width
+            img = img.resize((edge, max(1, int(img.height * ratio))), Image.LANCZOS)
+
+        # More tiles than the cap used to cut the bottom of a long tape off
+        # without a word (the last races). Shrink until it fits, and say so.
+        step_ = edge - 220
+        need = 1 + max(0, -(-(img.height - edge) // step_))
+        if need > MAX_TILES:
+            target_h = edge + step_ * (MAX_TILES - 1)
+            ratio = target_h / img.height
+            log.warning("Tall image %dx%d needs %d tiles; shrinking to fit %d",
+                        img.width, img.height, need, MAX_TILES)
+            img = img.resize((max(1, int(img.width * ratio)), target_h), Image.LANCZOS)
 
         pieces = []
-        if img.height <= MAX_EDGE:
+        if img.height <= edge:
             pieces.append(img)
         else:
             overlap = 220
-            step = MAX_EDGE - overlap
+            step = edge - overlap
             top = 0
             while top < img.height and len(pieces) < MAX_TILES:
-                bottom = min(top + MAX_EDGE, img.height)
+                bottom = min(top + edge, img.height)
                 pieces.append(img.crop((0, top, img.width, bottom)))
                 if bottom >= img.height:
                     break
@@ -403,6 +475,35 @@ def _spreadsheet_text(path):
                 break
     wb.close()
     return "\n".join(out)
+
+
+def _xls_text(path):
+    """A legacy Excel 97-2003 .xls (Claremont's tally sheet) as plain rows.
+    Needs xlrd in the intake venv; without it the message is queued as
+    unreadable (runner) rather than dropped."""
+    try:
+        import xlrd
+    except ImportError:
+        log.warning("xlrd not installed; cannot read legacy .xls %s", path)
+        return ""
+    try:
+        book = xlrd.open_workbook(str(path))
+    except Exception:
+        log.exception("Could not open .xls %s", path)
+        return ""
+    out = []
+    for sh in book.sheets():
+        out.append(f"--- sheet: {sh.name} ---")
+        for r in range(min(sh.nrows, 4000)):
+            cells = ["" if v is None else str(v).strip() for v in sh.row_values(r)]
+            if any(cells):
+                out.append(" | ".join(cells).rstrip(" |"))
+    return "\n".join(out)
+
+
+def readable_content(paths):
+    """Whether any attachment produced something the model can actually see."""
+    return bool(_attachment_blocks(paths) or spreadsheet_texts(paths))
 
 
 def _document_text(path):
@@ -451,7 +552,16 @@ def spreadsheet_texts(paths):
         except OSError:
             continue
         suffix = path.suffix.lower()
-        if suffix in (".docx", ".docm"):
+        if suffix in (".csv", ".tsv", ".txt"):
+            try:
+                text = path.read_text("utf-8", errors="replace")[:200000]
+            except OSError:
+                text = ""
+            label = "text attachment"
+        elif head[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" or suffix == ".xls":
+            text = _xls_text(path)
+            label = "spreadsheet attachment"
+        elif suffix in (".docx", ".docm"):
             text = _document_text(path)
             label = "document attachment"
         elif head[:4] == b"PK\x03\x04" or suffix in (".xlsx", ".xlsm"):
@@ -464,14 +574,44 @@ def spreadsheet_texts(paths):
     return "\n\n".join(chunks)
 
 
+def unread_attachments(paths):
+    """Attachments this report carries that the reader will not be shown."""
+    return _attachment_plan(paths)[1]
+
+
+_plan_cache = {}
+
+
+def _attachment_plan(paths):
+    """(blocks, unread_paths) within the per-request image, size and count limits."""
+    key = tuple(paths or [])
+    if key in _plan_cache:
+        return _plan_cache[key]
+    blocks, unread = _build_blocks(paths, MAX_EDGE)
+    if sum(1 for b in blocks if b["type"] == "image") > BIG_REQUEST_IMAGES:
+        blocks, unread = _build_blocks(paths, BIG_REQUEST_EDGE)
+    if len(_plan_cache) > 256:
+        _plan_cache.clear()
+    _plan_cache[key] = (blocks, unread)
+    return blocks, unread
+
+
 def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
     """Photos and PDFs of tally sheets as content blocks.
 
     Most reports on election night are a picture of the tape or a scanned
     printout rather than typed numbers, so this is the main input path.
     """
+    blocks, _unread = _attachment_plan(paths)
+    return [dict(b) for b in blocks]
+
+
+def _build_blocks(paths, max_edge):
+    paths = list(paths or [])
+    unread = paths[MAX_ATTACHMENTS:]
     blocks = []
-    for p in (paths or [])[:limit]:
+    size = 0
+    for p in paths[:MAX_ATTACHMENTS]:
         path = Path(p)
         try:
             if not path.exists() or path.stat().st_size == 0:
@@ -486,7 +626,12 @@ def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
         if media_type == "application/pdf":
             if len(data) > MAX_PDF_BYTES:
                 log.warning("Skipping oversized PDF %s (%.1f MB)", p, len(data) / 1e6)
+                unread.append(p)
                 continue
+            if size + len(data) * 4 // 3 > MAX_REQUEST_BYTES:
+                unread.append(p)
+                continue
+            size += len(data) * 4 // 3
             blocks.append({
                 "type": "document",
                 "source": {"type": "base64", "media_type": "application/pdf",
@@ -497,13 +642,24 @@ def _attachment_blocks(paths, limit=MAX_ATTACHMENTS):
         if not media_type or not media_type.startswith("image/"):
             continue
 
-        for prepared, out_type in _prepare_image(data, media_type):
+        pieces = _prepare_image(data, media_type, max_edge)
+        n_images = sum(1 for b in blocks if b["type"] == "image")
+        piece_bytes = sum(len(x) * 4 // 3 for x, _t in pieces)
+        if (n_images + len(pieces) > MAX_IMAGES
+                or size + piece_bytes > MAX_REQUEST_BYTES):
+            unread.append(p)
+            continue
+        size += piece_bytes
+        for prepared, out_type in pieces:
             blocks.append({
                 "type": "image",
                 "source": {"type": "base64", "media_type": out_type,
                            "data": base64.standard_b64encode(prepared).decode()},
             })
-    return blocks
+    if unread:
+        log.warning("%d attachment(s) over the per-report limit, not read: %s",
+                    len(unread), ", ".join(Path(u).name for u in unread[:5]))
+    return blocks, unread
 
 
 def identify_town(town_list, body, subject="", sender="", attachments=None):
@@ -570,6 +726,11 @@ def _strict_schema(node):
     if isinstance(node, dict):
         if node.get("type") == "object" or "properties" in node:
             node["additionalProperties"] = False
+            if "properties" in node:
+                node["required"] = list(node["properties"])
+                for prop in node["properties"].values():
+                    if isinstance(prop, dict):
+                        prop.pop("default", None)
         for value in node.values():
             _strict_schema(value)
     elif isinstance(node, list):
@@ -595,7 +756,11 @@ def _extract_streamed_api(content, max_tokens=None):
                                   "schema": _strict_schema(Extraction.model_json_schema())}},
     ) as stream:
         message = stream.get_final_message()
-    text = next(b.text for b in message.content if b.type == "text")
+    text = next((b.text for b in message.content if b.type == "text"), None)
+    if text is None:
+        # A bare StopIteration here used to surface as an error with no text at
+        # all, so nobody could tell a refusal from a crash.
+        raise ValueError(f"no text in the model's reply (stop_reason={message.stop_reason})")
     return Extraction.model_validate_json(text)
 
 
@@ -627,19 +792,32 @@ def line_key(line):
     return ("text", race, norm(line.candidate_text))
 
 
+def _occ_keys(lines):
+    """line_key plus its occurrence number within one read.
+
+    A message carrying four tabulator tapes has four Ayotte lines - four
+    numbers, not one number said four times. Keyed on (race, candidate) alone,
+    the reads collapsed onto the first tape: Derry's four tapes published
+    Ayotte 698 against a true ~2,174 for 51 minutes on primary night."""
+    seen, out = {}, []
+    for l in lines:
+        k = line_key(l)
+        n = seen.get(k, 0)
+        seen[k] = n + 1
+        out.append(k + (n,))
+    return out
+
+
 def _tally(reads):
-    """Per (race, candidate), what each read said. Missing counts against it."""
+    """Per (race, candidate, occurrence), what each read said. Missing counts against it."""
     votes = {}
-    for r in reads:
-        seen_here = {}
-        for l in r.lines:
-            seen_here.setdefault(line_key(l), l.votes)
-        for key, v in seen_here.items():
+    per_read = [dict(zip(_occ_keys(r.lines), (l.votes for l in r.lines))) for r in reads]
+    for d in per_read:
+        for key in d:
             votes.setdefault(key, [])
     for key in votes:
-        for r in reads:
-            match = next((l.votes for l in r.lines if line_key(l) == key), None)
-            votes[key].append(match)
+        for d in per_read:
+            votes[key].append(d.get(key))
     return votes
 
 
@@ -709,9 +887,27 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     # The two baseline reads are independent, so pay for one round trip, not
     # two. On election night latency per report is what decides whether the
     # board keeps up with the towns.
+    failures = []
+
+    def gather(futures):
+        out = []
+        for f in futures:
+            try:
+                out.append(f.result())
+            except Exception as exc:          # one bad read must not sink the rest
+                log.warning("%s: one read failed (%s)", municipality, str(exc)[:160])
+                failures.append(exc)
+        return out
+
     with ThreadPoolExecutor(max_workers=2) as pool:
-        futures = [pool.submit(read_once) for _ in range(2)]
-        reads = [f.result() for f in futures]
+        reads = gather([pool.submit(read_once) for _ in range(2)])
+    if len(reads) < 2:
+        # Never let a single surviving read publish on its own: agreement needs
+        # two. Read again to make up the pair.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            reads += gather([pool.submit(read_once) for _ in range(2 - len(reads))])
+    if not reads:
+        raise failures[-1]
     settle(reads)
 
     first = reads[0]
@@ -729,30 +925,48 @@ def extract_consensus(municipality, roster_text, body, subject="", sender="",
     if len(reads) < limit and unsettled(reads):
         extra = limit - len(reads)
         with ThreadPoolExecutor(max_workers=extra) as pool:
-            futures = [pool.submit(read_once) for _ in range(extra)]
-            reads.extend(f.result() for f in futures)
+            reads.extend(gather([pool.submit(read_once) for _ in range(extra)]))
         settle(reads)
 
     tally = _tally(reads)
     agreed, disagreements = set(), {}
+    # Two DIFFERENT numbers for one key inside a single read are two lines on
+    # the sheet that resolved to one candidate - a name printed in two party
+    # columns that the reader did not sum (the roster asks it to: see
+    # roster.cross_filed), or a write-in for a printed candidate. _tally keeps
+    # only the first of them and the overwrite below then gives both lines the
+    # same value, so apply.py's "two lines for this candidate" guard saw a
+    # harmless duplicate and published one column. Hold them instead.
+    collided = {}
+    for r in reads:
+        seen_here = {}
+        for l in r.lines:
+            k = line_key(l)
+            if k in seen_here and seen_here[k] != l.votes:
+                collided.setdefault(k, f"{seen_here[k]:,} and {l.votes:,} on two lines of the "
+                                       f"sheet for one candidate - add them, or is one a correction?")
+            seen_here.setdefault(k, l.votes)
     for key, values in tally.items():
         winner, ok = _verdict(values)
+        if len(reads) < 2:
+            ok = False                         # one read is an opinion, not a check
+        if key[:-1] in collided:
+            ok, winner = False, None
         if ok:
             agreed.add(key)
         else:
-            disagreements[key] = values
+            disagreements[key] = [collided[key[:-1]]] if key[:-1] in collided else values
 
         # Publish what the reads actually settled on, not the first attempt.
         if winner is not None:
-            for line in first.lines:
-                if line_key(line) == key:
+            for line, k in zip(first.lines, _occ_keys(first.lines)):
+                if k == key:
                     line.votes = winner
 
     # A line only later reads saw at all still belongs in the report.
-    seen = {line_key(l) for l in first.lines}
+    seen = set(_occ_keys(first.lines))
     for r in reads[1:]:
-        for l in r.lines:
-            key = line_key(l)
+        for l, key in zip(r.lines, _occ_keys(r.lines)):
             if key not in seen and key in tally:
                 winner, ok = _verdict(tally[key])
                 if winner is not None:

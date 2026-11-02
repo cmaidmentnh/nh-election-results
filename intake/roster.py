@@ -180,6 +180,21 @@ def resolve_municipality(cursor, text):
     return None, 0.0
 
 
+def places_named(cursor, text):
+    """Every polling place whose name appears in text (longest match wins, so
+    'Hampton Falls' is not also 'Hampton'). County names ('Carroll County')
+    are dropped first - Carroll is also a town."""
+    hay = re.sub(r"\b[A-Z]+\s+COUNTY\b", " ", _ward_words_to_digits(text or "").upper())
+    hay = " " + re.sub(r"[^A-Z0-9]+", " ", hay) + " "
+    hits = set()
+    for p in polling_places(cursor):
+        name = p["municipality"]
+        pattern = " " + re.sub(r"[^A-Z0-9]+", " ", name.upper()).strip() + " "
+        if pattern in hay:
+            hits.add(name)
+    return {h for h in hits if not any(h != o and h in o for o in hits)}
+
+
 def resolve_by_sender(cursor, sender):
     """A town clerk mailing from their listed address identifies their own town.
 
@@ -407,6 +422,8 @@ def roster_for(cursor, municipality):
                 "candidate_ids": cand_ids,
                 "writein_id": race["writein_id"],
                 "names": {c["candidate_id"]: c["name"] for c in race["candidates"]},
+                # Printed on the ballot, as opposed to written in tonight or earlier.
+                "printed_ids": {c["candidate_id"] for c in race["candidates"] if not c["is_writein"]},
                 # candidate_id -> the party lines that person is printed on, for
                 # anyone cross-filed in this contest (see cross_filed above).
                 "cross_filed": two_lines,
@@ -446,8 +463,17 @@ _NAME_SUFFIXES = {"JR", "SR", "II", "III", "IV", "V"}
 # creating a candidate called SCATTERING would take the whole race's write-in
 # total away from the shared line that is meant to hold it.
 _AGGREGATE_LINE = re.compile(
-    r"^(?:ALL\s+)?(?:OTHERS?|MISC\w*|SCATTER\w*|WRITE\s*INS?|TOTALS?|VOTES?)"
+    r"^(?:ALL\s+)?(?:OTHERS?|MISC\w*|SCATTER\w*|WRITE\s*INS?|W\s*I|TOTALS?|VOTES?)"
     r"(?:\s+(?:VOTES?|TOTALS?|CANDIDATES?|NAMES?))?$", re.I)
+
+
+def is_aggregate_token(text):
+    """True for a write-in label that is the race's total, not a person:
+    'wi', 'W/I', 'w-i', 'write-in', 'write ins', 'scattering', 'other'."""
+    norm = normalize_name(_WRITEIN_MARK.sub(" ", text or "") or "")
+    return (not re.search(r"[A-Z]", norm)
+            or bool(_AGGREGATE_LINE.match(norm))
+            or bool(_AGGREGATE_LINE.match(normalize_name(text or ""))))
 
 
 def writein_name(line):
@@ -618,6 +644,12 @@ def ensure_named_writein(conn, race_id, name, race_meta):
     """
     name = (name or "").strip()
     if not (race_id and name):
+        return None
+    # Never roster a person called "WI" or "Scattering". A terse report's
+    # "wi 9" is the race's aggregate write-in line, and on the general-night
+    # dry run it became a candidate named "wi" in eleven races - a row that
+    # then followed those races into every other town in the district.
+    if is_aggregate_token(name):
         return None
     with _roster_lock:
         cur = conn.cursor()

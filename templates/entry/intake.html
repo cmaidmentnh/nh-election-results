@@ -121,7 +121,7 @@
     </table>
     {% if m.municipality %}
     <div class="i-foot">
-        <a href="{{ url_for('entry.place', year=2026, election_type='state_primary', municipality=m.municipality) }}">
+        <a href="{{ url_for('entry.place', year=g.event_year or 2026, election_type=g.event_type or 'general', municipality=m.municipality) }}">
             Open {{ m.municipality }} in the entry screen →
         </a>
     </div>

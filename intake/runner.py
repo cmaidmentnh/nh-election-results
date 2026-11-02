@@ -7,6 +7,7 @@
 
 import argparse
 import json
+import sys
 import re
 import logging
 import threading
@@ -55,11 +56,27 @@ def _attachment_label(path):
     return stem.replace("_", " ").replace("-", " ").strip()
 
 
-def _attachment_towns(cursor, attachments):
-    """Which polling place each attachment names, by filename. None if unclear."""
+_WARD_IN_LABEL = re.compile(r"(?:^|[\s_-])W(?:AR)?D?\.?\s*(\d{1,2})(?=$|[\s_-])", re.I)
+
+
+def _attachment_towns(cursor, attachments, msg=None):
+    """Which polling place each attachment names, by filename. None if unclear.
+
+    Franklin's clerk named her files 'State_Primary_W1_Democratic' - a ward and
+    no city - so none resolved and the three wards were filed as one message.
+    A ward-only filename takes its city from the subject or sender."""
+    city = None
+    if msg:
+        city = _ward_city_named(cursor, f"{msg.get('subject') or ''} {msg.get('sender') or ''} "
+                                        f"{msg.get('body') or ''}")
     out = []
     for path in attachments or []:
-        name, _ = roster.resolve_municipality(cursor, _attachment_label(path))
+        label = _attachment_label(path)
+        name, _ = roster.resolve_municipality(cursor, label)
+        if not name and city:
+            m = _WARD_IN_LABEL.search(roster._ward_words_to_digits(label))
+            if m:
+                name, _ = roster.resolve_municipality(cursor, f"{city} Ward {int(m.group(1))}")
         out.append(name)
     return out
 
@@ -104,6 +121,146 @@ def _guess_town(cursor, msg):
     return None, 0.0, "none"
 
 
+def _ward_city_named(cursor, text):
+    """The ward city ('Manchester', 'Nashua', ...) named in text, if any."""
+    cities = sorted({re.sub(r"\s+Ward\s*\d+\*?$", "", p["municipality"])
+                     for p in roster.polling_places(cursor)
+                     if re.search(r"\sWard\s*\d+\*?$", p["municipality"])}, key=len, reverse=True)
+    for c in cities:
+        if re.search(r"\b" + re.escape(c) + r"\b", text or "", re.I):
+            return c
+    return None
+
+
+def _town_mismatch(cursor, town, how, extraction):
+    """A reason to hold the whole report, or None.
+
+    The town is chosen from the subject line before the sheet is read, so a
+    volunteer who types the wrong town files a whole tape under it: on the dry
+    run a tape headed TOWN OF NORTHWOOD, sent as "Nottingham results",
+    published 37 lines to Nottingham (both are in Executive Council 4, so the
+    district total moved too). The reader copies the place name off the sheet
+    into municipality_text; when that names a different polling place, or a
+    ward we only guessed, hold everything for a human.
+    """
+    header = (getattr(extraction, "header_place", "") or "").strip()
+    said = (getattr(extraction, "municipality_text", "") or "").strip()
+    # What the sheet itself says outranks everything. The reader is asked for it
+    # separately because municipality_text came back on the dry run as
+    # 'TOWN OF NORTHWOOD (tape header); email subject says "Nottingham results"'
+    # - two towns, which resolved to neither, and the tape published to the
+    # wrong one.
+    on_sheet = roster.places_named(cursor, header) if header else set()
+    if on_sheet and town not in on_sheet:
+        return (f"The sheet is headed {header!r} ({', '.join(sorted(on_sheet))}) but was "
+                f"filed under {town} (town taken from {how}) - check which town this is")
+    named, _conf = roster.resolve_municipality(cursor, said) if said else (None, 0.0)
+    if not on_sheet and named and named != town:
+        return (f"The report names {named} but was filed under {town} "
+                f"(town taken from {how}) - check which town this is")
+    if not on_sheet:
+        mentioned = roster.places_named(cursor, said)
+        if mentioned and town not in mentioned:
+            return (f"The report names {', '.join(sorted(mentioned))} but was filed under "
+                    f"{town} (town taken from {how}) - check which town this is")
+        named = named or (town if town in mentioned else None)
+    else:
+        named = town
+    if how != "exact" and not on_sheet:
+        # municipality_text does not count here: with no place on the sheet the
+        # reader fills it with the town it inferred, so it always "agrees".
+        # Nothing on the sheet or in the message names a place: the reader (or
+        # this sender's history) inferred the town from the races on the tape.
+        # On the primary-night replay that filed two cropped, header-less Hudson
+        # tapes - one machine each - as the whole of Hudson. Right town, wrong
+        # numbers; a person has to say which town and whether it is all of it.
+        return (f"No place is named on the sheet or in the message; {town} was "
+                f"inferred ({how}) - confirm the town, and that this is its whole count")
+    if how != "exact" and re.search(r"\bWard\s*\d+", town) and named != town:
+        return (f"Ward not shown on the report ({said or 'no place named'}); "
+                f"{town} was a {how} guess - check which ward")
+    return None
+
+
+_PRIMARY = re.compile(r"\b(state\s+)?primary\b|\b(republican|democratic)\s+(ballot|party|primary)\b|"
+                      r"\bsept(ember)?\.?\s+\d|\b0?9/0?8/(20)?26\b", re.I)
+
+
+def _primary_return(extraction, msg):
+    """A reason to hold a report that looks like a PRIMARY return, or None.
+
+    A primary-night tape resent on general night reads cleanly against the
+    general ballot - Littleton's "Cinde Warmington 407" from September is a
+    perfectly good-looking line for the general Governor race - and would
+    publish. Only the sheet and the covering note can tell them apart."""
+    if config.EVENT_TYPE in parser.PRIMARY_EVENT_TYPES:
+        return None
+    for label, text in (("sheet", getattr(extraction, "election_header", "") or ""),
+                        ("message", f"{msg.get('subject') or ''} {msg.get('body') or ''}")):
+        m = _PRIMARY.search(text)
+        if m:
+            return (f"This looks like a primary-election return ({label} says "
+                    f"{m.group(0)!r}) - check before publishing")
+    return None
+
+
+_COMBINED = re.compile(r"\b(all\s+wards|combined|town\s+total|totals?\s+for\s+all|"
+                       r"all\s+(polling\s+)?(places|locations|machines))\b", re.I)
+_PARTIAL = re.compile(r"\b(partial|one\s+of\s+(two|three|four|five|\d)|\d\s+of\s+\d\s+wards|"
+                      r"(this|one)\s+ward\s+only|ward\s+\d+\s+only)\b", re.I)
+
+
+def _tapes_left_out(extraction):
+    """Hold a report whose reader entered one tape out of several it was shown.
+
+    The reader is told never to add tapes together, so a message with five
+    tabulator tapes comes back as ONE tape's figures plus a note - and those
+    published as the whole town: Derry (5 tapes) and Hudson (4 tapes, 29 photos)
+    on the primary-night replay, about a third of the true totals."""
+    n = getattr(extraction, "tapes_not_entered", 0) or 0
+    if n > 0:
+        return (f"This message carries {n} more tape(s) that were not read into it - "
+                f"the figures are one tape, not the town. Sum them (scripts/sum_tapes.py) "
+                f"or enter by hand")
+    return None
+
+
+def _partial_of_combined_town(cursor, town, extraction, msg):
+    """A reason to hold one ward's tape from a town that files ONE total, or None.
+
+    Salem, Derry, Hudson and the rest vote at several ward locations but report
+    a single town total, so 'Salem Ward 2' resolves to Salem. A tape from just
+    one of those locations then published as if it were all of Salem (the Fisk
+    Ward 3 tape on primary night). Hold it unless the sheet or note says it is
+    the combined total. A machine tape is partial by nature and is handled by
+    the machine-tape path, so it is left alone."""
+    if re.search(r"\bWard\s*\d+", town):
+        return None                                   # a ward city: the ward IS the place
+    header = getattr(extraction, "header_place", "") or ""
+    note = f"{msg.get('subject') or ''} {msg.get('body') or ''}"
+    labels = " ".join(_attachment_label(p) for p in (msg.get("attachments") or []))
+    said = roster._ward_words_to_digits(f"{header} {note} {labels}")
+    text = roster._ward_words_to_digits(f"{said} {extraction.municipality_text or ''}")
+    if _PARTIAL.search(said):
+        return (f"The report says it is partial ({_PARTIAL.search(said).group(0)!r}) - "
+                f"{town} reports ONE combined total; check before publishing")
+    if _COMBINED.search(said) or apply_mod._report_scope(extraction) == "machine_tape":
+        return None
+    ward = re.search(r"\bW(?:AR)?D\.?\s*(\d{1,2})\b", text, re.I)
+    if ward:
+        return (f"Names Ward {ward.group(1)} of {town}, which reports ONE combined town "
+                f"total - is this one location's tape (partial)? Check before publishing")
+    return None
+
+
+_CORRECTION = re.compile(r"\b(correct(ion|ed|ing)?|should (be|read|have been)|typo|"
+                         r"mis-?typed|wrong number|revised|amended)\b", re.I)
+
+
+def _is_correction(msg):
+    return bool(_CORRECTION.search(f"{msg.get('subject') or ''} {msg.get('body') or ''}"))
+
+
 def _split_by_attachment(conn, cursor, message_id, msg):
     """Handle a message whose attachments come from more than one polling place.
 
@@ -116,7 +273,7 @@ def _split_by_attachment(conn, cursor, message_id, msg):
     attachments = msg.get("attachments") or []
     if len(attachments) < 2:
         return None
-    towns = _attachment_towns(cursor, attachments)
+    towns = _attachment_towns(cursor, attachments, msg)
     if len({t for t in towns if t}) < 2:
         return None
 
@@ -135,21 +292,47 @@ def _split_by_attachment(conn, cursor, message_id, msg):
     # long split off its list; the real outcome is written when the loop ends.
     store.set_message_status(conn, message_id, "splitting")
     totals = {"applied": 0, "queued": 0}
+    children = []
     for i, path in enumerate(attachments):
         child = dict(msg)
         child["attachments"] = [path]
         child["external_id"] = f"{msg['external_id']}#{i}"
         # The covering note names every ward at once, so it cannot be allowed to
-        # decide this tape's ward. The filename can, and _guess_town reads it.
-        child["subject"] = _attachment_label(path)
-        summary = process(conn, child) or {}
-        totals["applied"] += summary.get("applied", 0)
-        totals["queued"] += summary.get("queued", 0)
+        # decide this tape's ward. The filename can, and _guess_town reads it -
+        # with the city from the parent when the filename names only a ward.
+        label = _attachment_label(path)
+        if towns[i] and towns[i] != (roster.resolve_municipality(cursor, label)[0]):
+            label = towns[i]
+        child["subject"] = label
+        children.append(child)
+
+    # In parallel: Concord's five-ward email took 813 s one tape at a time.
+    # Each child has its own connection; SQLite serialises the short writes.
+    def run_child(child):
+        c = store.connect()
+        try:
+            return process(c, child) or {}
+        finally:
+            c.close()
+
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    with _TPE(max_workers=min(4, len(children))) as pool:
+        for summary in pool.map(run_child, children):
+            totals["applied"] += summary.get("applied", 0)
+            totals["queued"] += summary.get("queued", 0)
 
     status = ("applied" if totals["applied"] and not totals["queued"]
               else "partial" if totals["applied"] else "queued")
     store.set_message_status(conn, message_id, status)
     return {**totals, "town": None, "details": []}
+
+
+# Message ids being worked on right now, and ids handed to the pool for a
+# re-parse. The stranded sweep skips both: a slow read is not a stranded one,
+# and re-parsing it while it runs deleted its rows out from under it.
+_inflight = set()
+_replay_queued = set()
+_inflight_lock = threading.Lock()
 
 
 def process(conn, msg):
@@ -162,6 +345,16 @@ def process(conn, msg):
     if not is_new:
         log.info("Already seen message %s (%s)", message_id, msg["external_id"])
         return None
+    with _inflight_lock:
+        _inflight.add(message_id)
+    try:
+        return _process_new(conn, msg, message_id)
+    finally:
+        with _inflight_lock:
+            _inflight.discard(message_id)
+
+
+def _process_new(conn, msg, message_id):
 
     if config.COLLECT_ONLY:
         # Keep the feeds, drop the bill.  The message and its attachments are
@@ -190,6 +383,18 @@ def process(conn, msg):
             return split
 
         town, town_conf, how = _guess_town(cursor, msg)
+        if not town and not msg.get("attachments"):
+            # "Manchester: Ayotte 1402, ..." names a city that votes by ward
+            # without saying which ward. That is a real report the resolver
+            # cannot file, not chatter - it goes to a human, never the bin.
+            city = _ward_city_named(cursor, f"{msg.get('subject') or ''} {body_text}")
+            if city and re.search(r"\d{2,}", body_text):
+                store.set_message_status(conn, message_id, "queued")
+                store.add_item(conn, message_id, status="pending", municipality_text=city,
+                               reason=f"{city} report with no ward - which ward?")
+                log.warning("msg %s: %s with no ward; queued", message_id, city)
+                _notify(f"{city} report with no ward number. Needs review: {_review_url()}")
+                return {"applied": 0, "queued": 1, "town": None}
         if not town:
             # A text-only report always names its town - a reporter typing
             # numbers into Signal says where they are. When it does not, it is
@@ -219,13 +424,37 @@ def process(conn, msg):
         )
 
         parse_json = json.dumps(extraction.model_dump(), default=str)
+        if (not extraction.contains_results and msg.get("attachments")
+                and not parser.readable_content(msg.get("attachments"))):
+            # A .csv, an .xls without xlrd, a 25MB PDF: the reader never saw it,
+            # which is not the same as there being no results in it.
+            store.set_message_status(conn, message_id, "queued", parse_json=parse_json)
+            store.add_item(conn, message_id, status="pending", municipality=town,
+                           reason="Attachment format could not be read - open it by hand")
+            log.warning("msg %s: no attachment could be read; queued", message_id)
+            return {"applied": 0, "queued": 1, "town": town}
         if not extraction.contains_results:
             store.set_message_status(conn, message_id, "ignored", parse_json=parse_json)
             log.info("msg %s: no results in it (%s)", message_id, town)
             return {"applied": 0, "queued": 0, "town": town}
 
+        hold = (_primary_return(extraction, msg) or _town_mismatch(cursor, town, how, extraction)
+                or _tapes_left_out(extraction)
+                or _partial_of_combined_town(cursor, town, extraction, msg))
+        if hold:
+            log.warning("msg %s: %s", message_id, hold)
+        unread = parser.unread_attachments(msg.get("attachments"))
         summary = apply_mod.apply_extraction(conn, message_id, town, extraction, index,
-                                             elections, agreed, disagreements)
+                                             elections, agreed, disagreements,
+                                             hold_reason=hold,
+                                             correction=_is_correction(msg))
+        if unread:
+            store.add_item(conn, message_id, status="pending", municipality=town,
+                           municipality_text=extraction.municipality_text,
+                           reason=f"{len(unread)} of {len(msg.get('attachments') or [])} "
+                                  f"attachments were NOT read (over the per-report image "
+                                  f"limit) - open them by hand")
+            summary["queued"] += 1
         status = ("applied" if summary["queued"] == 0
                   else "partial" if summary["applied"] else "queued")
         store.set_message_status(conn, message_id, status, parse_json=parse_json)
@@ -238,8 +467,21 @@ def process(conn, msg):
 
     except Exception as exc:
         log.exception("msg %s failed", message_id)
-        store.set_message_status(conn, message_id, "error", error=str(exc))
-        _notify(f"Intake error on a report from {msg.get('sender')}: {exc}. {_review_url()}")
+        text = (str(exc) or type(exc).__name__)[:300]
+        # A report the reader could not finish must still reach a person: an
+        # 'error' row is invisible on the review page. The stranded sweep
+        # retries an 'error' once; the second failure parks it as 'queued',
+        # which the sweep leaves alone, instead of retrying it all night.
+        retried = bool(msg.get("_retry"))
+        try:
+            conn.rollback()
+            store.add_item(conn, message_id, status="pending",
+                           municipality_text=(msg.get("subject") or msg.get("body") or "")[:120],
+                           reason=f"Could not be read automatically: {text}")
+        except Exception:
+            log.exception("msg %s: could not queue the failure", message_id)
+        store.set_message_status(conn, message_id, "queued" if retried else "error", error=text)
+        _notify(f"Intake error on a report from {msg.get('sender')}: {text}. {_review_url()}")
         return None
 
 
@@ -412,6 +654,7 @@ def replay(message_id):
         "subject": row["subject"], "body": row["body"],
         "attachments": json.loads(row["attachments"] or "[]"),
         "received_at": row["received_at"],
+        "_retry": row["status"] == "error",
     })
     conn.close()
 
@@ -454,7 +697,10 @@ def _replay_safely(message_id):
     try:
         replay(message_id)
     except Exception:
-        log.exception("could not process web report %s", message_id)
+        log.exception("could not re-parse message %s", message_id)
+    finally:
+        with _inflight_lock:
+            _replay_queued.discard(message_id)
 
 
 def stranded_loop(stop):
@@ -492,11 +738,15 @@ def stranded_loop(stop):
             finally:
                 conn.close()
             for row in rows:
-                log.warning("msg %s was stranded; re-parsing", row["id"])
-                try:
-                    replay(row["id"])
-                except Exception:
-                    log.exception("could not re-parse stranded message %s", row["id"])
+                mid = row["id"]
+                with _inflight_lock:
+                    if mid in _inflight or mid in _replay_queued:
+                        continue                 # still being read, or already queued
+                    _replay_queued.add(mid)
+                log.warning("msg %s was stranded; re-parsing", mid)
+                # On the pool, not inline: one slow re-read used to stall the
+                # sweep (and every other stranded message) behind it.
+                _pool.submit(_replay_safely, mid)
         except Exception:
             log.exception("stranded sweep failed")
 
@@ -545,9 +795,22 @@ def main():
              " (collect-only, no model reads)" if config.COLLECT_ONLY else "",
              config.EMAIL_POLL_SECONDS,
              config.SIGNAL_GROUP_NAME or config.SIGNAL_GROUP_ID or "(none)")
+    # The feed threads only ever log their exceptions, but a thread that dies
+    # anyway (an import error mid-night, a BaseException) used to leave the
+    # service "active" and deaf. Exit instead, so systemd Restart= restarts it.
+    # Loops that return on purpose when their feed is not configured are
+    # recorded at start and not watched.
+    time.sleep(5)
+    watched = [t for t in threads if t.is_alive()]
     try:
         while True:
             time.sleep(1)
+            dead = [t.name for t in watched if not t.is_alive()]
+            if dead:
+                log.critical("intake loop thread(s) died: %s - exiting for a restart",
+                             ", ".join(dead))
+                stop.set()
+                sys.exit(1)
     except KeyboardInterrupt:
         stop.set()
 

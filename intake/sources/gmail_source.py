@@ -334,7 +334,13 @@ def _fetch_mailbox(token_path):
             continue
 
         paths = []
-        for filename, att_id in atts[:12]:
+        # The parser reads up to parser.MAX_ATTACHMENTS and queues a "not read"
+        # note for the rest, so download them all (within reason) rather than
+        # dropping everything past the 12th here without a trace.
+        if len(atts) > 60:
+            log.warning("Message %s has %d attachments; downloading the first 60",
+                        ref["id"], len(atts))
+        for filename, att_id in atts[:60]:
             try:
                 a = users.messages().attachments().get(
                     userId="me", messageId=ref["id"], id=att_id).execute()

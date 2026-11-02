@@ -27,7 +27,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("town")
     ap.add_argument("tapes", nargs="+")
-    ap.add_argument("--elections", default="29,30")
+    ap.add_argument("--elections", default="31",
+                    help="election ids to replace rows in (31 = 2026 general; "
+                         "29,30 = the 2026 primaries)")
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
