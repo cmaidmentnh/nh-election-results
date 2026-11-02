@@ -17,6 +17,8 @@ bottom of this file.
 
 import difflib
 import itertools
+import json
+import logging
 import re
 import threading
 from collections import Counter
@@ -241,6 +243,109 @@ def town_list_text(cursor):
 _roster_lock = threading.Lock()
 
 
+# ---------------------------------------------------------------------------
+# Cross-filed candidates
+#
+# A general-election candidate nominated by two parties is printed on the
+# ballot once per party line - "Bill Wright (d)" and "Bill Wright (r)" - and a
+# tape can report the two lines separately. The roster holds that person ONCE
+# (scripts/import_general_2026.py: "one candidate whose votes are combined"),
+# so two separate lines both resolve to one candidate_id with two different
+# numbers, and the apply step holds the race as "Two lines in this report are
+# for this candidate". The fix is at the source: the roster tells the reader
+# which names are on two lines and that the sheet's two figures are summed.
+#
+# Which names those are is NOT in the database - race_candidates keeps one row
+# and one party per person (that is the point of the import). The Secretary of
+# State's candidate list the roster was imported from is the record of every
+# line printed, so read it from there: a name with more than one party_code in
+# one contest. It is loaded once, and only when its year and election type are
+# the event being counted, so a stale list can never mark a different election.
+# ---------------------------------------------------------------------------
+
+_log = logging.getLogger(__name__)
+
+_CANDIDATE_LIST = config.BASE_DIR / "data" / f"general_{config.EVENT_YEAR}_candidates.json"
+_cross_filed_cache = None
+_cross_filed_lock = threading.Lock()
+
+
+def _contest_key(office, county, district):
+    return (office or "", county or "", str(district or ""))
+
+
+def cross_filed():
+    """{(office, county, district): {NORMALIZED NAME: [party, party, ...]}} for
+    every person printed on more than one party line in one contest. Empty when
+    the event is not a general or the list is missing or for another election."""
+    global _cross_filed_cache
+    with _cross_filed_lock:
+        if _cross_filed_cache is not None:
+            return _cross_filed_cache
+        found = {}
+        if config.EVENT_TYPE == "general":
+            try:
+                doc = json.loads(_CANDIDATE_LIST.read_text())
+                if (int(doc.get("year") or 0) != config.EVENT_YEAR
+                        or doc.get("election_type") != "general"):
+                    _log.warning("cross-filed: %s is for %s %s, not %s general - ignored",
+                                 _CANDIDATE_LIST, doc.get("year"), doc.get("election_type"),
+                                 config.EVENT_YEAR)
+                else:
+                    lines = {}
+                    for row in doc.get("candidates") or []:
+                        key = _contest_key(row.get("office"), row.get("county"), row.get("district"))
+                        parties = lines.setdefault(key, {}).setdefault(normalize_name(row.get("name")), [])
+                        party = row.get("party") or row.get("party_code") or "?"
+                        if party not in parties:
+                            parties.append(party)
+                    for key, people in lines.items():
+                        multi = {n: p for n, p in people.items() if len(p) > 1}
+                        if multi:
+                            found[key] = multi
+                    _log.info("cross-filed: %d candidates on two party lines (%s)",
+                              sum(len(v) for v in found.values()), _CANDIDATE_LIST.name)
+            except (OSError, ValueError) as exc:
+                # Never take intake down over this: without the list the reader
+                # simply is not told, and a two-line sheet is held for a human
+                # exactly as before.
+                _log.warning("cross-filed: cannot read %s (%s)", _CANDIDATE_LIST, exc)
+        _cross_filed_cache = found
+        return found
+
+
+def _cross_filed_in(race, multi):
+    """{candidate_id: [parties]} for this race's candidates that are on more
+    than one party line. Matches the name as printed on the SoS list (which is
+    what the import stored); falls back to a surname that is unique both in the
+    race and among the race's cross-filed names, so a later spelling fix to one
+    side cannot silently drop the marker."""
+    if not multi:
+        return {}
+    out = {}
+    unmatched = dict(multi)
+    printed = [c for c in race["candidates"] if not c["is_writein"]]
+    for c in printed:
+        parties = unmatched.pop(normalize_name(c["name"]), None)
+        if parties:
+            out[c["candidate_id"]] = parties
+    for norm, parties in unmatched.items():
+        surname = norm.split()[-1] if norm else ""
+        hits = [c for c in printed if c["candidate_id"] not in out
+                and normalize_name(c["name"]).split()[-1:] == [surname]]
+        same_surname = [n for n in multi if n.split()[-1:] == [surname]]
+        if len(hits) == 1 and len(same_surname) == 1:
+            out[hits[0]["candidate_id"]] = parties
+        else:
+            _log.warning("cross-filed: %s on the SoS list not found in race %s",
+                         norm, race["id"])
+    return out
+
+
+def _party_list(parties):
+    return " and ".join(parties) if len(parties) < 3 else ", ".join(parties[:-1]) + " and " + parties[-1]
+
+
 def roster_for(cursor, municipality):
     """Every race the town votes on, with candidate ids, as model-readable text
     plus a lookup structure the validator uses to check the model's output."""
@@ -257,6 +362,8 @@ def roster_for(cursor, municipality):
     for race in races:
         by_party.setdefault(party_of.get(race["election_id"], ""), []).append(race)
 
+    multi_lines = cross_filed()
+
     eid_of_party = {}
     for e in elections:
         eid_of_party[e["party"] or ""] = e["id"]
@@ -269,8 +376,15 @@ def roster_for(cursor, municipality):
             label = race["label"] or race["office"]
             lines.append(f"[race_id={race['id']}] {race['office']} - {label} ({seats} seat{'s' if seats != 1 else ''})")
             cand_ids = set()
+            two_lines = _cross_filed_in(
+                race, multi_lines.get(_contest_key(race["office"], race["county"], race["district"])))
             for c in race["candidates"]:
                 tag = " (write-in)" if c["is_writein"] else ""
+                if c["candidate_id"] in two_lines:
+                    parties = two_lines[c["candidate_id"]]
+                    n, each = ("two", "both") if len(parties) == 2 else (str(len(parties)), "all")
+                    tag += (f" (on {n} party lines: {_party_list(parties)} - report ONE line "
+                            f"with the SUM of {each} lines' votes)")
                 lines.append(f"    candidate_id={c['candidate_id']}  {c['name']}{tag}")
                 cand_ids.add(c["candidate_id"])
             lines.append(f"    candidate_id={race['writein_id']}  Write-in (aggregate line)")
@@ -293,6 +407,9 @@ def roster_for(cursor, municipality):
                 "candidate_ids": cand_ids,
                 "writein_id": race["writein_id"],
                 "names": {c["candidate_id"]: c["name"] for c in race["candidates"]},
+                # candidate_id -> the party lines that person is printed on, for
+                # anyone cross-filed in this contest (see cross_filed above).
+                "cross_filed": two_lines,
             }
 
     return "\n".join(lines), index, elections
