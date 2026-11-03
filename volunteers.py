@@ -365,18 +365,26 @@ def email_instructions(v, places, reminder=False):
     return send_email(v['email'], subject, html, text)
 
 
-def email_review(v, places, is_update):
+def email_review(v, places, is_update, requested=()):
     url = f"{PUBLIC_BASE_URL}/volunteers/admin?status=pending"
     rows = "".join(f"<li>{p['municipality']}</li>" for p in places)
+    asked = ""
+    if requested:
+        url = f"{PUBLIC_BASE_URL}/volunteers/admin"
+        asked = ("<p><b>Already approved, and asking to add:</b></p><ul>"
+                 + "".join(f"<li>{m}</li>" for m in requested)
+                 + "</ul><p>Not added. Use Add place on their row if they should have it.</p>")
     html = _wrap_html(f"""
 <p><b>{'Updated' if is_update else 'New'} election-night volunteer</b></p>
 <p>{v['name']}<br>{v['email']}<br>{v['phone'] or ''}<br>Home town: {v['home_town'] or '-'}<br>
 With: {v['affiliation'] or '-'}</p>
-<p>Polling places:</p><ul>{rows}</ul>
+<p>Polling places:</p><ul>{rows}</ul>{asked}
 {_button(url, 'Review volunteers')}""")
     text = (f"{'Updated' if is_update else 'New'} election-night volunteer\n{v['name']}\n{v['email']}\n"
             f"{v['phone'] or ''}\nHome town: {v['home_town'] or '-'}\nWith: {v['affiliation'] or '-'}\n"
-            f"Places: {_places_text(places)}\n\nReview: {url}\n")
+            f"Places: {_places_text(places)}\n"
+            + (f"Already approved; asked to add (NOT added): {', '.join(requested)}\n" if requested else "")
+            + f"\nReview: {url}\n")
     return send_email(REVIEW_EMAIL, f"Election night volunteer: {v['name']}", html, text,
                       reply_to=v['email'])
 
@@ -495,12 +503,19 @@ def signup_post():
 
     cur.execute("SELECT municipality FROM volunteer_assignments WHERE volunteer_id = ?", (vid,))
     have = [r['municipality'] for r in cur.fetchall()]
-    full = []
+    full, requested = [], []
+    # An approved volunteer's link can send results for every place on it, and
+    # this form needs nothing but their email address. So a new place for an
+    # approved volunteer is a request for an admin (Add place), never a grant.
+    approved = bool(existing) and existing['status'] == 'approved'
     for m in chosen:
         if m in have:
             continue
-        if len(have) >= MAX_PLACES_PER_VOLUNTEER:
+        if len(have) + len(requested) >= MAX_PLACES_PER_VOLUNTEER:
             break
+        if approved:
+            requested.append(m)
+            continue
         p = places[m]
         if p['approved'] + p['pending'] >= p['cap']:
             full.append(m)
@@ -527,7 +542,7 @@ def signup_post():
         email_approved(v, mine)
     else:
         email_signup_received(v, mine)
-    email_review(v, mine, is_update=bool(existing))
+    email_review(v, mine, is_update=bool(existing), requested=requested)
     return redirect(url_for('vol.signup_thanks', full=','.join(full)) if full else url_for('vol.signup_thanks'))
 
 

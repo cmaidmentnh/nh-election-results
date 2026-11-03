@@ -87,10 +87,13 @@ def _wards_named(text):
     subject line, not one. Without this the ward normalisation below would read
     the first one and quietly file all five tapes under Concord Ward 3.
     """
+    # 'Dover Ward 1 and Ward 2' names two as well: count each 'Ward N' too.
+    each = len({int(w) for w in re.findall(r"\bWARD\s*#?\s*(\d{1,2})\b",
+                                           _ward_words_to_digits(text), re.I)})
     m = re.search(r"\bWARDS?\b[:\s]*((?:" + _WARD_TOKEN + r"|and\b|[\s,&])+)", text or "", re.I)
     if not m:
-        return 0
-    return len(re.findall(r"\b" + _WARD_TOKEN + r"\b", m.group(1), re.I))
+        return each
+    return max(each, len(re.findall(r"\b" + _WARD_TOKEN + r"\b", m.group(1), re.I)))
 
 
 def _key_variants(text):
@@ -154,7 +157,10 @@ def resolve_municipality(cursor, text):
     # Real subject lines read "Bedford - R primary", not "Bedford". Look for a
     # place name inside the text, longest first so "Manchester Ward 3" wins over
     # any shorter name it contains. Only unambiguous hits count.
-    hay = " " + re.sub(r"[^A-Z0-9]+", " ", _ward_words_to_digits(text).upper()) + " "
+    # 'Carroll County Sheriff' names a county, not the town of Carroll - the
+    # same rule places_named() applies.
+    hay = re.sub(r"\b[A-Z]+\s+COUNTY\b", " ", _ward_words_to_digits(text).upper())
+    hay = " " + re.sub(r"[^A-Z0-9]+", " ", hay) + " "
     hits = set()
     for k, name in places.items():
         pattern = " " + re.sub(r"[^A-Z0-9]+", " ", name.upper()).strip() + " "

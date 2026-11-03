@@ -15,7 +15,7 @@ import logging
 
 from pydantic import BaseModel, Field
 
-from entry import log_audit, normalize_name
+from entry import log_audit, normalize_name, writein_on_roster
 from intake import config, parser, store
 
 log = logging.getLogger("intake.commands")
@@ -127,9 +127,11 @@ def _apply_action(conn, act, user_id):
         if not rr:
             return None
         norm = normalize_name(name)
-        cur.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
-                    (norm, rr["party"]))
-        crow = cur.fetchone()
+        crow = writein_on_roster(cur, race_id, norm)
+        if not crow:
+            cur.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                        (norm, rr["party"]))
+            crow = cur.fetchone()
         if crow:
             candidate_id = crow["id"]
         else:

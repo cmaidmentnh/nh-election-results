@@ -636,6 +636,37 @@ def replay(message_id):
     if not row:
         print(f"No message {message_id}")
         return
+    # Lines this message already published stay in results, but deleting the
+    # message hides them from the machine-tape check, so the re-parse added the
+    # same tape again (302 -> 403). That covers the stranded sweep too, which
+    # retries an 'error' message that may have published before it failed.
+    # Park it for a human instead; nothing is lost, the report stays stored.
+    done = conn.execute(
+        """SELECT COUNT(*) FROM intake_items
+            WHERE status = 'applied' AND kind = 'result'
+              AND (message_id = ? OR message_id IN
+                   (SELECT id FROM intake_messages
+                     WHERE source = ? AND external_id LIKE ? || '#%'))""",
+        (message_id, row["source"], row["external_id"])).fetchone()[0]
+    if done:
+        conn.execute("UPDATE intake_messages SET status = 'queued' WHERE id = ? AND status != 'queued'",
+                     (message_id,))
+        # One line on the review page, so the rest of the report gets read.
+        if not conn.execute("SELECT 1 FROM intake_items WHERE message_id = ? AND status = 'pending'",
+                            (message_id,)).fetchone():
+            town = conn.execute("SELECT municipality FROM intake_items WHERE message_id = ? "
+                                "AND status = 'applied' LIMIT 1", (message_id,)).fetchone()
+            store.add_item(conn, message_id, municipality=town[0] if town else None,
+                           reason=f"Not re-read: {done} of this report's lines are already "
+                                  f"published, and re-reading would count them twice. Check "
+                                  f"the original for anything that did not publish.")
+        conn.commit()
+        conn.close()
+        log.warning("not replaying message %s: %s of its lines are already published - "
+                    "check it on the review page", message_id, done)
+        print(f"Message {message_id} already published {done} lines; not re-parsing it "
+              f"(that would count them twice). Check it on the review page.")
+        return
     conn.execute("DELETE FROM intake_items WHERE message_id = ? AND status = 'pending'", (message_id,))
     conn.execute("DELETE FROM intake_messages WHERE id = ?", (message_id,))
     # A multi-town message is re-submitted as one child message per attachment

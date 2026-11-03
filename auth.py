@@ -1,6 +1,8 @@
 """Authentication module for election results entry."""
 
 import sqlite3
+import threading
+import time
 from functools import wraps
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -67,6 +69,41 @@ def admin_required(f):
     return decorated_function
 
 
+# Failed logins per (address, username), kept per worker. Ten misses in ten
+# minutes locks that pair out for the rest of the window. Keyed on the username
+# too, so a room of reviewers behind one address can't lock each other out.
+_FAILS = {}
+_FAILS_LOCK = threading.Lock()
+_FAIL_LIMIT, _FAIL_WINDOW = 10, 600
+
+
+def _fail_key(username):
+    ip = request.headers.get('X-Real-IP') or request.remote_addr or ''
+    return (ip, username.lower())
+
+
+def _locked_out(key):
+    now = time.monotonic()
+    with _FAILS_LOCK:
+        hits = [t for t in _FAILS.get(key, []) if now - t < _FAIL_WINDOW]
+        _FAILS[key] = hits
+        return len(hits) >= _FAIL_LIMIT
+
+
+def _record_fail(key):
+    with _FAILS_LOCK:
+        _FAILS.setdefault(key, []).append(time.monotonic())
+        if len(_FAILS) > 10000:
+            _FAILS.clear()
+
+
+def _safe_next(target):
+    """Only a path on this site: '/entry/', never 'https://evil' or '//evil'."""
+    if not target or not target.startswith('/') or target.startswith('//') or '\\' in target:
+        return None
+    return target
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -76,8 +113,16 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
 
+        key = _fail_key(username)
+        if _locked_out(key):
+            flash('Too many failed attempts. Wait ten minutes and try again.', 'error')
+            return render_template('admin/login.html'), 429
+
         user_row = User.get_by_username(username)
-        if user_row and check_password_hash(user_row['password_hash'], password):
+        ok = bool(user_row and check_password_hash(user_row['password_hash'], password))
+        if not ok:
+            _record_fail(key)
+        if ok:
             user = User(user_row['id'], user_row['username'], user_row['role'])
             login_user(user)
 
@@ -89,7 +134,7 @@ def login():
             conn.commit()
             conn.close()
 
-            next_page = request.args.get('next')
+            next_page = _safe_next(request.args.get('next'))
             return redirect(next_page or url_for('admin.dashboard'))
 
         flash('Invalid username or password.', 'error')

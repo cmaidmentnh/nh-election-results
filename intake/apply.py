@@ -287,9 +287,18 @@ def _ballots_doubt(b, extraction, index):
     blocked the clerk's real return line by line as 'Exceeds 1 ballots cast'."""
     if (b.confidence or 0) < config.MIN_CONFIDENCE:
         return f"Ballots cast read at low confidence ({(b.confidence or 0):.0%})"
-    top = max((l.votes or 0 for l in extraction.lines
-               if l.race_id in index and index[l.race_id]["election_id"] == b.election_id),
-              default=0)
+    votes = sorted((l.votes or 0 for l in extraction.lines
+                    if l.race_id in index and index[l.race_id]["election_id"] == b.election_id
+                    and (l.votes or 0) <= MAX_PLAUSIBLE_VOTES), reverse=True)
+    top = votes[0] if votes else 0
+    # One line above the ballots figure is that line's misread, not the
+    # ballots': it is held on its own, against this figure. Distrusting the
+    # ballots instead switched the cap off for the whole report, and a line
+    # one vote over ballots cast published. A ballots figure several lines
+    # beat (Hudson's "1") is the misread one.
+    if b.ballots_cast is not None and b.ballots_cast >= 5 and \
+            sum(1 for v in votes if v > b.ballots_cast) == 1:
+        return None
     if b.ballots_cast is None or b.ballots_cast < max(top, 5):
         return (f"Ballots cast {b.ballots_cast} is below the largest vote line "
                 f"({top:,}) on the same report")
@@ -650,8 +659,25 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
                 " VALUES (?,?,?,?)",
                 (line.race_id, line.candidate_id, municipality, line.votes),
             )
-            log_audit(cursor, user_id, line.race_id, municipality, line.candidate_id,
-                      "create", None, {"votes": line.votes})
+            if cursor.rowcount == 1:
+                log_audit(cursor, user_id, line.race_id, municipality, line.candidate_id,
+                          "create", None, {"votes": line.votes})
+            else:
+                # Another report filed this line first. The same number is a
+                # duplicate (recorded below, no second audit row); a different
+                # one is a contradiction, and marking it 'applied' would drop
+                # it with nobody asked.
+                won = _existing_votes(cursor, line.race_id, line.candidate_id, municipality)
+                if won != line.votes:
+                    reason = (f"Conflicts with {won:,} filed by another report "
+                              f"at the same moment")
+                    store.add_item(conn, message_id, status="pending", reason=reason,
+                                   **{**common, "old_votes": won})
+                    queued += 1
+                    queued_reasons.append(f"{label}: {reason}")
+                    details.append({"ok": False, "party": party, "label": label,
+                                    "name": name, "votes": line.votes, "reason": reason})
+                    continue
         # old == line.votes is a duplicate report; record it, change nothing.
         item_id = store.add_item(conn, message_id, status="applied", reason=None, **common)
         conn.execute(
@@ -678,17 +704,19 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     # with the running sum, and anything unscoped, still goes to review, because
     # replacing a figure is destructive and only a human should choose it.
     scope = _report_scope(extraction)
+    # Review-everything mode holds ballots cast too, not just the vote lines.
+    ballots_hold = hold_reason or (None if config.AUTO_APPLY else "Review-everything mode is on")
     for b in extraction.ballots:
         valid_ids = {e["id"] for e in elections}
         doubt = _ballots_doubt(b, extraction, index) if b.election_id in valid_ids else None
-        if doubt and gate_open and not hold_reason:
+        if doubt and gate_open and not ballots_hold:
             store.add_item(conn, message_id, kind="ballots", municipality=municipality,
                            election_id=b.election_id, votes=b.ballots_cast,
                            confidence=b.confidence, status="pending", reason=doubt)
             queued += 1
             continue
         if (b.election_id in valid_ids and b.ballots_cast is not None and gate_open
-                and not hold_reason):
+                and not ballots_hold):
             existing = _ballots_cast(cursor, b.election_id, municipality)
             if existing is None:
                 cursor.execute("SELECT county FROM polling_places WHERE municipality = ?", (municipality,))
@@ -722,7 +750,10 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
                 applied += 1
                 continue
 
-            if scope == "machine_tape":
+            # Add only when this tape's votes were added too (add_device). A
+            # tape arriving after a town total has every vote line held as a
+            # conflict; adding its ballots anyway took Raymond from 390 to 600.
+            if scope == "machine_tape" and add_device:
                 total = existing + b.ballots_cast
                 cursor.execute(
                     """UPDATE voter_registration SET ballots_cast = ?
@@ -749,8 +780,8 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             # not as a ballot we could not identify.
             if b.election_id in valid_ids and b.ballots_cast is not None and not gate_open:
                 reason = f"Held until polls close ({config.OPEN_AFTER})"
-            elif b.election_id in valid_ids and hold_reason:
-                reason = hold_reason
+            elif b.election_id in valid_ids and ballots_hold:
+                reason = ballots_hold
             else:
                 reason = "Could not tell which ballot these are for"
             store.add_item(conn, message_id, kind="ballots", municipality=municipality,

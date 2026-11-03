@@ -413,7 +413,9 @@ def api_town_chart(name):
     if not summary:
         return jsonify({'error': 'Town not found'}), 404
 
-    years = summary['years']
+    # A year with no two-party margin (an unorganised grant that cast no votes
+    # that year) has no point on the chart; it used to be a KeyError and a 500.
+    years = [y for y in summary['years'] if y in summary['margins_by_year']]
     margins = [summary['margins_by_year'][y]['margin'] for y in years]
 
     return jsonify({
@@ -1729,7 +1731,22 @@ def _prior_margins(cur, office_name, county, district, year):
     points of the two-party vote, keyed by _norm_place, plus the raw R and D
     votes so a set of towns can be totalled. Empty when that year had no such
     race or it was not an R-vs-D contest. The 2022 lines are this decade's, so
-    a district in 2022 and 2024 is the same ground as in 2026."""
+    a district in 2022 and 2024 is the same ground as in 2026.
+
+    Votes are per nominee (each party's total over its number of candidates):
+    a multi-seat district that ran three Republicans against two Democrats in
+    2024 and two against two now would otherwise show a big swing that is
+    nothing but a missing name."""
+    n = {row['party']: row['n'] for row in cur.execute(
+            """SELECT c.party AS party, COUNT(DISTINCT res.candidate_id) AS n
+                 FROM results res JOIN races r ON res.race_id = r.id
+                 JOIN offices o ON r.office_id = o.id JOIN elections e ON r.election_id = e.id
+                 JOIN candidates c ON c.id = res.candidate_id
+                WHERE e.year = ? AND e.election_type = 'general' AND o.name = ?
+                  AND COALESCE(r.county,'') = ? AND COALESCE(r.district,'') = ?
+                  AND c.party IN ('Republican', 'Democratic')
+                GROUP BY c.party""", (year, office_name, county, district))}
+    nr, nd = n.get('Republican') or 1, n.get('Democratic') or 1
     out = {}
     for r in cur.execute(
             """SELECT res.municipality AS m,
@@ -1743,7 +1760,7 @@ def _prior_margins(cur, office_name, county, district, year):
                 GROUP BY res.municipality""", (year, office_name, county, district)):
         rv, dv = r['rv'] or 0, r['dv'] or 0
         if rv > 0 and dv > 0:
-            out[_norm_place(r['m'])] = (rv, dv)
+            out[_norm_place(r['m'])] = (rv / nr, dv / nd)
     return out
 
 
@@ -1871,10 +1888,17 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
         prob = 0.5 * (1 + _math.erf(z / _math.sqrt(2)))
         prob = max(0.5, min(0.99, prob))
 
+    # Dead level at the last seat: nobody is ahead, so leave that seat empty
+    # rather than hand it to whoever sorts first and count it as "leading".
+    if gap_votes == 0 and status != 'called':
+        winners = winners[:seats - 1]
+        prob = None
+
     return {'status': status, 'winners': winners, 'margin': round(margin * 100, 1),
             'expected_in': round(100 * reported_weight), 'projected_total': round(projected_total),
             'win_prob': round(prob, 3) if prob is not None else None,
-            'leader': cand_list[seats - 1]['name'] if cand_list else None}
+            'leader': (cand_list[seats - 1]['name']
+                       if cand_list and not (gap_votes == 0 and status != 'called') else None)}
 
 
 
@@ -2415,8 +2439,9 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                     if not p['reported']:
                         continue
                     v = by_prec.get(p['name'], {})
-                    rv = sum(v.get(c, 0) for c in rids)
-                    dv = sum(v.get(c, 0) for c in dids)
+                    # Per nominee, like _prior_margins.
+                    rv = sum(v.get(c, 0) for c in rids) / len(rids)
+                    dv = sum(v.get(c, 0) for c in dids) / len(dids)
                     was = prior.get(_norm_place(p['name']))
                     if rv + dv <= 0 or not was:
                         continue

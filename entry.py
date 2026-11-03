@@ -94,6 +94,14 @@ class _Reject(Exception):
 STALE_PAGE = {'error': 'This page is out of date. Reload it before saving.', 'stale': True}
 
 
+def _entries(data, key):
+    """The list of cells under `key`, refusing anything that is not one."""
+    rows = data.get(key) or []
+    if not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows):
+        raise _Reject(400, {'error': f'Bad request: "{key}" must be a list of entries.'})
+    return rows
+
+
 def _cell(entry, key='votes'):
     """(votes, orig) from one posted cell; votes None means 'blank - skip it'.
 
@@ -118,6 +126,19 @@ def _cell(entry, key='votes'):
         if orig is None:
             raise _Reject(400, {'error': 'Bad original value.'})
     return votes, orig
+
+
+def writein_on_roster(cursor, race_id, norm):
+    """The race's own candidate with this normalised name, if it has one.
+
+    A write-in of someone already in the race is that candidate. The lookup by
+    party alone missed them in the general, where the election has no party, and
+    created a second "Chris Pappas" that split his votes.
+    """
+    cursor.execute("""SELECT c.id FROM race_candidates rc
+                        JOIN candidates c ON c.id = rc.candidate_id
+                       WHERE rc.race_id = ? AND c.name_normalized = ?""", (race_id, norm))
+    return cursor.fetchone()
 
 
 def _vote_ceiling(cursor, race_id, municipality):
@@ -451,14 +472,27 @@ def place_save(year, election_type, municipality):
     valid_election_ids = {e['id'] for e in elections}
 
     data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        conn.close()
+        return jsonify({'error': 'Bad request.'}), 400
     updated = 0
     conflicts = []
 
     try:
         cursor.execute("BEGIN IMMEDIATE")  # the orig check and the write are one step
 
+        # Same checks as the race grid: a real polling place, a race on its
+        # ballot, a candidate on that race. Without them a save could put
+        # Salem's votes in a Hillsborough race, or file a whole page under a
+        # place that does not exist.
+        cursor.execute("SELECT 1 FROM polling_places WHERE municipality = ?", (municipality,))
+        if not cursor.fetchone():
+            raise _Reject(404, {'error': f'{municipality} is not a polling place.'})
+        allowed = {r['id']: {c['candidate_id'] for c in r['candidates']} | {r['writein_id']}
+                   for r in place_races(cursor, municipality, sorted(valid_election_ids))}
+
         # Guard: only accept races that belong to this event.
-        for entry in data.get('results', []):
+        for entry in _entries(data, 'results'):
             race_id = entry.get('race_id')
             candidate_id = entry.get('candidate_id')
             if not race_id or not candidate_id:
@@ -470,15 +504,21 @@ def place_save(year, election_type, municipality):
             rr = cursor.fetchone()
             if not rr or rr['election_id'] not in valid_election_ids:
                 continue
+            if race_id not in allowed:
+                raise _Reject(400, {'error': f'That race is not on the {municipality} ballot.'})
+            if candidate_id not in allowed[race_id]:
+                raise _Reject(400, {'error': 'That candidate is not in this race.'})
             updated += _write_result(cursor, current_user.id, race_id, municipality,
                                      candidate_id, votes, orig, conflicts)
 
         # Named write-ins: create the candidate + roster row, then record the votes.
-        for entry in data.get('writeins', []):
+        for entry in _entries(data, 'writeins'):
             race_id = entry.get('race_id')
-            name = (entry.get('name') or '').strip()
+            name = str(entry.get('name') or '').strip()
             if not race_id or not name:
                 continue
+            if race_id not in allowed:
+                raise _Reject(400, {'error': f'That race is not on the {municipality} ballot.'})
             votes, orig = _cell(entry)
             if votes is None:
                 continue
@@ -489,9 +529,11 @@ def place_save(year, election_type, municipality):
                 continue
             norm = normalize_name(name)
             party = rr['party']
-            cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
-                           (norm, party))
-            crow = cursor.fetchone()
+            crow = writein_on_roster(cursor, race_id, norm)
+            if not crow:
+                cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                               (norm, party))
+                crow = cursor.fetchone()
             if crow:
                 candidate_id = crow['id']
             else:
@@ -506,7 +548,7 @@ def place_save(year, election_type, municipality):
             updated += _write_result(cursor, current_user.id, race_id, municipality,
                                      candidate_id, votes, orig, conflicts)
 
-        for entry in data.get('ballots', []):
+        for entry in _entries(data, 'ballots'):
             election_id = entry.get('election_id')
             if election_id not in valid_election_ids:
                 continue
@@ -637,7 +679,7 @@ def save_results(race_id):
         return jsonify({'error': 'Race not found'}), 404
 
     data = request.get_json(silent=True)
-    if not data or 'results' not in data:
+    if not isinstance(data, dict) or 'results' not in data:
         conn.close()
         return jsonify({'error': 'No results data'}), 400
 
@@ -649,7 +691,7 @@ def save_results(race_id):
     conflicts = []
     try:
         cursor.execute("BEGIN IMMEDIATE")
-        for entry in data['results']:
+        for entry in _entries(data, 'results'):
             town = entry.get('town')
             candidate_id = entry.get('candidate_id')
             if not town or not candidate_id:

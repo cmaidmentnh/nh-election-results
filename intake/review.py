@@ -13,7 +13,7 @@ from flask import Blueprint, abort, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 
 from auth import get_db
-from entry import log_audit, normalize_name, whole_count
+from entry import log_audit, normalize_name, place_races, whole_count, writein_on_roster
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/entry/intake")
 
@@ -136,6 +136,22 @@ def index():
                            counts=counts, recent=recent)
 
 
+def _bad_target(cursor, municipality, race_id, candidate_id):
+    """Why (race, candidate) cannot take this town's votes, or None if it can."""
+    cursor.execute("SELECT election_id FROM races WHERE id = ?", (race_id,))
+    rr = cursor.fetchone()
+    if not rr:
+        return "unknown race"
+    races = place_races(cursor, municipality or "", [rr["election_id"]])
+    race = next((r for r in races if r["id"] == race_id), None)
+    if not race:
+        return f"that race is not on the {municipality} ballot"
+    if candidate_id is not None and candidate_id not in (
+            {c["candidate_id"] for c in race["candidates"]} | {race["writein_id"]}):
+        return "that candidate is not in this race"
+    return None
+
+
 def _apply_item(cursor, item, action, data, user_id):
     """Apply one queued line. Returns (status, error); the caller commits."""
     votes = None
@@ -156,6 +172,14 @@ def _apply_item(cursor, item, action, data, user_id):
             return None, "the queued count is not a whole number, 0 or more - edit it"
     race_id = data.get("race_id", item["race_id"])
     candidate_id = data.get("candidate_id", item["candidate_id"])
+    if item["kind"] != "ballots" and (race_id != item["race_id"]
+                                      or candidate_id != item["candidate_id"]):
+        # Re-pointing a line is allowed, but only to a race on this town's
+        # ballot and a candidate in that race - the same rule hand entry has.
+        problem = _bad_target(cursor, item["municipality"], race_id,
+                              None if action == "writein" else candidate_id)
+        if problem:
+            return None, problem
 
     # A town with several machines sends several tapes. "add" sums this
     # reading with what is recorded NOW, not with old_votes (the value when the
@@ -189,9 +213,11 @@ def _apply_item(cursor, item, action, data, user_id):
             return None, "unknown race"
         party = rr["party"]
         norm = normalize_name(name)
-        cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
-                       (norm, party))
-        crow = cursor.fetchone()
+        crow = writein_on_roster(cursor, race_id, norm)
+        if not crow:
+            cursor.execute("SELECT id FROM candidates WHERE name_normalized = ? AND party IS ?",
+                           (norm, party))
+            crow = cursor.fetchone()
         if crow:
             candidate_id = crow["id"]
         else:
