@@ -307,6 +307,13 @@ def _fetch_mailbox(token_path):
                                     body, [f for f, _ in atts])
         from_clerk = _from_clerk_or_results_list(hdrs)
         take, mark_read = jev_gate.decide(verdict, bool(atts), _plausible_return(hdrs))
+        rcpt = " ".join(hdrs.get(k, "") or "" for k in ("to", "cc", "delivered-to")).lower()
+        if (not take and config.GROUP_ADDRESS
+                and config.GROUP_ADDRESS.lower() in rcpt):
+            # Anything sent to the results address is meant for the desk. A
+            # link-only "Dixville" report (a tweet of the midnight count) was
+            # read as "other" and dropped; store it, and a person reads it.
+            take, mark_read = True, False
         if not from_clerk:
             # These are Chris's own mailboxes. Volunteers now report through
             # their personal link, Signal or results@nhhouse.gop; the only
