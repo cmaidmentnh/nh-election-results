@@ -37,6 +37,15 @@ def partial_items(cur):
            AND EXISTS (SELECT 1 FROM results r
                         WHERE r.race_id = i.race_id
                           AND r.municipality = i.municipality)
+           -- Half-published means half of THIS report's race went up. Results
+           -- on file from some other report say nothing about this one, which
+           -- may be held as the wrong town, one tape of several, or a primary
+           -- return - releasing it on that basis bypassed the queue.
+           AND EXISTS (SELECT 1 FROM intake_items a
+                        WHERE a.message_id = i.message_id
+                          AND a.race_id = i.race_id
+                          AND a.municipality = i.municipality
+                          AND a.status = 'applied' AND a.reviewed_by IS NULL)
            AND NOT EXISTS (SELECT 1 FROM results r
                             WHERE r.race_id = i.race_id
                               AND r.municipality = i.municipality

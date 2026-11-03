@@ -73,7 +73,7 @@ def whole_count(value):
         return value if value >= 0 else None
     if isinstance(value, float):
         return int(value) if value.is_integer() and value >= 0 else None
-    if isinstance(value, str) and value.strip().isdigit():
+    if isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
         return int(value.strip())
     return None
 
@@ -120,6 +120,31 @@ def _cell(entry, key='votes'):
     return votes, orig
 
 
+def _vote_ceiling(cursor, race_id, municipality):
+    """The most votes one candidate could get in one place, or None if unknown.
+
+    The larger of ballots cast for this election (when on file) and twice the
+    biggest single-candidate count the place gave in the 2024 general (floor
+    100). Intake already refuses such counts; hand entry published them - a
+    typo with an extra zero went straight to the live page.
+    """
+    cursor.execute("""SELECT vr.ballots_cast FROM races r
+                      JOIN voter_registration vr ON vr.election_id = r.election_id
+                     WHERE r.id = ? AND vr.municipality = ?""", (race_id, municipality))
+    row = cursor.fetchone()
+    cast = row['ballots_cast'] if row and row['ballots_cast'] else None
+    cursor.execute("""SELECT MAX(res.votes) AS v FROM results res
+                      JOIN races ra ON ra.id = res.race_id
+                      JOIN elections e ON e.id = ra.election_id
+                     WHERE e.year = 2024 AND e.election_type = 'general'
+                       AND res.municipality = ?""", (municipality,))
+    row = cursor.fetchone()
+    past = max(100, 2 * row['v']) if row and row['v'] is not None else None
+    # Whichever is larger: ballots cast may be one machine's tape so far.
+    known = [n for n in (cast, past) if n]
+    return max(known) if known else None
+
+
 def _write_result(cursor, user_id, race_id, municipality, candidate_id, votes, orig, conflicts):
     """Record one candidate's votes in one town, through result_audit.
 
@@ -135,6 +160,10 @@ def _write_result(cursor, user_id, race_id, municipality, candidate_id, votes, o
     stored = old['votes'] if old else None
     if stored == votes:
         return 0
+    ceiling = _vote_ceiling(cursor, race_id, municipality)
+    if ceiling is not None and votes > ceiling:
+        raise _Reject(400, {'error': f'{votes:,} votes in {municipality} is more than '
+                                     f'that place can cast ({ceiling:,}). Check for an extra digit.'})
     if stored != orig:
         conflicts.append({'race_id': race_id, 'candidate_id': candidate_id,
                           'municipality': municipality, 'stored': stored, 'orig': orig})

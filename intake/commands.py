@@ -103,7 +103,19 @@ def _apply_action(conn, act, user_id):
     race_id, candidate_id = item["race_id"], item["candidate_id"]
 
     if act.action == "add":
-        votes = (item["old_votes"] or 0) + (act.votes or item["votes"] or 0)
+        # Add to what is on file NOW, not old_votes (the figure when the line
+        # was queued): two tapes waiting against one made the second add wipe
+        # the first. Same rule as the web queue's Add (review.py).
+        if item["kind"] == "ballots":
+            cur.execute("SELECT ballots_cast AS v FROM voter_registration "
+                        "WHERE election_id=? AND municipality=?",
+                        (item["election_id"], item["municipality"]))
+        else:
+            cur.execute("SELECT votes AS v FROM results "
+                        "WHERE race_id=? AND candidate_id=? AND municipality=?",
+                        (race_id, candidate_id, item["municipality"]))
+        now = cur.fetchone()
+        votes = ((now["v"] or 0) if now else 0) + (act.votes or item["votes"] or 0)
 
     if act.action == "writein":
         name = (item["candidate_text"] or "").strip()

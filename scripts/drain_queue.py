@@ -21,7 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from intake import store, roster              # noqa: E402
+from intake import store, roster, config      # noqa: E402
+from intake import apply as apply_mod         # noqa: E402
 from intake.apply import reconcile, _existing_votes   # noqa: E402
 from intake.parser import Extraction          # noqa: E402
 from entry import log_audit                   # noqa: E402
@@ -71,10 +72,23 @@ def main():
         print(f"retired {cur.rowcount} orphaned items")
         conn.commit()
 
+    # Only the polls-close gate is lifted here. Every other hold - wrong town,
+    # one tape filed as the whole town, an implausible count, low confidence,
+    # a primary return - was set because a person has to look, and re-checking
+    # arithmetic and conflicts says nothing about any of them. The gate reason
+    # is only ever stamped on a line that passed every other check (see
+    # apply.py), so these are exactly the lines that would have published.
+    if not apply_mod._gate_open():
+        print("polls-close gate still shut; nothing to release")
+        return
+    if not config.AUTO_APPLY:
+        print("review-everything mode is on; nothing released")
+        return
     cur.execute("""SELECT i.*, m.parse_json
                      FROM intake_items i
                      JOIN intake_messages m ON m.id = i.message_id
                     WHERE i.status = 'pending' AND i.kind = 'result'
+                      AND i.reason LIKE 'Held until polls close%'
                     ORDER BY i.message_id, i.id""")
     pending = [dict(r) for r in cur.fetchall()]
 

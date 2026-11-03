@@ -13,6 +13,7 @@ from flask import (Flask, render_template, jsonify, request, Response, make_resp
 import queries
 import analysis
 import census
+from markupsafe import escape
 
 app = Flask(__name__)
 
@@ -264,7 +265,7 @@ def town(name):
     """Town detail page with insights."""
     summary = analysis.get_town_summary(name)
     if not summary:
-        return f"Town '{name}' not found", 404
+        return f"Town '{escape(name)}' not found", 404
 
     # Get detailed results for the most recent year
     latest_year = summary['years'][-1]
@@ -301,7 +302,7 @@ def town_year(name, year):
     """Town results for a specific year."""
     summary = analysis.get_town_summary(name)
     if not summary or year not in summary['years']:
-        return f"No data for {name} in {year}", 404
+        return f"No data for {escape(name)} in {escape(year)}", 404
 
     races = analysis.get_town_race_details(name, year)
     pvi = analysis.get_town_pvi(name)
@@ -383,7 +384,7 @@ def county(name):
     """County overview page."""
     summary = analysis.get_county_summary(name)
     if not summary:
-        return f"County '{name}' not found", 404
+        return f"County '{escape(name)}' not found", 404
 
     year = request.args.get('year', type=int)
     county_offices = analysis.get_county_office_races(name, year)
@@ -646,7 +647,7 @@ def office_detail(office_name):
     """Office-level results page."""
     office = OFFICE_SLUGS.get(office_name)
     if not office:
-        return f"Office '{office_name}' not found", 404
+        return f"Office '{escape(office_name)}' not found", 404
 
     office_data = analysis.get_office_results(office)
     is_county = office.startswith('County') or office.startswith('Register')
@@ -659,7 +660,7 @@ def office_year(office_name, year):
     """Office results for a specific year with all races."""
     office = OFFICE_SLUGS.get(office_name)
     if not office:
-        return f"Office '{office_name}' not found", 404
+        return f"Office '{escape(office_name)}' not found", 404
 
     races = analysis.get_office_year_results(office, year)
     if not races:
@@ -715,11 +716,11 @@ def county_race_detail(office_name, year, county):
     Commissioner districts pass ?district=N."""
     office = OFFICE_SLUGS.get(office_name)
     if not office:
-        return f"Office '{office_name}' not found", 404
+        return f"Office '{escape(office_name)}' not found", 404
     district = request.args.get('district', '')
     data = analysis.get_county_race_detail(office, county, year, district)
     if not data:
-        return f"No results for {office} in {county} {year}", 404
+        return f"No results for {escape(office)} in {escape(county)} {escape(year)}", 404
     return render_template('county_race.html', office_name=office_name, data=data)
 
 
@@ -1366,10 +1367,15 @@ def _question_payload(cur, ev, munis=None):
         yes = sum(t['yes'] for t in towns.values())
         no = sum(t['no'] for t in towns.values())
         reported = sum(t['reported'] for t in towns.values())
+        # Sixteen unincorporated grants (Beans Grant, Kilkenny, ...) are polling
+        # places with nobody voting in them. Nobody will ever report them, so
+        # counting them as expected left Q1 "passing" forever, never "adopted".
+        empty = _empty_places(cur)
+        expected = sum(1 for p in precs if p not in empty or p in votes)
         state = {'yes': yes, 'no': no, 'total': yes + no,
                  'pct_yes': round(100 * yes / (yes + no), 1) if yes + no else None,
                  'reported': reported, 'precincts': len(precs),
-                 'status': _q_status(yes, no, q['threshold'], reported, len(precs), is_cert)
+                 'status': _q_status(yes, no, q['threshold'], reported, expected, is_cert)
                            if q['decided_by'] == 'state' else None}
         tl = sorted(towns.values(), key=lambda t: t['town'])
         item = {k: q[k] for k in ('key', 'number', 'office', 'title', 'summary',
@@ -1610,6 +1616,17 @@ def _all_precincts(cur):
     return _ref('statewide', lambda: [
         r['municipality'] for r in
         cur.execute("SELECT municipality FROM polling_places ORDER BY county, municipality")])
+
+
+def _empty_places(cur):
+    """Polling places on file for the 2024 general with not one vote cast."""
+    return _ref('empty_places', lambda: {
+        r['m'] for r in cur.execute("""
+            SELECT res.municipality AS m
+              FROM results res JOIN races ra ON ra.id = res.race_id
+              JOIN elections e ON e.id = ra.election_id
+             WHERE e.year = 2024 AND e.election_type = 'general'
+             GROUP BY res.municipality HAVING SUM(res.votes) = 0""")})
 
 
 def _precincts_for(cur, office_name, level, county, district):

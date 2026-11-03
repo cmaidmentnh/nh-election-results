@@ -169,8 +169,18 @@ def resolve_municipality(cursor, text):
     # Last resort: a near-miss spelling of the whole field ("bedfortd").
     # Deliberately strict, and never applied to ward cities, where picking the
     # wrong ward would be worse than asking a human.
+    # Real typos keep the first letter and the length; "Rochester" -> Chester,
+    # "WARMINGTON" -> Farmington and "Hi all," -> Hill all passed the ratio
+    # alone and filed whole tapes under the wrong town. A ward city's bare name
+    # is never a near-miss for anything: it is ambiguous, not misspelled.
     import difflib
-    close = difflib.get_close_matches(normkey(text), list(places), n=2, cutoff=0.87)
+    key = normkey(text)
+    ward_cities = {normkey(re.sub(r"\s*Ward\s*\d+\*?$", "", p, flags=re.I))
+                   for p in places.values() if re.search(r"\bWard\s*\d+", p, re.I)}
+    if len(key) < 6 or any(key.startswith(c) for c in ward_cities):
+        return None, 0.0
+    close = [c for c in difflib.get_close_matches(key, list(places), n=2, cutoff=0.87)
+             if c[:1] == key[:1]]
     if len(close) == 1 or (len(close) == 2 and close[0] != close[1]
                            and difflib.SequenceMatcher(None, normkey(text), close[0]).ratio()
                                - difflib.SequenceMatcher(None, normkey(text), close[1]).ratio() > 0.06):

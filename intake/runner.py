@@ -92,7 +92,9 @@ def _guess_town(cursor, msg):
     for text in candidates:
         name, conf = roster.resolve_municipality(cursor, text)
         if name:
-            return name, conf, "exact"
+            # 0.85 is resolve_municipality's near-miss spelling, not a name we
+            # found; label it so the wrong-town hold still applies.
+            return name, conf, ("exact" if conf > 0.85 else "spelling guess")
 
     # A town clerk mailing from their listed address identifies their own town.
     # Ward cities share one clerk address across wards, so this returns nothing

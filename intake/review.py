@@ -234,6 +234,14 @@ def _apply_item(cursor, item, action, data, user_id):
             (race_id, candidate_id, item["municipality"]),
         )
         old = cursor.fetchone()
+        # The number on file moved since this line was queued - a hand
+        # correction, another tape. Accepting would silently put the queued
+        # number back over it; make the reviewer look at the new figure.
+        if (action == "accept" and old and old["votes"] != item["old_votes"]
+                and old["votes"] != votes):
+            return None, (f"{item['municipality']} now has {old['votes']:,} on file "
+                          f"(was {item['old_votes'] if item['old_votes'] is not None else 'nothing'} "
+                          f"when this was queued) - reload and check before replacing it")
         if old:
             cursor.execute(
                 "UPDATE results SET votes=? WHERE race_id=? AND candidate_id=? AND municipality=?",
