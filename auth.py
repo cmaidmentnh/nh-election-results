@@ -1,7 +1,6 @@
 """Authentication module for election results entry."""
 
 import sqlite3
-import threading
 import time
 from functools import wraps
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session
@@ -69,11 +68,11 @@ def admin_required(f):
     return decorated_function
 
 
-# Failed logins per (address, username), kept per worker. Ten misses in ten
-# minutes locks that pair out for the rest of the window. Keyed on the username
-# too, so a room of reviewers behind one address can't lock each other out.
-_FAILS = {}
-_FAILS_LOCK = threading.Lock()
+# Failed logins per (address, username), in the database so all gunicorn
+# workers share one count (a per-worker count let ~50 guesses through before
+# every worker had locked out). Ten misses in ten minutes locks that pair out
+# for the rest of the window. Keyed on the username too, so a room of
+# reviewers behind one address can't lock each other out.
 _FAIL_LIMIT, _FAIL_WINDOW = 10, 600
 
 
@@ -82,19 +81,33 @@ def _fail_key(username):
     return (ip, username.lower())
 
 
+def _fails_db():
+    conn = get_db()
+    conn.execute("""CREATE TABLE IF NOT EXISTS login_failures (
+                        ip TEXT NOT NULL, username TEXT NOT NULL, at REAL NOT NULL)""")
+    return conn
+
+
 def _locked_out(key):
-    now = time.monotonic()
-    with _FAILS_LOCK:
-        hits = [t for t in _FAILS.get(key, []) if now - t < _FAIL_WINDOW]
-        _FAILS[key] = hits
-        return len(hits) >= _FAIL_LIMIT
+    conn = _fails_db()
+    try:
+        cutoff = time.time() - _FAIL_WINDOW
+        n = conn.execute("SELECT COUNT(*) FROM login_failures WHERE ip = ? AND username = ? AND at > ?",
+                         (key[0], key[1], cutoff)).fetchone()[0]
+        return n >= _FAIL_LIMIT
+    finally:
+        conn.close()
 
 
 def _record_fail(key):
-    with _FAILS_LOCK:
-        _FAILS.setdefault(key, []).append(time.monotonic())
-        if len(_FAILS) > 10000:
-            _FAILS.clear()
+    conn = _fails_db()
+    try:
+        conn.execute("INSERT INTO login_failures (ip, username, at) VALUES (?, ?, ?)",
+                     (key[0], key[1], time.time()))
+        conn.execute("DELETE FROM login_failures WHERE at < ?", (time.time() - _FAIL_WINDOW,))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def _safe_next(target):

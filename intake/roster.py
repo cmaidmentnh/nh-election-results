@@ -440,6 +440,10 @@ def roster_for(cursor, municipality):
                 "names": {c["candidate_id"]: c["name"] for c in race["candidates"]},
                 # Printed on the ballot, as opposed to written in tonight or earlier.
                 "printed_ids": {c["candidate_id"] for c in race["candidates"] if not c["is_writein"]},
+                # Printed Republicans and Democrats: a report that leaves one of
+                # them out is cut off, not a zero (see apply._missing_major).
+                "major_ids": {c["candidate_id"] for c in race["candidates"]
+                              if not c["is_writein"] and c.get("party") in ("Republican", "Democratic")},
                 # candidate_id -> the party lines that person is printed on, for
                 # anyone cross-filed in this contest (see cross_filed above).
                 "cross_filed": two_lines,

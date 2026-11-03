@@ -21,7 +21,7 @@ import logging
 import re
 
 from entry import log_audit
-from intake import config, roster, store
+from intake import config, parser, roster, store
 from intake.parser import line_key
 
 log = logging.getLogger("intake.apply")
@@ -314,6 +314,32 @@ def _report_cast(extraction, index=None):
     return out
 
 
+def _missing_major(extraction, index):
+    """{race_id: reason} for races the report gives only part of.
+
+    A photo cut off mid-race read Tim McGough's line and not Shannon Chandley's,
+    and the race published with McGough at 100%. A printed Republican or
+    Democrat with no line at all is a missing line, not a zero - hold the race.
+    A missing minor-party name is not held: volunteers' texts routinely skip
+    the Libertarian, and his absence does not misstate who is winning.
+    """
+    if config.EVENT_TYPE in parser.PRIMARY_EVENT_TYPES:
+        return {}
+    given = {}
+    for l in extraction.lines:
+        if l.race_id in index:
+            given.setdefault(l.race_id, set()).add(l.candidate_id)
+    out = {}
+    for rid, cids in given.items():
+        meta = index[rid]
+        missing = sorted(meta.get("major_ids", set()) - cids)
+        if missing and len(meta.get("major_ids", ())) > 1:
+            names = ", ".join(meta["names"].get(c, str(c)) for c in missing)
+            out[rid] = (f"Report has no line for {names} - cut off or left out? "
+                        f"Holding the race so it does not go up incomplete")
+    return out
+
+
 def _over_seats(cursor, extraction, index, municipality, report_cast, add_device):
     """{race_id: reason} for races whose votes exceed ballots x seats.
 
@@ -522,6 +548,7 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
     resent_device = None if add_device else \
         _device_already_counted(cursor, extraction, municipality, index)
     over_seats = _over_seats(cursor, extraction, index, municipality, report_cast, add_device)
+    incomplete = _missing_major(extraction, index)
 
     verdicts = {}
     for line in extraction.lines:
@@ -534,6 +561,8 @@ def apply_extraction(conn, message_id, municipality, extraction, index, election
             ok, reason = False, hold_reason
         if ok and line.race_id in over_seats:
             ok, reason = False, over_seats[line.race_id]
+        if ok and line.race_id in incomplete:
+            ok, reason = False, incomplete[line.race_id]
         if ok and line.race_id in writein_holds:
             ok, reason = False, writein_holds[line.race_id]
         if ok and line.race_id in unreconciled:
