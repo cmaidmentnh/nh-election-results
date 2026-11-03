@@ -54,6 +54,9 @@ EVENT_YEAR = int(os.environ.get('VOLUNTEER_EVENT_YEAR', '2026'))
 EVENT_TYPE = os.environ.get('VOLUNTEER_EVENT_TYPE', 'general')
 ELECTION_DAY = os.environ.get('VOLUNTEER_ELECTION_DAY', 'Tuesday, November 3')
 
+# Election night: approve new signups on the spot and send their link and instructions right away.
+AUTO_APPROVE = os.environ.get('VOLUNTEER_AUTO_APPROVE', '') == '1'
+
 MAX_PLACES_PER_VOLUNTEER = 2
 MAX_VOLUNTEERS_PER_PLACE = 3
 MAX_PHOTO_BYTES = 20 * 1024 * 1024   # nginx client_max_body_size is 25M for this site
@@ -337,6 +340,7 @@ INSTRUCTIONS_STEPS = [
     "When counting is done, the moderator announces the results and posts them, usually on a wall or the door. That is public.",
     "Take a clear photo of every page of the posted results, close up, with the whole sheet in the frame. One photo per page.",
     "If your polling place uses more than one voting machine, there is a tape or sheet for each one. Photograph all of them and send them together. We add them up.",
+    "In hand-count towns the count takes longer. Write the results onto a sample ballot, or photograph the one they finish and post.",
     "Open your personal link and pick your polling place. Add the photos and tap Send. That's it.",
     "If something goes wrong, email the photos to results@nhhouse.gop with your town in the subject.",
 ]
@@ -535,12 +539,26 @@ def signup_post():
 
     cur.execute("SELECT * FROM volunteers WHERE id = ?", (vid,))
     v = cur.fetchone()
+    auto = AUTO_APPROVE and v['status'] == 'pending'
+    if auto:
+        cur.execute("UPDATE volunteers SET status='approved', approved_at=?, updated_at=?, admin_note=? WHERE id=?",
+                    (now, now, 'auto-approved', vid))
+        conn.commit()
+        cur.execute("SELECT * FROM volunteers WHERE id = ?", (vid,))
+        v = cur.fetchone()
     mine = assignments_for(cur, vid)
+
+    if auto:
+        if email_approved(v, mine):
+            cur.execute("UPDATE volunteers SET link_sent_at=? WHERE id=?", (now, vid))
+        if email_instructions(v, mine, reminder=True):
+            cur.execute("UPDATE volunteers SET instructions_sent_at=? WHERE id=?", (now, vid))
+        conn.commit()
     conn.close()
 
-    if v['status'] == 'approved':
+    if v['status'] == 'approved' and not auto:
         email_approved(v, mine)
-    else:
+    elif not auto:
         email_signup_received(v, mine)
     email_review(v, mine, is_update=bool(existing), requested=requested)
     return redirect(url_for('vol.signup_thanks', full=','.join(full)) if full else url_for('vol.signup_thanks'))
