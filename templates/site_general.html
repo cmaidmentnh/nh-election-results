@@ -46,7 +46,7 @@
 const DEMO = {{ 'true' if demo else 'false' }}, LIVE = {{ 'true' if live_mode else 'false' }};
 const EVQ = {{ evq|tojson }};
 const nf = new Intl.NumberFormat('en-US');
-const LABEL = {recount:'Recount', certified:'Certified', called:'Called', likely:'Likely', leaning:'Leaning',
+const LABEL = {recount:'Recount', certified:'Final', called:'Called', likely:'Likely', leaning:'Leaning',
                too_close:'Too close', awaiting:'Awaiting', unopposed:'Unopposed'};
 /* Party colours. R and D are the validated pair in site.css; the minor
    parties never carry a colour alone - the name always sits beside it. */
@@ -69,7 +69,7 @@ function odds(pj){
   if (pj.recount)
     return `<div class="odds"><b>!</b><span>Recount scheduled — result not final</span></div>`;
   if (pj.certified && (pj.winners||[]).length)
-    return `<div class="odds"><b>✓</b><span>Certified winner <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
+    return `<div class="odds"><b>✓</b><span>Final <span class="who">${esc(pj.winners.join(', '))}</span></span></div>`;
   if (pj.status === 'unopposed')
     return `<div class="odds"><b>✓</b><span>Unopposed — <span class="who">${esc((pj.winners||[]).join(', '))}</span></span></div>`;
   if (pj.status === 'called' && (pj.winners||[]).length)
@@ -125,7 +125,7 @@ function block(b, small){
   const foot = !LIVE
     ? `<div class="foot"><span>${b.seats>1?b.seats+' seats · ':''}Polls close 7:00 p.m.</span></div>`
     : `<div class="foot">${pj.certified
-        ? `<span>Certified by the Secretary of State</span>`
+        ? `<span>Final: Secretary of State results</span>`
         : `<span>${rep.expected_in ?? 0}% of expected vote counted</span>${
             rep.projected_total?`<span>~${nf.format(rep.projected_total)} total</span>`:''}`}</div>`;
   return `<div class="col G${small?' sm':''}">
