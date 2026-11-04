@@ -430,6 +430,11 @@ table.pt thead th:first-child{z-index:3}
 .snums .sn.mid{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
                color:var(--ink2);align-self:center}
 .chamber .ck{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink3);margin-top:5px}
+.snums .sn.big{display:flex;align-items:baseline;gap:8px}
+.snums .sn.big b{font-size:34px;line-height:1}
+.snums .sn.big em{font-style:normal;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.chamber .ck .fin{display:inline-block;background:var(--rule);color:#fff;padding:1px 6px;margin-right:6px;
+  font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 @media(max-width:640px){
   .snums .sn.mid{order:3;flex-basis:100%}
   .snums .sn b{font-size:19px}
