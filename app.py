@@ -1932,7 +1932,7 @@ def _gen_baseline(cur):
 # margin). z = projected margin / band drives a 4-state call. Tuned so a ~30-pt
 # lead with consistent returns is CALLED near 5% in, a ~10-pt lead reads "likely"
 # mid-count, and a true squeaker stays "too close" until very late.
-PROJ_BASE = 0.15
+PROJ_BASE = 0.08
 PROJ_VOL_FACTOR = 1.0
 PROJ_MIN_IN = 0.005
 
