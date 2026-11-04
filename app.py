@@ -1965,6 +1965,10 @@ PROJ_SAMPLE = 0.12      # sampling uncertainty term ~ PROJ_SAMPLE / sqrt(reporte
 # On a general nothing is called (short of every town being in) until this
 # share of the expected vote is counted.
 PROJ_MIN_IN_GENERAL = 0.02
+# Call when, with at least half the expected vote in, the trailer would need to
+# beat the projection in the uncounted vote by this much (share of that vote).
+PROJ_REQ_MIN_IN = 0.5
+PROJ_REQ_BEYOND = 0.15
 
 
 def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
@@ -2009,6 +2013,12 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
     elif outstanding < 0.01 and margin > 0:  # effectively all counted with a clear margin
         status = 'called'
     elif z >= 1.5 and enough:
+        status = 'called'
+    elif (reported_weight >= PROJ_REQ_MIN_IN and enough and out_votes > 0 and gap_votes > 0
+          and gap_votes / out_votes - ((trail - cand_list[seats]['votes']) - (lead - cand_list[seats - 1]['votes'])) / out_votes
+              >= PROJ_REQ_BEYOND):
+        # Required-margin test: the trailer would have to win the uncounted vote by
+        # PROJ_REQ_BEYOND more than the projection says that vote will give them.
         status = 'called'
     elif z >= 1.0:
         status = 'likely'
