@@ -912,6 +912,65 @@ def question1_towns():
     return resp
 
 
+@app.route('/shift')
+def shift_map():
+    """Town-by-town shift in the D-R margin, 2026 vs an earlier general (arrow map)."""
+    resp = make_response(render_template('shift.html'))
+    resp.headers["Cache-Control"] = "public, max-age=60"
+    return resp
+
+
+_SHIFT_BASE = {}
+
+
+def _party_by_town(office_id, year):
+    """{town key: {d, r, t, rep}} for a general-election office; wards added together."""
+    conn = queries.get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT res.municipality, c.party, SUM(res.votes) AS v
+        FROM results res
+        JOIN candidates c ON c.id = res.candidate_id
+        JOIN races r ON r.id = res.race_id
+        JOIN elections e ON e.id = r.election_id
+        WHERE e.year = ? AND e.election_type = 'general' AND r.office_id = ?
+        GROUP BY res.municipality, c.party
+    """, (year, office_id))
+    towns, seen = {}, set()
+    for row in cur.fetchall():
+        k = _taxcap_key(row['municipality'])
+        t = towns.setdefault(k, {'d': 0, 'r': 0, 't': 0, 'rep': 0})
+        v = row['v'] or 0
+        if row['party'] == 'Democratic':
+            t['d'] += v
+        elif row['party'] == 'Republican':
+            t['r'] += v
+        t['t'] += v
+        if row['municipality'] not in seen:
+            seen.add(row['municipality'])
+            t['rep'] += 1
+    conn.close()
+    return {k: t for k, t in towns.items() if t['t'] > 0}
+
+
+@app.route('/api/shift')
+def api_shift():
+    offices = (1, 2, 3, 4)  # President, US Senate, US House, Governor
+    office = request.args.get('office', 4, type=int)
+    base_office = request.args.get('base_office', office, type=int)
+    base_year = request.args.get('base_year', 2024, type=int)
+    if office not in offices or base_office not in offices or not 2000 <= base_year < 2026:
+        return jsonify({'error': 'bad race'}), 400
+    key = (base_office, base_year)
+    if key not in _SHIFT_BASE:
+        _SHIFT_BASE[key] = _party_by_town(base_office, base_year)
+    from zoneinfo import ZoneInfo
+    resp = jsonify({'now': _party_by_town(office, 2026), 'base': _SHIFT_BASE[key],
+                    'asof': datetime.now(ZoneInfo('America/New_York')).isoformat()})
+    resp.headers["Cache-Control"] = "public, max-age=30"
+    return resp
+
+
 @app.route('/api/taxcap')
 def api_taxcap():
     return api_question(2)

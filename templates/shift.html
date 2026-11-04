@@ -1,0 +1,301 @@
+{% raw %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NH Shift Map 2026</title>
+<meta name="description" content="How far each New Hampshire town moved toward Democrats or Republicans in 2026, compared with an earlier election.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: map left, detail + sortable list right; stacks on phones. Arrows: left/blue = toward D, right/red = toward R. */
+:root{
+  --bg:#f3f5f6; --panel:#ffffff; --fg:#1d262b; --muted:#5b6870; --line:#d5dcdf; --hover:#e8edef;
+  --dem:#1f5fbf; --rep:#c8312a; --land:#e6eaec; --landout:#f1f3f4; --border:#ffffff; --county:#9aa6ac;
+  --select:#111a1f;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131a1e; --panel:#1b2429; --fg:#e4eaec; --muted:#97a5ab; --line:#2f3c43; --hover:#253137;
+  --dem:#5b9bff; --rep:#ff6b5e; --land:#26323a; --landout:#1f292f; --border:#1b2429; --county:#55636b;
+  --select:#ffffff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131a1e; --panel:#1b2429; --fg:#e4eaec; --muted:#97a5ab; --line:#2f3c43; --hover:#253137;
+  --dem:#5b9bff; --rep:#ff6b5e; --land:#26323a; --landout:#1f292f; --border:#1b2429; --county:#55636b;
+  --select:#ffffff; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;padding:18px 16px}
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,30px);letter-spacing:.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;max-width:72ch}
+.statewide{display:flex;flex-wrap:wrap;gap:18px;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px}
+.statewide b{font-family:var(--display);font-size:22px;display:block;line-height:1}
+.statewide span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+select{font:600 13px var(--display);letter-spacing:.03em;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);max-width:100%}
+select:focus-visible,input:focus-visible{outline:2px solid var(--dem);outline-offset:1px}
+.tally{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono);padding:4px 8px;border:1px solid var(--line);background:var(--panel)}
+.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
+.mapbox{background:var(--panel);border:1px solid var(--line);position:relative;min-width:0}
+svg{display:block;width:100%;height:auto;max-height:80vh;touch-action:none}
+path.town{fill:var(--land);stroke:var(--border);stroke-width:.5;vector-effect:non-scaling-stroke;cursor:pointer}
+path.town.out{fill:var(--landout)}
+path.town:hover{fill:var(--hover)}
+path.town.sel{stroke:var(--select);stroke-width:2}
+path.county{fill:none;stroke:var(--county);stroke-width:.9;vector-effect:non-scaling-stroke;pointer-events:none}
+.arrows path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:12px var(--body);padding:6px 8px;transform:translate(-50%,-115%);white-space:nowrap}
+.tip[hidden]{display:none}
+.legend{position:absolute;left:10px;top:10px;background:var(--panel);border:1px solid var(--line);padding:6px 8px;font:11px var(--mono);color:var(--muted);display:grid;gap:2px}
+.legend svg{width:120px;height:26px}
+.zoomhint{position:absolute;right:8px;bottom:6px;font:11px var(--mono);color:var(--muted)}
+.side{display:grid;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px}
+.detail h2{font-family:var(--display);font-size:20px;margin:0 0 2px;text-wrap:balance}
+.meta{color:var(--muted);font-size:12.5px}
+.pill{display:inline-block;font:600 12px var(--display);letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;margin-top:8px;color:#fff}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.kv div{border-top:1px solid var(--line);padding-top:6px}
+.kv b{display:block;font:600 18px var(--display);font-variant-numeric:tabular-nums}
+.kv span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.listcard{padding:0}
+.listhead{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
+.listhead input{flex:1;min-width:0;font:13px var(--body);padding:6px 8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.scroller{max-height:380px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--panel);font:600 11px var(--display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:5px 10px;border-bottom:1px solid var(--line);text-align:right;font:12.5px var(--mono)}
+td:first-child{font:13px var(--body)}
+tr{cursor:pointer}
+tr:hover td{background:var(--hover)}
+tr.sel td{background:var(--hover);font-weight:600}
+.d{color:var(--dem)} .r{color:var(--rep)}
+.note{color:var(--muted);font-size:12px;max-width:110ch}
+.note p{margin:0 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="h1">Shift in the margin, town by town</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div class="statewide" aria-label="Shift in reported towns">
+      <div><span>Shift, towns in</span><b id="ss">–</b></div>
+      <div><span>Toward D</span><b id="sd" class="d">–</b></div>
+      <div><span>Toward R</span><b id="sr" class="r">–</b></div>
+      <div><span>Towns in</span><b id="sn">–</b></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <select id="cmp" aria-label="Race and comparison"></select>
+    <div class="tally"><span class="chip" id="asof">Loading…</span></div>
+  </div>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" role="img" aria-label="Map of New Hampshire towns with arrows showing the shift toward Democrats or Republicans"></svg>
+      <div class="legend" aria-hidden="true">
+        <svg viewBox="0 0 120 26"><path d="M50,22 l-14,-14" stroke="currentColor" class="d" style="stroke:var(--dem)" stroke-width="2" fill="none"/><path d="M36,8 l0,6 M36,8 l6,0" style="stroke:var(--dem)" stroke-width="2" fill="none"/><path d="M70,22 l14,-14" style="stroke:var(--rep)" stroke-width="2" fill="none"/><path d="M84,8 l0,6 M84,8 l-6,0" style="stroke:var(--rep)" stroke-width="2" fill="none"/></svg>
+        <div><span class="d">More Dem</span> · <span class="r">More Rep</span></div>
+      </div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="zoomhint">Scroll or pinch to zoom · drag to pan</div>
+    </div>
+    <div class="side">
+      <div class="card detail" id="detail"></div>
+      <div class="card listcard">
+        <div class="listhead"><input id="q" type="search" placeholder="Find a town or county" aria-label="Find a town or county"></div>
+        <div class="scroller"><table><thead><tr>
+          <th data-k="name">Town</th><th data-k="s">Shift</th><th data-k="m">2026</th><th data-k="m0">Before</th><th data-k="t">Votes</th>
+        </tr></thead><tbody id="rows"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>How to read it.</b> Each arrow starts at a town. It points left and is blue when the Democratic margin grew compared with the earlier election, and right and red when the Republican margin grew. Longer arrows mean bigger shifts. Only towns with every polling place reported get an arrow; the rest are shaded lighter. "Shift, towns in" compares the same towns in both years, so it shows the direction of the night, not the final statewide margin.</p>
+    <p><b>Method.</b> Margin is the Democratic share minus the Republican share of all votes cast in the race, with city wards added together. Election-night returns from elections.nhhouse.gop reload every minute and are unofficial until the Secretary of State certifies them. For Congress, each town is compared with its own district's race.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+(async function(){
+  const CMP = [
+    {k:'gov24',  label:'Governor: 2026 vs 2024',              office:4, base_office:4, base_year:2024, was:'2024 Governor'},
+    {k:'gov22',  label:'Governor: 2026 vs 2022',              office:4, base_office:4, base_year:2022, was:'2022 Governor'},
+    {k:'govp24', label:'Governor 2026 vs President 2024',     office:4, base_office:1, base_year:2024, was:'2024 President'},
+    {k:'sen20',  label:'US Senate: 2026 vs 2020 (same seat)', office:2, base_office:2, base_year:2020, was:'2020 Senate'},
+    {k:'sen22',  label:'US Senate 2026 vs Senate 2022',       office:2, base_office:2, base_year:2022, was:'2022 Senate'},
+    {k:'senp24', label:'US Senate 2026 vs President 2024',    office:2, base_office:1, base_year:2024, was:'2024 President'},
+    {k:'cd24',   label:'Congress: 2026 vs 2024',              office:3, base_office:3, base_year:2024, was:'2024 Congress'}];
+  const RACE = {4:'Governor', 2:'U.S. Senate', 3:'Congress'};
+  const sel = document.getElementById('cmp');
+  sel.innerHTML = CMP.map(c => `<option value="${c.k}">${c.label}</option>`).join('');
+  let cmp = CMP[0];
+  try { const s = new URLSearchParams(location.search).get('c') || localStorage.getItem('shift-cmp'); const f = CMP.find(c => c.k === s); if (f) cmp = f; } catch(e) {}
+  sel.value = cmp.k;
+
+  const DATA = await (await fetch('/static/data/question-towns.json')).json();
+  const TW = DATA.towns, towns = DATA.layers.town.features, counties = DATA.layers.county.features;
+  const COS = Math.cos(43.7 * Math.PI / 180);
+  const flat = g => { const f = c => typeof c[0] === 'number' ? [c[0] * COS, -c[1]] : c.map(f); return {type: g.type, coordinates: f(g.coordinates)}; };
+  [...towns, ...counties].forEach(f => { f.pg = flat(f.geometry); });
+
+  const svg = d3.select('#map'), W = 760, H = 900;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+  const proj = d3.geoIdentity().fitExtent([[14,14],[W-14,H-14]], {type:'FeatureCollection', features: towns.map(f => ({type:'Feature', geometry:f.pg}))});
+  const path = d3.geoPath(proj);
+  const g = svg.append('g');
+  const landG = g.append('g'), countyG = g.append('g'), arrowG = g.append('g').attr('class','arrows');
+  let k = 1;
+  const zoom = d3.zoom().scaleExtent([1, 14]).on('zoom', e => { g.attr('transform', e.transform); k = e.transform.k; drawArrows(); });
+  svg.call(zoom);
+  towns.forEach(f => { f.c = path.centroid(f.pg); });
+  countyG.selectAll('path').data(counties).join('path').attr('class','county').attr('d', d => path(d.pg));
+
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = n => n.toLocaleString();
+  const mg = x => x == null ? '–' : x === 0 ? 'Even' : (x > 0 ? 'D+' : 'R+') + Math.abs(x).toFixed(1);
+  const sh = x => x == null ? '–' : x === 0 ? '0' : (x > 0 ? 'D+' : 'R+') + Math.abs(x).toFixed(1);
+  const cls = x => x > 0 ? 'd' : x < 0 ? 'r' : '';
+  const tip = document.getElementById('tip');
+  let selected = null, sortK = 'abs', sortDir = -1, P = [], st = {};
+
+  function compute(R){
+    const now = R.now, base = R.base;
+    P = towns.map(f => {
+      const key = f.properties.t[0], n = now[key], b = base[key], e = TW[key] ? TW[key].exp : 0;
+      const p = {id: f.properties.id, name: f.properties.name, county: f.properties.county, f};
+      p.rep = n ? n.rep : 0; p.exp = Math.max(e, p.rep); p.done = !!n && p.exp > 0 && p.rep >= p.exp;
+      p.m = n && n.t ? 100 * (n.d - n.r) / n.t : null;
+      p.m0 = b && b.t ? 100 * (b.d - b.r) / b.t : null;
+      p.t = n ? n.t : 0; p.t0 = b ? b.t : 0;
+      p.s = p.done && p.m != null && p.m0 != null ? p.m - p.m0 : null;
+      p.abs = p.s == null ? -1 : Math.abs(p.s);
+      p.n = n; p.b = b;
+      return p;
+    });
+    let d = 0, r = 0, t = 0, d0 = 0, r0 = 0, t0 = 0;
+    P.filter(p => p.s != null).forEach(p => { d += p.n.d; r += p.n.r; t += p.n.t; d0 += p.b.d; r0 += p.b.r; t0 += p.b.t; });
+    st = {s: t && t0 ? 100 * (d - r) / t - 100 * (d0 - r0) / t0 : null,
+          dn: P.filter(p => p.s > 0).length, rn: P.filter(p => p.s < 0).length, n: P.filter(p => p.s != null).length,
+          tot: P.filter(p => p.exp > 0).length};
+    document.getElementById('ss').textContent = sh(st.s);
+    document.getElementById('ss').className = cls(st.s);
+    document.getElementById('sd').textContent = st.dn;
+    document.getElementById('sr').textContent = st.rn;
+    document.getElementById('sn').textContent = st.n + '/' + st.tot;
+    document.getElementById('h1').textContent = `${RACE[cmp.office]} 2026: shift from ${cmp.was}`;
+    document.getElementById('sub').textContent = `How far each town's margin moved toward Democrats (blue, left) or Republicans (red, right) compared with the ${cmp.was} race.`;
+    document.getElementById('asof').textContent = 'Updated ' + new Date(R.asof).toLocaleString('en-US', {timeZone:'America/New_York', hour:'numeric', minute:'2-digit', month:'short', day:'numeric'}) + ' · refreshes every minute';
+  }
+
+  function drawLand(){
+    landG.selectAll('path').data(P, d => d.id).join('path')
+      .attr('class', d => 'town' + (d.s == null ? ' out' : '') + (selected === d.id ? ' sel' : ''))
+      .attr('d', d => path(d.f.pg))
+      .on('mousemove', (e, d) => {
+        const r = svg.node().parentNode.getBoundingClientRect();
+        tip.hidden = false; tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px';
+        tip.textContent = d.s != null ? `${d.name}: ${sh(d.s)} (${mg(d.m0)} → ${mg(d.m)})` : d.rep ? `${d.name}: ${d.rep}/${d.exp} places in` : `${d.name}: not in yet`;
+      })
+      .on('mouseleave', () => { tip.hidden = true; })
+      .on('click', (e, d) => select(d.id, false));
+    landG.selectAll('path.sel').raise();
+  }
+
+  // Arrow: from the town's centre, up and to the left (D) or right (R); length grows with the shift.
+  function drawArrows(){
+    const L = s => Math.min(42, 2.2 * Math.abs(s)) / k + 3 / k;
+    const A = P.filter(p => p.s != null && Math.abs(p.s) >= 0.5);
+    arrowG.selectAll('path').data(A, d => d.id).join('path')
+      .attr('d', d => {
+        const [x, y] = d.f.c, l = L(d.s), dir = d.s > 0 ? -1 : 1;
+        const ang = 50 * Math.PI / 180, dx = dir * l * Math.cos(ang), dy = -l * Math.sin(ang);
+        const x2 = x + dx, y2 = y + dy, h = Math.min(5, 0.45 * l * k) / k;
+        const a1 = Math.atan2(dy, dx) + Math.PI - 0.5, a2 = Math.atan2(dy, dx) + Math.PI + 0.5;
+        return `M${x},${y}L${x2},${y2}M${x2 + h * Math.cos(a1)},${y2 + h * Math.sin(a1)}L${x2},${y2}L${x2 + h * Math.cos(a2)},${y2 + h * Math.sin(a2)}`;
+      })
+      .attr('stroke', d => css(d.s > 0 ? '--dem' : '--rep'))
+      .attr('stroke-width', d => d.id === selected ? 2.6 : 1.6);
+  }
+
+  function rows(){
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    let fs = P.filter(p => p.exp > 0 && (!q || p.name.toLowerCase().includes(q) || (p.county || '').toLowerCase().includes(q)));
+    const v = (p, k) => p[k] == null ? -Infinity : p[k];
+    fs.sort((a, b) => sortK === 'name' ? sortDir * a.name.localeCompare(b.name) : sortDir * (v(a, sortK) - v(b, sortK)) || a.name.localeCompare(b.name));
+    document.getElementById('rows').innerHTML = fs.map(p =>
+      `<tr data-id="${p.id}" class="${selected === p.id ? 'sel' : ''}"><td>${p.name}</td>` +
+      `<td class="${cls(p.s)}">${p.s != null ? sh(p.s) : p.rep ? p.rep + '/' + p.exp + ' in' : '–'}</td>` +
+      `<td class="${cls(p.m)}">${mg(p.m)}</td><td class="${cls(p.m0)}">${mg(p.m0)}</td><td>${p.t ? fmt(p.t) : '–'}</td></tr>`).join('');
+  }
+
+  function detail(){
+    const el = document.getElementById('detail');
+    const p = P.find(p => p.id === selected);
+    if (!p) {
+      el.innerHTML = `<h2>${st.s == null ? 'Waiting for towns' : st.s > 0 ? 'The night is moving toward Democrats' : st.s < 0 ? 'The night is moving toward Republicans' : 'No net shift so far'}</h2>
+        <div class="meta">${st.n} of ${st.tot} towns fully in. ${st.dn} moved toward Democrats and ${st.rn} toward Republicans${st.s == null ? '' : `; in those towns together the margin moved ${sh(st.s)} from the ${cmp.was} race`}. Pick a town on the map or in the list.</div>`;
+      return;
+    }
+    const pill = p.s == null ? '' : `<span class="pill" style="background:${css(p.s > 0 ? '--dem' : '--rep')}">${p.s > 0 ? 'Toward Democrats' : 'Toward Republicans'} · ${Math.abs(p.s).toFixed(1)} pts</span>`;
+    el.innerHTML = `<h2>${p.name}</h2><div class="meta">${p.county} County${p.done ? '' : ` · ${p.rep}/${p.exp} places in`}</div>${pill}
+      <div class="kv">
+        <div><b class="${cls(p.m0)}">${mg(p.m0)}</b><span>${cmp.was}</span></div>
+        <div><b class="${cls(p.m)}">${mg(p.m)}</b><span>2026 ${RACE[cmp.office]}</span></div>
+        <div><b class="${cls(p.s)}">${sh(p.s)}</b><span>Shift</span></div>
+      </div>
+      <div class="kv">
+        <div><b>${p.n ? fmt(p.n.d) : '–'}</b><span>2026 Dem votes</span></div>
+        <div><b>${p.n ? fmt(p.n.r) : '–'}</b><span>2026 Rep votes</span></div>
+        <div><b>${p.t0 ? fmt(p.t0) : '–'}</b><span>Votes before</span></div>
+      </div>`;
+  }
+
+  function select(id, zoomTo){
+    selected = selected === id && !zoomTo ? null : id;
+    if (selected && zoomTo) {
+      const p = P.find(p => p.id === selected);
+      const [[x0,y0],[x1,y1]] = path.bounds(p.f.pg);
+      const z = Math.min(8, 0.5 / Math.max((x1-x0)/W, (y1-y0)/H));
+      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(Math.max(1, z)).translate(-(x0+x1)/2, -(y0+y1)/2));
+    }
+    drawLand(); drawArrows(); rows(); detail();
+  }
+  const draw = () => { drawLand(); drawArrows(); rows(); detail(); };
+
+  const url = () => `/api/shift?office=${cmp.office}&base_office=${cmp.base_office}&base_year=${cmp.base_year}`;
+  const load = async () => compute(await (await fetch(url(), {cache:'no-store'})).json());
+  await load(); draw();
+
+  sel.addEventListener('change', async () => {
+    cmp = CMP.find(c => c.k === sel.value);
+    try { localStorage.setItem('shift-cmp', cmp.k); } catch(e) {}
+    try { const u = new URL(location); u.searchParams.set('c', cmp.k); history.replaceState(null, '', u); } catch(e) {}
+    await load(); draw();
+  });
+  document.getElementById('q').addEventListener('input', rows);
+  document.getElementById('rows').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id, true); });
+  document.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+    const kk = th.dataset.k;
+    if (sortK === kk) sortDir *= -1; else { sortK = kk; sortDir = kk === 'name' ? 1 : -1; } rows();
+  }));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  setInterval(async () => { try { await load(); draw(); } catch (e) {} }, 60000);
+})();
+</script>
+</body>
+</html>
+{% endraw %}
