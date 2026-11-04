@@ -1,0 +1,311 @@
+{% raw %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% endraw %}{{ title }}{% raw %}</title>
+<meta name="description" content="New Hampshire {% endraw %}{{ label }}{% raw %} returns by town and county.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: working tool. Map left, district detail + sortable list right; stacks on phones. */
+:root{
+  --bg:#f3f5f6; --panel:#ffffff; --fg:#1d262b; --muted:#5b6870; --line:#d5dcdf; --hover:#e8edef;
+  --pass2:#1f6b52; --pass1:#8cc5a8; --fail1:#e7a68f; --fail2:#a8341f; --nodata:#cfd6d9;
+  --select:#111a1f;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131a1e; --panel:#1b2429; --fg:#e4eaec; --muted:#97a5ab; --line:#2f3c43; --hover:#253137;
+  --pass2:#3fa57e; --pass1:#6f9c88; --fail1:#b9786a; --fail2:#d4583c; --nodata:#3a464c;
+  --select:#ffffff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131a1e; --panel:#1b2429; --fg:#e4eaec; --muted:#97a5ab; --line:#2f3c43; --hover:#253137;
+  --pass2:#3fa57e; --pass1:#6f9c88; --fail1:#b9786a; --fail2:#d4583c; --nodata:#3a464c;
+  --select:#ffffff; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;padding:18px 16px}
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,30px);letter-spacing:.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;max-width:70ch}
+.statewide{display:flex;flex-wrap:wrap;gap:18px;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px}
+.statewide b{font-family:var(--display);font-size:22px;display:block;line-height:1}
+.statewide span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);background:var(--panel)}
+.seg button{font:600 13px var(--display);letter-spacing:.03em;padding:7px 12px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button:focus-visible,input:focus-visible{outline:2px solid var(--pass2);outline-offset:1px}
+.tally{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono);padding:4px 8px;border:1px solid var(--line);background:var(--panel)}
+.sw{width:11px;height:11px;display:inline-block}
+.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
+.mapbox{background:var(--panel);border:1px solid var(--line);position:relative;min-width:0}
+svg{display:block;width:100%;height:auto;max-height:78vh;touch-action:none}
+path.f{stroke:var(--panel);stroke-width:.5;vector-effect:non-scaling-stroke;cursor:pointer}
+path.f:hover{stroke:var(--fg);stroke-width:1.2}
+path.f.sel{stroke:var(--select);stroke-width:2.2}
+path.ghost{fill:var(--nodata);opacity:.55;stroke:var(--panel);stroke-width:.4;vector-effect:non-scaling-stroke;pointer-events:none}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:12px var(--body);padding:6px 8px;transform:translate(-50%,-115%);white-space:nowrap}
+.tip[hidden]{display:none}
+.zoomhint{position:absolute;right:8px;bottom:6px;font:11px var(--mono);color:var(--muted)}
+.side{display:grid;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px}
+.detail h2{font-family:var(--display);font-size:20px;margin:0 0 2px;text-wrap:balance}
+.meta{color:var(--muted);font-size:12.5px}
+.pill{display:inline-block;font:600 12px var(--display);letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;margin-top:8px;color:#fff}
+.bar{position:relative;display:flex;height:22px;margin:12px 0 4px;font:500 11px var(--mono)}
+.bar div{display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden;white-space:nowrap}
+.bar .line{position:absolute;top:-4px;bottom:-4px;left:60%;width:2px;background:var(--fg)}
+.barlab{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted)}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.kv div{border-top:1px solid var(--line);padding-top:6px}
+.kv b{display:block;font:600 18px var(--display);font-variant-numeric:tabular-nums}
+.kv span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.members{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.listcard{padding:0}
+.listhead{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
+.listhead input{flex:1;min-width:0;font:13px var(--body);padding:6px 8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.scroller{max-height:360px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--panel);font:600 11px var(--display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:5px 10px;border-bottom:1px solid var(--line);text-align:right;font:12.5px var(--mono)}
+td:first-child{font:13px var(--body)}
+tr{cursor:pointer}
+tr:hover td{background:var(--hover)}
+tr.sel td{background:var(--hover);font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:baseline}
+.note{color:var(--muted);font-size:12px;max-width:110ch}
+.note p{margin:0 0 6px}
+@media (prefers-reduced-motion:no-preference){path.f{transition:fill .25s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>{% endraw %}{{ title }}{% raw %}</h1>
+      <p class="sub">{% endraw %}{{ label }} returns as reported, town by town. {{ rule }}{% raw %} <span id="asof"></span></p>
+    </div>
+    <div class="statewide" aria-label="Statewide results">
+      <div><span>Yes</span><b id="sy"></b></div>
+      <div><span>No</span><b id="sn"></b></div>
+      <div><span>Yes share</span><b id="sx"></b></div>
+      <div><span>Places in</span><b id="sr"></b></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Map layer">
+      <button aria-pressed="true" data-layer="town">Towns</button>
+      <button aria-pressed="false" data-layer="county">Counties</button>
+    </div>
+    <div class="tally" id="tally"></div>
+  </div>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" role="img" aria-label="Map of New Hampshire towns colored by result"></svg>
+      <div class="tip" id="tip" hidden></div>
+      <div class="zoomhint">Scroll or pinch to zoom · drag to pan</div>
+    </div>
+    <div class="side">
+      <div class="card detail" id="detail"></div>
+      <div class="card listcard">
+        <div class="listhead"><input id="q" type="search" placeholder="Find a town or county" aria-label="Find a town or county"></div>
+        <div class="scroller"><table><thead><tr>
+          <th data-k="name">Name</th><th data-k="x">Yes %</th><th data-k="yes">Yes</th><th data-k="no">No</th><th data-k="r">In</th>
+        </tr></thead><tbody id="rows"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>How to read it.</b> Yes % is yes votes as a share of yes plus no. Green is at or above {% endraw %}{{ threshold }}{% raw %}%, red is below it. Dark colors mean every polling place in the town or county has reported; light colors mean some are still out. Gray means nothing is in yet. The statewide total is what decides it; town colors show where the support came from.</p>
+    <p><b>Method.</b> Results come from the election-night returns (elections.nhhouse.gop), with city wards added together, and reload every minute. The returns are unofficial until the Secretary of State certifies them.</p>
+  </div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+(async function(){
+  const DATA = await (await fetch('/static/data/question-towns.json')).json();
+  const Q = {% endraw %}{{ q }}, TH = {{ threshold }}{% raw %};
+  const COS = Math.cos(43.7 * Math.PI / 180);
+  function flat(g){
+    const f = c => typeof c[0] === 'number' ? [c[0] * COS, -c[1]] : c.map(f);
+    return {type: g.type, coordinates: f(g.coordinates)};
+  }
+  const all = [...DATA.layers.town.features, ...DATA.layers.county.features];
+  all.forEach(f => { f.pg = flat(f.geometry); });
+  const TW = DATA.towns;
+  let st = {yes: 0, no: 0, rep: 0, exp: 0};
+  function apply(R){
+    const res = R.towns;
+    all.forEach(f => {
+      const p = f.properties;
+      let y = 0, n = 0, rep = 0, exp = 0; const out = [];
+      p.t.forEach(k => {
+        const r = res[k], e = TW[k] ? TW[k].exp : 0, got = r ? r.rep : 0;
+        if (r) { y += r.y; n += r.n; }
+        rep += got; exp += Math.max(e, got);
+        if (e && got < e) out.push(TW[k].name);
+      });
+      p.towns = p.t.map(k => TW[k] ? TW[k].name : k).sort();
+      Object.assign(p, {yes: y, no: n, rep, exp, out: out.sort()});
+      p.x = y + n ? Math.round(1000 * y / (y + n)) / 10 : null;
+      p.done = exp > 0 && rep >= exp;
+      p.r = exp ? rep / exp : 0;
+    });
+    st = {yes: 0, no: 0, rep: 0, exp: 0};
+    Object.values(res).forEach(r => { st.yes += r.y; st.no += r.n; st.rep += r.rep; });
+    Object.keys(TW).forEach(k => { st.exp += Math.max(TW[k].exp, res[k] ? res[k].rep : 0); });
+    const fmt = n => n.toLocaleString();
+    document.getElementById('sy').textContent = fmt(st.yes);
+    document.getElementById('sn').textContent = fmt(st.no);
+    document.getElementById('sx').textContent = st.yes + st.no ? (100 * st.yes / (st.yes + st.no)).toFixed(1) + '%' : '–';
+    document.getElementById('sr').textContent = st.rep + '/' + st.exp;
+    const d = new Date(R.asof);
+    document.getElementById('asof').textContent = 'Updated ' + d.toLocaleString('en-US', {timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'}) + '; refreshes every minute.';
+  }
+  const load = async () => (await fetch('/api/question/' + Q, {cache: 'no-store'})).json();
+  apply(await load());
+  const base = DATA.layers.town.features, counties = DATA.layers.county.features;
+
+  const fmt = n => n.toLocaleString();
+
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const BINS = [
+    {k:'Over ' + TH + '%',        t:p=>p.x!=null && p.done && p.x>=TH,  c:'--pass2'},
+    {k:'Over, places out',  t:p=>p.x!=null && !p.done && p.x>=TH, c:'--pass1'},
+    {k:'Under, places out', t:p=>p.x!=null && !p.done && p.x<TH,  c:'--fail1'},
+    {k:'Under ' + TH + '%',       t:p=>p.x!=null && p.done && p.x<TH,   c:'--fail2'},
+    {k:'Not in',       t:p=>p.x==null,                       c:'--nodata'}];
+  const bin = p => BINS.find(b => b.t(p));
+  const color = p => css(bin(p).c);
+  const pct = x => x == null ? '–' : x.toFixed(1);
+  const sgn = x => x == null ? '–' : (x > 0 ? '+' : '') + x.toFixed(1);
+
+  const svg = d3.select('#map');
+  const W = 760, H = 900;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+  const proj = d3.geoIdentity().fitExtent([[14,14],[W-14,H-14]], {type:'FeatureCollection', features: base.map(f => ({type:'Feature', geometry:f.pg}))});
+  const path = d3.geoPath(proj);
+  const g = svg.append('g');
+  const ghostG = g.append('g'), mainG = g.append('g');
+  const zoom = d3.zoom().scaleExtent([1, 14]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+
+  let layer = 'town', selected = null, sortK = 'x', sortDir = -1;
+  try { const s = localStorage.getItem('question-layer'); if (['town','county'].includes(s)) layer = s; } catch(e) {}
+  const tip = document.getElementById('tip');
+  const feats = () => layer === 'town' ? base : counties;
+
+  function draw(){
+    ghostG.selectAll('path').data([], d => d.properties.id).join('path')
+      .attr('class','ghost').attr('d', d => path(d.pg));
+    mainG.selectAll('path').data(feats(), d => d.properties.id).join('path')
+      .attr('class', d => 'f' + (selected === d.properties.id ? ' sel' : ''))
+      .attr('d', d => path(d.pg))
+      .attr('fill', d => color(d.properties))
+      .on('mousemove', (e, d) => {
+        const p = d.properties, r = svg.node().parentNode.getBoundingClientRect();
+        tip.hidden = false; tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px';
+        tip.textContent = p.x == null ? `${p.name}: not in yet` : `${p.name}: ${p.x.toFixed(1)}% yes${p.done ? '' : ` (${p.rep}/${p.exp} in)`}`;
+      })
+      .on('mouseleave', () => { tip.hidden = true; })
+      .on('click', (e, d) => select(d.properties.id, false));
+    mainG.selectAll('path.sel').raise();
+    tally(); rows(); detail();
+  }
+
+  function tally(){
+    const fs = feats();
+    document.getElementById('tally').innerHTML = BINS.map(b => {
+      const n = fs.filter(f => b.t(f.properties)).length;
+      return n ? `<span class="chip"><i class="sw" style="background:${css(b.c)}"></i>${b.k} ${n}</span>` : '';
+    }).join('');
+  }
+
+  function rows(){
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    let fs = feats().map(f => f.properties).filter(p => !q || p.name.toLowerCase().includes(q)
+      || (p.towns||[]).join(' ').toLowerCase().includes(q) || (p.members||[]).join(' ').toLowerCase().includes(q)
+      || (p.county || '').toLowerCase().includes(q));
+    const v = (p, k) => p[k] == null ? -Infinity : p[k];
+    fs.sort((a,b) => sortK === 'name' ? sortDir * a.name.localeCompare(b.name) : sortDir * (v(a,sortK) - v(b,sortK)) || a.name.localeCompare(b.name));
+    document.getElementById('rows').innerHTML = fs.map(p =>
+      `<tr data-id="${p.id}" class="${selected === p.id ? 'sel' : ''}"><td><i class="dot" style="background:${color(p)}"></i>${p.name}</td>` +
+      `<td>${pct(p.x)}</td><td>${fmt(p.yes)}</td><td>${fmt(p.no)}</td><td>${p.rep}/${p.exp}</td></tr>`).join('');
+  }
+
+  function detail(){
+    const el = document.getElementById('detail');
+    const f = feats().find(f => f.properties.id === selected);
+    const p = f ? f.properties : null;
+    if (!p) {
+      const fs = feats().map(f => f.properties);
+      const over = fs.filter(p => p.done && p.x >= TH).length, under = fs.filter(p => p.done && p.x < TH).length;
+      const sx = st.yes + st.no ? 100 * st.yes / (st.yes + st.no) : null;
+      el.innerHTML = `<h2>${sx == null ? 'No returns yet' : sx >= TH ? 'Statewide: over ' + TH + '%' : 'Statewide: under ' + TH + '%'}</h2>
+        <div class="meta">${sx == null ? '' : sx.toFixed(1) + '% yes with ' + st.rep + ' of ' + st.exp + ' places in. '}${over} ${layer === 'town' ? 'towns' : 'counties'} fully in are over ${TH}% and ${under} are under. Pick one on the map or in the list for its numbers.</div>`;
+      return;
+    }
+    const b = bin(p), light = b.c === '--pass1' || b.c === '--fail1' || b.c === '--nodata';
+    const tot = p.yes + p.no, yw = tot ? 100 * p.yes / tot : 0;
+    el.innerHTML = `<h2>${p.name}</h2><div class="meta">${p.kind === 'town' ? p.county + ' County' : p.t.length + ' towns'}</div>
+      <span class="pill" style="background:${css(b.c)};color:${light ? css('--fg') : '#fff'}">${b.k}${p.x == null ? '' : ' · ' + p.x.toFixed(1) + '% yes'}</span>
+      ${tot ? `<div class="bar" role="img" aria-label="Yes ${p.yes}, no ${p.no}">
+        <div style="width:${yw}%;background:${css('--pass2')}">${fmt(p.yes)}</div>
+        <div style="width:${100 - yw}%;background:${css('--fail2')}">${fmt(p.no)}</div><i class="line" style="left:${TH}%" title="${TH}% needed"></i></div>
+      <div class="barlab"><span>Yes</span><span>${TH}% line</span><span>No</span></div>` : ''}
+      <div class="kv">
+        <div><b>${p.rep}/${p.exp}</b><span>Places in</span></div>
+        <div><b>${fmt(p.yes)}</b><span>Yes</span></div>
+        <div><b>${fmt(p.no)}</b><span>No</span></div>
+      </div>
+      ${p.out && p.out.length && p.kind === 'county' ? `<div class="members">Still out: ${p.out.join(', ')}</div>` : ''}`;
+  }
+
+  function select(id, zoomTo){
+    selected = selected === id && !zoomTo ? null : id;
+    mainG.selectAll('path').attr('class', d => 'f' + (selected === d.properties.id ? ' sel' : ''));
+    mainG.selectAll('path.sel').raise();
+    if (selected && zoomTo) {
+      const f = feats().find(f => f.properties.id === selected);
+      const [[x0,y0],[x1,y1]] = path.bounds(f.pg);
+      const k = Math.min(10, 0.75 / Math.max((x1-x0)/W, (y1-y0)/H));
+      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(Math.max(1,k)).translate(-(x0+x1)/2, -(y0+y1)/2));
+    }
+    rows(); detail();
+  }
+
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    layer = b.dataset.layer; selected = null;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    try { localStorage.setItem('question-layer', layer); } catch(e) {}
+    draw();
+  }));
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x.dataset.layer === layer));
+  document.getElementById('q').addEventListener('input', rows);
+  document.getElementById('rows').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id, true); });
+  document.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+    const k = th.dataset.k; if (sortK === k) sortDir *= -1; else { sortK = k; sortDir = k === 'name' ? 1 : -1; } rows();
+  }));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+  draw();
+  setInterval(async () => { try { apply(await load()); draw(); } catch (e) {} }, 60000);
+})();
+</script>
+</body>
+</html>
+{% endraw %}

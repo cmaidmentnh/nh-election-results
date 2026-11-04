@@ -902,9 +902,24 @@ def _taxcap_key(name):
     return re.sub(r"[^a-z]", "", name.lower().replace("&", "and"))
 
 
+@app.route('/question1')
+def question1_towns():
+    """Question 1 (constitutional amendment) returns by town and county."""
+    resp = make_response(render_template('question.html', q=1,
+        title='Question 1 Results by Town', label='Question 1 (CACR 13)',
+        threshold=66.7, rule='It needs two-thirds yes statewide to become part of the constitution.'))
+    resp.headers["Cache-Control"] = "public, max-age=60"
+    return resp
+
+
 @app.route('/api/taxcap')
 def api_taxcap():
-    """Yes/no on the tax cap question per town (wards added), for /taxcap."""
+    return api_question(2)
+
+
+@app.route('/api/question/<int:n>')
+def api_question(n):
+    """Yes/no on ballot question n per town (wards added), for /taxcap and /question1."""
     conn = queries.get_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -916,9 +931,9 @@ def api_taxcap():
         JOIN races r ON r.id = res.race_id
         JOIN offices o ON o.id = r.office_id
         JOIN elections e ON e.id = r.election_id
-        WHERE e.year = 2026 AND e.election_type = 'general' AND o.name LIKE 'Question 2:%'
+        WHERE e.year = 2026 AND e.election_type = 'general' AND o.name LIKE ?
         GROUP BY res.municipality
-    """)
+    """, (f'Question {n}:%',))
     towns = {}
     for row in cur.fetchall():
         t = towns.setdefault(_taxcap_key(row['municipality']), {'y': 0, 'n': 0, 'rep': 0})
