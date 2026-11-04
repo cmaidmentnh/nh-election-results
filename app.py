@@ -1849,6 +1849,15 @@ def _gov24(cur):
                     GROUP BY res.municipality"""):
             out[r['m']] = r['v']
             out.setdefault(_norm_place(r['m']), r['v'])
+        # A city reported as one city-wide total (Somersworth 2026, from the
+        # clerk) weighs what its wards did together in 2024.
+        wards = {}
+        for m, v in list(out.items()):
+            base = re.sub(r'\s+Ward\s+\d+\*?$', '', m)
+            if base != m:
+                wards[base] = wards.get(base, 0) + v
+        for base, v in wards.items():
+            out.setdefault(base, v)
         return out
     return _ref('gov24', build)
 
