@@ -36,7 +36,7 @@
                 <tbody>
                     {% for race in summary.presidential %}
                     <tr>
-                        <td><strong>{{ race.year }}</strong></td>
+                        <td><strong>{{ race.year }}</strong>{% if unofficial(race.year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(race.year) }}</span>{% endif %}</td>
                         <td>
                             <span class="{% if race.margin > 0 %}r{% else %}d{% endif %}">
                                 {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
@@ -55,10 +55,10 @@
         {% if county_offices and county_offices.races %}
         <div class="section">
             <div class="section-header">
-                <h2>County Offices &mdash; {{ county_offices.year }}</h2>
+                <h2>County Offices &mdash; {{ county_offices.year }}{% if unofficial(county_offices.year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(county_offices.year) }}</span>{% endif %}</h2>
             </div>
             <table>
-                <thead><tr><th>Office</th><th>Winner</th><th class="text-right">Votes</th></tr></thead>
+                <thead><tr><th>Office</th><th>{% if unofficial(county_offices.year) %}Leading{% else %}Winner{% endif %}</th><th class="text-right">Votes</th></tr></thead>
                 <tbody>
                 {% for race in county_offices.races %}
                 {% set w = race.candidates|selectattr('is_winner')|first %}
@@ -107,7 +107,7 @@
         {% for year in summary.years|reverse %}
         <div class="section">
             <div class="section-header">
-                <h2>{{ year }} Results</h2>
+                <h2>{{ year }} Results{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}</h2>
                 {% set m = summary.margins_by_year[year] %}
                 <span class="{% if m.margin > 0 %}r{% else %}d{% endif %}">
                     {% if m.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(m.margin|abs) }}%

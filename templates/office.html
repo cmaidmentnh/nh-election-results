@@ -16,7 +16,7 @@
         <div class="metric-value">
             <span class="r">{{ yr_data.r_seats }}</span>-<span class="d">{{ yr_data.d_seats }}</span>
         </div>
-        <div class="metric-label">{{ year }} Seats</div>
+        <div class="metric-label">{{ year }} Seats{% if unofficial(year) %} (unofficial, leading){% endif %}</div>
     </div>
     {% endfor %}
 </div>
@@ -27,7 +27,7 @@
         {% set yr_data = data.by_year[year] %}
         <div class="section">
             <div class="section-header">
-                <h2><a href="{{ url_for('office_year', office_name=office_name, year=year) }}">{{ year }} Results</a></h2>
+                <h2><a href="{{ url_for('office_year', office_name=office_name, year=year) }}">{{ year }} Results</a>{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}</h2>
                 <span class="{% if yr_data.margin > 0 %}r{% else %}d{% endif %}">
                     {% if yr_data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(yr_data.margin|abs) }}% overall
                 </span>
@@ -49,7 +49,7 @@
                     <tr>
                         <th>{% if yr_data.races[0].county %}County{% endif %}</th>
                         <th>District</th>
-                        <th>Winner</th>
+                        <th>{% if unofficial(year) %}Leading{% else %}Winner{% endif %}</th>
                         <th class="text-right">Votes</th>
                     </tr>
                 </thead>

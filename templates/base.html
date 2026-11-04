@@ -162,12 +162,18 @@
     </script>
 
     <main id="main-content" class="container" role="main">
+        {% for y in unofficial_years %}
+        <div class="unofficial-banner" role="status" style="margin:0.75rem 0;padding:0.6rem 0.9rem;border-left:4px solid #b45309;background:#fef3c7;color:#78350f;font-size:0.95rem">
+            <strong>{{ y }} general election: {{ unofficial(y) }}.</strong>
+            These are unofficial returns from town clerks and will change as towns report. Earlier years are certified results.
+        </div>
+        {% endfor %}
         {% block content %}{% endblock %}
     </main>
 
     <footer>
         <div class="container">
-            {% block footer %}Data from NH Secretary of State{% endblock %}
+            {% block footer %}Data from NH Secretary of State{% if unofficial_years %}; {{ unofficial_years|join(", ") }} general election results are unofficial{% endif %}{% endblock %}
         </div>
     </footer>
 

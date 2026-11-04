@@ -60,7 +60,7 @@
                 <h2>Battleground Districts</h2>
                 <a href="{{ url_for('districts_browser') }}" class="section-link">View all districts &rarr;</a>
             </div>
-            <p class="text-muted mb-2">Races decided by less than 5% in {{ latest_year }}</p>
+            <p class="text-muted mb-2">{% if unofficial(latest_year) %}Closest races so far in {{ latest_year }} ({{ unofficial(latest_year) }}){% else %}Races decided by less than 5% in {{ latest_year }}{% endif %}</p>
 
             <ul class="race-list">
                 {% for race in closest_races %}
@@ -83,7 +83,7 @@
             <div class="section-header">
                 <h2>Biggest Swings</h2>
             </div>
-            <p class="text-muted mb-2">Largest margin shifts from {{ prev_year }} to {{ latest_year }}</p>
+            <p class="text-muted mb-2">Largest margin shifts from {{ prev_year }} to {{ latest_year }}{% if unofficial(latest_year) %} ({{ latest_year }} unofficial, results coming in){% endif %}</p>
 
             <table>
                 <thead>
@@ -127,7 +127,7 @@
                 <tbody>
                     {% for year in years|reverse %}
                     <tr>
-                        <td><strong>{{ year }}</strong></td>
+                        <td><strong>{{ year }}</strong>{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}</td>
                         <td>
                             {% if 'State Representative' in statewide.get(year, {}) %}
                             {% set h = statewide[year]['State Representative'] %}
@@ -178,7 +178,7 @@
 
         <!-- Party Control -->
         <div class="sidebar-section">
-            <h3>{{ latest_year }} Results</h3>
+            <h3>{{ latest_year }} Results</h3>{% if unofficial(latest_year) %}<p class="text-muted" style="margin:0 0 0.5rem">{{ unofficial(latest_year) }}. Seats shown are leads, not winners.</p>{% endif %}
             <div class="party-control">
                 {% if 'State Representative' in party_control %}
                 {% set h = party_control['State Representative'] %}

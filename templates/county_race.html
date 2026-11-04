@@ -30,7 +30,7 @@ h3.cr-h{margin:1.5rem 0 .5rem;border-bottom:2px solid #333;padding-bottom:.25rem
 <div class="cr-wrap">
   <a class="cr-back" href="{{ url_for('office_year', office_name=office_name, year=data.year) }}">&larr; All {{ data.year }} {{ data.office }} races</a>
   <h2 class="cr-title">{{ data.office }} — {{ data.county }} County{% if data.district %}, District {{ data.district }}{% endif %}</h2>
-  <div class="cr-sub">{{ data.year }} General Election{% if data.seats > 1 %} · {{ data.seats }} seats{% endif %}
+  <div class="cr-sub">{{ data.year }} General Election{% if data.seats > 1 %} · {{ data.seats }} seats{% endif %}{% if unofficial(data.year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(data.year) }}</span>{% endif %}
     {% if data.pvi and data.pvi.current_pvi %}&nbsp;·&nbsp; <span class="cr-pvi">PVI</span>
       <span class="{{ 'r' if data.pvi.current_pvi>0 else 'd' }}">{{ 'R+' if data.pvi.current_pvi>0 else 'D+' }}{{ '%.1f'|format(data.pvi.current_pvi|abs) }}</span>
       <span style="font-weight:400">(these towns' lean vs. statewide)</span>{% endif %}
@@ -44,7 +44,7 @@ h3.cr-h{margin:1.5rem 0 .5rem;border-bottom:2px solid #333;padding-bottom:.25rem
     {% for c in data.candidates %}
     <div class="cr-cand {% if c.party=='Republican' %}r{% elif c.party=='Democratic' %}d{% endif %}">
       <div class="row">
-        <span class="nm">{% if c.is_winner %}<span class="win">&#10003;</span> {% endif %}{{ c.name }}
+        <span class="nm">{% if c.is_winner and not unofficial(data.year) %}<span class="win">&#10003;</span> {% endif %}{{ c.name }}
           <span style="color:#888;font-weight:400">{{ c.party or '—' }}</span></span>
         <span>{{ "{:,}".format(c.votes) }} &nbsp; {{ c.pct }}%</span>
       </div>

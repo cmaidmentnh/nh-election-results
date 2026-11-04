@@ -66,7 +66,7 @@
             {% set data = by_year[year] %}
             <div class="election-year">
                 <div class="election-year-header">
-                    <h3>{{ year }} &mdash; <span class="r">{{ data.r_seats }}R</span> / <span class="d">{{ data.d_seats }}D</span></h3>
+                    <h3>{{ year }} &mdash; <span class="r">{{ data.r_seats }}R</span> / <span class="d">{{ data.d_seats }}D</span>{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}</h3>
                     <span class="{% if data.margin > 0 %}r{% else %}d{% endif %}">
                         {% if data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(data.margin|abs) }}%
                     </span>
@@ -75,7 +75,7 @@
                 <ul class="candidates">
                     {% for candidate in data.candidates %}
                     <li class="candidate {% if candidate.is_winner %}winner{% endif %}">
-                        <span class="candidate-name">{{ candidate.name }}{% if candidate.is_winner %} <span class="winner-check" title="Winner">&#10003;</span>{% endif %}</span>
+                        <span class="candidate-name">{{ candidate.name }}{% if candidate.is_winner and not unofficial(year) %} <span class="winner-check" title="Winner">&#10003;</span>{% endif %}</span>
                         <span class="candidate-party {% if candidate.party == 'Republican' %}r{% elif candidate.party == 'Democratic' %}d{% endif %}">{{ candidate.party or '-' }}</span>
                         <span class="candidate-votes">{{ "{:,}".format(candidate.votes) }}</span>
                     </li>

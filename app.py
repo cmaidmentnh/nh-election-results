@@ -71,6 +71,76 @@ def house_projection_2026():
 @app.context_processor
 def inject_datetime():
     return {'now': datetime.now, 'datetime': datetime, 'ga_id': os.environ.get('GA_MEASUREMENT_ID', '')}
+
+
+_UNOFFICIAL = {'at': 0, 'years': {}}
+
+
+def _unofficial_years():
+    """{year: (towns reporting, towns total)} for general elections not yet official.
+
+    A general election is final once any of its races carries the Secretary of
+    State's figures (is_official, or a certified_races row). Until then - on
+    election night and the days after - its numbers are the clerks' unofficial
+    returns still coming in, and the history pages must not present the
+    leaders as winners. Refreshed every minute so certification shows up.
+    """
+    import time
+    if time.time() - _UNOFFICIAL['at'] < 60:
+        return _UNOFFICIAL['years']
+    years = {}
+    try:
+        conn = queries.get_connection()
+        cur = conn.cursor()
+        try:
+            cert = "OR r.id IN (SELECT race_id FROM certified_races)"
+            cur.execute("SELECT 1 FROM certified_races LIMIT 1")
+        except Exception:
+            cert = ""
+        rows = cur.execute(f"""
+            SELECT e.year FROM elections e JOIN races r ON r.election_id = e.id
+             WHERE e.election_type = 'general'
+             GROUP BY e.id
+            HAVING SUM(CASE WHEN IFNULL(r.is_official, 0) = 1 {cert}
+                            THEN 1 ELSE 0 END) = 0""").fetchall()
+        for row in rows:
+            y = row[0]
+            # Towns in so far against the towns the last Governor's race had.
+            counts = {r[0]: (r[1], r[2]) for r in cur.execute("""
+                SELECT e.year,
+                       COUNT(DISTINCT CASE WHEN res.votes > 0 THEN res.municipality END),
+                       COUNT(DISTINCT res.municipality)
+                  FROM results res JOIN races r ON r.id = res.race_id
+                  JOIN elections e ON e.id = r.election_id
+                  JOIN offices o ON o.id = r.office_id
+                 WHERE e.election_type = 'general' AND o.name = 'Governor'
+                   AND e.year IN (?, ?)
+                 GROUP BY e.year""", (y, y - 2))}
+            years[y] = (counts.get(y, (0, 0))[0], counts.get(y - 2, (0, 0))[1])
+        conn.close()
+    except Exception:
+        return _UNOFFICIAL['years']
+    _UNOFFICIAL.update(at=time.time(), years=years)
+    return years
+
+
+@app.context_processor
+def inject_unofficial():
+    """`unofficial(year)`: '' for a final year, else the label to show by it."""
+    def unofficial(year):
+        try:
+            got = _unofficial_years().get(int(year))
+        except (TypeError, ValueError):
+            return ''
+        if not got:
+            return ''
+        n, total = got
+        return ('Unofficial - results coming in'
+                + (f' ({n} of {total} towns reporting)' if total else ''))
+    live = sorted(_unofficial_years())
+    return {'unofficial': unofficial, 'unofficial_years': live}
+
+
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Set up Flask-Login

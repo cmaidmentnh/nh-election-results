@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>{{ summary.name }} - {{ year }}</h1>
+    <h1>{{ summary.name }} - {{ year }}{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}</h1>
     <p class="subtitle">
         <a href="{{ url_for('town', name=summary.name) }}">&larr; Back to {{ summary.name }} overview</a>
     </p>

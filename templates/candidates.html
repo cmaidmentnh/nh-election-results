@@ -191,7 +191,7 @@
             <span class="race-label">{{ race.office }}{% if race.district %} &mdash; {{ race.county }} District {{ race.district }}{% endif %}</span>
         </div>
         <div class="race-meta">
-            <span class="yr-badge">{{ race.year }}</span>
+            <span class="yr-badge">{{ race.year }}{% if unofficial(race.year) %} unofficial{% endif %}</span>
             <span class="seats-badge">{{ race.seats }} seat{{ 's' if race.seats > 1 else '' }}</span>
         </div>
     </div>
@@ -200,7 +200,7 @@
         <div class="cand-color {{ candidate.party|lower if candidate.party else '' }}"></div>
         <div class="cand-name">
             {{ candidate.name }}
-            {% if candidate.is_winner %}<span class="cand-winner">W</span>{% endif %}
+            {% if candidate.is_winner and not unofficial(race.year) %}<span class="cand-winner">W</span>{% endif %}
         </div>
         <div class="cand-party {{ candidate.party|lower if candidate.party else '' }}">{{ candidate.party or '-' }}</div>
         <div class="cand-votes">{{ "{:,}".format(candidate.votes) }}</div>

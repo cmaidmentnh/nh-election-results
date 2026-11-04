@@ -65,7 +65,7 @@
                         <span class="d">D Win</span>
                         {% else %}
                         Tie
-                        {% endif %}
+                        {% endif %}{% if unofficial(year) %} <span class="unofficial-tag" style="font-size:0.8rem;font-weight:600;color:#92400e;background:#fef3c7;padding:0.1rem 0.4rem;border-radius:3px;vertical-align:middle">{{ unofficial(year) }}</span>{% endif %}
                     </h3>
                     <span class="{% if data.margin > 0 %}r{% else %}d{% endif %}">
                         {% if data.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(data.margin|abs) }}%
