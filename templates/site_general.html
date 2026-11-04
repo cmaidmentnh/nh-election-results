@@ -159,10 +159,11 @@ function chamber(c){
     if (final){
       // Every seat decided: just the split, no won/leading breakdown.
       const mnames = {L:'Libertarian',C:'Constitution',I:'Independent',O:'Other'};
-      const others = ['L','C','I','O'].filter(k => g(c.won,k)).map(k => `${g(c.won,k)} ${mnames[k]}`).join(' · ');
+      const others = ['L','C','I','O'].filter(k => g(c.won,k))
+        .map(k => `<span class="sn O big" style="color:${PC[k]}"><b>${g(c.won,k)}</b><em>${mnames[k]}${g(c.won,k)==1?'':'s'}</em></span>`).join('');
       const ctl = wR >= c.majority ? 'Republican majority' : wD >= c.majority ? 'Democratic majority' : 'No majority';
       nums = `<span class="sn R big"><b>${wR}</b><em>Republicans</em></span>
-              <span class="sn mid">${others ? others + '<br>' : ''}${c.majority} for majority</span>
+              ${others}<span class="sn mid">${c.majority} for majority</span>
               <span class="sn D big"><em>Democrats</em><b>${wD}</b></span>`;
       // "Final" only once the SoS has posted every race; until then the calls stand.
       const sos = c.certified >= c.races;
