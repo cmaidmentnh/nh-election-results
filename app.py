@@ -2924,7 +2924,7 @@ def _seat_tally(board, seats_total, majority, live):
     awaiting everything else - races with no vote in yet
     Parties are the one-letter codes; 'O' is everyone else, write-ins included."""
     won, lead, unopp, running, cover = {}, {}, {}, {}, {}
-    open_ = races_in = 0
+    open_ = races_in = certified = 0
 
     def add(d, k, n=1):
         d[k] = d.get(k, 0) + n
@@ -2933,6 +2933,7 @@ def _seat_tally(board, seats_total, majority, live):
         seats = r.get('seats') or 1
         pj = r.get('projection') or {}
         st = pj.get('status')
+        certified += bool(pj.get('certified'))
         pof = {c['name']: c.get('party', 'O') for c in r['candidates']}
         named = [c for c in r['candidates'] if c['name'] != 'Write-in']
         per = {}
@@ -2971,7 +2972,7 @@ def _seat_tally(board, seats_total, majority, live):
     return {'seats': seats_total, 'majority': majority, 'races': len(board),
             'races_in': races_in, 'won': won, 'leading': lead, 'unopposed': unopp,
             'open': open_, 'awaiting': max(0, seats_total - assigned),
-            'running': running, 'cover': cover}
+            'running': running, 'cover': cover, 'certified': certified}
 
 
 def _slim(r, label=None):

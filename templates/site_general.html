@@ -164,7 +164,10 @@ function chamber(c){
       nums = `<span class="sn R big"><b>${wR}</b><em>Republicans</em></span>
               <span class="sn mid">${others ? others + '<br>' : ''}${c.majority} for majority</span>
               <span class="sn D big"><em>Democrats</em><b>${wD}</b></span>`;
-      key = `<span class="fin">Final</span> ${ctl}${c.open?` · ${c.open} with no candidate`:''}`;
+      // "Final" only once the SoS has posted every race; until then the calls stand.
+      const sos = c.certified >= c.races;
+      key = `${sos ? '<span class="fin">Final</span> ' : ''}${ctl}${sos ? '' : ` · every seat called · ${c.certified} of ${c.races} races SoS-final`
+        }${c.open?` · ${c.open} with no candidate`:''}`;
     } else {
       nums = `<span class="sn R"><b>R ${wR+lR}</b> — ${wR} won, ${lR} leading</span>
               <span class="sn mid">${c.majority} for majority</span>
@@ -195,7 +198,7 @@ function chamber(c){
 function render(d){
   document.getElementById('chambers').innerHTML = (d.chambers||[]).map(chamber).join('');
   if (LIVE && (d.chambers||[]).length && (d.chambers||[]).every(c => !c.awaiting &&
-      !Object.values(c.leading||{}).some(Boolean)))
+      !Object.values(c.leading||{}).some(Boolean) && c.certified >= c.races))
     document.getElementById('ctl-note').textContent = 'Final results';
   document.getElementById('races').innerHTML = (d.blocks||[]).map(b => block(b,false)).join('');
   document.getElementById('council').innerHTML = (d.council||[]).map(b => block(b,true)).join('');
