@@ -1967,6 +1967,10 @@ def _project(cand_list, seats, reported_weight, current_total, volatility=0.0,
         return {'status': 'awaiting', 'winners': [], 'expected_in': round(100 * reported_weight),
                 'projected_total': None, 'margin': None}
     projected_total = current_total / reported_weight
+    # Rank by projected vote, not votes counted so far: when the outstanding towns
+    # flip the order, the counted leader is not the one the projection favors, and
+    # ranking by count made the margin negative and the win chance a flat 50%.
+    cand_list = sorted(cand_list, key=lambda c: c.get('projected') or 0, reverse=True)
     winners = [c['name'] for c in cand_list[:seats]]
     if len(cand_list) <= seats:
         return {'status': 'called', 'winners': winners, 'expected_in': round(100 * reported_weight),
