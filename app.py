@@ -889,6 +889,49 @@ def compare():
                          towns=towns)
 
 
+@app.route('/taxcap')
+def taxcap_districts():
+    """Question 2 (property tax cap) returns by school district, SAU and co-op."""
+    resp = make_response(render_template('taxcap.html'))
+    resp.headers["Cache-Control"] = "public, max-age=60"
+    return resp
+
+
+def _taxcap_key(name):
+    name = re.sub(r"\s*Ward\s*\d+\*?$", "", name, flags=re.I)
+    return re.sub(r"[^a-z]", "", name.lower().replace("&", "and"))
+
+
+@app.route('/api/taxcap')
+def api_taxcap():
+    """Yes/no on the tax cap question per town (wards added), for /taxcap."""
+    conn = queries.get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT res.municipality,
+               SUM(CASE WHEN c.name = 'Yes' THEN res.votes ELSE 0 END) AS y,
+               SUM(CASE WHEN c.name = 'No' THEN res.votes ELSE 0 END) AS n
+        FROM results res
+        JOIN candidates c ON c.id = res.candidate_id
+        JOIN races r ON r.id = res.race_id
+        JOIN offices o ON o.id = r.office_id
+        JOIN elections e ON e.id = r.election_id
+        WHERE e.year = 2026 AND e.election_type = 'general' AND o.name LIKE 'Question 2:%'
+        GROUP BY res.municipality
+    """)
+    towns = {}
+    for row in cur.fetchall():
+        t = towns.setdefault(_taxcap_key(row['municipality']), {'y': 0, 'n': 0, 'rep': 0})
+        t['y'] += row['y'] or 0
+        t['n'] += row['n'] or 0
+        t['rep'] += 1
+    conn.close()
+    from zoneinfo import ZoneInfo
+    resp = jsonify({'towns': towns, 'asof': datetime.now(ZoneInfo('America/New_York')).isoformat()})
+    resp.headers["Cache-Control"] = "public, max-age=30"
+    return resp
+
+
 @app.route('/map')
 def election_map():
     """Interactive election map."""
