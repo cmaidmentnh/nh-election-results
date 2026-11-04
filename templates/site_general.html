@@ -153,10 +153,11 @@ function chamber(c){
     segs = [[g(c.won,'R'),PC.R,1],[g(c.leading,'R'),PC.R,.35],
             [c.awaiting + c.open,'#e4e6e9',1],[minors,PC.O,.8],
             [g(c.leading,'D'),PC.D,.35],[g(c.won,'D'),PC.D,1]];
-    const R = g(c.won,'R'), D = g(c.won,'D');
-    nums = `<span class="sn R"><b>${R}</b> won${g(c.leading,'R')?` · ${g(c.leading,'R')} leading`:''}</span>
+    // Headline is won + leading; the split sits underneath.
+    const wR = g(c.won,'R'), lR = g(c.leading,'R'), wD = g(c.won,'D'), lD = g(c.leading,'D');
+    nums = `<span class="sn R"><b>R ${wR+lR}</b> — ${wR} won, ${lR} leading</span>
             <span class="sn mid">${c.majority} for majority</span>
-            <span class="sn D">${g(c.leading,'D')?`${g(c.leading,'D')} leading · `:''}<b>${D}</b> won</span>`;
+            <span class="sn D">${wD} won, ${lD} leading — <b>D ${wD+lD}</b></span>`;
     key = `${c.races_in} of ${c.races} races reporting · ${c.awaiting} seats awaiting results${
       minors?` · ${minors} other`:''}${c.open?` · ${c.open} with no candidate`:''}`;
   } else {
