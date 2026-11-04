@@ -844,7 +844,7 @@ function ptable(r){
   (r.precincts||[]).forEach(p=>{
     h+=`<tr><td>${esc(p.name)}</td>${cn.map(n=>`<td>${p.reported?nf.format(p.votes[n]||0):'—'}</td>`).join('')}`+
        vy.map(y=>`<td>${p.reported?sw((p.vs||{})[y]):'—'}</td>`).join('')+
-       `<td>${p.reported?'✓':'—'}</td></tr>`;});
+       `<td>${p.partial?esc(p.partial):p.reported?'✓':'—'}</td></tr>`;});
   if(vy.length&&r.vs) h+=`<tr style="font-weight:700"><td>Counted towns</td>${cn.map(()=>'<td></td>').join('')}${
     vy.map(y=>`<td>${sw(r.vs[y])}</td>`).join('')}<td></td></tr>`;
   document.getElementById('ptable').innerHTML=h+'</tbody>';

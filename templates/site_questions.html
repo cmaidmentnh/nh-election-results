@@ -42,7 +42,8 @@ function townTable(q){
   const f = (filt[q.key] || '').toLowerCase();
   const rows = q.towns.filter(t => !f || t.town.toLowerCase().includes(f)).map(t => `<tr>
       <td><a href="/results/town/${encodeURIComponent(t.wards.length ? t.wards[0] : t.town)}${QS?'?'+QS:''}">${esc(t.town)}</a>${
-        t.wards.length ? ` <span class="dm">${t.reported}/${t.precincts} wards</span>` : ''}</td>
+        t.wards.length ? ` <span class="dm">${t.reported}/${t.precincts} wards</span>` : ''}${
+        t.partial ? ` <span class="dm">${esc(t.partial)}</span>` : ''}</td>
       <td style="text-align:right">${nf.format(t.yes)}</td>
       <td style="text-align:right">${nf.format(t.no)}</td>
       <td style="text-align:right">${t.pct_yes == null ? '–' : t.pct_yes.toFixed(1) + '%'}</td>

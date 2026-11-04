@@ -76,6 +76,55 @@ def inject_datetime():
 _UNOFFICIAL = {'at': 0, 'years': {}}
 
 
+# A town that votes at more than one place but whose returns so far cover only
+# some of them (Goffstown: the high school is in, Bartlett Elementary is not).
+# Its votes count, but it is not "reported": the pages say "1 of 2 polling
+# places reporting" and weight it by the share of its places in.
+# Set and clear with scripts/mark_partial.py.
+TOWN_PARTIAL_SQL = """CREATE TABLE IF NOT EXISTS town_partial (
+    election_id INTEGER NOT NULL, municipality TEXT NOT NULL,
+    reported_places INTEGER NOT NULL, total_places INTEGER NOT NULL,
+    note TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (election_id, municipality))"""
+
+
+def _ensure_town_partial():
+    try:
+        conn = queries.get_connection()
+        conn.execute(TOWN_PARTIAL_SQL)
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
+_ensure_town_partial()
+
+
+def _partial_towns(cur, ev=None, election_id=None):
+    """{municipality: {'in': n, 'of': m, 'frac': n/m, 'label', 'note'}} for one
+    election (by id) or event (year + type)."""
+    try:
+        if election_id is not None:
+            rows = cur.execute("""SELECT * FROM town_partial WHERE election_id = ?""",
+                               (election_id,)).fetchall()
+        else:
+            rows = cur.execute("""SELECT tp.* FROM town_partial tp
+                                  JOIN elections e ON e.id = tp.election_id
+                                 WHERE e.year = ? AND e.election_type = ?""",
+                               (ev['year'], ev['type'])).fetchall()
+    except Exception:
+        return {}
+    out = {}
+    for r in rows:
+        n, m = r['reported_places'], r['total_places']
+        if not m or n >= m:
+            continue
+        out[r['municipality']] = {'in': n, 'of': m, 'frac': n / m, 'note': r['note'] or '',
+                                  'label': f"{n} of {m} polling places reporting"}
+    return out
+
+
 def _unofficial_years():
     """{year: (towns reporting, towns total)} for general elections not yet official.
 
@@ -108,7 +157,11 @@ def _unofficial_years():
             # Towns in so far against the towns the last Governor's race had.
             counts = {r[0]: (r[1], r[2]) for r in cur.execute("""
                 SELECT e.year,
-                       COUNT(DISTINCT CASE WHEN res.votes > 0 THEN res.municipality END),
+                       COUNT(DISTINCT CASE WHEN res.votes > 0 AND res.municipality NOT IN
+                          (SELECT tp.municipality FROM town_partial tp
+                            WHERE tp.election_id = e.id
+                              AND tp.reported_places < tp.total_places)
+                     THEN res.municipality END),
                        COUNT(DISTINCT res.municipality)
                   FROM results res JOIN races r ON r.id = res.race_id
                   JOIN elections e ON e.id = r.election_id
@@ -1288,11 +1341,14 @@ def _place_general(cur, ev, kind, name, demo=False):
                 continue
             pmap = {c['name']: c.get('party', 'O') for c in r['candidates']
                     if c['name'] != 'Write-in'}
-            votes, reported = {}, 0
+            votes, reported, partial = {}, 0, []
             for p in r['precincts']:
                 if p['name'] not in munis:
                     continue
-                reported += 1 if p['reported'] else 0
+                reported += 1 if p['reported'] and not p.get('partial') else 0
+                if p.get('partial'):
+                    partial.append(p['name'] + ': ' + p['partial'] if len(here) > 1
+                                   else p['partial'])
                 # Named write-ins arrive under their own names beside the
                 # sheet's aggregate line; the two state the same votes, so take
                 # the larger per town, as _compute_results does.
@@ -1323,6 +1379,7 @@ def _place_general(cur, ev, kind, name, demo=False):
                 'certified': bool(pj.get('certified')), 'recount': pj.get('recount'),
                 'candidates': cands, 'total': sum(c['votes'] for c in cands),
                 'reported': reported, 'precincts': len(here),
+                **({'partial': '; '.join(partial)} if partial else {}),
                 'race_status': pj.get('status'), 'race_winners': pj.get('winners') or [],
                 'race_expected_in': r['reporting'].get('expected_in', 0),
             })
@@ -1406,6 +1463,7 @@ def _question_payload(cur, ev, munis=None):
     `munis` narrows the town list (and the totals) to those polling places -
     one town's page, or one county's."""
     certified = _certified_races(cur)
+    partial = _partial_towns(cur, ev)
     out = []
     for q in BALLOT_QUESTIONS:
         got = _question_rows(cur, ev, q)
@@ -1425,7 +1483,10 @@ def _question_payload(cur, ev, munis=None):
             if p != t['town']:
                 t['wards'].append(p)
             if p in votes:
-                t['reported'] += 1
+                if p in partial:
+                    t['partial'] = partial[p]['label']
+                else:
+                    t['reported'] += 1
                 t['yes'] += votes[p]['Yes']
                 t['no'] += votes[p]['No']
         for t in towns.values():
@@ -1433,7 +1494,9 @@ def _question_payload(cur, ev, munis=None):
             t['total'] = n
             t['pct_yes'] = round(100 * t['yes'] / n, 1) if n else None
             # A town's own outcome only means something where the town decides.
-            t['status'] = (_q_status(t['yes'], t['no'], q['threshold'], t['reported'],
+            # A partly reported town has votes in but is not final: half a place.
+            t['status'] = (_q_status(t['yes'], t['no'], q['threshold'],
+                                     t['reported'] + (0.5 if 'partial' in t else 0),
                                      t['precincts'], is_cert)
                            if q['decided_by'] == 'town' else None)
         yes = sum(t['yes'] for t in towns.values())
@@ -1482,6 +1545,8 @@ def _place_questions(cur, ev, munis):
                 outcome_label = (f"{t['town']}, all {t['precincts']} wards: "
                                  f"{t['reported']}/{t['precincts']} reporting"
                                  if t['wards'] else f"decided in {t['town']}")
+                if t.get('partial'):
+                    outcome_label += f" ({t['partial']})"
                 if t['wards'] and t['pct_yes'] is not None:
                     outcome_label += f", {t['pct_yes']}% Yes"
             else:
@@ -2284,6 +2349,7 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
             by_prec.setdefault(r['municipality'], {})[r['candidate_id']] = r['votes']
 
     overall = {cid: 0 for cid in name_by_id}
+    partial = {} if demo else _partial_towns(cur, ev)
     precincts = []
     for p in precs:
         v = by_prec.get(p, {})
@@ -2292,13 +2358,18 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
                 overall[cid] += val
         precincts.append({'name': p, 'reported': p in by_prec,
                           'votes': {name_by_id[cid]: val for cid, val in v.items() if cid in name_by_id}})
-    reported_n = sum(1 for p in precincts if p['reported'])
+        if p in by_prec and p in partial:
+            precincts[-1]['partial'] = partial[p]['label']
+    # A partly reported town's votes count, but it is not a town reported, and
+    # only its share of polling places in counts toward the expected vote.
+    reported_n = sum(1 for p in precincts if p['reported'] and not p.get('partial'))
     total = len(precincts)
 
     weights = _precinct_weights(cur, party_full, precs)
     pcounty = _precinct_counties(cur, precs)
     reported = {p['name'] for p in precincts if p['reported']}
-    reported_weight = sum(weights.get(p, 0) for p in reported)
+    frac = {p: partial[p]['frac'] for p in reported if p in partial}
+    reported_weight = sum(weights.get(p, 0) * frac.get(p, 1) for p in reported)
     current_total = sum(overall.values())
     projected_total = (current_total / reported_weight) if reported_weight > 0 else 0
 
@@ -2329,8 +2400,10 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     for p in precincts:
         ev_votes = weights.get(p['name'], 0) * projected_total
         p['expected'] = round(ev_votes)
-        if p['name'] in reported:
+        if p['name'] in reported and p['name'] not in frac:
             continue
+        if p['name'] in frac:
+            ev_votes *= 1 - frac[p['name']]  # the polling places still out
         sh = gsw['shares_for'](p['name']) if gsw else None
         if sh is None:
             rg = pcounty.get(p['name'], '')
@@ -3289,8 +3362,14 @@ def live_results(election_id):
         towns_reporting = 0
         towns_total = len(turnout_2024)
 
+        partial = _partial_towns(cursor, election_id=election_id)
         for town, data in town_results.items():
-            if data['reported'] and town in turnout_2024:
+            if data['reported'] and town in partial:
+                # Votes count; the town does not, and only its places in weigh.
+                data['partial'] = partial[town]['label']
+                if town in turnout_2024:
+                    reported_weight += turnout_2024[town] * partial[town]['frac']
+            elif data['reported'] and town in turnout_2024:
                 reported_weight += turnout_2024[town]
                 towns_reporting += 1
 

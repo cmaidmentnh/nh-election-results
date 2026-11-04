@@ -85,7 +85,7 @@ function gcard(r){
   return `<div class="col G">
     <div class="colhead"><span class="pty">Race-wide</span>${st}<span class="rx">${r.race_expected_in||0}% of expected vote counted</span></div>
     ${rows}
-    <div class="foot"><span>${nf.format(r.total)} votes ${here} · ${r.reported}/${r.precincts} reporting${
+    <div class="foot"><span>${nf.format(r.total)} votes ${here} · ${r.partial ? esc(r.partial) : r.reported+'/'+r.precincts+' reporting'}${
       r.seats>1?` · ${r.seats} seats`:''}</span>${
       link?`<span><a href="${link}">the whole race →</a></span>`:''}</div>
   </div>`;

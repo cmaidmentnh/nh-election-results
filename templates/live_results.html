@@ -767,6 +767,8 @@ fetch('/static/data/nh-towns.geojson')
                         } else {
                             html += '<em>Not yet reported</em>';
                         }
+                        const tr = (data.town_results || {})[townName] || (data.town_results || {})[normalizeGeoName(townName)];
+                        if (tr && tr.partial) html += `<em>${tr.partial}</em>`;
                         html += '</div>';
 
                         layer.bindTooltip(html, {
