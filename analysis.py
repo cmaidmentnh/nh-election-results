@@ -610,7 +610,10 @@ def get_closest_races(year, limit=10):
                 r.seats,
                 MAX(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
                 MAX(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-            FROM results res
+            -- Candidate totals across all towns first, so MAX picks the top candidate,
+            -- not the single largest town row.
+            FROM (SELECT race_id, candidate_id, SUM(votes) AS votes FROM results
+                  GROUP BY race_id, candidate_id) res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
@@ -644,7 +647,7 @@ def get_closest_races(year, limit=10):
             'r_votes': r_votes,
             'd_votes': d_votes,
             'margin': margin,
-            'label': f"{county} {district}" if county else f"District {district}"
+            'label': f"{county} {district}" if county else (f"District {district}" if district else "Statewide")
         })
 
     conn.close()
@@ -668,7 +671,10 @@ def get_biggest_shifts(year1, year2, limit=10):
                 r.county,
                 MAX(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
                 MAX(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-            FROM results res
+            -- Candidate totals across all towns first, so MAX picks the top candidate,
+            -- not the single largest town row.
+            FROM (SELECT race_id, candidate_id, SUM(votes) AS votes FROM results
+                  GROUP BY race_id, candidate_id) res
             JOIN candidates c ON res.candidate_id = c.id
             JOIN races r ON res.race_id = r.id
             JOIN elections e ON r.election_id = e.id
@@ -714,7 +720,7 @@ def get_biggest_shifts(year1, year2, limit=10):
             'margin2': margin2,
             'shift': shift,
             'direction': 'R' if shift > 0 else 'D',
-            'label': f"{county} {district}" if county else f"District {district}"
+            'label': f"{county} {district}" if county else (f"District {district}" if district else "Statewide")
         })
 
     conn.close()
