@@ -93,7 +93,7 @@ tr.sel td{background:var(--hover);font-weight:600}
   <header>
     <div>
       <h1>{% endraw %}{{ title }}{% raw %}</h1>
-      <p class="sub">{% endraw %}{{ label }} returns as reported, town by town. {{ rule }}{% raw %} <span id="asof"></span></p>
+      <p class="sub">{% endraw %}{{ label }} official Secretary of State results, town by town. {{ rule }}{% raw %} <span id="asof"></span></p>
     </div>
     <div class="statewide" aria-label="Statewide results">
       <div><span>Yes</span><b id="sy"></b></div>
@@ -130,7 +130,7 @@ tr.sel td{background:var(--hover);font-weight:600}
 
   <div class="note">
     <p><b>How to read it.</b> Yes % is yes votes as a share of yes plus no. Green is at or above {% endraw %}{{ threshold }}{% raw %}%, red is below it. Dark colors mean every polling place in the town or county has reported; light colors mean some are still out. Gray means nothing is in yet. The statewide total is what decides it; town colors show where the support came from.</p>
-    <p><b>Method.</b> Results come from the election-night returns (elections.nhhouse.gop), with city wards added together, and reload every minute. The returns are unofficial until the Secretary of State certifies them.</p>
+    <p><b>Method.</b> Results are the Secretary of State's official returns, with city wards added together.</p>
   </div></div>
 </div>
 
