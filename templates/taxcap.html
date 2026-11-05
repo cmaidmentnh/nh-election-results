@@ -142,7 +142,7 @@ tr.sel td{background:var(--hover);font-weight:600}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
 (async function(){
-  const DATA = await (await fetch('/static/data/taxcap-districts.json')).json();
+  const DATA = await (await fetch('/static/data/taxcap-districts.json?v=20261105')).json();
   const COS = Math.cos(43.7 * Math.PI / 180);
   function flat(g){
     const f = c => typeof c[0] === 'number' ? [c[0] * COS, -c[1]] : c.map(f);
