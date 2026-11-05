@@ -58,6 +58,10 @@ path.ghost{fill:var(--nodata);opacity:.55;stroke:var(--panel);stroke-width:.4;ve
 .zoomhint{position:absolute;right:8px;bottom:6px;font:11px var(--mono);color:var(--muted)}
 .side{display:grid;gap:14px;min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);padding:14px}
+.detail table.towns{width:100%;margin-top:10px;border-collapse:collapse;font-size:13px}
+.detail table.towns th{position:static;cursor:default}
+.detail table.towns td{padding:4px 10px;border-bottom:1px solid var(--line);text-align:right}
+.detail table.towns td:first-child,.detail table.towns th:first-child{text-align:left}
 .detail h2{font-family:var(--display);font-size:20px;margin:0 0 2px;text-wrap:balance}
 .meta{color:var(--muted);font-size:12.5px}
 .pill{display:inline-block;font:600 12px var(--display);letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;margin-top:8px;color:#fff}
@@ -147,9 +151,9 @@ tr.sel td{background:var(--hover);font-weight:600}
   const all = [...DATA.districts.features, ...DATA.saus.features];
   all.forEach(f => { f.pg = flat(f.geometry); });
   const TW = DATA.towns;
-  let st = {yes: 0, no: 0, rep: 0, exp: 0};
+  let st = {yes: 0, no: 0, rep: 0, exp: 0}, RES = {};
   function apply(R){
-    const res = R.towns;
+    const res = R.towns; RES = res;
     all.forEach(f => {
       const p = f.properties;
       let y = 0, n = 0, rep = 0, exp = 0; const out = [];
@@ -278,9 +282,22 @@ tr.sel td{background:var(--hover);font-weight:600}
         <div><b>${pct(p.est)}%</b><span>Poll estimate</span></div>
         <div><b>${sgn(p.d)}</b><span>Actual vs poll</span></div>
       </div>
-      <div class="members">Towns: ${(p.towns || []).join(', ') || 'none'}</div>
+      ${townTable(p)}
       ${p.out && p.out.length ? `<div class="members">Still out: ${p.out.join(', ')}</div>` : ''}
       ${p.members ? `<div class="members">Districts: ${p.members.join(', ')}</div>` : ''}`;
+  }
+
+  // Town-by-town returns inside the selected district or SAU, highest yes first.
+  function townTable(p){
+    const ts = (p.t || []).map(k => {
+      const r = RES[k], y = r ? r.y : 0, n = r ? r.n : 0;
+      return {name: TW[k] ? TW[k].name : k, y, n, x: y + n ? 100 * y / (y + n) : null};
+    }).sort((a, b) => (b.x ?? -1) - (a.x ?? -1) || a.name.localeCompare(b.name));
+    if (!ts.length) return '<div class="members">Towns: none</div>';
+    return `<table class="towns"><thead><tr><th>Town</th><th>Yes %</th><th>Yes</th><th>No</th></tr></thead><tbody>` +
+      ts.map(t => `<tr><td><i class="dot" style="background:${css(t.x == null ? '--nodata' : t.x >= 60 ? '--pass2' : '--fail2')}"></i>${t.name}</td>` +
+        `<td>${t.x == null ? '–' : t.x.toFixed(1)}</td><td>${fmt(t.y)}</td><td>${fmt(t.n)}</td></tr>`).join('') +
+      `</tbody></table>`;
   }
 
   function select(id, zoomTo){
