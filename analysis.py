@@ -3800,14 +3800,18 @@ def get_ticket_splitting_analysis():
                                 'split': round(split, 1)
                             })
 
-                            # Old format for President vs State Rep specifically
-                            if office1 == 'President of the United States' and office2 == 'State Representative':
+                            # Old format: top of the ticket vs State Rep - the
+                            # President, or in a midterm (2018, 2022, 2026) the Governor
+                            top = ('President of the United States'
+                                   if 'President of the United States' in offices else 'Governor')
+                            if office1 == top and office2 == 'State Representative':
                                 winner1 = 'R' if margin1 > 0 else 'D'
                                 winner2 = 'R' if margin2 > 0 else 'D'
                                 if winner1 != winner2:  # Actually split ticket
                                     all_pres_rep_splits.append({
                                         'year': year,
                                         'town': muni,
+                                        'top_office': 'President' if top.startswith('President') else 'Governor',
                                         'president': winner1,
                                         'president_margin': round(margin1, 1),
                                         'state_rep': winner2,

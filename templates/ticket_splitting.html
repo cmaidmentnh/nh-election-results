@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Ticket Splitting Analysis</h1>
-    <p class="subtitle">Towns where voters split between President and State Representative</p>
+    <p class="subtitle">Towns where voters split between the top of the ticket (President, or Governor in a midterm) and State Representative</p>
 </div>
 
 <div class="metrics">
@@ -26,7 +26,7 @@
     <div class="main-content">
         <div class="section">
             <h2>Ticket Splitting by Year</h2>
-            <p class="text-muted mb-2">Towns where the presidential winner differed from state rep majority</p>
+            <p class="text-muted mb-2">Towns where the President (midterms: Governor) winner differed from the state rep majority</p>
 
             {% for year in data.by_year.keys()|sort(reverse=true) %}
             <div class="election-year">
@@ -39,7 +39,7 @@
                     <thead>
                         <tr>
                             <th>Town</th>
-                            <th class="text-right">President</th>
+                            <th class="text-right">{{ data.by_year[year][0].top_office if data.by_year[year] else 'President' }}</th>
                             <th class="text-right">State Rep</th>
                         </tr>
                     </thead>
@@ -49,12 +49,12 @@
                             <td><a href="{{ url_for('town', name=s.town) }}">{{ s.town }}</a></td>
                             <td class="text-right">
                                 <span class="{% if s.president == 'R' %}r{% else %}d{% endif %}">
-                                    {{ s.president }}{% if s.president_margin > 0 %}+{% endif %}{{ "%.1f"|format(s.president_margin) }}%
+                                    {{ s.president }}+{{ "%.1f"|format(s.president_margin|abs) }}%
                                 </span>
                             </td>
                             <td class="text-right">
                                 <span class="{% if s.state_rep == 'R' %}r{% else %}d{% endif %}">
-                                    {{ s.state_rep }}{% if s.state_rep_margin > 0 %}+{% endif %}{{ "%.1f"|format(s.state_rep_margin) }}%
+                                    {{ s.state_rep }}+{{ "%.1f"|format(s.state_rep_margin|abs) }}%
                                 </span>
                             </td>
                         </tr>
@@ -69,7 +69,7 @@
     <aside class="sidebar">
         <div class="sidebar-section">
             <h3>What is Ticket Splitting?</h3>
-            <p class="text-muted">Ticket splitting occurs when voters choose candidates from different parties for different offices in the same election. This analysis shows towns where the presidential winner was from a different party than the majority of state representative votes.</p>
+            <p class="text-muted">Ticket splitting occurs when voters choose candidates from different parties for different offices in the same election. This analysis shows towns where the presidential winner (in a midterm, the governor's race winner) was from a different party than the majority of state representative votes.</p>
         </div>
 
         <div class="sidebar-section">
