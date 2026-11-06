@@ -1022,8 +1022,8 @@ def get_statewide_baseline(year=None):
 # House district count its voters seven times and drown out the Governor's race.
 # ---------------------------------------------------------------------------
 STATE_OFFICE_IDS = (4, 5, 6, 7)          # Governor, Exec Council, State Senate, State House
-STATE_PVI_CYCLES = (2024, 2026)          # headline: the last two generals
-STATE_PVI_PRIOR = (2020, 2022)           # the pair before, used for the trend
+STATE_PVI_CYCLES = (2022, 2024, 2026)    # headline: the last three generals
+STATE_PVI_PRIOR = (2016, 2018, 2020)     # the three before, used for the trend
 _STATE_BASELINE_CACHE = {}
 
 
