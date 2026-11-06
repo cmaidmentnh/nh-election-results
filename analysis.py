@@ -3997,8 +3997,10 @@ def get_swing_analysis():
     """
     conn = get_connection()
     cursor = conn.cursor()
+    year = queries.last_general_year()
+    prev = year - 2
 
-    # Get all State Rep districts with 2022 and 2024 data
+    # Get all State Rep districts with the last three generals' data
     cursor.execute("""
         SELECT
             e.year,
@@ -4013,13 +4015,13 @@ def get_swing_analysis():
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'State Representative'
-        AND e.year IN (2020, 2022, 2024)
+        AND e.year IN (?, ?, ?)
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY e.year, r.county, r.district, c.name, c.party
-    """)
+    """, (year - 4, prev, year))
 
     # Aggregate by district and year using top vote-getter
     district_data = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0, 'seats': 1}))
@@ -4034,11 +4036,11 @@ def get_swing_analysis():
 
     swing_districts = []
     for (county, district), years in district_data.items():
-        if 2024 not in years:
+        if year not in years:
             continue
 
-        # Calculate 2024 margin
-        r24, d24 = years[2024]['top_r'], years[2024]['top_d']
+        # Calculate the latest margin (r24/d24 = latest, r22/d22 = the one before)
+        r24, d24 = years[year]['top_r'], years[year]['top_d']
         total24 = r24 + d24
         if total24 == 0:
             continue
@@ -4050,8 +4052,8 @@ def get_swing_analysis():
         trend = 0
         trend_valid = False
         margin22 = None
-        if 2022 in years:
-            r22, d22 = years[2022]['top_r'], years[2022]['top_d']
+        if prev in years:
+            r22, d22 = years[prev]['top_r'], years[prev]['top_d']
             total22 = r22 + d22
             contested22 = r22 > 0 and d22 > 0
             if total22 > 0:
@@ -4062,7 +4064,7 @@ def get_swing_analysis():
 
         # Calculate volatility - ONLY from contested races
         margins = []
-        for y in [2020, 2022, 2024]:
+        for y in [year - 4, prev, year]:
             if y in years:
                 r, d = years[y]['top_r'], years[y]['top_d']
                 t = r + d
@@ -4087,13 +4089,13 @@ def get_swing_analysis():
             # Get towns in this district
             towns = queries.get_district_towns(county, district, 'State Representative')
 
-            # Get the actual 2024 winners
-            winners = queries.get_district_winners(county, district, 'State Representative', 2024)
+            # Get the actual winners
+            winners = queries.get_district_winners(county, district, 'State Representative', year)
 
             swing_districts.append({
                 'county': county,
                 'district': district,
-                'seats': years[2024]['seats'],
+                'seats': years[year]['seats'],
                 'margin': round(margin24, 1),
                 'margin22': margin22,
                 'winner': winner24,
@@ -4127,6 +4129,8 @@ def get_swing_analysis():
                         if d['seats'] > 1 and abs(d['margin']) < 5]
 
     return {
+        'year': year,
+        'prev_year': prev,
         'swing_districts': swing_districts[:50],
         'high_flip': high_flip,
         'competitive_multi': competitive_multi,
@@ -4142,6 +4146,7 @@ def get_multi_seat_analysis():
     """
     conn = get_connection()
     cursor = conn.cursor()
+    latest = queries.last_general_year()
 
     # Get all multi-seat State Rep districts
     cursor.execute("""
@@ -4151,24 +4156,24 @@ def get_multi_seat_analysis():
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = 'State Representative'
         AND r.seats > 1
-        AND e.year = 2024
+        AND e.year = ?
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
-    """)
+    """, (latest,))
 
     districts = []
     for county, district, seats in cursor.fetchall():
         # Get candidate data for multiple years
         years_data = {}
-        for year in [2016, 2018, 2020, 2022, 2024]:
+        for year in range(latest - 10, latest + 1, 2):
             data = queries.get_district_candidates(county, district, 'State Representative', year)
             if data['candidates']:
                 years_data[year] = data
 
-        if 2024 not in years_data:
+        if latest not in years_data:
             continue
 
-        data_2024 = years_data[2024]
+        data_2024 = years_data[latest]
         candidates = data_2024['candidates']
         seats = data_2024['seats']
 
@@ -4266,7 +4271,7 @@ def get_correlation_analysis():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get town-level data for 2024
+    # Get town-level data for the latest general
     cursor.execute("""
         SELECT
             res.municipality,
@@ -4278,13 +4283,13 @@ def get_correlation_analysis():
         JOIN races r ON res.race_id = r.id
         JOIN elections e ON r.election_id = e.id
         JOIN offices o ON r.office_id = o.id
-        WHERE e.year = 2024
+        WHERE e.year = ?
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND c.party IN ('Republican', 'Democratic')
         GROUP BY res.municipality, o.name, c.party
-    """)
+    """, (queries.last_general_year(),))
 
     town_data = defaultdict(lambda: {'total_votes': 0, 'r_votes': 0, 'd_votes': 0})
     for row in cursor.fetchall():
