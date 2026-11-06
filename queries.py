@@ -657,6 +657,17 @@ def search_candidates(query):
         WHERE (c.name LIKE ? OR c.name_normalized LIKE ?)
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND e.election_type = 'general'
+        -- a candidate, not a name someone wrote in: 2026's sheets list every
+        -- write-in, so "Pappas" also found his one vote for County Sheriff.
+        -- Where the race has a roster (2026) the name must be on it; older
+        -- races have none, and there the candidate needs a party.
+        AND (EXISTS (SELECT 1 FROM race_candidates rc
+                      WHERE rc.race_id = r.id AND rc.candidate_id = c.id
+                      -- on the ballot (>= 0), or a write-in the SoS sheet names (-2)
+                      AND (IFNULL(rc.recruitment_filing_id, 0) >= 0
+                           OR rc.recruitment_filing_id = -2))
+             OR (IFNULL(c.party, '') != ''
+                 AND NOT EXISTS (SELECT 1 FROM race_candidates rc WHERE rc.race_id = r.id)))
     """, (f'%{query}%', f'%{query.upper()}%'))
 
     race_ids = [row[0] for row in cursor.fetchall()]
@@ -721,6 +732,10 @@ def search_candidates(query):
         race['candidates'].sort(key=lambda x: -x['votes'])
         for i, cand in enumerate(race['candidates']):
             cand['is_winner'] = i < race['seats']
+        race['candidates'] = fold_writeins(race['candidates'], race['seats'])
+        for cand in race['candidates']:
+            if cand['name'] == 'Write-in' and not cand.get('party'):
+                cand['is_match'] = False
         race_list.append(race)
 
     # Sort by year desc
