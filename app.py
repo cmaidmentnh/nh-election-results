@@ -1244,7 +1244,30 @@ def inject_event():
         return path + ('?' + q if q else '')
     other = 'primary' if ev['key'] == 'general' else 'general'
     other_href = '/results' + ('' if other == DEFAULT_EVENT else '?event=' + other)
-    return {'ev': ev, 'evq': evq, 'link': link, 'ev_other_href': other_href}
+    return {'ev': ev, 'evq': evq, 'link': link, 'ev_other_href': other_href,
+            'ev_final': _event_final(ev)}
+
+
+def _event_final(ev):
+    """True once every race of the event with votes in is certified by the
+    Secretary of State: the pages then say "final", not "unofficial, coming in"."""
+    def build():
+        conn = _contested_db()
+        try:
+            sql, args = _ev_sql(ev)
+            row = conn.execute(f"""
+                SELECT COUNT(*) AS n,
+                       SUM(CASE WHEN r.id IN (SELECT race_id FROM certified_races)
+                                  OR IFNULL(r.is_official, 0) = 1 THEN 1 ELSE 0 END) AS c
+                  FROM races r JOIN elections e ON e.id = r.election_id
+                 WHERE {sql} AND EXISTS (SELECT 1 FROM results res WHERE res.race_id = r.id)""",
+                args).fetchone()
+            return bool(row[0]) and row[0] == row[1]
+        except Exception:
+            return False
+        finally:
+            conn.close()
+    return _ref('event_final:' + ev['key'], build)
 
 
 @app.route('/contested')
@@ -1435,7 +1458,10 @@ def _place_general(cur, ev, kind, name, demo=False):
     race-wide call, because "who won" is the next question after "how did we
     vote"."""
     if kind == 'town':
-        munis = {name}
+        # A city votes by ward: /results/town/Keene is Keene Ward 1-5.
+        munis = {name} | {r['municipality'] for r in cur.execute(
+            "SELECT municipality FROM polling_places WHERE municipality LIKE ? || ' Ward %'",
+            (name,))}
     else:
         munis = {r['municipality'] for r in cur.execute(
             "SELECT municipality FROM polling_places WHERE county = ?", (name,))}
@@ -1606,6 +1632,8 @@ def _question_payload(cur, ev, munis=None):
                     t['reported'] += 1
                 t['yes'] += votes[p]['Yes']
                 t['no'] += votes[p]['No']
+            elif is_cert:
+                t['reported'] += 1  # certified: a place with no line had no voters
         for t in towns.values():
             n = t['yes'] + t['no']
             t['total'] = n
@@ -2490,13 +2518,18 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
 
     overall = {cid: 0 for cid in name_by_id}
     partial = {} if demo else _partial_towns(cur, ev)
+    # A certified race is complete: the Secretary of State's sheet simply has
+    # no line for a place where nobody voted (the unincorporated grants and
+    # purchases), so those are counted as in with zero votes, not as still out.
+    # Otherwise U.S. Senate sat at 298 of 316 and carried a "projected" total.
+    certified = race_id in _certified_races(cur)
     precincts = []
     for p in precs:
         v = by_prec.get(p, {})
         for cid, val in v.items():
             if cid in overall:
                 overall[cid] += val
-        precincts.append({'name': p, 'reported': p in by_prec,
+        precincts.append({'name': p, 'reported': p in by_prec or (certified and not demo),
                           'votes': {name_by_id[cid]: val for cid, val in v.items() if cid in name_by_id}})
         if p in by_prec and p in partial:
             precincts[-1]['partial'] = partial[p]['label']
@@ -2601,7 +2634,6 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
     # Donald Duck, Vermin Supreme, misspellings of real candidates. Adding them
     # counts those votes twice. The Democratic governor primary read 3,251
     # write-ins against a certified 2,150.
-    certified = race_id in _certified_races(cur)
     wi_votes = 0
     for p in reported:
         v = by_prec.get(p, {})

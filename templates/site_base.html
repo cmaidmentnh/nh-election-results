@@ -18,8 +18,9 @@
 
 <div class="ticker">
   <div class="w">
-    <span><span class="live-dot"></span><b id="tk-count">—</b> <span class="dim">of</span> <b id="tk-total">320</b> <span class="dim">polling places reporting</span></span>
-    <span class="dim" id="tk-when">Polls close 7:00 p.m.{% if not ev.is_primary %} · {{ ev.date_label }}{% endif %}</span>
+    <span>{% if not ev_final %}<span class="live-dot"></span>{% endif %}<b id="tk-count">—</b> <span class="dim">of</span> <b id="tk-total">320</b> <span class="dim">polling places reporting</span></span>
+    {% if ev_final %}<span class="dim">Final · certified by the Secretary of State</span>{% endif %}
+    <span class="dim" id="tk-when"{% if ev_final %} hidden{% endif %}>Polls close 7:00 p.m.{% if not ev.is_primary %} · {{ ev.date_label }}{% endif %}</span>
   </div>
 </div>
 
@@ -56,9 +57,14 @@
 
 <footer class="f">
   <div class="w">
+    {% if ev_final %}
+    <p><strong>Final results.</strong> Every race shows the Secretary of State's certified
+      figures. A recount, where one is scheduled, is noted on the race.</p>
+    {% else %}
     <p><strong>Unofficial results.</strong> Compiled from town clerks and reported by local
       volunteers as they come in. Projections are statistical estimates from the vote
       counted so far — not official calls.</p>
+    {% endif %}
     <p>Official certified results come from the
       <a href="https://www.sos.nh.gov/" rel="noopener">New Hampshire Secretary of State</a>.</p>
   </div>

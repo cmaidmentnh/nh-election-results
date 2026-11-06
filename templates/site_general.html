@@ -9,7 +9,8 @@
   <section class="lead">
     <div>
       <h1>{{ 'New Hampshire Election Results' if live_mode else 'New Hampshire General Election' }}</h1>
-      <p id="leadp">{% if live_mode %}One ballot, every party. Each race shows the vote counted so far,
+      <p id="leadp">{% if ev_final %}Final results, certified by the Secretary of State. One ballot,
+         every party; the chambers are counted in seats.{% elif live_mode %}One ballot, every party. Each race shows the vote counted so far,
          the projected total, and how likely the current order is to hold; the chambers
          are counted in seats.{% else %}Who is on the ballot on {{ ev.date_label }}. Results
          start here when the polls close at 7:00 p.m.{% endif %}</p>
