@@ -4602,20 +4602,36 @@ def get_county_race_detail(office, county, year, district=''):
         GROUP BY c.id ORDER BY v DESC
     """, (race_id,))
     candidates = [{'name': r['name'], 'party': r['party'], 'votes': r['v']} for r in cur.fetchall()]
-    total = sum(c['votes'] for c in candidates) or 1
     for i, c in enumerate(candidates):
         c['is_winner'] = i < seats
+    # one Write-in line, not a column per name written in
+    candidates = queries.fold_writeins(candidates, seats)
+    total = sum(c['votes'] for c in candidates) or 1
+    for c in candidates:
         c['pct'] = round(100.0 * c['votes'] / total, 1)
     names = [c['name'] for c in candidates]
+    shown = set(names) - {'Write-in'}
 
     cur.execute("""
         SELECT res.municipality, c.name, res.votes
         FROM results res JOIN candidates c ON c.id = res.candidate_id
         WHERE res.race_id = ? AND c.name NOT IN ('Undervotes','Overvotes','Write-Ins')
     """, (race_id,))
-    town_map = {}
+    town_map, wi_total, wi_named = {}, {}, {}
     for r in cur.fetchall():
-        town_map.setdefault(r['municipality'], {})[r['name']] = r['votes']
+        m, nm = r['municipality'], r['name']
+        town_map.setdefault(m, {})
+        if nm in shown:
+            town_map[m][nm] = r['votes']
+        elif nm.strip().lower() in queries.WRITEIN_TOTAL_LINES:
+            wi_total[m] = wi_total.get(m, 0) + r['votes']
+        elif nm.strip().lower() not in queries.NOT_A_VOTE_LINES:
+            wi_named[m] = wi_named.get(m, 0) + r['votes']
+    for m in town_map:
+        # the sheet's write-in total where the town has one; the names restate it
+        wi = wi_total[m] if m in wi_total else wi_named.get(m, 0)
+        if wi:
+            town_map[m]['Write-in'] = wi
     towns = []
     for muni in sorted(town_map):
         row_votes = town_map[muni]
@@ -4634,10 +4650,14 @@ def get_county_race_detail(office, county, year, district=''):
     """, (office, county, district))
     hist = {}
     for r in cur.fetchall():
-        hist.setdefault(r['yr'], []).append({'name': r['name'], 'party': r['party'], 'votes': r['v']})
+        hist.setdefault(r['yr'], []).append({'name': r['name'], 'party': r['party'], 'votes': r['v'],
+                                             'is_winner': not hist.get(r['yr'])})
     history = []
     for yr in sorted(hist, reverse=True):
-        cands = hist[yr]
+        # the write-in line is not an opponent: an unopposed sheriff is uncontested
+        cands = [c for c in queries.fold_writeins(hist[yr], 1) if c['name'] != 'Write-in']
+        if not cands:
+            continue
         win = cands[0]
         margin = (cands[0]['votes'] - cands[1]['votes']) if len(cands) > 1 else cands[0]['votes']
         tot = sum(c['votes'] for c in cands) or 1
@@ -4694,6 +4714,8 @@ def get_county_office_races(county, year=None):
                           'district': row['district'] or '', 'seats': row['seats'], 'candidates': []}
         races[key]['candidates'].append({'name': row['name'], 'party': row['party'],
                                          'votes': row['v'], 'is_winner': row['rk'] <= row['seats']})
+    for race in races.values():
+        race['candidates'] = queries.fold_writeins(race['candidates'], race['seats'])
     # years available for this county's offices
     cur.execute("""SELECT DISTINCT e.year FROM races r JOIN elections e ON e.id=r.election_id
                    WHERE r.county=? AND r.office_id IN (8,9,10,11,12,13) AND e.election_type='general'
