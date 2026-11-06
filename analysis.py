@@ -602,65 +602,68 @@ def get_party_control(year):
 
 
 def get_closest_races(year, limit=10):
-    """Get races with the smallest margins.
+    """Get races with the smallest margins at the seat that decided them.
 
-    Uses MAX (top vote-getter per party) to normalize for slate size in multi-member races.
+    The margin is between the last candidate elected and the first one out -
+    seat 2 of 2 in Cheshire 18, seat 10 of 10 in Rockingham 13 - since that
+    is the seat that could have gone the other way. Only seats where those two
+    are from different parties count: a gap between two Democrats moves no
+    seat. Totals are summed over every town first.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        WITH race_totals AS (
-            SELECT
-                r.id as race_id,
-                o.name as office,
-                r.district,
-                r.county,
-                r.seats,
-                MAX(CASE WHEN c.party = 'Republican' THEN res.votes ELSE 0 END) as r_votes,
-                MAX(CASE WHEN c.party = 'Democratic' THEN res.votes ELSE 0 END) as d_votes
-            -- Candidate totals across all towns first, so MAX picks the top candidate,
-            -- not the single largest town row.
-            FROM (SELECT race_id, candidate_id, SUM(votes) AS votes FROM results
-                  GROUP BY race_id, candidate_id) res
-            JOIN candidates c ON res.candidate_id = c.id
-            JOIN races r ON res.race_id = r.id
-            JOIN elections e ON r.election_id = e.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE e.year = ?
-            AND e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
-            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            GROUP BY r.id
-        )
-        SELECT
-            office, district, county,
-            r_votes, d_votes,
-            CASE WHEN r_votes + d_votes > 0
-                THEN ROUND((r_votes - d_votes) * 100.0 / (r_votes + d_votes), 1)
-                ELSE 0
-            END as margin
-        FROM race_totals
-        WHERE r_votes > 0 AND d_votes > 0
-        ORDER BY ABS(margin)
-        LIMIT ?
-    """, (year, limit))
+        SELECT r.id AS race_id, o.name AS office, r.district, r.county, r.seats,
+               c.name, c.party, SUM(res.votes) AS votes
+        FROM results res
+        JOIN candidates c ON res.candidate_id = c.id
+        JOIN races r ON res.race_id = r.id
+        JOIN elections e ON r.election_id = e.id
+        JOIN offices o ON r.office_id = o.id
+        WHERE e.year = ?
+        AND e.election_type = 'general'
+        AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
+        AND c.party IN ('Republican', 'Democratic', 'Libertarian', 'Constitution', 'Independent')
+        GROUP BY r.id, c.id
+    """, (year,))
+
+    races = {}
+    for row in cursor.fetchall():
+        race = races.setdefault(row['race_id'], {
+            'office': row['office'], 'district': row['district'], 'county': row['county'],
+            'seats': row['seats'] or 1, 'cands': []})
+        race['cands'].append((row['votes'] or 0, row['name'], row['party']))
+    conn.close()
 
     results = []
-    for row in cursor.fetchall():
-        office, district, county, r_votes, d_votes, margin = row
+    for race in races.values():
+        cands = sorted(race['cands'], reverse=True)
+        seats = race['seats']
+        if len(cands) <= seats:
+            continue
+        (w_votes, w_name, w_party), (l_votes, l_name, l_party) = cands[seats - 1], cands[seats]
+        if w_party == l_party or w_votes + l_votes == 0:
+            continue
+        gap = w_votes - l_votes
+        pct = gap * 100.0 / (w_votes + l_votes)
+        # Signed like the rest of the site: positive = the Republican side held it.
+        sign = 1 if w_party == 'Republican' else -1 if w_party == 'Democratic' else (
+            -1 if l_party == 'Republican' else 1)
+        county, district = race['county'], race['district']
         results.append({
-            'office': office,
+            'office': race['office'],
             'district': district,
             'county': county,
-            'r_votes': r_votes,
-            'd_votes': d_votes,
-            'margin': margin,
-            'label': f"{county} {district}" if county else (f"District {district}" if district else "Statewide")
+            'seats': seats,
+            'winner': w_name, 'winner_party': w_party,
+            'runner_up': l_name, 'runner_up_party': l_party,
+            'vote_gap': gap,
+            'margin': round(sign * pct, 2),
+            'label': f"{county} {district}" if county else (f"District {district}" if district else "Statewide"),
         })
-
-    conn.close()
-    return results
+    results.sort(key=lambda r: (abs(r['margin']), r['vote_gap']))
+    return results[:limit]
 
 
 def get_biggest_shifts(year1, year2, limit=10):

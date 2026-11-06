@@ -60,7 +60,7 @@
                 <h2>Battleground Districts</h2>
                 <a href="{{ url_for('districts_browser') }}" class="section-link">View all districts &rarr;</a>
             </div>
-            <p class="text-muted mb-2">{% if unofficial(latest_year) %}Closest races so far in {{ latest_year }} ({{ unofficial(latest_year) }}){% else %}Races decided by less than 5% in {{ latest_year }}{% endif %}</p>
+            <p class="text-muted mb-2">{% if unofficial(latest_year) %}Closest races so far in {{ latest_year }} ({{ unofficial(latest_year) }}){% else %}Closest seats in {{ latest_year }}: last winner against the first candidate out{% endif %}</p>
 
             <ul class="race-list">
                 {% for race in closest_races %}
@@ -68,10 +68,10 @@
                     <div class="race-header">
                         <span class="race-name">{{ race.label }}</span>
                         <span class="race-margin {% if race.margin > 0 %}r{% else %}d{% endif %}">
-                            {% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%
+                            {% if race.vote_gap is defined %}{{ race.winner_party[:1] }} by {{ "{:,}".format(race.vote_gap) }} vote{{ '' if race.vote_gap == 1 else 's' }}{% else %}{% if race.margin > 0 %}R+{% else %}D+{% endif %}{{ "%.1f"|format(race.margin|abs) }}%{% endif %}
                         </span>
                     </div>
-                    <div class="race-office">{{ race.office }}</div>
+                    <div class="race-office">{{ race.office }}{% if race.winner is defined %} &middot; {{ race.winner }} over {{ race.runner_up }}{% if race.seats > 1 %} for seat {{ race.seats }}{% endif %}{% endif %}</div>
                 </li>
                 {% endfor %}
             </ul>
