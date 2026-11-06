@@ -3207,6 +3207,7 @@ def get_all_districts_with_pvi(office):
     """
     conn = get_connection()
     cursor = conn.cursor()
+    latest = queries.last_general_year()  # the district's own race, for (U)
 
     # Get statewide baseline: R% across all contested races
     cursor.execute("""
@@ -3299,13 +3300,13 @@ def get_all_districts_with_pvi(office):
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = ?
-            AND e.year IN (2022, 2024)
+            AND e.year = ?
             AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND c.party IN ('Republican', 'Democratic')
             GROUP BY e.year, r.county, r.district, c.id
-        """, (office,))
+        """, (office, latest))
 
         # Get top vote-getter per party per district for margin calc
         district_results = defaultdict(lambda: defaultdict(lambda: {'top_r': 0, 'top_d': 0}))
@@ -3339,7 +3340,7 @@ def get_all_districts_with_pvi(office):
             trend = pvi_2024 - pvi_2022
 
             # Get State Rep race results for this district
-            res_2024 = district_results[(county, district)][2024]
+            res_2024 = district_results[(county, district)][latest]
             top_r = res_2024['top_r']
             top_d = res_2024['top_d']
             contested = top_r > 0 and top_d > 0
@@ -3355,7 +3356,8 @@ def get_all_districts_with_pvi(office):
                 'trend': idx['trend'] if idx else round(trend, 1),
                 'r_votes': top_r,
                 'd_votes': top_d,
-                'contested': contested
+                'contested': contested,
+                'towns': sorted(towns),
             })
 
         conn.close()
@@ -3432,11 +3434,11 @@ def get_all_districts_with_pvi(office):
             JOIN elections e ON r.election_id = e.id
             JOIN offices o ON r.office_id = o.id
             WHERE o.name = ?
-            AND e.year IN (2022, 2024)
+            AND e.year = ?
             AND e.election_type = 'general'
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             GROUP BY e.year, r.district
-        """, (office,))
+        """, (office, latest))
         own_race = defaultdict(dict)
         for year, district, r_votes, d_votes in cursor.fetchall():
             own_race[district][year] = {'r': r_votes or 0, 'd': d_votes or 0}
@@ -3490,10 +3492,11 @@ def get_all_districts_with_pvi(office):
                 'pvi': idx['pvi'] if idx else round(pvi_2024, 1),
                 'rating': idx['rating'] if idx else None,
                 'trend': idx['trend'] if idx else round(trend, 1),
-                'r_votes': own_race.get(district, {}).get(2024, {}).get('r', 0),
-                'd_votes': own_race.get(district, {}).get(2024, {}).get('d', 0),
-                'contested': (own_race.get(district, {}).get(2024, {}).get('r', 0) > 0
-                              and own_race.get(district, {}).get(2024, {}).get('d', 0) > 0)
+                'r_votes': own_race.get(district, {}).get(latest, {}).get('r', 0),
+                'd_votes': own_race.get(district, {}).get(latest, {}).get('d', 0),
+                'contested': (own_race.get(district, {}).get(latest, {}).get('r', 0) > 0
+                              and own_race.get(district, {}).get(latest, {}).get('d', 0) > 0),
+                'towns': sorted(sw_towns.get(district, ())),
             })
 
     conn.close()
