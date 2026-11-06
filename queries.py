@@ -22,6 +22,44 @@ LAST_GENERAL_YEAR_SQL = ("(SELECT MAX(eg.year) FROM elections eg WHERE eg.electi
                          " OR rg.id IN (SELECT race_id FROM certified_races)))))")
 
 
+# Lines on a return that are not a person: the sheet's write-in total, and the
+# ballots it could not count (not a vote for anyone, so never shown).
+WRITEIN_TOTAL_LINES = ('write-in', 'write-ins', 'write in', 'writein', 'scattering')
+NOT_A_VOTE_LINES = ('invalid', 'unadjudicated')
+
+
+def fold_writeins(candidates, seats, name='name', votes='votes', party='party',
+                  winner='is_winner'):
+    """One "Write-in" line instead of every name a voter wrote.
+
+    2026's sheets list each write-in name (Mickey Mouse, Donald Duck, ...)
+    with no party beside the WRITE-INS total, and the history pages printed
+    all seventy of them under the Governor. The names restate the total -
+    adding both counts them twice - so the line is the total where the race
+    has one and the names' sum where it does not, as the results site does.
+    A party-less name stays only if it actually won a seat. `candidates` are
+    dicts sorted by votes."""
+    kept, line, total, named, seen_total = [], None, 0, 0, False
+    for c in candidates:
+        nm = (c.get(name) or '').strip().lower()
+        if nm in NOT_A_VOTE_LINES:
+            continue
+        if not c.get(party) and (nm in WRITEIN_TOTAL_LINES or not c.get(winner)):
+            if line is None:
+                line = {**c, name: 'Write-in', winner: False}
+            if nm in WRITEIN_TOTAL_LINES:
+                seen_total = True
+                total += c.get(votes) or 0
+            else:
+                named += c.get(votes) or 0
+            continue
+        kept.append(c)
+    if line is not None and (total if seen_total else named):
+        line[votes] = total if seen_total else named
+        kept.append(line)
+    return kept
+
+
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -129,10 +167,10 @@ def get_statewide_district_results(office, district):
         ORDER BY e.year DESC, votes DESC
     """, (office, district))
 
-    results = []
+    by_year = {}
     for row in cursor.fetchall():
         year, seats, name, party, votes, rank = row
-        results.append({
+        by_year.setdefault(year, []).append({
             'year': year,
             'seats': seats,
             'name': name,
@@ -142,7 +180,8 @@ def get_statewide_district_results(office, district):
         })
 
     conn.close()
-    return results
+    return [c for year in sorted(by_year, reverse=True)
+            for c in fold_writeins(by_year[year], by_year[year][0]['seats'])]
 
 
 def get_towns_in_statewide_district(office, district):
@@ -427,9 +466,9 @@ def get_district_results(county, district, office='State Representative'):
         ORDER BY year DESC, total_votes DESC
     """, (county, str(district), office))
 
-    results = []
+    by_year = {}
     for row in cursor.fetchall():
-        results.append({
+        by_year.setdefault(row['year'], []).append({
             'year': row['year'],
             'seats': row['seats'],
             'candidate': row['candidate'],
@@ -440,7 +479,9 @@ def get_district_results(county, district, office='State Representative'):
         })
 
     conn.close()
-    return results
+    return [c for year in sorted(by_year, reverse=True)
+            for c in fold_writeins(by_year[year], by_year[year][0]['seats'],
+                                   name='candidate', votes='total_votes')]
 
 
 def get_district_towns(county, district, office='State Representative'):

@@ -1863,6 +1863,10 @@ def get_office_results(office):
 
     conn.close()
 
+    for data in by_year.values():
+        for race in data['races']:
+            race['candidates'] = queries.fold_writeins(race['candidates'], race['seats'])
+
     # Calculate margins per year
     for year, data in by_year.items():
         total = data['total_r_votes'] + data['total_d_votes']
@@ -1982,6 +1986,7 @@ def get_office_year_results(office, year):
 
     # Calculate margin for each race and add towns
     for race in races:
+        race['candidates'] = queries.fold_writeins(race['candidates'], race['seats'])
         total = race['top_r'] + race['top_d']
         if total > 0:
             race['margin'] = round((race['top_r'] - race['top_d']) / total * 100, 1)
