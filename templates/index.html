@@ -185,7 +185,7 @@
                 <div class="party-control-row">
                     <span class="party-control-label">House</span>
                     <span class="party-control-value">
-                        <span class="r">{{ h.R }}</span>-<span class="d">{{ h.D }}</span>
+                        <span class="r">{{ h.R }}</span>-<span class="d">{{ h.D }}</span>{% if h.Other %}-<span title="Independent / other">{{ h.Other }}</span>{% endif %}
                     </span>
                 </div>
                 {% endif %}
