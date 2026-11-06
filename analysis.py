@@ -2324,6 +2324,7 @@ def get_districts_map_data(year=None, metric='margin'):
             SELECT
                 res.municipality,
                 r.id as race_id,
+                c.id as cand_id,
                 c.party,
                 SUM(res.votes) as votes
             FROM results res
@@ -2337,17 +2338,25 @@ def get_districts_map_data(year=None, metric='margin'):
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
             AND res.municipality IS NOT NULL
             AND c.party IN ('Republican', 'Democratic')
-            GROUP BY res.municipality, r.id, c.name, c.party
+            GROUP BY res.municipality, r.id, c.id, c.party
         """)
 
-        # Group by town and race, then find top vote-getter per party
-        town_race_candidates = defaultdict(lambda: defaultdict(list))
-        for muni, race_id, party, votes in cursor.fetchall():
+        # Group by town and race, then find top vote-getter per party. A
+        # city's wards add up per candidate first; taking the max over ward
+        # rows picked the biggest single ward.
+        town_race_cand = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [None, 0])))
+        for muni, race_id, cand_id, party, votes in cursor.fetchall():
             if ' Ward ' in muni:
                 base = muni[:muni.index(' Ward ')]
             else:
                 base = muni
-            town_race_candidates[base][race_id].append({'party': party, 'votes': votes})
+            entry = town_race_cand[base][race_id][cand_id]
+            entry[0] = party
+            entry[1] += votes
+        town_race_candidates = {
+            town: {race_id: [{'party': p, 'votes': v} for p, v in cands.values()]
+                   for race_id, cands in races.items()}
+            for town, races in town_race_cand.items()}
 
         # Calculate total using top vote-getter per party per race
         house_town_votes = defaultdict(lambda: {'r': 0, 'd': 0})
@@ -2463,6 +2472,7 @@ def get_districts_map_data(year=None, metric='margin'):
             AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
             AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
+            AND IFNULL(c.party, '') != ''  -- write-in lines are not a seat
             GROUP BY r.county, r.district, c.name, c.party
             ORDER BY r.county, r.district, votes DESC
         """)
