@@ -67,19 +67,23 @@ def get_connection():
 
 
 def get_all_towns():
-    """Get list of all municipalities."""
+    """Get list of all municipalities: today's polling places that have ever
+    had a vote, plus each ward city as a whole ("Manchester" beside its wards).
+
+    Reading the names straight out of results listed every spelling an old
+    sheet used (Bean's Grant / Beans Grant, Croyden, Wasington, county-name
+    rows like "Coos") and no city at all, only its wards."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT DISTINCT municipality
-        FROM results
-        WHERE municipality NOT GLOB '[0-9]*'
-        AND municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
-        ORDER BY municipality
+        SELECT municipality FROM polling_places p
+        WHERE EXISTS (SELECT 1 FROM results res
+                      WHERE res.municipality = p.municipality AND res.votes > 0)
     """)
-    towns = [row[0] for row in cursor.fetchall()]
+    towns = {row[0] for row in cursor.fetchall()}
+    towns |= {t.split(' Ward ')[0] for t in towns if ' Ward ' in t}
     conn.close()
-    return towns
+    return sorted(towns)
 
 
 def get_all_counties():
