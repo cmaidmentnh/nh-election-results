@@ -11,9 +11,15 @@ DB_PATH = Path(__file__).parent / "nh_elections.db"
 # The last general election that is over. A general's elections row exists
 # months before its votes do (2026's was created in September), so a bare
 # MAX(year) pointed every district page at an empty year: 0 towns, blank map.
-# History pages want the last finished general, i.e. one before this year.
-LAST_GENERAL_YEAR_SQL = ("(SELECT MAX(year) FROM elections WHERE election_type = 'general'"
-                         " AND year < CAST(strftime('%Y', 'now') AS INTEGER))")
+# History pages want the last finished general: one before this year, or this
+# year's once the Secretary of State's certified figures are in (a race marked
+# official or listed in certified_races). Without that second half every
+# district page kept showing 2024's towns and map after 2026 was certified.
+LAST_GENERAL_YEAR_SQL = ("(SELECT MAX(eg.year) FROM elections eg WHERE eg.election_type = 'general'"
+                         " AND (eg.year < CAST(strftime('%Y', 'now') AS INTEGER)"
+                         " OR EXISTS (SELECT 1 FROM races rg WHERE rg.election_id = eg.id"
+                         " AND (IFNULL(rg.is_official, 0) = 1"
+                         " OR rg.id IN (SELECT race_id FROM certified_races)))))")
 
 
 def get_connection():
@@ -153,8 +159,7 @@ def get_towns_in_statewide_district(office, district):
         JOIN offices o ON r.office_id = o.id
         WHERE o.name = ?
         AND r.district = ?
-        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general'
-                      AND year < CAST(strftime('%Y', 'now') AS INTEGER))
+        AND e.year = """ + LAST_GENERAL_YEAR_SQL + """
         AND e.election_type = 'general'
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
@@ -453,8 +458,7 @@ def get_district_towns(county, district, office='State Representative'):
         WHERE r.county = ?
         AND r.district = ?
         AND o.name = ?
-        AND e.year = (SELECT MAX(year) FROM elections WHERE election_type = 'general'
-                      AND year < CAST(strftime('%Y', 'now') AS INTEGER))
+        AND e.year = """ + LAST_GENERAL_YEAR_SQL + """
         AND e.election_type = 'general'
         AND res.municipality NOT GLOB '[0-9]*'
         AND res.municipality NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'TOTALS', 'Court ordered recount', 'court ordered recount')
