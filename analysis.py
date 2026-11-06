@@ -3824,43 +3824,17 @@ def get_bellwether_analysis():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get House seats won by party for each year
-    # Winners are top N candidates by total votes where N = seats
-    cursor.execute("""
-        WITH race_totals AS (
-            SELECT
-                r.id as race_id,
-                e.year,
-                c.id as candidate_id,
-                c.party,
-                r.seats,
-                SUM(res.votes) as total_votes,
-                RANK() OVER (PARTITION BY r.id ORDER BY SUM(res.votes) DESC) as rank
-            FROM results res
-            JOIN candidates c ON res.candidate_id = c.id
-            JOIN races r ON res.race_id = r.id
-            JOIN elections e ON r.election_id = e.id
-            JOIN offices o ON r.office_id = o.id
-            WHERE e.election_type = 'general'
-            AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
-            AND o.name = 'State Representative'
-            AND c.party IN ('Republican', 'Democratic')
-            AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-            GROUP BY r.id, c.id
-        )
-        SELECT year, party, COUNT(*) as seats_won
-        FROM race_totals
-        WHERE rank <= seats
-        GROUP BY year, party
-    """)
-
+    # House seats won by party each year, counted the way the homepage counts
+    # them (get_party_control). Counting only R and D candidates handed the
+    # 2026 independent's seat to the next Republican: 108-292 instead of 107-292-1.
+    cursor.execute("""SELECT DISTINCT year FROM elections WHERE election_type = 'general'""")
     house_control = {}
-    seats_by_year = defaultdict(lambda: {'R': 0, 'D': 0})
-    for year, party, seats in cursor.fetchall():
-        p = 'R' if party == 'Republican' else 'D'
-        seats_by_year[year][p] = seats
-
-    for year, seats in seats_by_year.items():
+    seats_by_year = {}
+    for (year,) in cursor.fetchall():
+        seats = get_party_control(year).get('State Representative')
+        if not seats:
+            continue
+        seats_by_year[year] = seats
         house_control[year] = 'R' if seats['R'] > seats['D'] else 'D'
 
     # Get statewide State Rep vote totals by year
