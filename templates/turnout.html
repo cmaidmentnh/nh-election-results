@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Turnout Analysis</h1>
-    <p class="subtitle">Presidential election turnout trends 2016-2024</p>
+    <p class="subtitle">General election turnout, {{ data.years[0] }}-{{ data.years[-1] }}</p>
 </div>
 
 <div class="metrics">
@@ -21,13 +21,13 @@
 <div class="two-col">
     <div class="main-content">
         <div class="section">
-            <h2>Biggest Turnout Gains (2020 &rarr; 2024)</h2>
+            <h2>Biggest Turnout Gains ({{ data.from_year }} &rarr; {{ data.to_year }})</h2>
             <table>
                 <thead>
                     <tr>
                         <th>Town</th>
-                        <th class="text-right">2020</th>
-                        <th class="text-right">2024</th>
+                        <th class="text-right">{{ data.from_year }}</th>
+                        <th class="text-right">{{ data.to_year }}</th>
                         <th class="text-right">Change</th>
                         <th class="text-right">% Change</th>
                     </tr>
@@ -36,8 +36,8 @@
                     {% for t in data.biggest_gains %}
                     <tr>
                         <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
-                        <td class="text-right">{{ "{:,}".format(t.votes_2020) }}</td>
-                        <td class="text-right">{{ "{:,}".format(t.votes_2024) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_from) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_to) }}</td>
                         <td class="text-right" style="color: green;">+{{ "{:,}".format(t.change) }}</td>
                         <td class="text-right" style="color: green;">+{{ t.pct_change }}%</td>
                     </tr>
@@ -47,13 +47,13 @@
         </div>
 
         <div class="section">
-            <h2>Biggest Turnout Losses (2020 &rarr; 2024)</h2>
+            <h2>Biggest Turnout Losses ({{ data.from_year }} &rarr; {{ data.to_year }})</h2>
             <table>
                 <thead>
                     <tr>
                         <th>Town</th>
-                        <th class="text-right">2020</th>
-                        <th class="text-right">2024</th>
+                        <th class="text-right">{{ data.from_year }}</th>
+                        <th class="text-right">{{ data.to_year }}</th>
                         <th class="text-right">Change</th>
                         <th class="text-right">% Change</th>
                     </tr>
@@ -62,8 +62,8 @@
                     {% for t in data.biggest_losses %}
                     <tr>
                         <td><a href="{{ url_for('town', name=t.town) }}">{{ t.town }}</a></td>
-                        <td class="text-right">{{ "{:,}".format(t.votes_2020) }}</td>
-                        <td class="text-right">{{ "{:,}".format(t.votes_2024) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_from) }}</td>
+                        <td class="text-right">{{ "{:,}".format(t.votes_to) }}</td>
                         <td class="text-right" style="color: #8b0000;">{{ "{:,}".format(t.change) }}</td>
                         <td class="text-right" style="color: #8b0000;">{{ t.pct_change }}%</td>
                     </tr>
@@ -76,7 +76,7 @@
     <aside class="sidebar">
         <div class="sidebar-section">
             <h3>About This Data</h3>
-            <p class="text-muted">Turnout is measured by total votes cast in presidential races, which typically have the highest participation.</p>
+            <p class="text-muted">Turnout is ballots cast as reported by the Secretary of State. Where a place has no ballots-cast figure (as for many places in 2026), its largest race total is used instead. Town changes compare the latest general with the one four years before it, presidential with presidential and midterm with midterm.</p>
         </div>
 
         <div class="sidebar-section">

@@ -1644,53 +1644,81 @@ def get_town_representation(town):
 
 # ============== NEW ANALYSIS FUNCTIONS ==============
 
-def get_turnout_analysis():
-    """
-    Analyze turnout trends across towns and years using official ballots cast data.
-    Returns towns with biggest turnout changes, overall trends, etc.
-    """
-    conn = get_connection()
-    cursor = conn.cursor()
+def _ballots_cast_rows(cursor):
+    """[(year, municipality, ballots)] for every general, one row per polling place.
 
-    # Get turnout by town and year from voter_registration table (ballots_cast)
+    Ballots cast come from voter_registration. Where a place has no figure
+    there - 2026's sheet has none for 98 of 316 places, Manchester's wards
+    among them, which put 2026 turnout at 505,861 - the place's largest
+    single-seat race total stands in for it (it reads a little under ballots
+    cast, by the voters who skipped every such race)."""
     cursor.execute("""
-        SELECT
-            v.municipality as town,
-            e.year,
-            v.ballots_cast
+        SELECT e.year, v.municipality, v.ballots_cast
         FROM voter_registration v
         JOIN elections e ON v.election_id = e.id
         WHERE e.election_type = 'general'
         AND v.ballots_cast > 0
-        ORDER BY v.municipality, e.year
     """)
+    cast = {(y, m): b for y, m, b in cursor.fetchall() if m}
+    # Only a year whose sheet is missing places gets filled in, and only for
+    # today's polling places, whose names match the results (older years'
+    # sheets spell towns their own way, and a fill there would count twice).
+    places = {r[0] for r in cursor.execute("SELECT municipality FROM polling_places")}
+    have = defaultdict(int)
+    for (y, _m) in cast:
+        have[y] += 1
+    cursor.execute("""
+        SELECT year, municipality, MAX(total) FROM (
+            SELECT e.year, res.municipality, SUM(res.votes) AS total
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN candidates c ON res.candidate_id = c.id
+            WHERE e.election_type = 'general'
+            AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')
+            AND IFNULL(r.seats, 1) = 1  -- a 10-seat race's total is ten votes a voter
+            AND c.name NOT IN ('Undervotes', 'Overvotes')
+            GROUP BY e.year, r.id, res.municipality)
+        GROUP BY year, municipality
+    """)
+    for y, m, total in cursor.fetchall():
+        if (total and m in places and (y, m) not in cast
+                and have[y] < 0.9 * len(places)):
+            cast[(y, m)] = total
+    return [(y, m, b) for (y, m), b in cast.items()]
+
+
+def get_turnout_analysis():
+    """
+    Analyze turnout trends across towns and years using official ballots cast data.
+    Returns towns with biggest turnout changes, overall trends, etc.
+    Town changes compare the latest general with the one four years before it,
+    so a midterm is measured against a midterm.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
 
     town_turnout = defaultdict(dict)
-    for row in cursor.fetchall():
-        town, year, ballots = row
-        if not town:
-            continue
+    for year, town, ballots in sorted(_ballots_cast_rows(cursor)):
         # Normalize ward names to town names
         if ' Ward ' in town:
-            base_town = town[:town.index(' Ward ')]
-            if base_town not in town_turnout or year not in town_turnout[base_town]:
-                town_turnout[base_town][year] = 0
-            town_turnout[base_town][year] += ballots
-        else:
-            town_turnout[town][year] = ballots
+            town = town[:town.index(' Ward ')]
+        town_turnout[town][year] = town_turnout[town].get(year, 0) + ballots
+
+    years = sorted({y for by_year in town_turnout.values() for y in by_year})
+    to_year = years[-1] if years else None
+    from_year = to_year - 4 if to_year and (to_year - 4) in years else None
 
     # Calculate changes
-    years = [2016, 2018, 2020, 2022, 2024]
     turnout_changes = []
-
     for town, by_year in town_turnout.items():
-        if 2020 in by_year and 2024 in by_year:
-            change = by_year[2024] - by_year[2020]
-            pct_change = (change / by_year[2020] * 100) if by_year[2020] > 0 else 0
+        if from_year in by_year and to_year in by_year:
+            change = by_year[to_year] - by_year[from_year]
+            pct_change = (change / by_year[from_year] * 100) if by_year[from_year] > 0 else 0
             turnout_changes.append({
                 'town': town,
-                'votes_2020': by_year.get(2020, 0),
-                'votes_2024': by_year.get(2024, 0),
+                'votes_from': by_year[from_year],
+                'votes_to': by_year[to_year],
                 'change': change,
                 'pct_change': round(pct_change, 1)
             })
@@ -1702,8 +1730,7 @@ def get_turnout_analysis():
     # Statewide totals
     statewide = {}
     for year in years:
-        total = sum(by_year.get(year, 0) for by_year in town_turnout.values())
-        statewide[year] = total
+        statewide[year] = sum(by_year.get(year, 0) for by_year in town_turnout.values())
 
     conn.close()
 
@@ -1712,7 +1739,9 @@ def get_turnout_analysis():
         'biggest_gains': biggest_gains,
         'biggest_losses': biggest_losses,
         'statewide': statewide,
-        'years': years
+        'years': years,
+        'from_year': from_year,
+        'to_year': to_year,
     }
 
 
@@ -3588,21 +3617,10 @@ def get_turnout_patterns():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get ballots cast from voter_registration table
-    cursor.execute("""
-        SELECT
-            e.year,
-            v.municipality,
-            v.ballots_cast
-        FROM voter_registration v
-        JOIN elections e ON v.election_id = e.id
-        WHERE e.election_type = 'general'
-        AND v.ballots_cast > 0
-    """)
-
+    # Ballots cast per polling place (see _ballots_cast_rows for the 2026 gaps)
     # Organize by town (aggregating wards into cities)
     town_data = defaultdict(lambda: defaultdict(int))
-    for year, muni, ballots in cursor.fetchall():
+    for year, muni, ballots in _ballots_cast_rows(cursor):
         if ' Ward ' in muni:
             muni = muni[:muni.index(' Ward ')]
         town_data[muni][year] += ballots
