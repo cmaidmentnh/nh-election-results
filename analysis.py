@@ -2162,48 +2162,52 @@ def get_incumbent_analysis():
 
         return incumbents
 
-    # Find incumbents for each cycle
-    incumbents_2024 = find_incumbents(2022, 2024)
-    incumbents_2022 = find_incumbents(2020, 2022)
-    incumbents_2020 = find_incumbents(2018, 2020)
+    # Find incumbents for the latest cycle and the two before it
+    latest = queries.last_general_year()
+    incumbents_latest = find_incumbents(latest - 2, latest)
+    history = []
+    for y in (latest, latest - 2, latest - 4):
+        inc = incumbents_latest if y == latest else find_incumbents(y - 2, y)
+        if inc:
+            won = sum(1 for i in inc if i['won_reelection'])
+            history.append({'year': y, 'won': won, 'lost': len(inc) - won, 'total': len(inc)})
 
-    # Build repeat candidates list (for display)
-    repeat_candidates = []
-    seen = set()
-    for year in sorted(results_by_year.keys(), reverse=True):
+    # Most experienced: every general race each person ran in, by name and
+    # party. Party-less lines are write-ins (2026 lists each name written in),
+    # and a bare surname (how the older House sheets print candidates) would
+    # pool every Smith in the state into one record, so both are left out.
+    runs = {}
+    for year in sorted(results_by_year):
         for r in results_by_year[year]:
-            key = (r['lastname'], r['party'])
-            if key not in seen:
-                seen.add(key)
-                repeat_candidates.append({
-                    'name': r['name'],
-                    'party': r['party'],
-                    'office': r['office'],
-                    'district': r['district'],
-                    'county': r['county']
-                })
+            if not r['party'] or ' ' not in r['name'].strip():
+                continue
+            c = runs.setdefault((r['name'].upper(), r['party']),
+                                {'name': r['name'], 'party': r['party'], 'total_races': 0,
+                                 'wins': 0, 'years': []})
+            c['total_races'] += 1
+            c['wins'] += r['won']
+            if year not in c['years']:
+                c['years'].append(year)
+    repeat_candidates = sorted((c for c in runs.values() if c['total_races'] > 1),
+                               key=lambda c: (-c['total_races'], -c['wins'], c['name']))
+    for c in repeat_candidates:
+        c['win_rate'] = round(100 * c['wins'] / c['total_races'])
 
-    repeat_candidates = repeat_candidates[:100]  # Limit
+    won = sum(1 for i in incumbents_latest if i['won_reelection'])
 
-    # Calculate incumbent stats
-    inc_2024_won = sum(1 for i in incumbents_2024 if i['won_reelection'])
-    inc_2024_lost = len(incumbents_2024) - inc_2024_won
-    inc_2022_won = sum(1 for i in incumbents_2022 if i['won_reelection'])
-    inc_2022_lost = len(incumbents_2022) - inc_2022_won
-    inc_2020_won = sum(1 for i in incumbents_2020 if i['won_reelection'])
-    inc_2020_lost = len(incumbents_2020) - inc_2020_won
-
-    # Sort incumbents_2024 - lost first, then by name
-    incumbents_2024.sort(key=lambda x: (x['won_reelection'], x['name']))
+    # Sort - lost first, then by name
+    incumbents_latest.sort(key=lambda x: (x['won_reelection'], x['name']))
 
     return {
+        'year': latest,
+        'prev_year': latest - 2,
+        'first_year': min(results_by_year) if results_by_year else None,
         'repeat_candidates': repeat_candidates[:100],
         'total_repeat': len(repeat_candidates),
-        'incumbents_2024': incumbents_2024,
-        'incumbents_won_2024': inc_2024_won,
-        'incumbents_lost_2024': inc_2024_lost,
-        'incumbents_2022': {'won': inc_2022_won, 'lost': inc_2022_lost, 'total': len(incumbents_2022)},
-        'incumbents_2020': {'won': inc_2020_won, 'lost': inc_2020_lost, 'total': len(incumbents_2020)}
+        'incumbents_latest': incumbents_latest,
+        'incumbents_won': won,
+        'incumbents_lost': len(incumbents_latest) - won,
+        'history': history,
     }
 
 

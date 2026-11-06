@@ -10,24 +10,24 @@
 </div>
 
 <div class="section">
-    <h2>2024 Incumbent Re-Election</h2>
-    <p class="text-muted mb-2">Incumbents = candidates who won in 2022 and ran again in 2024</p>
+    <h2>{{ data.year }} Incumbent Re-Election</h2>
+    <p class="text-muted mb-2">Incumbents = candidates who won in {{ data.prev_year }} and ran again in {{ data.year }}</p>
 
     <div class="metrics">
         <div class="metric">
-            <div class="metric-value">{{ data.incumbents_won_2024 + data.incumbents_lost_2024 }}</div>
+            <div class="metric-value">{{ data.incumbents_won + data.incumbents_lost }}</div>
             <div class="metric-label">Total Incumbents</div>
         </div>
         <div class="metric">
-            <div class="metric-value" style="color: var(--color-safe);">{{ data.incumbents_won_2024 }}</div>
+            <div class="metric-value" style="color: var(--color-safe);">{{ data.incumbents_won }}</div>
             <div class="metric-label">Won Re-Election</div>
         </div>
         <div class="metric">
-            <div class="metric-value" style="color: var(--color-danger);">{{ data.incumbents_lost_2024 }}</div>
+            <div class="metric-value" style="color: var(--color-danger);">{{ data.incumbents_lost }}</div>
             <div class="metric-label">Lost Re-Election</div>
         </div>
         <div class="metric">
-            <div class="metric-value">{% if data.incumbents_won_2024 + data.incumbents_lost_2024 > 0 %}{{ "%.1f"|format(data.incumbents_won_2024 / (data.incumbents_won_2024 + data.incumbents_lost_2024) * 100) }}%{% else %}N/A{% endif %}</div>
+            <div class="metric-value">{% if data.incumbents_won + data.incumbents_lost > 0 %}{{ "%.1f"|format(data.incumbents_won / (data.incumbents_won + data.incumbents_lost) * 100) }}%{% else %}N/A{% endif %}</div>
             <div class="metric-label">Re-Election Rate</div>
         </div>
     </div>
@@ -35,10 +35,10 @@
 
 <div class="two-col">
     <div class="main-content">
-        {% if data.incumbents_lost_2024 > 0 %}
+        {% if data.incumbents_lost > 0 %}
         <div class="section">
-            <h2>Incumbents Who Lost in 2024</h2>
-            <p class="text-muted mb-2">These candidates won in 2022 but lost their re-election bid in 2024</p>
+            <h2>Incumbents Who Lost in {{ data.year }}</h2>
+            <p class="text-muted mb-2">These candidates won in {{ data.prev_year }} but lost their re-election bid in {{ data.year }}</p>
 
             <table>
                 <thead>
@@ -50,7 +50,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for c in data.incumbents_2024 if not c.won_reelection %}
+                    {% for c in data.incumbents_latest if not c.won_reelection %}
                     <tr>
                         <td>
                             <a href="{{ url_for('candidates') }}?q={{ c.name }}">{{ c.name }}</a>
@@ -93,38 +93,22 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% for h in data.history %}
                     <tr>
-                        <td><strong>2024</strong></td>
-                        <td class="text-right">{{ data.incumbents_won_2024 + data.incumbents_lost_2024 }}</td>
-                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_won_2024 }}</td>
-                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_lost_2024 }}</td>
-                        <td class="text-right">{% if data.incumbents_won_2024 + data.incumbents_lost_2024 > 0 %}{{ "%.1f"|format(data.incumbents_won_2024 / (data.incumbents_won_2024 + data.incumbents_lost_2024) * 100) }}%{% else %}N/A{% endif %}</td>
+                        <td>{% if loop.first %}<strong>{{ h.year }}</strong>{% else %}{{ h.year }}{% endif %}</td>
+                        <td class="text-right">{{ h.total }}</td>
+                        <td class="text-right" style="color: var(--color-safe);">{{ h.won }}</td>
+                        <td class="text-right" style="color: var(--color-danger);">{{ h.lost }}</td>
+                        <td class="text-right">{% if h.total > 0 %}{{ "%.1f"|format(h.won / h.total * 100) }}%{% else %}N/A{% endif %}</td>
                     </tr>
-                    {% if data.incumbents_2022 %}
-                    <tr>
-                        <td>2022</td>
-                        <td class="text-right">{{ data.incumbents_2022.total }}</td>
-                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_2022.won }}</td>
-                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_2022.lost }}</td>
-                        <td class="text-right">{% if data.incumbents_2022.total > 0 %}{{ "%.1f"|format(data.incumbents_2022.won / data.incumbents_2022.total * 100) }}%{% else %}N/A{% endif %}</td>
-                    </tr>
-                    {% endif %}
-                    {% if data.incumbents_2020 %}
-                    <tr>
-                        <td>2020</td>
-                        <td class="text-right">{{ data.incumbents_2020.total }}</td>
-                        <td class="text-right" style="color: var(--color-safe);">{{ data.incumbents_2020.won }}</td>
-                        <td class="text-right" style="color: var(--color-danger);">{{ data.incumbents_2020.lost }}</td>
-                        <td class="text-right">{% if data.incumbents_2020.total > 0 %}{{ "%.1f"|format(data.incumbents_2020.won / data.incumbents_2020.total * 100) }}%{% else %}N/A{% endif %}</td>
-                    </tr>
-                    {% endif %}
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
 
         <div class="section">
             <h2>Most Experienced Candidates</h2>
-            <p class="text-muted mb-2">Candidates who have run in the most elections (2016-2024)</p>
+            <p class="text-muted mb-2">Candidates who have run in the most general-election races ({{ data.first_year }}-{{ data.year }})</p>
 
             <table>
                 <thead>
