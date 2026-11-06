@@ -2248,7 +2248,7 @@ def get_districts_map_data(year=None, metric='margin'):
     Get district data keyed by district code for the map.
 
     Args:
-        year: Election year (2016, 2018, 2020, 2022, 2024) or None for average
+        year: Election year (2016 ... 2026) or None for average
         metric: 'margin' for vote margin, 'pvi' for partisan lean
 
     Returns data for all district types:
@@ -2272,10 +2272,10 @@ def get_districts_map_data(year=None, metric='margin'):
 
     # Determine years to query
     if year:
-        years = [int(year)]
-        year_clause = f"e.year = {year}"
+        years = [int(year)]  # also keeps the request value out of the SQL
+        year_clause = f"e.year = {years[0]}"
     else:
-        years = [2016, 2018, 2020, 2022, 2024]
+        years = [2016, 2018, 2020, 2022, 2024, 2026]
         year_clause = f"e.year IN ({','.join(str(y) for y in years)})"
 
     # House districts - need special handling for multi-seat

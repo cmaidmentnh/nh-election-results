@@ -1009,7 +1009,7 @@ def api_question(n):
 @app.route('/map')
 def election_map():
     """Interactive election map."""
-    year = request.args.get('year', 2024, type=int)
+    year = request.args.get('year', queries.last_general_year(), type=int)
     metric = request.args.get('metric', 'pvi')  # pvi, margin, turnout
     return render_template('map.html', year=year, metric=metric)
 
@@ -1017,7 +1017,7 @@ def election_map():
 @app.route('/api/map-data')
 def api_map_data():
     """GeoJSON data for the map."""
-    year = request.args.get('year', 2024, type=int)
+    year = request.args.get('year', queries.last_general_year(), type=int)
     metric = request.args.get('metric', 'pvi')
     return jsonify(analysis.get_map_data(year, metric))
 
