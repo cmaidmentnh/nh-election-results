@@ -125,7 +125,7 @@ def get_town_summary(town):
             r.county,
             c.name as candidate,
             c.party,
-            res.votes
+            SUM(res.votes) as votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
@@ -136,7 +136,9 @@ def get_town_summary(town):
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
         AND o.name != 'State Representative'
-        ORDER BY e.year, o.name, res.votes DESC
+        -- each candidate's town total: a city's wards are separate rows
+        GROUP BY e.year, r.id, c.id
+        ORDER BY e.year, o.name, votes DESC
     """, (town, town))
 
     results = cursor.fetchall()
@@ -144,15 +146,18 @@ def get_town_summary(town):
         conn.close()
         return None
 
-    # Track individual candidate votes by year/office (for non-State-Rep)
-    candidate_votes = defaultdict(lambda: defaultdict(list))
+    # Track individual candidate votes by year/office/race (for non-State-Rep).
+    # A city can sit in more than one district of an office (Manchester has
+    # three State Senate seats), so the top vote-getters are taken per race
+    # and then added up for the office.
+    candidate_votes = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for row in results:
         year = row['year']
         office = row['office']
         party = row['party']
         votes = row['votes']
-        candidate_votes[year][office].append({'party': party, 'votes': votes})
+        candidate_votes[year][office][row['district']].append({'party': party, 'votes': votes})
 
     # Calculate margins by year
     # Combine years from both queries
@@ -167,10 +172,12 @@ def get_town_summary(town):
         year_total = 0
 
         # Add non-State-Rep offices (using top vote-getter)
-        for office, candidates in candidate_votes.get(year, {}).items():
-            top_r = max((c['votes'] for c in candidates if c['party'] == 'Republican'), default=0)
-            top_d = max((c['votes'] for c in candidates if c['party'] == 'Democratic'), default=0)
-            total = sum(c['votes'] for c in candidates)
+        for office, races in candidate_votes.get(year, {}).items():
+            top_r = sum(max((c['votes'] for c in cands if c['party'] == 'Republican'), default=0)
+                        for cands in races.values())
+            top_d = sum(max((c['votes'] for c in cands if c['party'] == 'Democratic'), default=0)
+                        for cands in races.values())
+            total = sum(c['votes'] for cands in races.values() for c in cands)
 
             by_year[year][office]['top_r'] = top_r
             by_year[year][office]['top_d'] = top_d
@@ -316,7 +323,7 @@ def get_town_race_details(town, year):
             c.id as candidate_id,
             c.name as candidate,
             c.party,
-            res.votes
+            SUM(res.votes) as votes
         FROM results res
         JOIN candidates c ON res.candidate_id = c.id
         JOIN races r ON res.race_id = r.id
@@ -327,7 +334,9 @@ def get_town_race_details(town, year):
         AND e.election_type = 'general'
             AND r.office_id NOT IN (8, 9, 10, 11, 12, 13) AND r.office_id NOT IN (SELECT id FROM offices WHERE level = 'question')  -- exclude county offices from cross-office stats
         AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins')
-        ORDER BY o.name, r.district, res.votes DESC
+        -- one line per candidate: a city's wards are separate rows in results
+        GROUP BY r.id, c.id
+        ORDER BY o.name, r.district, votes DESC
     """, (town, town, year))
 
     results = cursor.fetchall()
@@ -1612,6 +1621,7 @@ def get_town_representation(town):
         JOIN offices o ON r.office_id = o.id
         WHERE (res.municipality = ? OR res.municipality LIKE ? || ' Ward %')
         AND e.year = (SELECT MAX(e2.year) FROM elections e2 WHERE e2.election_type = 'general')
+        AND e.election_type = 'general'  -- not that year's primaries, which list each district again
         AND o.name IN ('State Representative', 'State Senator', 'Executive Councilor', 'Representative in Congress')
         ORDER BY o.name
     """, (town, town))
