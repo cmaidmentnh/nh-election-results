@@ -1855,6 +1855,8 @@ def _recounts():
 
 def _recount_for(office_name, county, district, party_full):
     for r in _recounts():
+        if r.get('canceled'):
+            continue
         if (r.get('office') == office_name
                 and (r.get('county') or '') == (county or '')
                 and (r.get('district') or '') == (district or '')
@@ -2687,7 +2689,17 @@ def _compute_results(cur, office_name, level, county, district, party_full, part
         projection = dict(projection)
         projection['certified'] = True
     rc = _recount_for(office_name, county, district, party_full)
-    if rc:
+    if rc and rc.get('winners'):
+        # The recount is held and its outcome known, but the Secretary of State
+        # has not posted the recounted figures yet - so the votes stay as first
+        # counted and only the outcome is fixed, the way a draw of lots is.
+        # Franklin's Merrimack 3 went that way: Hall passed Visconti by recount.
+        projection = dict(projection)
+        projection['status'] = 'called'
+        projection['winners'] = rc['winners']
+        projection['win_prob'] = 1.0
+        projection['recount_result'] = rc
+    elif rc:
         projection = dict(projection)
         projection['recount'] = rc
 

@@ -1,22 +1,239 @@
 {
-  "source": "2026 State Primary Recount Schedule, NH Secretary of State",
-  "url": "https://mm.nh.gov/files/uploads/sos/docs/2026-state-primary-recount-schedule.pdf",
-  "venue": "State Archives, 9 Ratification Way, Concord",
-  "recounts": [
-    {"office": "State Representative", "county": "Hillsborough", "district": "40",
-     "party": "Democratic", "date": "2026-09-14", "time": "9:00",
-     "where": "Manchester 1, 3, 10, 11, 12"},
-    {"office": "State Representative", "county": "Rockingham", "district": "16",
-     "party": "Republican", "date": "2026-09-14", "time": "1:30",
-     "where": "Londonderry"},
-    {"office": "State Representative", "county": "Hillsborough", "district": "33",
-     "party": "Democratic", "date": "2026-09-15", "time": "9:00",
-     "where": "Peterborough, Sharon", "note": "write-in"},
-    {"office": "County Treasurer", "county": "Carroll", "district": "",
-     "party": "Republican", "date": "2026-09-15", "time": "1:30",
-     "where": "Carroll County"},
-    {"office": "State Representative", "county": "Strafford", "district": "6",
-     "party": "Democratic", "date": "2026-09-16", "time": "9:00",
-     "where": "Rochester 2"}
-  ]
+ "_comment": "A recount with `winners` is settled: those names hold the seats whatever the first count says, until the SoS recount figures are entered as votes_recount. One without is scheduled or awaiting its result. `canceled` = the candidate withdrew the request; the first count stands.",
+ "source": "NH Secretary of State recount schedules (2026 State Primary; 2026 General Election)",
+ "url": "https://mm.nh.gov/files/uploads/sos/docs/2026-state-primary-recount-schedule.pdf",
+ "general_url": "https://mm.nh.gov/files/uploads/sos/docs/2026-ge-recount-schedule.pdf",
+ "venue": "State Archives, 9 Ratification Way, Concord",
+ "recounts": [
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "40",
+   "party": "Democratic",
+   "date": "2026-09-14",
+   "time": "9:00",
+   "where": "Manchester 1, 3, 10, 11, 12",
+   "election": "state_primary"
+  },
+  {
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "16",
+   "party": "Republican",
+   "date": "2026-09-14",
+   "time": "1:30",
+   "where": "Londonderry",
+   "election": "state_primary"
+  },
+  {
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "33",
+   "party": "Democratic",
+   "date": "2026-09-15",
+   "time": "9:00",
+   "where": "Peterborough, Sharon",
+   "note": "write-in",
+   "election": "state_primary"
+  },
+  {
+   "office": "County Treasurer",
+   "county": "Carroll",
+   "district": "",
+   "party": "Republican",
+   "date": "2026-09-15",
+   "time": "1:30",
+   "where": "Carroll County",
+   "election": "state_primary"
+  },
+  {
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "6",
+   "party": "Democratic",
+   "date": "2026-09-16",
+   "time": "9:00",
+   "where": "Rochester 2",
+   "election": "state_primary"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Carroll",
+   "district": "8",
+   "party": null,
+   "date": "2026-11-09",
+   "time": "9:00",
+   "where": "Brookfield, Eaton, Effingham, Freedom, Madison, Moultonborough, Tamworth, Wakefield",
+   "winners": [
+    "Colin Mitchell",
+    "George Randell"
+   ],
+   "result": "Recount confirmed the first count: Mitchell and Randell hold the two seats.",
+   "result_source": "New Hampshire Bulletin, 11/10/2026"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "1",
+   "party": null,
+   "date": "2026-11-09",
+   "time": "1:00",
+   "where": "Farmington",
+   "winners": [
+    "Andy Dow",
+    "W. Packy Campbell"
+   ],
+   "result": "Recount confirmed the first count: Dow and Campbell hold the two seats.",
+   "result_source": "New Hampshire Bulletin, 11/10/2026"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "25",
+   "party": null,
+   "date": "2026-11-10",
+   "time": "9:00",
+   "where": "Salem"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "13",
+   "party": null,
+   "date": "2026-11-12",
+   "time": "9:00",
+   "where": "Derry"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "5",
+   "party": null,
+   "date": "2026-11-13",
+   "time": "9:00",
+   "where": "Andover, Danbury, Hill, Salisbury, Webster"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "26",
+   "party": null,
+   "date": "2026-11-13",
+   "time": "1:00",
+   "where": "Andover, Boscawen, Canterbury, Danbury, Hill, Loudon, Salisbury, Webster"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Rockingham",
+   "district": "14",
+   "party": null,
+   "date": "2026-11-16",
+   "time": "9:00",
+   "where": "East Kingston, Kingston"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "1",
+   "party": null,
+   "date": "2026-11-16",
+   "time": "1:00",
+   "where": "Bath, Lisbon, Littleton, Lyman, Monroe, Sugar Hill"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Belknap",
+   "district": "6",
+   "party": null,
+   "date": "2026-11-17",
+   "time": "9:00",
+   "where": "Gilford, Gilmanton, Laconia W2"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Grafton",
+   "district": "11",
+   "party": null,
+   "date": "2026-11-17",
+   "time": "1:00",
+   "where": "Alexandria, Grafton, Groton, Hebron"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Merrimack",
+   "district": "3",
+   "party": null,
+   "date": "2026-11-18",
+   "time": "9:00",
+   "where": "Franklin Wards 1-3",
+   "winners": [
+    "Scott A. Burns",
+    "Vivian Marie Hall"
+   ],
+   "result": "Recount reversed the first count: Vivian Marie Hall (D) takes the second seat from Michael Visconti (R).",
+   "result_source": "Reported to Chris Maidment 11/18/2026; SoS recount sheet not yet posted"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Strafford",
+   "district": "18",
+   "party": null,
+   "date": "2026-11-18",
+   "time": "1:00",
+   "where": "Barrington, Middleton, New Durham, Strafford"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "36",
+   "party": null,
+   "date": "2026-11-19",
+   "time": "9:00",
+   "where": "Brookline, Greenville, Mason"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "45",
+   "party": null,
+   "date": "2026-11-19",
+   "time": "1:00",
+   "where": "Brookline, Greenville, Hollis, Mason",
+   "canceled": true
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Hillsborough",
+   "district": "44",
+   "party": null,
+   "date": "2026-11-20",
+   "time": "9:00",
+   "where": "Goffstown, Weare"
+  },
+  {
+   "election": "general",
+   "office": "State Representative",
+   "county": "Cheshire",
+   "district": "18",
+   "party": null,
+   "date": "2026-11-20",
+   "time": "1:00",
+   "where": "Dublin, Jaffrey, Rindge"
+  }
+ ]
 }

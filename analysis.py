@@ -597,8 +597,44 @@ def get_party_control(year):
         else:
             results[office]['Other'] += seats
 
+    # A recount whose outcome is known but whose figures the Secretary of State
+    # has not posted: the votes above are the first count, so move the seat.
+    for rc in settled_recounts(year):
+        cursor.execute("""
+            SELECT c.name, c.party, SUM(res.votes) AS v, r.seats
+            FROM results res JOIN candidates c ON c.id = res.candidate_id
+            JOIN races r ON r.id = res.race_id JOIN elections e ON e.id = r.election_id
+            JOIN offices o ON o.id = r.office_id
+            WHERE e.year = ? AND e.election_type = 'general' AND o.name = ?
+              AND r.county = ? AND r.district = ?
+              AND c.name NOT IN ('Undervotes', 'Overvotes', 'Write-Ins', 'Write-in')
+            GROUP BY c.id ORDER BY v DESC""", (year, rc['office'], rc['county'], rc['district']))
+        rows = cursor.fetchall()
+        if not rows or rc['office'] not in results:
+            continue
+        seats = rows[0][3] or 1
+        party_of = {r[0]: r[1] for r in rows}
+        first = [r[0] for r in rows[:seats]]
+        key = lambda p: 'R' if p == 'Republican' else 'D' if p == 'Democratic' else 'Other'
+        for name in set(first) - set(rc['winners']):
+            results[rc['office']][key(party_of.get(name))] -= 1
+        for name in set(rc['winners']) - set(first):
+            results[rc['office']][key(party_of.get(name))] += 1
+
     conn.close()
     return results
+
+
+def settled_recounts(year):
+    """General-election recounts in data/recounts.json with a known outcome."""
+    import json
+    path = Path(__file__).resolve().parent / 'data' / 'recounts.json'
+    try:
+        rows = json.loads(path.read_text()).get('recounts', [])
+    except (OSError, ValueError):
+        return []
+    return [r for r in rows if r.get('election') == 'general' and r.get('winners')
+            and not r.get('canceled') and str(r.get('date', ''))[:4] == str(year)]
 
 
 def get_closest_races(year, limit=10):
