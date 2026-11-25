@@ -4,8 +4,10 @@ UNL=[]
 from parse import parse
 from pdfgrid import parse_pdf
 COUNTY_PREFIX={'belk':'Belknap','carr':'Carroll','ches':'Cheshire','coos':'Coos','graf':'Grafton','hill':'Hillsborough','merr':'Merrimack','rock':'Rockingham','stra':'Strafford','sull':'Sullivan'}
-PARTY={'r':'Republican','d':'Democratic','i':'Independent','ind':'Independent','und':'Independent','gr':'Green','ci':'Independent','ib':'Independent','l':'Libertarian','lib':'Libertarian','g':'Green','grn':'Green','c':'Constitution','con':'Constitution'}
-ALIAS={"atkinson & gilmanton academy grant":"Atkinson & Gilmanton Academy Grant","at. & gil. academy grant":"Atkinson & Gilmanton Academy Grant",
+PARTY={'u':'Independent','rtc':'Republican','im':'Independent','r':'Republican','d':'Democratic','i':'Independent','ind':'Independent','und':'Independent','gr':'Green','ci':'Independent','ib':'Independent','l':'Libertarian','lib':'Libertarian','g':'Green','grn':'Green','c':'Constitution','con':'Constitution'}
+ALIAS={"at. & gil ac. grant":"Atkinson & Gilmanton Academy Grant","atkinson and gilmanton ac. grant":"Atkinson & Gilmanton Academy Grant",
+       "thomp. and mess purchase":"Thompson and Meserves Purchase","thompson & meserve's purchase":"Thompson and Meserves Purchase","thompson & meserves purchase":"Thompson and Meserves Purchase",
+       "atkinson & gilmanton academy grant":"Atkinson & Gilmanton Academy Grant","at. & gil. academy grant":"Atkinson & Gilmanton Academy Grant",
        "atk. & gilm. ac. gt.":"Atkinson & Gilmanton Academy Grant","low & burbank's grant":"Low and Burbanks Grant","thompson & meserve's purchase":"Thompson and Meserves Purchase"}
 def office_of(fn):
     f=fn.lower()
@@ -25,11 +27,12 @@ def county_of(fn):
         if f.startswith(k): return v
     return None
 def split_party(raw):
+    raw=re.sub(r",\s*i\.m\.$",", im",raw.strip())         # "Hall, i.m." (independent moderate)
     raw=re.sub(r"\s*\(dec'?d\)\s*$","",raw.strip())      # "Carlson, r (dec'd)": died before election day
     raw=re.sub(r'\bind mod$','ind',raw.strip())    # "ind mod" (independent moderate) -> Independent
     m=re.match(r'^(.*?),\s*([rd])\s+([A-Z][a-z]+)$',raw.strip())   # "Frost, d Donald"
     if m: return f"{m.group(3)} {m.group(1)}",PARTY[m.group(2).lower()]
-    m=re.search(r"(?:,\s*|\s+)\(?([a-z]{1,3}(?:\s*[&/-]\s*[a-z]{1,3})?)\)?[.`'\s]*$",raw,re.I)
+    m=re.search(r"(?:\s*,\s*|\s+)\(?([a-z]{1,3}(?:\s*[&/-]\s*[a-z]{1,3})?)\)?[.`'\s]*$",raw,re.I)
     if not m or m.group(1).lower().split('&')[0].split('/')[0].split('-')[0].strip() not in PARTY: return raw.strip(),''
     first=re.split(r'\s*[&/-]\s*',m.group(1).lower())[0]
     return raw[:m.start()].strip().rstrip(','),PARTY[first]
@@ -45,22 +48,50 @@ def clean_name(n):
 def muni(m):
     m=re.sub(r'\*+|\s*\(.*?\)','',m).strip();m=re.sub(r'\s+',' ',m)
     m=re.sub(r'^((Republican|Democratic)\s+)+','',m)            # 2002 sheets: party caption run into the town cell
-    m=re.sub(r'\bward\b','Ward',m);m=re.sub(r'^BeansPurchase$','Beans Purchase',m)
+    m=re.sub(r'\bward\b','Ward',m);m=re.sub(r'\s+-\s+Ward\b',' Ward',m);m=re.sub(r'^BeansPurchase$','Beans Purchase',m)
     if m.lower() in ALIAS: return ALIAS[m.lower()]
     m=re.sub(r'\bWd\.?\s*(\d)',r'Ward \1',m)
     m=re.sub(r'\bLoc\.?$','Location',m);m=re.sub(r'\bGt\.?$','Grant',m);m=re.sub(r'\bPur\.?$','Purchase',m)
-    return m.replace('’','').replace("'",'')
+    m=m.replace('’','').replace("'",'')
+    # one spelling for the two unincorporated places every sheet abbreviates differently
+    k=re.sub(r'[^a-z]','',m.lower().replace('&','and'))
+    if k.startswith(('atandgil','atkandgilm','atkinsonandgilmanton')): return 'Atkinson & Gilmanton Academy Grant'
+    if k.startswith(('thompandmes','thompsonandmeserve')): return 'Thompson and Meserves Purchase'
+    return m
+def cms_meta(fn):
+    """2012/2014 files are named <page>_<link text>_<id>: office, county, first district"""
+    f=fn.lower()
+    if 'recount' in f or 'winners' in f: return None,None,None
+    for k,off in [('repgen','State Representative'),('state_representative','State Representative'),('sengen','State Senator'),('state_senate','State Senator'),
+                  ('congen','Representative in Congress'),('representative_in_congress','Representative in Congress'),('exegen','Executive Councilor'),
+                  ('executive_council','Executive Councilor'),('govgen','Governor'),('governor','Governor'),('united_states_senator','United States Senator'),
+                  ('ussgen','United States Senator'),('presgen','President of the United States')]:
+        if f.startswith(k) or f.startswith('2012'+k) or f.startswith('2014'+k):
+            cty=None
+            if off=='State Representative':
+                m=re.search(r'house-([a-z]+)',f);cty=m.group(1).title() if m else None
+            m=re.search(r'district[s]?_(\d+)',f);dist=m.group(1) if m and off in('State Senator','Representative in Congress','Executive Councilor') else None
+            return off,cty,dist
+    return None,None,None
+def is_sheet(path):
+    with open(path,'rb') as fh: h=fh.read(8)
+    return h.startswith(b'PK') or h.startswith(b'\xd0\xcf\x11\xe0')
 def build(year,folder):
     out=[];probs=[];unk=[];global UNL;UNL=[]
+    cms=year>=2012
     for f in sorted(glob.glob(f'raw/{folder}/*')):
-        fn=os.path.basename(f);off=office_of(fn)
+        fn=os.path.basename(f)
+        if cms:
+            off,cty_c,dist_c=cms_meta(fn)
+            if not off or not is_sheet(f): unk.append(fn);continue   # spreadsheets only; the PDFs duplicate them
+        else: off=office_of(fn)
         if not off:
             unk.append(fn);continue
-        cty=county_of(fn) if off=='State Representative' else None
-        dist=None
-        m=re.match(r'^(?:congress|con|council|exe)\D*(\d)',fn,re.I)
+        cty=(cty_c if cms else county_of(fn)) if off=='State Representative' else None
+        dist=dist_c if cms else None
+        m=None if cms else re.match(r'^(?:congress|con|council|exe)\D*(\d)',fn,re.I)
         if m and off in('Representative in Congress','Executive Councilor'): dist=m.group(1)
-        m=re.match(r'^(?:senate|sen)\D*(\d+)',fn,re.I)
+        m=None if cms else re.match(r'^(?:senate|sen)\D*(\d+)',fn,re.I)
         if m and off=='State Senator': dist=m.group(1)   # first district on the page; later headings move it on
         recs,p=(parse_pdf if fn.lower().endswith('.pdf') else parse)(f,off,cty,district=dist,rep=(off=='State Representative'))
         probs+=[(fn,)+tuple(x) for x in p if x[2]!='unlabeled column']
@@ -69,7 +100,7 @@ def build(year,folder):
         for r in recs: r['_file']=fn
         for r in recs:
             raw=r['candidate']
-            if re.match(r'^(scatter|scattering|others?|write-?ins?)$',raw,re.I): name,party='Write-Ins',''
+            if re.match(r'^(scatt+er|scattering|others?|write-?ins?)$',raw,re.I): name,party='Write-Ins',''
             else:
                 name,party=split_party(raw);name=clean_name(name)
             out.append({'office':off,'county':cty,'district':r['district'] if off not in('Governor','United States Senator','President of the United States') else None,

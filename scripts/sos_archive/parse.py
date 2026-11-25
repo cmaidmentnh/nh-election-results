@@ -3,7 +3,7 @@ per-town candidate vote records, self-checking every block against its TOTALS ro
 import re,json,sys,collections
 from grid import rows
 NUM=re.compile(r'^-?\d[\d,]*(?:\.0+)?$')
-PARTY=re.compile(r"(?:,\s*|\s+)\(?([rdilgc]|lib|ind|con|grn|[rdi]\s*[&/-]\s*[rdi])\)?[.`'\s]*$|,\s*[rd]\s+[A-Z][a-z]+$",re.I)
+PARTY=re.compile(r"(?:\s*,\s*|\s+)\(?([rdilgc]|lib|ind|con|grn|[rdi]\s*[&/-]\s*[rdi])\)?[.`'\s]*$|,\s*[rd]\s+[A-Z][a-z]+$",re.I)
 NONCAND=re.compile(r'^(scatter|scattering|others?|write-?ins?|recount|blc recount|blc|undervotes?|overvotes?)$',re.I)
 COUNTIES=['Belknap','Carroll','Cheshire','Coos','Grafton','Hillsborough','Merrimack','Rockingham','Strafford','Sullivan']
 DIST=re.compile(r'Dist\w*ct\s*(?:No\.?)?\s*(\d*)\s*\((\d+)\)',re.I)
@@ -32,8 +32,15 @@ def unside(R):
             j=None if not hits else j
             out.append(r)
     return out+right
+def _rows_any(path):
+    with open(path,'rb') as f: head=f.read(8)
+    if head.startswith(b'PK') or head.startswith(b'\xd0\xcf\x11\xe0'):
+        from xlgrid import rows as xrows
+        return xrows(path)
+    return rows(path)
 def parse(path,office,county=None,district=None,seats=1,rep=False):
-    R=rows(path);recs=[];checks=[];problems=[]
+    R=_rows_any(path);recs=[];checks=[];problems=[]
+    summary=False
     if not rep: R=unside(R)
     cols=None;block=[];total=None;cur_county=county;cur_dist=district;cur_seats=seats;lastnum=0;prev_noname=False
     def close():
@@ -60,13 +67,16 @@ def parse(path,office,county=None,district=None,seats=1,rep=False):
                     if v is None or NONCAND.match(nm) and nm.lower()!='recount' and nm.lower() not in('scatter','others','other','write-ins','write-in'): continue
                     recs.append({'office':office,'county':cty,'district':cur_dist,'seats':cur_seats,'municipality':lab,'candidate':nm,'votes':v})
         block=[];total=None
-    prev_text=None
+    prev_text=None;hdr_town=None
     for r in R:
         r=[re.sub(r'^Recount\s+\S.*$','Recount',x) for x in r]
+        if r and re.match(r'^(4\d{4}|\d{4}-\d\d-\d\d.*)$',r[0]) and any(is_name(x) for x in r[1:]): r=['']+r[1:]   # Excel date in the header corner
         c0=r[0].strip() if r else ''
         pt,prev_text=prev_text,(r if r and not any(NUM.match(x) for x in r) else None)
         prev_text_for_row=pt
         m=DIST.search(c0) if rep else None
+        if rep and not m and re.search(r'\b(\d+)\s*\((\d+)\)\s*(FL)?\s*$',c0) and any(is_name(x) for x in r[1:]) and not any(NUM.match(x) for x in r[1:]):
+            m=re.search(r'\b(\d+)\s*\((\d+)\)',c0)       # "Dover Ward 15 (1)": a typo for "District No. 15 (1)"
         if rep and not m:
             m2=re.search(r'County\s+District\s*(?:No\.?)?\s*(\d+)\s*$',c0,re.I)
             if m2:
@@ -107,6 +117,9 @@ def parse(path,office,county=None,district=None,seats=1,rep=False):
         nums=[i for i,x in enumerate(r) if NUM.match(x)]
         if names and not nums:
             close()
+            summary=bool(re.match(r'summary by count',c0,re.I))   # county-by-county recap of the same votes: skip
+            # "Exeter | Simpson, d | ..." then a vote line with no town: the town sits in the header's first cell
+            hdr_town=c0 if c0 and not is_name(c0) and not re.search(r'county|district|summary|page',c0,re.I) else None
             # every text cell of a header row is a candidate, even one printed without a party (an independent)
             names={i:x for i,x in enumerate(r) if x and not NUM.match(x) and not x.lower().startswith('page ') and (i>0 or is_name(x))}
             if prev_text_for_row:
@@ -114,6 +127,7 @@ def parse(path,office,county=None,district=None,seats=1,rep=False):
             if min(names)==0: names={i+1:x for i,x in names.items()}
             cols=names;continue
         if cols is None or not nums: continue
+        if not c0.strip() and hdr_town: c0=hdr_town;hdr_town=None
         lab=re.sub(r'\*+','',c0).strip()
         lab=re.sub(r'^.*?Page \d+ of \d+\s*','',lab)
         lab=re.sub(r'^State Senate\s*-?\s*District\s*(No\.?)?\s*\d+\s*','',lab,flags=re.I)                       # 'State Senate District No. 1 Republica n Page 2 of 2 Stewartstown'
@@ -134,6 +148,7 @@ def parse(path,office,county=None,district=None,seats=1,rep=False):
                 cols[i]=cols.pop(i+1)   # the header cell sits one column right of its numbers
             elif i not in cols:
                 cols[i]=f'__COL{i}';problems.append((cur_dist,f'__COL{i}','unlabeled column',lab,vals[i],None))
+        if summary: continue
         block.append((lab,cur_county,vals,False))
     close()
     return recs,problems

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Import pre-2012 NH state general-election results rebuilt from the Secretary of
-State's own result pages, as saved by the Internet Archive (web.archive.org,
-www.sos.nh.gov/general96 ... /general%202010).
+Import 1998-2014 NH state general-election results rebuilt from the Secretary of
+State's own result files, as saved by the Internet Archive (web.archive.org:
+www.sos.nh.gov/general98 ... /general%202010 pages, and the 2012/2014 spreadsheets
+behind sos.nh.gov/WorkArea/DownloadAsset.aspx).
 
 The pages were parsed off-line into data/sos_archive/general_<year>.json.gz:
 one record per municipality per candidate per race, every district block checked
@@ -11,9 +12,9 @@ against the TOTALS row the SoS printed under it. Each record:
 county is null for races that cross county lines (Senate, Council, Congress,
 statewide), as the 2016+ imports store them.
 
-Only years <= 2010 are touched: for each year in the data, the 'general' election
+Only years <= 2014 are touched: for each year in the data, the 'general' election
 row and everything under it is deleted and rebuilt, so re-running is safe and
-2012+ data (hand entry, intake bot, recounts) can never be affected.
+2016+ data (hand entry, intake bot, recounts) can never be affected.
 DRY RUN by default; pass --commit to write. Back up the DB first.
 """
 import argparse
@@ -27,11 +28,11 @@ from collections import defaultdict
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nh_elections.db")
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sos_archive")
-MAX_YEAR = 2010
+MAX_YEAR = 2014
 
 
 def cycle_for(year):
-    return "1992-2000" if year <= 2000 else "2002-2010"
+    return "1992-2000" if year <= 2000 else "2002-2010" if year <= 2010 else "2012-2020"
 
 
 def load(path):
