@@ -2029,7 +2029,20 @@ def get_office_year_results(office, year):
             race['top_d'] = max(race['top_d'], votes)
 
     # Get towns for each district (State Representative only)
-    if office == 'State Representative':
+    if office == 'State Representative' and int(year) < 2012:
+        # Pre-2012 plans (archived SoS results) have no district_compositions:
+        # a district's towns are the places that reported votes in it that year
+        cursor.execute("""
+            SELECT DISTINCT r.county, r.district, res.municipality
+            FROM results res
+            JOIN races r ON res.race_id = r.id
+            JOIN elections e ON r.election_id = e.id
+            JOIN offices o ON r.office_id = o.id
+            WHERE o.name = 'State Representative' AND e.year = ?
+            AND e.election_type = 'general'
+            ORDER BY r.county, r.district, res.municipality
+        """, (year,))
+    elif office == 'State Representative':
         cycle = '2022-2030' if year >= 2022 else '2012-2020'
         cursor.execute("""
             SELECT county, district, municipality
@@ -2039,6 +2052,7 @@ def get_office_year_results(office, year):
             ORDER BY county, district, municipality
         """, (cycle,))
 
+    if office == 'State Representative':
         district_towns = {}
         for row in cursor.fetchall():
             county, district, town = row
