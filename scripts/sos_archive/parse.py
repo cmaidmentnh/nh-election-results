@@ -2,7 +2,7 @@
 per-town candidate vote records, self-checking every block against its TOTALS row."""
 import re,json,sys,collections
 from grid import rows
-NUM=re.compile(r'^-?\d[\d,]*$')
+NUM=re.compile(r'^-?\d[\d,]*(?:\.0+)?$')
 PARTY=re.compile(r"(?:,\s*|\s+)\(?([rdilgc]|lib|ind|con|grn|[rdi]\s*[&/-]\s*[rdi])\)?[.`'\s]*$|,\s*[rd]\s+[A-Z][a-z]+$",re.I)
 NONCAND=re.compile(r'^(scatter|scattering|others?|write-?ins?|recount|blc recount|blc|undervotes?|overvotes?)$',re.I)
 COUNTIES=['Belknap','Carroll','Cheshire','Coos','Grafton','Hillsborough','Merrimack','Rockingham','Strafford','Sullivan']
@@ -10,7 +10,7 @@ DIST=re.compile(r'Dist\w*ct\s*(?:No\.?)?\s*(\d*)\s*\((\d+)\)',re.I)
 def is_name(c):
     c=re.sub(r'^Recount\s+\S.*$','Recount',c.strip())
     return bool(c) and not NUM.match(c) and (bool(PARTY.search(c)) or bool(NONCAND.match(c)) or 'w-in' in c.lower() or 'write-in' in c.lower())
-def num(c): return int(c.replace(',','')) if NUM.match(c.strip()) else None
+def num(c): return int(float(c.replace(',',''))) if NUM.match(c.strip()) else None
 SIDE=re.compile(r'(?:SENATE|COUNCIL)\D{0,25}?DISTRICT\s*(?:NO\.?)?\s*\d+\s*$',re.I)
 def unside(R):
     # one race printed as two side-by-side half-lists (1998 Council 2): the header repeats its names

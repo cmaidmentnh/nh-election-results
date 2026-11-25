@@ -18,6 +18,11 @@ def rows(path):
             m2=re.match(r'^(\d[\d,]*)\s+(\d[\d,]*)$',s)
             if m2: s=m2.group(2)        # "3877 3881": first count, then recount - the recount stands
             s=re.sub(r'\s+Recount$','',s) if re.search(r',\s*\w+\s+Recount$',s) else s   # "Bridle, r Recount"
+            s=re.sub(r'\bRecoun\s+t\b','Recount',s)                     # 'Recoun t' typo
+            if re.match(r'^RECOUNT\s*/\s*BLC$',s,re.I): s='Recount'          # recount column, BLC-adjusted
+            m3=re.match(r'^(.*?,\s*[a-z&]+)\s+Recount$',s)
+            if m3: s=m3.group(1)                                             # 'Salatiello, d Recount' (the recount column is the next cell)
+            s=re.sub(r'(,\s*[a-z]{1,3}),$',r'\1',s)                          # 'Lynde, d,'
             cells.append(s)
             if sp: cells+=['']*(int(sp.group(1))-1)
         while cells and cells[-1]=='': cells.pop()

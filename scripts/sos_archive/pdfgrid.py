@@ -3,7 +3,7 @@ columns by x-position (a blank cell stays blank); candidate names go to columns 
 order. A table runs across page breaks until its TOTALS line, and is checked
 against it."""
 import re,pdfplumber
-NUMT=re.compile(r'^(\d[\d,]*|-+)$')
+NUMT=re.compile(r'^(\d[\d,]*(?:\.0+)?|-+)$')   # some sheets print 846.0
 PARTYTOK=re.compile(r"^(r|d|i|l|g|c|lib|ind|con|grn|[rdi]&[rdi]|[rdi]/[rdi]),?$")   # lowercase only: "L." is a middle initial
 COUNTIES=['Belknap','Carroll','Cheshire','Coos','Grafton','Hillsborough','Merrimack','Rockingham','Strafford','Sullivan']
 DISTRE=re.compile(r'Dist\w*ct\s*(?:No\.?)?\s*(\d+)\s*(?:\((\d+)\))?',re.I)
@@ -31,7 +31,7 @@ def split_label(ws):
         if NUMT.match(t) and not (i>0 and ws[i-1]['text'].lower() in('ward','wd','no.','district')): break
         i+=1
     return ws[:i],ws[i:]
-def num(t): return None if t.startswith('-') else int(t.replace(',',''))
+def num(t): return None if t.startswith('-') else int(float(t.replace(',','')))
 def cluster(xs,tol=14):
     cl=[]
     for x in sorted(xs):
@@ -207,6 +207,8 @@ def parse_pdf(path,office,county=None,district=None,seats=1,rep=False):
     return recs,problems
 def flush(st,problems,close):
     buf=st.pop('buf',[]);hdr=st.pop('pending_hdr',None)
+    if hdr and not buf and st.get('rep') and any(PARTYW.match(w['text']) or w['text'].endswith(', d') for ws in hdr for w in ws):
+        problems.append((st['d'],' '.join(w['text'] for ws in hdr for w in ws),'candidate header with no vote rows',0,'',0))
     if not buf: return
     xs=[x1 for _,vals in buf for x0,x1,t in vals if not t.startswith('-')]
     cols=cluster(xs)
